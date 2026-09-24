@@ -231,7 +231,7 @@ def test_exportar_traz_entrada_resultado_e_auditoria(client):
     r = client.get(f"/api/decisoes/{pid}/exportar")
     assert r.status_code == 200
     livro = load_workbook(io.BytesIO(r.content))
-    assert livro.sheetnames == ["Entrada", "Resultado", "Auditoria"]
+    assert livro.sheetnames == ["Entrada", "Resultado", "Perguntas", "Auditoria"]
 
     trilha = livro["Auditoria"]
     declaracoes = [trilha.cell(l, 4).value for l in range(2, trilha.max_row + 1)]
@@ -285,3 +285,58 @@ def test_problema_traz_a_matriz_de_valor_normalizada(client):
     for linha in valores.values():
         for v in linha.values():
             assert 0.0 <= v <= 1.0
+
+
+def test_export_traz_o_resumo_tabular_das_perguntas(client):
+    """A trilha narrada conta a decisao em prosa; esta aba e para conferir em
+    qual ciclo cada resposta entrou."""
+    criada = client.post(
+        "/api/decisoes/importar",
+        files={"arquivo": ("dados.xlsx", como_xlsx(LINHAS_OK), XLSX)},
+    ).json()
+    pid = criada["id"]
+    client.post(
+        f"/api/decisoes/{pid}/ordenacao",
+        json={"ordem": [c["chave"] for c in criada["criterios"]]},
+    )
+    client.post(f"/api/decisoes/{pid}/resposta", json={"preferencia": "A"})
+
+    livro = load_workbook(io.BytesIO(client.get(f"/api/decisoes/{pid}/exportar").content))
+    aba = livro["Perguntas"]
+    assert [c.value for c in aba[1]] == ["Ciclo", "Declaracao", "Autor", "Registrado em"]
+    ciclos = [aba.cell(l, 1).value for l in range(2, aba.max_row + 1)]
+    assert ciclos == [1, 2]
+
+
+def test_export_com_sensibilidade_acrescenta_a_aba(client):
+    criada = client.post(
+        "/api/decisoes/importar",
+        files={"arquivo": ("dados.xlsx", como_xlsx(LINHAS_OK), XLSX)},
+    ).json()
+    pid = criada["id"]
+    client.post(
+        f"/api/decisoes/{pid}/ordenacao",
+        json={"ordem": [c["chave"] for c in criada["criterios"]]},
+    )
+
+    sem = load_workbook(io.BytesIO(client.get(f"/api/decisoes/{pid}/exportar").content))
+    assert "Sensibilidade" not in sem.sheetnames
+
+    com = load_workbook(
+        io.BytesIO(client.get(f"/api/decisoes/{pid}/exportar?sensibilidade=true").content)
+    )
+    assert "Sensibilidade" in com.sheetnames
+    aba = com["Sensibilidade"]
+    rotulos = [aba.cell(l, 1).value for l in range(1, aba.max_row + 1)]
+    assert "Estabilidade" in rotulos
+
+
+def test_sensibilidade_no_export_e_ignorada_antes_de_comecar(client):
+    """Sem elicitacao nao ha o que variar: o parametro nao pode quebrar."""
+    criada = client.post(
+        "/api/decisoes/importar",
+        files={"arquivo": ("dados.xlsx", como_xlsx(LINHAS_OK), XLSX)},
+    ).json()
+    r = client.get(f"/api/decisoes/{criada['id']}/exportar?sensibilidade=true")
+    assert r.status_code == 200
+    assert "Sensibilidade" not in load_workbook(io.BytesIO(r.content)).sheetnames

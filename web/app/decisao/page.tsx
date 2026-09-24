@@ -15,11 +15,12 @@
 
 import { Equals, Question } from "@phosphor-icons/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 
 import { Dica } from "@/components/ui";
 
 import { EntradaProblema } from "@/components/EntradaProblema";
+import { BotaoSalvarGrafico } from "@/components/BotaoSalvarGrafico";
 import { CurvaDeValor, type Ponto } from "@/components/CurvaDeValor";
 import { Etapas, Voltar, type Etapa } from "@/components/Etapas";
 import { Inconsistencia, type Diagnostico, type Saida } from "@/components/Inconsistencia";
@@ -111,6 +112,8 @@ function Decisao() {
   const [auditoria, setAuditoria] = useState<Auditoria | null>(null);
   const [diagnostico, setDiagnostico] = useState<Diagnostico | null>(null);
   const [curvaDe, setCurvaDe] = useState<string | null>(null);
+  const [encerradoPeloUsuario, setEncerradoPeloUsuario] = useState(false);
+  const areaComparacao = useRef<HTMLDivElement>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
 
@@ -242,9 +245,13 @@ function Decisao() {
 
   /* Em que etapa o decisor está, e quais já pode revisitar. */
   const [revisando, setRevisando] = useState<Etapa | null>(null);
+  /* O método permite parar antes de esgotar as perguntas: se o conjunto já
+     está pequeno, olhar as faixas e decidir pelos dados é a avaliação holística
+     prevista. Encerrar é escolha do decisor, não só do algoritmo. */
+  const encerrado = (estado?.encerrado ?? false) || encerradoPeloUsuario;
   const etapaNatural: Etapa = !estado?.elicitacao_iniciada
     ? "ordem"
-    : estado.encerrado
+    : encerrado
       ? "resultado"
       : "perguntas";
   const etapa = revisando ?? etapaNatural;
@@ -442,7 +449,7 @@ function Decisao() {
             </div>
           )}
 
-          {etapa === "perguntas" && estado?.elicitacao_iniciada && !estado.encerrado && (
+          {etapa === "perguntas" && estado?.elicitacao_iniciada && !encerrado && (
             <Secao
               titulo={`Pergunta ${Math.max((estado.declaracoes ?? 1) - 1, 0) + 1}`}
               acessorio={
@@ -493,11 +500,33 @@ function Decisao() {
 
           {(etapa === "perguntas" || etapa === "resultado") &&
             estado?.elicitacao_iniciada && estado.consistente && (
-            <Secao titulo="Comparar as alternativas">
+            <Secao
+              titulo="Comparar as alternativas"
+              acessorio={
+                <span className="flex items-center gap-4">
+                  <BotaoSalvarGrafico
+                    alvo={areaComparacao}
+                    nome={`${problema.nome} — comparação`}
+                  />
+                  {!encerrado && (
+                    <button
+                      onClick={() => setEncerradoPeloUsuario(true)}
+                      className="tatil text-[12px] underline underline-offset-2"
+                      style={{ color: "var(--tinta-3)" }}
+                      title="Para de perguntar e mostra o resultado com o que já foi respondido"
+                    >
+                      já decidi, encerrar
+                    </button>
+                  )}
+                </span>
+              }
+            >
+              <div ref={areaComparacao}>
               <Visualizacoes
                 problema={problema}
                 destaque={estado.analise?.potencialmente_otimas}
               />
+              </div>
               <div className="mt-6 border-t pt-5" style={{ borderColor: "var(--borda)" }}>
                 <JulgamentoHolistico
                   alternativas={Object.keys(problema.consequencias)}
@@ -509,7 +538,20 @@ function Decisao() {
           )}
 
           {(etapa === "perguntas" || etapa === "resultado") && estado?.analise && (
-            <Secao titulo={estado.encerrado ? "Resultado" : "Onde estamos"}>
+            <Secao
+              titulo={encerrado ? "Resultado" : "Onde estamos"}
+              acessorio={
+                encerradoPeloUsuario && !estado.encerrado ? (
+                  <button
+                    onClick={() => setEncerradoPeloUsuario(false)}
+                    className="tatil text-[12px] underline underline-offset-2"
+                    style={{ color: "var(--tinta-3)" }}
+                  >
+                    voltar a responder
+                  </button>
+                ) : undefined
+              }
+            >
               {!estado.consistente ? (
                 <p className="prosa text-sm" style={{ color: "var(--erro)" }}>
                   {estado.aviso}
@@ -577,7 +619,7 @@ function Decisao() {
             </Secao>
           )}
 
-          {etapa === "resultado" && estado?.encerrado && estado.consistente && (
+          {etapa === "resultado" && encerrado && estado?.consistente && (
             <Secao titulo="Quanto isso depende dos dados">
               <SensibilidadeConsequencias
                 decisaoId={problema.id}

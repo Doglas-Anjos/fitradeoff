@@ -292,7 +292,60 @@ def modelo() -> bytes:
     return saida.getvalue()
 
 
-def exportar(problema: dict, estado: dict, auditoria: dict) -> bytes:
+def _aba_perguntas(livro, auditoria: dict) -> None:
+    """Uma linha por ciclo: o que foi perguntado e o que foi respondido.
+
+    A trilha narrada conta a decisao em prosa, que e bom para ler. Esta aba e
+    para conferir: em qual ciclo cada resposta entrou, e em que ordem.
+    """
+    aba = livro.create_sheet("Perguntas")
+    aba.append(["Ciclo", "Declaracao", "Autor", "Registrado em"])
+    for coluna in range(1, 5):
+        aba.cell(1, coluna).font = _NEGRITO
+        aba.cell(1, coluna).fill = _CABECALHO
+    for d in auditoria.get("declaracoes", []):
+        aba.append([d["sequencia"], d["declaracao"], d["autor"], d["registrado_em"]])
+    _ajustar(aba)
+    aba.column_dimensions["B"].width = 95
+    for linha in aba.iter_rows(min_col=2, max_col=2):
+        for celula in linha:
+            celula.alignment = Alignment(wrap_text=True, vertical="top")
+
+
+def _aba_sensibilidade(livro, sensibilidade: dict) -> None:
+    """O resultado da analise de sensibilidade sobre as consequencias."""
+    aba = livro.create_sheet("Sensibilidade")
+    aba.append(["Analise de sensibilidade sobre as consequencias"])
+    aba.cell(1, 1).font = _NEGRITO
+    aba.append([])
+    aba.append(["Cenarios simulados", sensibilidade.get("cenarios")])
+    aba.append(["Estabilidade", sensibilidade.get("estabilidade")])
+    aba.append(["Solucao original", ", ".join(sensibilidade.get("solucao_original", []))])
+    aba.append([])
+
+    aba.append(["Criterio variado", "Para baixo (%)", "Para cima (%)"])
+    for coluna in range(1, 4):
+        aba.cell(aba.max_row, coluna).font = _NEGRITO
+    for v in sensibilidade.get("criterios_variados", []):
+        aba.append([v["criterio"], v["para_baixo"], v["para_cima"]])
+    aba.append([])
+
+    aba.append(["Alternativa", "Fracao de cenarios na solucao"])
+    for coluna in range(1, 3):
+        aba.cell(aba.max_row, coluna).font = _NEGRITO
+    for nome, fracao in sorted(
+        sensibilidade.get("frequencia", {}).items(), key=lambda x: -x[1]
+    ):
+        aba.append([nome, fracao])
+    _ajustar(aba)
+
+
+def exportar(
+    problema: dict,
+    estado: dict,
+    auditoria: dict,
+    sensibilidade: dict | None = None,
+) -> bytes:
     """Exporta entrada, resultado e trilha -- cada um na sua aba.
 
     A trilha vai junto de proposito: um resultado sem o registro do que foi
@@ -340,6 +393,8 @@ def exportar(problema: dict, estado: dict, auditoria: dict) -> bytes:
     resultado.cell(1, 1).font = _NEGRITO
     _ajustar(resultado)
 
+    _aba_perguntas(livro, auditoria)
+
     trilha = livro.create_sheet("Auditoria")
     trilha.append(["#", "Autor", "Registrado em", "Declaracao"])
     for coluna in range(1, 5):
@@ -357,6 +412,9 @@ def exportar(problema: dict, estado: dict, auditoria: dict) -> bytes:
     for linha in trilha.iter_rows(min_col=4, max_col=4):
         for celula in linha:
             celula.alignment = Alignment(wrap_text=True, vertical="top")
+
+    if sensibilidade:
+        _aba_sensibilidade(livro, sensibilidade)
 
     saida = io.BytesIO()
     livro.save(saida)

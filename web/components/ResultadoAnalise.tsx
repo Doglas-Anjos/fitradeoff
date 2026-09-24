@@ -67,9 +67,33 @@ export function ResultadoAnalise({ analise }: { analise: Analise }) {
             </tbody>
           </table>
         </Secao>
-        {(analise.pares_indefinidos?.length ?? 0) > 0 && (
+        {(analise.diferencas_maximas?.length ?? 0) > 0 && (
           <Secao titulo="Ainda não decidido">
-            <Lista itens={analise.pares_indefinidos!} />
+            <p className="prosa mb-3 text-[12px]" style={{ color: "var(--tinta-3)" }}>
+              O quanto cada uma pode superar a outra, no cenário mais favorável.
+              Diferença pequena significa que responder mais sobre esse par
+              muda pouco.
+            </p>
+            <table className="w-full text-[12px]">
+              <thead>
+                <tr style={{ color: "var(--tinta-fraca)" }}>
+                  <th className="py-1 text-left font-normal">Par</th>
+                  <th className="py-1 text-right font-normal">vantagem máx.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {analise.diferencas_maximas!.map((d) => (
+                  <tr key={`${d.a}-${d.b}`} style={{ color: "var(--tinta-2)" }}>
+                    <td className="py-1">
+                      {d.a} <span style={{ color: "var(--tinta-fraca)" }}>vs</span> {d.b}
+                    </td>
+                    <td className="num py-1 text-right">
+                      {d.a_supera_b_em_ate.toFixed(3)} / {d.b_supera_a_em_ate.toFixed(3)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </Secao>
         )}
       </>

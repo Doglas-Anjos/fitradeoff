@@ -72,16 +72,32 @@ async def importar(
 
 
 @router.get("/decisoes/{decisao_id}/exportar", summary="Exporta a decisao")
-def exportar(decisao_id: str, service: DecisionService = Depends(get_service)):
+def exportar(
+    decisao_id: str,
+    sensibilidade: bool = False,
+    service: DecisionService = Depends(get_service),
+):
+    """Planilha com entrada, resultado, perguntas e trilha.
+
+    ``sensibilidade=true`` acrescenta a analise sobre as consequencias, que
+    custa tempo por rodar centenas de cenarios -- por isso nao vem por padrao.
+    """
     try:
         problema = service.describe(decisao_id)
         estado = service.state(decisao_id)
         auditoria = service.explain(decisao_id)
+        analise = None
+        if sensibilidade and estado.get("elicitacao_iniciada"):
+            analise = service.consequence_sensitivity(
+                decisao_id,
+                [{"criterio": c["chave"]} for c in problema["criterios"]],
+                cenarios=200,
+            )
     except Exception as exc:
         raise translate(exc) from exc
 
     seguro = "".join(c if c.isalnum() or c in " -_" else "-" for c in problema["nome"])
     return _anexo(
-        spreadsheet.exportar(problema, estado, auditoria),
+        spreadsheet.exportar(problema, estado, auditoria, analise),
         f"{seguro.strip() or 'decisao'}.xlsx",
     )

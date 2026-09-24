@@ -30,6 +30,12 @@ export interface Analise {
   ordem_definida?: string[] | null;
   pares_indefinidos?: string[];
   dominancia_direta?: { de: string; para: string }[];
+  diferencas_maximas?: {
+    a: string;
+    b: string;
+    a_supera_b_em_ate: number;
+    b_supera_a_em_ate: number;
+  }[];
   niveis?: string[][];
   alocacao?: Record<
     string,

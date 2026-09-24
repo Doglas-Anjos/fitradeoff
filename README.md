@@ -32,7 +32,7 @@ sem vínculo com o sistema oficial do CDSID-UFPE.
 | Ordenação de pesos nos dois modos | **pronto** — lista e avaliação global |
 | Decisão em grupo | a fazer |
 
-**246 testes**, incluindo um decisor-oráculo que verifica a invariante central do método (a
+**433 testes**, incluindo um decisor-oráculo que verifica a invariante central do método (a
 alternativa verdadeiramente ótima nunca sai do conjunto de POAs), testes que auditam a própria
 arquitetura e testes de entrada não confiável.
 

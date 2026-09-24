@@ -62,12 +62,50 @@ class RankingProblematic(Problematic):
                     else None
                 ),
                 "pares_indefinidos": self._unresolved_pairs(problem, dominance),
+                # o quanto, no pior caso, uma pode superar a outra: e o que diz
+                # se vale a pena continuar respondendo por aquele par
+                "diferencas_maximas": self._max_differences(problem, space, dominance),
                 # arestas do diagrama de Hasse: so a cobertura transitiva, pois
                 # desenhar todas as relacoes deixaria o grafo ilegivel
                 "dominancia_direta": self._cover(problem, dominance),
                 "niveis": self._levels(problem, dominance),
             },
         )
+
+    def _max_differences(
+        self, problem: Problem, space: WeightSpace, dominance: np.ndarray
+    ) -> list[dict]:
+        """Maior vantagem possivel entre alternativas ainda incomparaveis.
+
+        Uma diferenca maxima pequena significa que, mesmo no cenario mais
+        favoravel, uma mal supera a outra -- e continuar perguntando sobre
+        aquele par rende pouco. E a informacao que o sistema de referencia
+        oferece ao lado do diagrama.
+        """
+        solver = self.evaluator.solver
+        linhas = []
+        for i in range(problem.n_alternatives):
+            for l in range(i + 1, problem.n_alternatives):
+                if dominance[i, l] or dominance[l, i]:
+                    continue
+                a_sobre_b = solver.maximize(space, problem.values[i] - problem.values[l])
+                b_sobre_a = solver.maximize(space, problem.values[l] - problem.values[i])
+                if a_sobre_b is None or b_sobre_a is None:
+                    continue
+                linhas.append(
+                    {
+                        "a": problem.alternatives[i],
+                        "b": problem.alternatives[l],
+                        "a_supera_b_em_ate": round(max(a_sobre_b, 0.0), 4),
+                        "b_supera_a_em_ate": round(max(b_sobre_a, 0.0), 4),
+                    }
+                )
+        # as maiores primeiro: sao os pares em que ainda ha muito em jogo
+        linhas.sort(
+            key=lambda d: max(d["a_supera_b_em_ate"], d["b_supera_a_em_ate"]),
+            reverse=True,
+        )
+        return linhas
 
     def _cover(self, problem: Problem, dominance: np.ndarray) -> list[dict]:
         """Reducao transitiva: mantem a aresta i->l so quando nao existe um

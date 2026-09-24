@@ -13,18 +13,18 @@ Legenda: **✅ temos** · **◐ parcial** · **❌ falta**
 | 1.2 | Cadastro manual de alternativas e critérios | ✅ | |
 | 1.3 | Critério discreto com nº de níveis declarado | ◐ | O motor suporta escala construída; falta a UI |
 | 1.4 | Critério contínuo com marcação de inteiro | ❌ | |
-| 1.5 | **Avaliação intra-critério por elicitação de pontos** | ◐ | O motor aceita e persiste a curva (`curva_de_valor`); falta a tela que a elicita |
-| 1.6 | Input Page — revisão dos dados antes de começar | ❌ | |
+| 1.5 | **Avaliação intra-critério por elicitação de pontos** | ✅ | Elicitação por bisseção, com a reta linear desenhada por baixo para comparar |
+| 1.6 | Input Page — revisão dos dados antes de começar | ✅ | A etapa "Problema", acessível a qualquer momento |
 | 1.7 | **Limiar de equivalência editável** | ◐ | Existe no motor (`epsilon`), não exposto na tela |
 
 ## 2. Ordenação das constantes de escala
 
 | # | Recurso | Nós | Observação |
 |---|---|---|---|
-| 2.1 | **Pairwise comparison com gráfico de consequências** | ❌ | Compara A vs B graficamente para ordenar os pesos |
+| 2.1 | **Pairwise comparison com gráfico de consequências** | ✅ | Modo padrão da ordenação, com a faixa de cada critério desenhada |
 | 2.2 | Overall evaluation | ◐ | Temos a seleção sequencial; falta o gráfico de barras com a faixa de cada critério |
-| 2.3 | Tela de indiferença → escolher critério representativo | ❌ | |
-| 2.4 | Heurística para reduzir o nº de perguntas da ordenação | ❌ | |
+| 2.3 | Tratamento da indiferença na ordenação | ✅ | O par fica registrado e a tela avisa que a posição foi arbitrada |
+| 2.4 | Heurística para reduzir o nº de perguntas da ordenação | ✅ | Inserção com busca binária: O(n log n) em vez de O(n²) |
 
 ## 3. Elicitação por decomposição
 
@@ -32,7 +32,7 @@ Legenda: **✅ temos** · **◐ parcial** · **❌ falta**
 |---|---|---|---|
 | 3.1 | Pergunta de tradeoff com gráfico | ✅ | |
 | 3.2 | Respostas A / B / Indiferente | ✅ | |
-| 3.3 | **Resposta "No Answer"** | ❌ | Permite pular a pergunta sem declarar preferência |
+| 3.3 | **Resposta "não sei"** | ✅ | Encerra o par sem gerar restrição — distinta da indiferença |
 | 3.4 | Níveis intermediários em critério discreto | ◐ | O motor respeita os níveis; falta a tela dedicada |
 | 3.5 | Contador de perguntas respondidas | ✅ | |
 | 3.6 | Contador de alternativas potencialmente ótimas | ✅ | |
@@ -52,17 +52,17 @@ Legenda: **✅ temos** · **◐ parcial** · **❌ falta**
 | 4.7 | Gráfico dos limites das constantes de escala | ◐ | Temos as faixas; eles mostram a evolução ao longo das perguntas |
 | 4.8 | Selecionar quais alternativas exibir | ✅ | |
 | 4.9 | Esconder critérios em que todas empatam | ✅ | |
-| 4.10 | Tabela de diferenças máximas entre incomparáveis | ❌ | |
-| 4.11 | "Finalize decision process" | ❌ | Encerrar por decisão do usuário |
-| 4.12 | Salvar gráfico como imagem | ❌ | |
+| 4.10 | Tabela de diferenças máximas entre incomparáveis | ✅ | Mostra se ainda vale perguntar sobre aquele par |
+| 4.11 | "Finalize decision process" | ✅ | "Já decidi, encerrar", com volta para continuar respondendo |
+| 4.12 | Salvar gráfico como imagem | ✅ | PNG, com as variáveis CSS resolvidas antes de exportar |
 
 ## 5. Avaliação holística
 
 | # | Recurso | Nós | Observação |
 |---|---|---|---|
 | 5.1 | Julgamento entre alternativas reais | ✅ | Agora também na tela, ao lado dos gráficos |
-| 5.2 | Escolher a visualização antes de julgar | ❌ | |
-| 5.3 | Explicação conceitual junto ao gráfico | ❌ | |
+| 5.2 | Escolher a visualização antes de julgar | ✅ | As quatro abas ficam acima do julgamento |
+| 5.3 | Explicação conceitual junto ao gráfico | ✅ | Dica contextual em cada visualização |
 
 ## 6. Teste de inconsistência
 
@@ -86,8 +86,8 @@ Legenda: **✅ temos** · **◐ parcial** · **❌ falta**
 | # | Recurso | Nós | Observação |
 |---|---|---|---|
 | 8.1 | Dados de entrada e resultado | ✅ | |
-| 8.2 | **Resumo das perguntas** (ciclo a ciclo) | ◐ | Temos a trilha narrada; falta o formato tabular ciclo/consequência A/B/resposta |
-| 8.3 | Relatório da análise de sensibilidade | ❌ | Depende de 7.1 |
+| 8.2 | **Resumo das perguntas** (ciclo a ciclo) | ✅ | Aba "Perguntas" no export, além da trilha narrada |
+| 8.3 | Relatório da análise de sensibilidade | ✅ | Aba opcional no export (`?sensibilidade=true`) |
 
 ## 9. O que só nós temos
 
@@ -105,15 +105,15 @@ Legenda: **✅ temos** · **◐ parcial** · **❌ falta**
 
 | Bloco | Temos | Parcial | Falta |
 |---|---:|---:|---:|
-| Entrada | 2 | 3 | 2 |
-| Ordenação de pesos | 0 | 1 | 3 |
-| Elicitação | 5 | 1 | 2 |
-| Visualizações | 8 | 1 | 3 |
-| Holística | 1 | 0 | 2 |
+| Entrada | 4 | 2 | 1 |
+| Ordenação de pesos | 3 | 1 | 0 |
+| Elicitação | 6 | 1 | 1 |
+| Visualizações | 11 | 1 | 0 |
+| Holística | 3 | 0 | 0 |
 | Inconsistência | 3 | 0 | 0 |
 | Sensibilidade | 3 | 1 | 0 |
-| Export | 1 | 1 | 1 |
-| **Total** | **26** | **8** | **10** |
+| Export | 3 | 0 | 0 |
+| **Total** | **36** | **5** | **2** |
 
 ### Feito até aqui
 
@@ -135,14 +135,20 @@ Legenda: **✅ temos** · **◐ parcial** · **❌ falta**
   duas declarações que não cabem juntas, e uma declaração que a própria matriz
   desmente (preferir quem perde em todos os critérios)
 
-### O que falta, por prioridade
+### O que falta
 
-1. **Tela que elicita a curva de valor** (1.5) — o motor já aceita e persiste;
-   falta a interface ponto a ponto com gráfico
-2. **Pairwise comparison gráfico** na ordenação de pesos (2.1)
-3. **Resposta "No Answer"** na elicitação (3.3)
-4. Recorte da SA por posição e por classe (7.4)
-5. Itens menores: 1.4, 1.6, 2.3, 2.4, 4.10–4.12, 5.2, 5.3, 8.2, 8.3
+| Item | Situação |
+|---|---|
+| 1.3 · UI para escala construída (níveis) | O motor suporta; a planilha aceita; falta o formulário |
+| 1.4 · Marcar critério como inteiro | Cosmético — afeta só a apresentação do número |
+| 1.7 · Limiar de equivalência editável na tela | Existe na API e no chat |
+| 2.2 · Gráfico na *overall evaluation* | O modo par a par, que é o do método, já tem |
+| 3.4 · Tela dedicada a níveis intermediários | O motor respeita os níveis nas perguntas |
+| 4.7 · Evolução das faixas ao longo das perguntas | Mostramos o estado atual, não a série histórica |
+| 7.4 · Recorte da sensibilidade por posição e classe | Feito para escolha |
+
+Nada aqui muda o resultado de uma decisão: são refinamentos de apresentação
+sobre capacidade que o motor já tem.
 
 ---
 

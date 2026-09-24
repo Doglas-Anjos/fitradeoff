@@ -19,6 +19,7 @@
 import { CheckCircle } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 
+import { ComparacaoPares } from "@/components/ComparacaoPares";
 import { ListaArrastavel } from "@/components/ListaArrastavel";
 
 import { Botao, Dica } from "@/components/ui";
@@ -49,7 +50,7 @@ export function OrdenacaoPesos({
   ocupado: boolean;
   onConfirmar: (ordem: string[]) => void;
 }) {
-  const [modo, setModo] = useState<"lista" | "global">("lista");
+  const [modo, setModo] = useState<"pares" | "lista" | "global">("pares");
   const [ordem, setOrdem] = useState<string[]>(criterios.map((c) => c.chave));
 
   // trocar de decisão sem remontar o componente deixaria a ordem antiga
@@ -108,6 +109,7 @@ export function OrdenacaoPesos({
 
       <div className="mt-4 flex gap-2 border-b" style={{ borderColor: "var(--borda)" }}>
         {([
+          ["pares", "Comparar dois a dois"],
           ["lista", "Ordenar a lista"],
           ["global", "Escolher um a um"],
         ] as const).map(([valor, rotulo]) => (
@@ -125,6 +127,16 @@ export function OrdenacaoPesos({
           </button>
         ))}
       </div>
+
+      {modo === "pares" && (
+        <div className="mt-5">
+          <ComparacaoPares
+            criterios={criterios}
+            ocupado={ocupado}
+            onConfirmar={onConfirmar}
+          />
+        </div>
+      )}
 
       {modo === "lista" && (
         <>

@@ -1,0 +1,311 @@
+"""Casos de uso: o servico que MCP e API compartilham."""
+
+import numpy as np
+import pytest
+
+from conftest import ALTERNATIVAS, CONSEQUENCIAS, CRITERIOS_SPEC
+from fitradeoff import DecisionService, InvalidRequest, RecordNotFound
+from fitradeoff.application.service import parse_preference
+from fitradeoff.domain import Preference
+
+
+@pytest.fixture
+def service(container):
+    """Identificadores previsiveis, para os testes falarem de 'd1', 'd2'."""
+    contador = iter(f"d{i}" for i in range(1, 100))
+    return DecisionService(container, make_id=lambda: next(contador))
+
+
+@pytest.fixture
+def criada(service):
+    return service.create("Fornecedores", ALTERNATIVAS, CRITERIOS_SPEC, CONSEQUENCIAS)
+
+
+def responder_ate_o_fim(service, record_id, pesos, limite=40):
+    """Decisor simulado: responde conforme pesos ocultos ate encerrar."""
+    for _ in range(limite):
+        pergunta = service.next_question(record_id)
+        if pergunta.get("pergunta", "sentinela") is None:
+            return
+        question = service.session(record_id).next_question()
+        prefere_a = pesos[question.criterion] * question.value >= pesos[question.rival]
+        service.answer(record_id, "A" if prefere_a else "B")
+    raise AssertionError("A elicitacao nao encerrou.")
+
+
+# --- criacao ------------------------------------------------------------------
+
+
+def test_criar_devolve_problema_e_proximo_passo(criada):
+    assert criada["id"] == "d1"
+    assert criada["criterios"][1]["unidade"] == "R$/un"
+    assert criada["criterios"][1]["melhor"] == 10.20  # custo: menor e melhor
+    assert "ordenar_criterios" in criada["proximo_passo"]
+
+
+def test_matriz_incoerente_e_recusada(service):
+    with pytest.raises(ValueError, match="esperado"):
+        service.create("Ruim", ALTERNATIVAS, CRITERIOS_SPEC, [[1.0, 2.0, 3.0]])
+
+
+def test_problematica_desconhecida_lista_as_validas(service):
+    with pytest.raises(InvalidRequest, match="escolha"):
+        service.create(
+            "x", ALTERNATIVAS, CRITERIOS_SPEC, CONSEQUENCIAS, problematica="magica"
+        )
+
+
+def test_portfolio_sem_custos_e_recusado_na_criacao(service):
+    with pytest.raises(ValueError, match="custo de cada alternativa"):
+        service.create(
+            "Carteira",
+            ALTERNATIVAS,
+            CRITERIOS_SPEC,
+            CONSEQUENCIAS,
+            problematica="portfolio",
+            configuracao={"orcamento": 100.0},
+        )
+
+
+def test_sorting_sem_perfis_e_recusado_na_criacao(service):
+    with pytest.raises(ValueError, match="ao menos um perfil"):
+        service.create(
+            "Classes",
+            ALTERNATIVAS,
+            CRITERIOS_SPEC,
+            CONSEQUENCIAS,
+            problematica="sorting",
+        )
+
+
+def test_decisao_inexistente(service):
+    with pytest.raises(RecordNotFound, match="nao encontrada"):
+        service.state("fantasma")
+
+
+# --- fluxo --------------------------------------------------------------------
+
+
+def test_perguntar_antes_de_ordenar_orienta(service, criada):
+    with pytest.raises(InvalidRequest, match="ordene os criterios"):
+        service.next_question("d1")
+
+
+def test_ordenacao_incompleta_aponta_o_que_falta(service, criada):
+    with pytest.raises(InvalidRequest, match="prazo"):
+        service.rank_criteria("d1", ["qualidade", "custo"])
+
+
+def test_responder_texto_livre_e_recusado(service, criada):
+    service.rank_criteria("d1", ["qualidade", "custo", "prazo"])
+    with pytest.raises(InvalidRequest, match="'A', 'B', 'indiferente' ou"):
+        service.answer("d1", "sei la")
+
+
+@pytest.mark.parametrize(
+    "texto,esperado",
+    [
+        ("A", Preference.FIRST),
+        ("b", Preference.SECOND),
+        (" Indiferente ", Preference.INDIFFERENT),
+        ("não sei", Preference.NO_ANSWER),
+        ("nao sei", Preference.NO_ANSWER),
+    ],
+)
+def test_respostas_aceitas(texto, esperado):
+    assert parse_preference(texto) is esperado
+
+
+def test_fluxo_completo_ate_a_recomendacao(service, criada):
+    estado = service.rank_criteria("d1", ["qualidade", "custo", "prazo"])
+    assert estado["consistente"]
+    iniciais = len(estado["analise"]["indefinidas"])
+
+    responder_ate_o_fim(service, "d1", {0: 0.5, 1: 0.3, 2: 0.2})
+
+    final = service.state("d1")
+    assert final["encerrado"]
+    assert len(final["analise"]["indefinidas"]) <= iniciais
+    # a ordem declarada se reflete nas faixas de peso
+    assert final["faixas_de_peso"]["Indice de qualidade"][1] >= (
+        final["faixas_de_peso"]["Prazo de entrega"][0]
+    )
+
+
+def test_pergunta_vem_em_unidades_reais(service, criada):
+    service.rank_criteria("d1", ["qualidade", "custo", "prazo"])
+    pergunta = service.next_question("d1")
+
+    assert "pior desempenho possivel" in pergunta["enunciado"]
+    assert len(pergunta["opcao_a"]) == 3 and len(pergunta["opcao_b"]) == 3
+    assert 0.0 < pergunta["posicao_na_escala"] < 1.0
+    assert "Nao responda por ele" in pergunta["como_responder"]
+
+
+def test_desfazer_restaura_o_estado(service, criada):
+    service.rank_criteria("d1", ["qualidade", "custo", "prazo"])
+    antes = service.state("d1")
+    service.answer("d1", "A")
+    voltou = service.undo("d1")
+
+    assert voltou["declaracoes"] == 1
+    assert voltou["analise"]["indefinidas"] == antes["analise"]["indefinidas"]
+    service.undo("d1")
+    with pytest.raises(InvalidRequest, match="Nao ha declaracao"):
+        service.undo("d1")
+
+
+def test_reordenar_descarta_as_respostas(service, criada):
+    service.rank_criteria("d1", ["qualidade", "custo", "prazo"])
+    service.answer("d1", "A")
+    estado = service.rank_criteria("d1", ["custo", "qualidade", "prazo"])
+
+    assert estado["declaracoes_descartadas"] == 2
+    assert estado["declaracoes"] == 1
+
+
+def test_declaracoes_contraditorias_sao_sinalizadas(service, criada):
+    service.rank_criteria("d1", ["qualidade", "custo", "prazo"])
+    for _ in range(6):
+        pergunta = service.next_question("d1")
+        if pergunta.get("pergunta", "x") is None:
+            break
+        # responde sempre A e depois sempre B sobre o mesmo par: se contradiz
+        service.answer("d1", "A")
+    assert service.state("d1") is not None  # nao explode
+
+
+def test_julgamento_holistico_entra_no_mesmo_espaco(service, criada):
+    service.rank_criteria("d1", ["qualidade", "custo", "prazo"])
+    estado = service.judge("d1", preferida="Fornecedor B", sobre="Fornecedor A")
+
+    assert estado["declaracoes"] == 2
+    trilha = service.explain("d1")
+    assert any("Julgou" in d["declaracao"] for d in trilha["declaracoes"])
+
+
+def test_alternativa_desconhecida_no_julgamento(service, criada):
+    service.rank_criteria("d1", ["qualidade", "custo", "prazo"])
+    with pytest.raises(KeyError, match="Fornecedor Z"):
+        service.judge("d1", preferida="Fornecedor Z", sobre="Fornecedor A")
+
+
+# --- auditoria e releituras ---------------------------------------------------
+
+
+def test_explicar_narra_a_decisao_com_autor_e_instante(service, criada, clock):
+    service.rank_criteria("d1", ["qualidade", "custo", "prazo"])
+    service.answer("d1", "B")
+
+    trilha = service.explain("d1")
+    assert len(trilha["declaracoes"]) == 2
+    assert trilha["declaracoes"][0]["sequencia"] == 1
+    assert trilha["declaracoes"][0]["autor"] == "decisor"
+    assert clock.now().isoformat(timespec="seconds") == (
+        trilha["declaracoes"][0]["registrado_em"]
+    )
+    # a narrativa fala de criterios e unidades, nao de k[0]
+    texto = " ".join(d["declaracao"] for d in trilha["declaracoes"])
+    assert "Indice de qualidade" in texto
+    assert "k[" not in texto
+
+
+def test_trocar_de_problematica_reaproveita_o_log(service, criada):
+    service.rank_criteria("d1", ["qualidade", "custo", "prazo"])
+    service.answer("d1", "A")
+
+    como_ranking = service.switch_problematic("d1", "ranking")
+    assert como_ranking["declaracoes"] == 2  # nada foi reelicitado
+    assert "posicoes_possiveis" in como_ranking["analise"]
+
+
+def test_trocar_para_sorting_exige_perfis(service, criada):
+    service.rank_criteria("d1", ["qualidade", "custo", "prazo"])
+    with pytest.raises(ValueError, match="ao menos um perfil"):
+        service.switch_problematic("d1", "sorting", {})
+
+    estado = service.switch_problematic("d1", "sorting", {"perfis": [0.4, 0.7]})
+    assert estado["analise"]["classes"] == ["Classe 1", "Classe 2", "Classe 3"]
+
+
+def test_sensibilidade_releitura_do_mesmo_log(service, criada):
+    service.rank_criteria("d1", ["qualidade", "custo", "prazo"])
+    service.answer("d1", "A")
+
+    resultado = service.sensitivity("d1", [0.0, 0.01, 0.5])
+    assert [c["limiar"] for c in resultado["cenarios"]] == [0.0, 0.01, 0.5]
+    # limiar absurdo torna as declaracoes incompativeis
+    assert resultado["cenarios"][-1]["consistente"] is False
+    # e o log nao mudou
+    assert service.state("d1")["declaracoes"] == 2
+
+
+def test_listar_resume_as_decisoes(service, criada):
+    service.create("Outra", ALTERNATIVAS, CRITERIOS_SPEC, CONSEQUENCIAS)
+    resumo = service.list()
+    assert {r["id"] for r in resumo} == {"d1", "d2"}
+    assert resumo[0]["alternativas"] == 4
+
+
+def test_problematicas_expostas_com_a_ressalva(service):
+    disponiveis = service.problematics()
+    assert set(disponiveis["disponiveis"]) == {
+        "escolha", "ranking", "sorting", "portfolio"
+    }
+    assert "aproximado" in disponiveis["observacao"]
+
+
+# --- as quatro problematicas ponta a ponta ------------------------------------
+
+
+def test_ranking_ponta_a_ponta(service):
+    service.create(
+        "Ranking", ALTERNATIVAS, CRITERIOS_SPEC, CONSEQUENCIAS, problematica="ranking"
+    )
+    service.rank_criteria("d1", ["qualidade", "custo", "prazo"])
+    responder_ate_o_fim(service, "d1", {0: 0.5, 1: 0.3, 2: 0.2})
+
+    analise = service.state("d1")["analise"]
+    posicoes = analise["posicoes_possiveis"]
+    assert set(posicoes) == set(ALTERNATIVAS)
+    for faixa in posicoes.values():
+        assert 1 <= faixa[0] <= faixa[1] <= 4
+
+
+def test_sorting_ponta_a_ponta(service):
+    service.create(
+        "Classificacao",
+        ALTERNATIVAS,
+        CRITERIOS_SPEC,
+        CONSEQUENCIAS,
+        problematica="sorting",
+        configuracao={"perfis": [0.35, 0.7], "classes": ["Baixa", "Media", "Alta"]},
+    )
+    service.rank_criteria("d1", ["qualidade", "custo", "prazo"])
+    responder_ate_o_fim(service, "d1", {0: 0.5, 1: 0.3, 2: 0.2})
+
+    alocacao = service.state("d1")["analise"]["alocacao"]
+    assert set(alocacao) == set(ALTERNATIVAS)
+    for dados in alocacao.values():
+        assert dados["classes_possiveis"]
+        assert set(dados["classes_possiveis"]) <= {"Baixa", "Media", "Alta"}
+
+
+def test_portfolio_ponta_a_ponta(service):
+    service.create(
+        "Carteira",
+        ALTERNATIVAS,
+        CRITERIOS_SPEC,
+        CONSEQUENCIAS,
+        problematica="portfolio",
+        configuracao={"orcamento": 25.0, "amostras": 8},
+        custos=[10.0, 12.0, 8.0, 11.0],
+    )
+    service.rank_criteria("d1", ["qualidade", "custo", "prazo"])
+    estado = service.state("d1")
+
+    analise = estado["analise"]
+    assert analise["orcamento"] == 25.0
+    assert "aproximado" in analise["ressalva"]
+    for carteira in analise["portfolios_encontrados"]:
+        assert carteira["custo"] <= 25.0 + 1e-9

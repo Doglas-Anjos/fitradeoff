@@ -1,0 +1,215 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Sistema visual
+   ---------------------------------------------------------------------------
+   O produto e um instrumento de trabalho, nao uma pagina de marketing: quem
+   usa precisa defender a decisao depois. Dai as escolhas abaixo.
+
+   Uma accent so (petroleo), travada na pagina inteira. As cores do grafico sao
+   outra coisa: identificam dados, nao decoram interface, e vivem apenas dentro
+   dos paineis de comparacao -- por isso podem divergir da accent sem quebrar a
+   consistencia.
+
+   Raio: paineis 10px, controles 6px, marcas de grafico 3px. Nada de pill.
+   Um instrumento de medicao nao tem cantos arredondados de aplicativo.
+--------------------------------------------------------------------------- */
+
+:root {
+  color-scheme: light;
+
+  /* superficies -- familia zinc, fria, uma so */
+  --plano: #fafafa;
+  --painel: #ffffff;
+  --painel-fundo: #f4f4f5;
+  --borda: #e4e4e7;
+  --borda-forte: #d4d4d8;
+
+  /* tinta */
+  --tinta: #18181b;
+  --tinta-2: #52525b;
+  --tinta-3: #6b6b73;
+  --tinta-fraca: #71717a; /* 4,63:1 sobre o plano */
+
+  /* accent unica, travada */
+  --accent: #14524b;
+  --accent-hover: #0f403a;
+  --accent-suave: #ecf5f3;
+  --accent-tinta: #ffffff;
+
+  /* dados: so dentro dos paineis de grafico */
+  --dado-a: #0d9488;
+  --dado-b: #c2410c;
+  --dado-trilho: #e4e4e7;
+
+  /* estado */
+  --sucesso: #15803d;
+  --erro: #b91c1c;
+  --erro-suave: #fef2f2;
+
+  /* sombra tingida com o tom do fundo, nunca preto puro */
+  --sombra: 0 1px 2px rgba(24, 24, 27, 0.04), 0 4px 12px rgba(24, 24, 27, 0.04);
+  --sombra-alta: 0 2px 4px rgba(24, 24, 27, 0.05), 0 12px 28px rgba(24, 24, 27, 0.07);
+
+  --raio-painel: 10px;
+  --raio-controle: 6px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --plano: #09090b;
+    --painel: #18181b;
+    --painel-fundo: #27272a;
+    --borda: #27272a;
+    --borda-forte: #3f3f46;
+
+    --tinta: #fafafa;
+    --tinta-2: #a1a1aa;
+    --tinta-3: #a1a1aa;
+    --tinta-fraca: #7e7e86; /* 4,94:1 sobre o plano */
+
+    --accent: #2da090;
+    --accent-hover: #3fb8a6;
+    --accent-suave: #14312d;
+    --accent-tinta: #06231f;
+
+    --dado-a: #19a594;
+    --dado-b: #ce7c18;
+    --dado-trilho: #3f3f46;
+
+    --sucesso: #4ade80;
+    --erro: #f87171;
+    --erro-suave: #2a1515;
+
+    --sombra: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.25);
+    --sombra-alta: 0 2px 4px rgba(0, 0, 0, 0.35), 0 12px 28px rgba(0, 0, 0, 0.4);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --plano: #09090b;
+  --painel: #18181b;
+  --painel-fundo: #27272a;
+  --borda: #27272a;
+  --borda-forte: #3f3f46;
+  --tinta: #fafafa;
+  --tinta-2: #a1a1aa;
+  --tinta-3: #a1a1aa;
+  --tinta-fraca: #7e7e86;
+  --accent: #2da090;
+  --accent-hover: #3fb8a6;
+  --accent-suave: #14312d;
+  --accent-tinta: #06231f;
+  --dado-a: #19a594;
+  --dado-b: #ce7c18;
+  --dado-trilho: #3f3f46;
+  --sucesso: #4ade80;
+  --erro: #f87171;
+  --erro-suave: #2a1515;
+}
+
+@theme inline {
+  --color-plano: var(--plano);
+  --color-painel: var(--painel);
+  --color-painel-fundo: var(--painel-fundo);
+  --color-borda: var(--borda);
+  --color-borda-forte: var(--borda-forte);
+  --color-tinta: var(--tinta);
+  --color-tinta-2: var(--tinta-2);
+  --color-tinta-3: var(--tinta-3);
+  --color-tinta-fraca: var(--tinta-fraca);
+  --color-accent: var(--accent);
+  --color-accent-suave: var(--accent-suave);
+  --color-sucesso: var(--sucesso);
+  --color-erro: var(--erro);
+
+  --radius-painel: var(--raio-painel);
+  --radius-controle: var(--raio-controle);
+
+  --font-sans: var(--fonte-sans);
+  --font-mono: var(--fonte-mono);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--plano);
+  color: var(--tinta);
+  font-family: var(--fonte-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Numeros sao o conteudo desta interface: alinham em coluna e nao dancam
+   quando um digito muda. */
+.num {
+  font-family: var(--fonte-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* Display: tracking negativo, leading curto -- presenca sem tamanho gratuito. */
+.display {
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+  text-wrap: balance;
+}
+
+.prosa {
+  max-width: 62ch;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+/* Foco visivel, uma regra so para tudo que recebe teclado. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* Retorno tatil: o controle afunda ao ser pressionado. */
+.tatil {
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 120ms ease,
+    box-shadow 160ms ease;
+}
+.tatil:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Esqueleto de carregamento, com a forma do que vai chegar. */
+@keyframes pulso {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+.esqueleto {
+  background: var(--painel-fundo);
+  border-radius: var(--raio-controle);
+  animation: pulso 1.6s ease-in-out infinite;
+}

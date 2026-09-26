@@ -13,11 +13,15 @@ import Link from "next/link";
 import { SeletorIdioma } from "@/components/SeletorIdioma";
 import { useIdioma } from "@/lib/i18n";
 import "@/lib/i18n/nucleo";
+import "@/lib/i18n/paridade";
 import { usePathname } from "next/navigation";
 
 const DESTINOS = [
   { href: "/decisao", chave: "nav.decisao" },
   { href: "/chat", chave: "nav.chat" },
+  /* A paridade fica na navegação, não escondida num rodapé: quem precisa
+     defender uma decisão tomada aqui precisa achar a prova sem procurar. */
+  { href: "/paridade", chave: "nav.paridade" },
 ];
 
 function Marca() {

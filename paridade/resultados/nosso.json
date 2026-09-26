@@ -1,0 +1,2390 @@
+{
+ "escolha-dominante": {
+  "chave": "escolha-dominante",
+  "steps_ordenacao": 3,
+  "steps_tradeoff": 0,
+  "resumo": "Recomendação: Fornecedor A.",
+  "analise": {
+   "problematica": "escolha",
+   "resolvido": true,
+   "indefinidas": [],
+   "resumo": "Recomendação: Fornecedor A.",
+   "potencialmente_otimas": [
+    "Fornecedor A"
+   ],
+   "recomendacao": "Fornecedor A",
+   "dominancia": []
+  }
+ },
+ "escolha-minima": {
+  "chave": "escolha-minima",
+  "steps_ordenacao": 1,
+  "steps_tradeoff": 1,
+  "resumo": "Recomendação: Alfa.",
+  "analise": {
+   "problematica": "escolha",
+   "resolvido": true,
+   "indefinidas": [],
+   "resumo": "Recomendação: Alfa.",
+   "potencialmente_otimas": [
+    "Alfa"
+   ],
+   "recomendacao": "Alfa",
+   "dominancia": []
+  }
+ },
+ "ranking-cruzado": {
+  "chave": "ranking-cruzado",
+  "steps_ordenacao": 3,
+  "steps_tradeoff": 8,
+  "resumo": "Ranking completo: Plano A > Plano C > Plano B.",
+  "analise": {
+   "problematica": "ranking",
+   "resolvido": true,
+   "indefinidas": [],
+   "resumo": "Ranking completo: Plano A > Plano C > Plano B.",
+   "posicoes_possiveis": {
+    "Plano A": [
+     1,
+     1
+    ],
+    "Plano B": [
+     3,
+     3
+    ],
+    "Plano C": [
+     2,
+     2
+    ]
+   },
+   "ordem_definida": [
+    "Plano A",
+    "Plano C",
+    "Plano B"
+   ],
+   "pares_indefinidos": [],
+   "diferencas_maximas": [],
+   "dominancia_direta": [
+    {
+     "de": "Plano A",
+     "para": "Plano C"
+    },
+    {
+     "de": "Plano C",
+     "para": "Plano B"
+    }
+   ],
+   "niveis": [
+    [
+     "Plano A"
+    ],
+    [
+     "Plano C"
+    ],
+    [
+     "Plano B"
+    ]
+   ]
+  }
+ },
+ "escolha-06": {
+  "chave": "escolha-06",
+  "steps_ordenacao": 8,
+  "steps_tradeoff": 10,
+  "resumo": "Recomendação: Alt 02.",
+  "analise": {
+   "problematica": "escolha",
+   "resolvido": true,
+   "indefinidas": [],
+   "resumo": "Recomendação: Alt 02.",
+   "potencialmente_otimas": [
+    "Alt 02"
+   ],
+   "recomendacao": "Alt 02",
+   "dominancia": []
+  }
+ },
+ "ranking-06": {
+  "chave": "ranking-06",
+  "steps_ordenacao": 8,
+  "steps_tradeoff": 14,
+  "resumo": "Ranking completo: Alt 02 > Alt 03 > Alt 01 > Alt 06 > Alt 04 > Alt 05.",
+  "analise": {
+   "problematica": "ranking",
+   "resolvido": true,
+   "indefinidas": [],
+   "resumo": "Ranking completo: Alt 02 > Alt 03 > Alt 01 > Alt 06 > Alt 04 > Alt 05.",
+   "posicoes_possiveis": {
+    "Alt 01": [
+     3,
+     3
+    ],
+    "Alt 02": [
+     1,
+     1
+    ],
+    "Alt 03": [
+     2,
+     2
+    ],
+    "Alt 04": [
+     5,
+     5
+    ],
+    "Alt 05": [
+     6,
+     6
+    ],
+    "Alt 06": [
+     4,
+     4
+    ]
+   },
+   "ordem_definida": [
+    "Alt 02",
+    "Alt 03",
+    "Alt 01",
+    "Alt 06",
+    "Alt 04",
+    "Alt 05"
+   ],
+   "pares_indefinidos": [],
+   "diferencas_maximas": [],
+   "dominancia_direta": [
+    {
+     "de": "Alt 01",
+     "para": "Alt 06"
+    },
+    {
+     "de": "Alt 02",
+     "para": "Alt 03"
+    },
+    {
+     "de": "Alt 03",
+     "para": "Alt 01"
+    },
+    {
+     "de": "Alt 04",
+     "para": "Alt 05"
+    },
+    {
+     "de": "Alt 06",
+     "para": "Alt 04"
+    }
+   ],
+   "niveis": [
+    [
+     "Alt 02"
+    ],
+    [
+     "Alt 03"
+    ],
+    [
+     "Alt 01"
+    ],
+    [
+     "Alt 06"
+    ],
+    [
+     "Alt 04"
+    ],
+    [
+     "Alt 05"
+    ]
+   ]
+  }
+ },
+ "sorting-04": {
+  "chave": "sorting-04",
+  "steps_ordenacao": 3,
+  "steps_tradeoff": 6,
+  "resumo": "Todas as alternativas foram classificadas.",
+  "analise": {
+   "problematica": "sorting",
+   "resolvido": true,
+   "indefinidas": [],
+   "resumo": "Todas as alternativas foram classificadas.",
+   "perfis": [
+    0.35,
+    0.7
+   ],
+   "classes": [
+    "Baixa",
+    "Media",
+    "Alta"
+   ],
+   "alocacao": {
+    "Alt 01": {
+     "faixa_de_valor": [
+      0.3724,
+      0.4259
+     ],
+     "classes_possiveis": [
+      "Media"
+     ],
+     "definida": true
+    },
+    "Alt 02": {
+     "faixa_de_valor": [
+      0.9617,
+      1.0
+     ],
+     "classes_possiveis": [
+      "Alta"
+     ],
+     "definida": true
+    },
+    "Alt 03": {
+     "faixa_de_valor": [
+      0.0,
+      0.1148
+     ],
+     "classes_possiveis": [
+      "Baixa"
+     ],
+     "definida": true
+    },
+    "Alt 04": {
+     "faixa_de_valor": [
+      0.2066,
+      0.2319
+     ],
+     "classes_possiveis": [
+      "Baixa"
+     ],
+     "definida": true
+    }
+   }
+  }
+ },
+ "escolha-12": {
+  "chave": "escolha-12",
+  "steps_ordenacao": 8,
+  "steps_tradeoff": 6,
+  "resumo": "Recomendação: Alt 04.",
+  "analise": {
+   "problematica": "escolha",
+   "resolvido": true,
+   "indefinidas": [],
+   "resumo": "Recomendação: Alt 04.",
+   "potencialmente_otimas": [
+    "Alt 04"
+   ],
+   "recomendacao": "Alt 04",
+   "dominancia": []
+  }
+ },
+ "ranking-12": {
+  "chave": "ranking-12",
+  "steps_ordenacao": 8,
+  "steps_tradeoff": 14,
+  "resumo": "Ranking completo: Alt 04 > Alt 03 > Alt 05 > Alt 02 > Alt 06 > Alt 01 > Alt 07 > Alt 12 > Alt 08 > Alt 11 > Alt 09 > Alt 10.",
+  "analise": {
+   "problematica": "ranking",
+   "resolvido": true,
+   "indefinidas": [],
+   "resumo": "Ranking completo: Alt 04 > Alt 03 > Alt 05 > Alt 02 > Alt 06 > Alt 01 > Alt 07 > Alt 12 > Alt 08 > Alt 11 > Alt 09 > Alt 10.",
+   "posicoes_possiveis": {
+    "Alt 01": [
+     6,
+     6
+    ],
+    "Alt 02": [
+     4,
+     4
+    ],
+    "Alt 03": [
+     2,
+     2
+    ],
+    "Alt 04": [
+     1,
+     1
+    ],
+    "Alt 05": [
+     3,
+     3
+    ],
+    "Alt 06": [
+     5,
+     5
+    ],
+    "Alt 07": [
+     7,
+     7
+    ],
+    "Alt 08": [
+     9,
+     9
+    ],
+    "Alt 09": [
+     11,
+     11
+    ],
+    "Alt 10": [
+     12,
+     12
+    ],
+    "Alt 11": [
+     10,
+     10
+    ],
+    "Alt 12": [
+     8,
+     8
+    ]
+   },
+   "ordem_definida": [
+    "Alt 04",
+    "Alt 03",
+    "Alt 05",
+    "Alt 02",
+    "Alt 06",
+    "Alt 01",
+    "Alt 07",
+    "Alt 12",
+    "Alt 08",
+    "Alt 11",
+    "Alt 09",
+    "Alt 10"
+   ],
+   "pares_indefinidos": [],
+   "diferencas_maximas": [],
+   "dominancia_direta": [
+    {
+     "de": "Alt 01",
+     "para": "Alt 07"
+    },
+    {
+     "de": "Alt 02",
+     "para": "Alt 06"
+    },
+    {
+     "de": "Alt 03",
+     "para": "Alt 05"
+    },
+    {
+     "de": "Alt 04",
+     "para": "Alt 03"
+    },
+    {
+     "de": "Alt 05",
+     "para": "Alt 02"
+    },
+    {
+     "de": "Alt 06",
+     "para": "Alt 01"
+    },
+    {
+     "de": "Alt 07",
+     "para": "Alt 12"
+    },
+    {
+     "de": "Alt 08",
+     "para": "Alt 11"
+    },
+    {
+     "de": "Alt 09",
+     "para": "Alt 10"
+    },
+    {
+     "de": "Alt 11",
+     "para": "Alt 09"
+    },
+    {
+     "de": "Alt 12",
+     "para": "Alt 08"
+    }
+   ],
+   "niveis": [
+    [
+     "Alt 04"
+    ],
+    [
+     "Alt 03"
+    ],
+    [
+     "Alt 05"
+    ],
+    [
+     "Alt 02"
+    ],
+    [
+     "Alt 06"
+    ],
+    [
+     "Alt 01"
+    ],
+    [
+     "Alt 07"
+    ],
+    [
+     "Alt 12"
+    ],
+    [
+     "Alt 08"
+    ],
+    [
+     "Alt 11"
+    ],
+    [
+     "Alt 09"
+    ],
+    [
+     "Alt 10"
+    ]
+   ]
+  }
+ },
+ "escolha-15": {
+  "chave": "escolha-15",
+  "steps_ordenacao": 3,
+  "steps_tradeoff": 6,
+  "resumo": "Recomendação: Alt 04.",
+  "analise": {
+   "problematica": "escolha",
+   "resolvido": true,
+   "indefinidas": [],
+   "resumo": "Recomendação: Alt 04.",
+   "potencialmente_otimas": [
+    "Alt 04"
+   ],
+   "recomendacao": "Alt 04",
+   "dominancia": []
+  }
+ },
+ "ranking-15": {
+  "chave": "ranking-15",
+  "steps_ordenacao": 3,
+  "steps_tradeoff": 12,
+  "resumo": "Pré-ordem completa: Alt 04 > Alt 06 > Alt 05 > Alt 03 > Alt 07 > Alt 02 > Alt 08 > Alt 01 > Alt 15 > Alt 09 > Alt 10 > Alt 14 > Alt 13 > Alt 11 > Alt 12. 1 par(es) empatam dentro do limiar de 0.01.",
+  "analise": {
+   "problematica": "ranking",
+   "resolvido": true,
+   "indefinidas": [],
+   "resumo": "Pré-ordem completa: Alt 04 > Alt 06 > Alt 05 > Alt 03 > Alt 07 > Alt 02 > Alt 08 > Alt 01 > Alt 15 > Alt 09 > Alt 10 > Alt 14 > Alt 13 > Alt 11 > Alt 12. 1 par(es) empatam dentro do limiar de 0.01.",
+   "posicoes_possiveis": {
+    "Alt 01": [
+     8,
+     8
+    ],
+    "Alt 02": [
+     6,
+     6
+    ],
+    "Alt 03": [
+     4,
+     4
+    ],
+    "Alt 04": [
+     1,
+     1
+    ],
+    "Alt 05": [
+     3,
+     3
+    ],
+    "Alt 06": [
+     2,
+     2
+    ],
+    "Alt 07": [
+     5,
+     5
+    ],
+    "Alt 08": [
+     7,
+     7
+    ],
+    "Alt 09": [
+     10,
+     10
+    ],
+    "Alt 10": [
+     11,
+     12
+    ],
+    "Alt 11": [
+     14,
+     14
+    ],
+    "Alt 12": [
+     15,
+     15
+    ],
+    "Alt 13": [
+     13,
+     13
+    ],
+    "Alt 14": [
+     11,
+     12
+    ],
+    "Alt 15": [
+     9,
+     9
+    ]
+   },
+   "ordem_definida": [
+    "Alt 04",
+    "Alt 06",
+    "Alt 05",
+    "Alt 03",
+    "Alt 07",
+    "Alt 02",
+    "Alt 08",
+    "Alt 01",
+    "Alt 15",
+    "Alt 09",
+    "Alt 10",
+    "Alt 14",
+    "Alt 13",
+    "Alt 11",
+    "Alt 12"
+   ],
+   "pares_indefinidos": [],
+   "diferencas_maximas": [],
+   "dominancia_direta": [
+    {
+     "de": "Alt 01",
+     "para": "Alt 15"
+    },
+    {
+     "de": "Alt 02",
+     "para": "Alt 08"
+    },
+    {
+     "de": "Alt 03",
+     "para": "Alt 07"
+    },
+    {
+     "de": "Alt 04",
+     "para": "Alt 06"
+    },
+    {
+     "de": "Alt 05",
+     "para": "Alt 03"
+    },
+    {
+     "de": "Alt 06",
+     "para": "Alt 05"
+    },
+    {
+     "de": "Alt 07",
+     "para": "Alt 02"
+    },
+    {
+     "de": "Alt 08",
+     "para": "Alt 01"
+    },
+    {
+     "de": "Alt 10",
+     "para": "Alt 14"
+    },
+    {
+     "de": "Alt 11",
+     "para": "Alt 12"
+    },
+    {
+     "de": "Alt 13",
+     "para": "Alt 11"
+    },
+    {
+     "de": "Alt 14",
+     "para": "Alt 10"
+    },
+    {
+     "de": "Alt 15",
+     "para": "Alt 09"
+    }
+   ],
+   "niveis": [
+    [
+     "Alt 04"
+    ],
+    [
+     "Alt 06"
+    ],
+    [
+     "Alt 05"
+    ],
+    [
+     "Alt 03"
+    ],
+    [
+     "Alt 07"
+    ],
+    [
+     "Alt 02"
+    ],
+    [
+     "Alt 08"
+    ],
+    [
+     "Alt 01"
+    ],
+    [
+     "Alt 15"
+    ],
+    [
+     "Alt 09"
+    ],
+    [
+     "Alt 10",
+     "Alt 11",
+     "Alt 12",
+     "Alt 13",
+     "Alt 14"
+    ]
+   ]
+  }
+ },
+ "sorting-06": {
+  "chave": "sorting-06",
+  "steps_ordenacao": 8,
+  "steps_tradeoff": 22,
+  "resumo": "Todas as alternativas foram classificadas.",
+  "analise": {
+   "problematica": "sorting",
+   "resolvido": true,
+   "indefinidas": [],
+   "resumo": "Todas as alternativas foram classificadas.",
+   "perfis": [
+    0.35,
+    0.7
+   ],
+   "classes": [
+    "Baixa",
+    "Media",
+    "Alta"
+   ],
+   "alocacao": {
+    "Alt 01": {
+     "faixa_de_valor": [
+      0.4964,
+      0.5043
+     ],
+     "classes_possiveis": [
+      "Media"
+     ],
+     "definida": true
+    },
+    "Alt 02": {
+     "faixa_de_valor": [
+      0.9875,
+      1.0
+     ],
+     "classes_possiveis": [
+      "Alta"
+     ],
+     "definida": true
+    },
+    "Alt 03": {
+     "faixa_de_valor": [
+      0.9085,
+      0.9107
+     ],
+     "classes_possiveis": [
+      "Alta"
+     ],
+     "definida": true
+    },
+    "Alt 04": {
+     "faixa_de_valor": [
+      0.3314,
+      0.3418
+     ],
+     "classes_possiveis": [
+      "Baixa"
+     ],
+     "definida": true
+    },
+    "Alt 05": {
+     "faixa_de_valor": [
+      0.0,
+      0.0091
+     ],
+     "classes_possiveis": [
+      "Baixa"
+     ],
+     "definida": true
+    },
+    "Alt 06": {
+     "faixa_de_valor": [
+      0.3848,
+      0.389
+     ],
+     "classes_possiveis": [
+      "Media"
+     ],
+     "definida": true
+    }
+   }
+  }
+ },
+ "bc-08": {
+  "chave": "bc-08",
+  "steps_ordenacao": 5,
+  "steps_tradeoff": 17,
+  "resumo": "Carteira única pela razão benefício-custo: Alt 02, Alt 03, Alt 04, Alt 08 (custo 108.00 de 110.00).",
+  "analise": {
+   "problematica": "beneficio_custo",
+   "resolvido": true,
+   "indefinidas": [],
+   "resumo": "Carteira única pela razão benefício-custo: Alt 02, Alt 03, Alt 04, Alt 08 (custo 108.00 de 110.00).",
+   "orcamento": 110.0,
+   "amostras_de_peso": 4,
+   "razoes": {
+    "Alt 01": {
+     "custo": 40.0,
+     "beneficio_minimo": 0.4335,
+     "beneficio_maximo": 0.4403,
+     "razao_minima": 0.010837,
+     "razao_maxima": 0.011009
+    },
+    "Alt 02": {
+     "custo": 25.0,
+     "beneficio_minimo": 0.8291,
+     "beneficio_maximo": 0.8409,
+     "razao_minima": 0.033165,
+     "razao_maxima": 0.033636
+    },
+    "Alt 03": {
+     "custo": 35.0,
+     "beneficio_minimo": 0.9915,
+     "beneficio_maximo": 1.0,
+     "razao_minima": 0.028328,
+     "razao_maxima": 0.028571
+    },
+    "Alt 04": {
+     "custo": 20.0,
+     "beneficio_minimo": 0.7614,
+     "beneficio_maximo": 0.7628,
+     "razao_minima": 0.038068,
+     "razao_maxima": 0.038141
+    },
+    "Alt 05": {
+     "custo": 30.0,
+     "beneficio_minimo": 0.2926,
+     "beneficio_maximo": 0.3037,
+     "razao_minima": 0.009754,
+     "razao_maxima": 0.010122
+    },
+    "Alt 06": {
+     "custo": 45.0,
+     "beneficio_minimo": 0.0142,
+     "beneficio_maximo": 0.0271,
+     "razao_minima": 0.000316,
+     "razao_maxima": 0.000603
+    },
+    "Alt 07": {
+     "custo": 18.0,
+     "beneficio_minimo": 0.0,
+     "beneficio_maximo": 0.0068,
+     "razao_minima": 0.0,
+     "razao_maxima": 0.000379
+    },
+    "Alt 08": {
+     "custo": 28.0,
+     "beneficio_minimo": 0.2889,
+     "beneficio_maximo": 0.2926,
+     "razao_minima": 0.010318,
+     "razao_maxima": 0.01045
+    }
+   },
+   "dominancia_por_razao": [
+    {
+     "dominante": "Alt 01",
+     "dominado": "Alt 05"
+    },
+    {
+     "dominante": "Alt 01",
+     "dominado": "Alt 06"
+    },
+    {
+     "dominante": "Alt 01",
+     "dominado": "Alt 07"
+    },
+    {
+     "dominante": "Alt 01",
+     "dominado": "Alt 08"
+    },
+    {
+     "dominante": "Alt 02",
+     "dominado": "Alt 01"
+    },
+    {
+     "dominante": "Alt 02",
+     "dominado": "Alt 03"
+    },
+    {
+     "dominante": "Alt 02",
+     "dominado": "Alt 05"
+    },
+    {
+     "dominante": "Alt 02",
+     "dominado": "Alt 06"
+    },
+    {
+     "dominante": "Alt 02",
+     "dominado": "Alt 07"
+    },
+    {
+     "dominante": "Alt 02",
+     "dominado": "Alt 08"
+    },
+    {
+     "dominante": "Alt 03",
+     "dominado": "Alt 01"
+    },
+    {
+     "dominante": "Alt 03",
+     "dominado": "Alt 05"
+    },
+    {
+     "dominante": "Alt 03",
+     "dominado": "Alt 06"
+    },
+    {
+     "dominante": "Alt 03",
+     "dominado": "Alt 07"
+    },
+    {
+     "dominante": "Alt 03",
+     "dominado": "Alt 08"
+    },
+    {
+     "dominante": "Alt 04",
+     "dominado": "Alt 01"
+    },
+    {
+     "dominante": "Alt 04",
+     "dominado": "Alt 02"
+    },
+    {
+     "dominante": "Alt 04",
+     "dominado": "Alt 03"
+    },
+    {
+     "dominante": "Alt 04",
+     "dominado": "Alt 05"
+    },
+    {
+     "dominante": "Alt 04",
+     "dominado": "Alt 06"
+    },
+    {
+     "dominante": "Alt 04",
+     "dominado": "Alt 07"
+    },
+    {
+     "dominante": "Alt 04",
+     "dominado": "Alt 08"
+    },
+    {
+     "dominante": "Alt 05",
+     "dominado": "Alt 06"
+    },
+    {
+     "dominante": "Alt 05",
+     "dominado": "Alt 07"
+    },
+    {
+     "dominante": "Alt 08",
+     "dominado": "Alt 05"
+    },
+    {
+     "dominante": "Alt 08",
+     "dominado": "Alt 06"
+    },
+    {
+     "dominante": "Alt 08",
+     "dominado": "Alt 07"
+    }
+   ],
+   "dominantes": [
+    "Alt 01",
+    "Alt 02",
+    "Alt 03",
+    "Alt 04",
+    "Alt 05",
+    "Alt 08"
+   ],
+   "portfolios_encontrados": [
+    {
+     "projetos": [
+      "Alt 02",
+      "Alt 03",
+      "Alt 04",
+      "Alt 08"
+     ],
+     "custo": 108.0,
+     "amostras": 4
+    }
+   ],
+   "carteira_mais_frequente": {
+    "projetos": [
+     "Alt 02",
+     "Alt 03",
+     "Alt 04",
+     "Alt 08"
+    ],
+    "custo": 108.0,
+    "amostras": 4
+   },
+   "sempre_selecionados": [
+    "Alt 02",
+    "Alt 03",
+    "Alt 04",
+    "Alt 08"
+   ],
+   "nunca_selecionados": [
+    "Alt 01",
+    "Alt 05",
+    "Alt 06",
+    "Alt 07"
+   ],
+   "oscilam": [],
+   "ressalva": "Exato: as faixas de razão benefício-custo e a dominância entre faixas que não se sobrepõem, obtidas por programação linear, porque o custo é constante e o valor é linear nos pesos. Aproximado: a carteira e o 'sempre/nunca', que vêm da ordenação por razão em vértices amostrados do espaço de pesos. A dominância declarada é conservadora: dois projetos de faixas sobrepostas podem ainda assim ter ordem fixa."
+  }
+ },
+ "escolha-20": {
+  "chave": "escolha-20",
+  "steps_ordenacao": 8,
+  "steps_tradeoff": 12,
+  "resumo": "Recomendação: Alt 05.",
+  "analise": {
+   "problematica": "escolha",
+   "resolvido": true,
+   "indefinidas": [],
+   "resumo": "Recomendação: Alt 05.",
+   "potencialmente_otimas": [
+    "Alt 05"
+   ],
+   "recomendacao": "Alt 05",
+   "dominancia": []
+  }
+ },
+ "ranking-20": {
+  "chave": "ranking-20",
+  "steps_ordenacao": 8,
+  "steps_tradeoff": 22,
+  "resumo": "Pré-ordem completa: Alt 05 > Alt 07 > Alt 06 > Alt 04 > Alt 08 > Alt 09 > Alt 03 > Alt 10 > Alt 02 > Alt 11 > Alt 01 > Alt 20 > Alt 12 > Alt 13 > Alt 19 > Alt 14 > Alt 18 > Alt 17 > Alt 15 > Alt 16. 3 par(es) empatam dentro do limiar de 0.01.",
+  "analise": {
+   "problematica": "ranking",
+   "resolvido": true,
+   "indefinidas": [],
+   "resumo": "Pré-ordem completa: Alt 05 > Alt 07 > Alt 06 > Alt 04 > Alt 08 > Alt 09 > Alt 03 > Alt 10 > Alt 02 > Alt 11 > Alt 01 > Alt 20 > Alt 12 > Alt 13 > Alt 19 > Alt 14 > Alt 18 > Alt 17 > Alt 15 > Alt 16. 3 par(es) empatam dentro do limiar de 0.01.",
+   "posicoes_possiveis": {
+    "Alt 01": [
+     11,
+     11
+    ],
+    "Alt 02": [
+     9,
+     9
+    ],
+    "Alt 03": [
+     7,
+     7
+    ],
+    "Alt 04": [
+     4,
+     5
+    ],
+    "Alt 05": [
+     1,
+     1
+    ],
+    "Alt 06": [
+     3,
+     3
+    ],
+    "Alt 07": [
+     2,
+     2
+    ],
+    "Alt 08": [
+     4,
+     5
+    ],
+    "Alt 09": [
+     6,
+     6
+    ],
+    "Alt 10": [
+     8,
+     8
+    ],
+    "Alt 11": [
+     10,
+     10
+    ],
+    "Alt 12": [
+     13,
+     13
+    ],
+    "Alt 13": [
+     14,
+     14
+    ],
+    "Alt 14": [
+     16,
+     17
+    ],
+    "Alt 15": [
+     19,
+     20
+    ],
+    "Alt 16": [
+     19,
+     20
+    ],
+    "Alt 17": [
+     18,
+     18
+    ],
+    "Alt 18": [
+     16,
+     17
+    ],
+    "Alt 19": [
+     15,
+     15
+    ],
+    "Alt 20": [
+     12,
+     12
+    ]
+   },
+   "ordem_definida": [
+    "Alt 05",
+    "Alt 07",
+    "Alt 06",
+    "Alt 04",
+    "Alt 08",
+    "Alt 09",
+    "Alt 03",
+    "Alt 10",
+    "Alt 02",
+    "Alt 11",
+    "Alt 01",
+    "Alt 20",
+    "Alt 12",
+    "Alt 13",
+    "Alt 19",
+    "Alt 14",
+    "Alt 18",
+    "Alt 17",
+    "Alt 15",
+    "Alt 16"
+   ],
+   "pares_indefinidos": [],
+   "diferencas_maximas": [],
+   "dominancia_direta": [
+    {
+     "de": "Alt 01",
+     "para": "Alt 20"
+    },
+    {
+     "de": "Alt 02",
+     "para": "Alt 11"
+    },
+    {
+     "de": "Alt 03",
+     "para": "Alt 10"
+    },
+    {
+     "de": "Alt 04",
+     "para": "Alt 08"
+    },
+    {
+     "de": "Alt 05",
+     "para": "Alt 07"
+    },
+    {
+     "de": "Alt 07",
+     "para": "Alt 06"
+    },
+    {
+     "de": "Alt 08",
+     "para": "Alt 04"
+    },
+    {
+     "de": "Alt 09",
+     "para": "Alt 03"
+    },
+    {
+     "de": "Alt 10",
+     "para": "Alt 02"
+    },
+    {
+     "de": "Alt 11",
+     "para": "Alt 01"
+    },
+    {
+     "de": "Alt 12",
+     "para": "Alt 13"
+    },
+    {
+     "de": "Alt 13",
+     "para": "Alt 19"
+    },
+    {
+     "de": "Alt 14",
+     "para": "Alt 18"
+    },
+    {
+     "de": "Alt 15",
+     "para": "Alt 16"
+    },
+    {
+     "de": "Alt 16",
+     "para": "Alt 15"
+    },
+    {
+     "de": "Alt 18",
+     "para": "Alt 14"
+    },
+    {
+     "de": "Alt 20",
+     "para": "Alt 12"
+    }
+   ],
+   "niveis": [
+    [
+     "Alt 05"
+    ],
+    [
+     "Alt 07"
+    ],
+    [
+     "Alt 06"
+    ],
+    [
+     "Alt 01",
+     "Alt 02",
+     "Alt 03",
+     "Alt 04",
+     "Alt 08",
+     "Alt 09",
+     "Alt 10",
+     "Alt 11",
+     "Alt 12",
+     "Alt 13",
+     "Alt 14",
+     "Alt 15",
+     "Alt 16",
+     "Alt 17",
+     "Alt 18",
+     "Alt 19",
+     "Alt 20"
+    ]
+   ]
+  }
+ },
+ "sorting-20": {
+  "chave": "sorting-20",
+  "steps_ordenacao": 5,
+  "steps_tradeoff": 17,
+  "resumo": "Todas as alternativas foram classificadas.",
+  "analise": {
+   "problematica": "sorting",
+   "resolvido": true,
+   "indefinidas": [],
+   "resumo": "Todas as alternativas foram classificadas.",
+   "perfis": [
+    0.35,
+    0.7
+   ],
+   "classes": [
+    "Baixa",
+    "Media",
+    "Alta"
+   ],
+   "alocacao": {
+    "Alt 01": {
+     "faixa_de_valor": [
+      0.4721,
+      0.4795
+     ],
+     "classes_possiveis": [
+      "Media"
+     ],
+     "definida": true
+    },
+    "Alt 02": {
+     "faixa_de_valor": [
+      0.6203,
+      0.6301
+     ],
+     "classes_possiveis": [
+      "Media"
+     ],
+     "definida": true
+    },
+    "Alt 03": {
+     "faixa_de_valor": [
+      0.7233,
+      0.7342
+     ],
+     "classes_possiveis": [
+      "Alta"
+     ],
+     "definida": true
+    },
+    "Alt 04": {
+     "faixa_de_valor": [
+      0.8426,
+      0.8548
+     ],
+     "classes_possiveis": [
+      "Alta"
+     ],
+     "definida": true
+    },
+    "Alt 05": {
+     "faixa_de_valor": [
+      0.988,
+      1.0
+     ],
+     "classes_possiveis": [
+      "Alta"
+     ],
+     "definida": true
+    },
+    "Alt 06": {
+     "faixa_de_valor": [
+      0.9226,
+      0.9315
+     ],
+     "classes_possiveis": [
+      "Alta"
+     ],
+     "definida": true
+    },
+    "Alt 07": {
+     "faixa_de_valor": [
+      0.9547,
+      0.9616
+     ],
+     "classes_possiveis": [
+      "Alta"
+     ],
+     "definida": true
+    },
+    "Alt 08": {
+     "faixa_de_valor": [
+      0.8462,
+      0.8493
+     ],
+     "classes_possiveis": [
+      "Alta"
+     ],
+     "definida": true
+    },
+    "Alt 09": {
+     "faixa_de_valor": [
+      0.7644,
+      0.7651
+     ],
+     "classes_possiveis": [
+      "Alta"
+     ],
+     "definida": true
+    },
+    "Alt 10": {
+     "faixa_de_valor": [
+      0.6411,
+      0.6452
+     ],
+     "classes_possiveis": [
+      "Media"
+     ],
+     "definida": true
+    },
+    "Alt 11": {
+     "faixa_de_valor": [
+      0.526,
+      0.5331
+     ],
+     "classes_possiveis": [
+      "Media"
+     ],
+     "definida": true
+    },
+    "Alt 12": {
+     "faixa_de_valor": [
+      0.337,
+      0.3473
+     ],
+     "classes_possiveis": [
+      "Baixa"
+     ],
+     "definida": true
+    },
+    "Alt 13": {
+     "faixa_de_valor": [
+      0.2301,
+      0.2414
+     ],
+     "classes_possiveis": [
+      "Baixa"
+     ],
+     "definida": true
+    },
+    "Alt 14": {
+     "faixa_de_valor": [
+      0.0959,
+      0.1076
+     ],
+     "classes_possiveis": [
+      "Baixa"
+     ],
+     "definida": true
+    },
+    "Alt 15": {
+     "faixa_de_valor": [
+      0.0055,
+      0.0168
+     ],
+     "classes_possiveis": [
+      "Baixa"
+     ],
+     "definida": true
+    },
+    "Alt 16": {
+     "faixa_de_valor": [
+      0.0,
+      0.0093
+     ],
+     "classes_possiveis": [
+      "Baixa"
+     ],
+     "definida": true
+    },
+    "Alt 17": {
+     "faixa_de_valor": [
+      0.0192,
+      0.026
+     ],
+     "classes_possiveis": [
+      "Baixa"
+     ],
+     "definida": true
+    },
+    "Alt 18": {
+     "faixa_de_valor": [
+      0.0959,
+      0.0989
+     ],
+     "classes_possiveis": [
+      "Baixa"
+     ],
+     "definida": true
+    },
+    "Alt 19": {
+     "faixa_de_valor": [
+      0.2256,
+      0.2274
+     ],
+     "classes_possiveis": [
+      "Baixa"
+     ],
+     "definida": true
+    },
+    "Alt 20": {
+     "faixa_de_valor": [
+      0.3487,
+      0.3534
+     ],
+     "classes_possiveis": [
+      "Media"
+     ],
+     "definida": true
+    }
+   }
+  }
+ },
+ "bc-20": {
+  "chave": "bc-20",
+  "steps_ordenacao": 5,
+  "steps_tradeoff": 11,
+  "resumo": "Carteira única pela razão benefício-custo: Alt 02, Alt 04, Alt 05, Alt 07, Alt 08, Alt 10 (custo 143.00 de 160.00).",
+  "analise": {
+   "problematica": "beneficio_custo",
+   "resolvido": true,
+   "indefinidas": [],
+   "resumo": "Carteira única pela razão benefício-custo: Alt 02, Alt 04, Alt 05, Alt 07, Alt 08, Alt 10 (custo 143.00 de 160.00).",
+   "orcamento": 160.0,
+   "amostras_de_peso": 4,
+   "razoes": {
+    "Alt 01": {
+     "custo": 40.0,
+     "beneficio_minimo": 0.4501,
+     "beneficio_maximo": 0.4795,
+     "razao_minima": 0.011252,
+     "razao_maxima": 0.011986
+    },
+    "Alt 02": {
+     "custo": 25.0,
+     "beneficio_minimo": 0.5911,
+     "beneficio_maximo": 0.6301,
+     "razao_minima": 0.023645,
+     "razao_maxima": 0.025205
+    },
+    "Alt 03": {
+     "custo": 35.0,
+     "beneficio_minimo": 0.6911,
+     "beneficio_maximo": 0.7342,
+     "razao_minima": 0.019747,
+     "razao_maxima": 0.020978
+    },
+    "Alt 04": {
+     "custo": 20.0,
+     "beneficio_minimo": 0.8068,
+     "beneficio_maximo": 0.8548,
+     "razao_minima": 0.04034,
+     "razao_maxima": 0.04274
+    },
+    "Alt 05": {
+     "custo": 30.0,
+     "beneficio_minimo": 0.9528,
+     "beneficio_maximo": 1.0,
+     "razao_minima": 0.031759,
+     "razao_maxima": 0.033333
+    },
+    "Alt 06": {
+     "custo": 45.0,
+     "beneficio_minimo": 0.897,
+     "beneficio_maximo": 0.9315,
+     "razao_minima": 0.019933,
+     "razao_maxima": 0.0207
+    },
+    "Alt 07": {
+     "custo": 18.0,
+     "beneficio_minimo": 0.9347,
+     "beneficio_maximo": 0.9616,
+     "razao_minima": 0.051927,
+     "razao_maxima": 0.053425
+    },
+    "Alt 08": {
+     "custo": 28.0,
+     "beneficio_minimo": 0.8374,
+     "beneficio_maximo": 0.8493,
+     "razao_minima": 0.029907,
+     "razao_maxima": 0.030333
+    },
+    "Alt 09": {
+     "custo": 33.0,
+     "beneficio_minimo": 0.7644,
+     "beneficio_maximo": 0.7681,
+     "razao_minima": 0.023163,
+     "razao_maxima": 0.023277
+    },
+    "Alt 10": {
+     "custo": 22.0,
+     "beneficio_minimo": 0.6411,
+     "beneficio_maximo": 0.658,
+     "razao_minima": 0.029141,
+     "razao_maxima": 0.029908
+    },
+    "Alt 11": {
+     "custo": 38.0,
+     "beneficio_minimo": 0.526,
+     "beneficio_maximo": 0.5546,
+     "razao_minima": 0.013843,
+     "razao_maxima": 0.014595
+    },
+    "Alt 12": {
+     "custo": 26.0,
+     "beneficio_minimo": 0.337,
+     "beneficio_maximo": 0.3782,
+     "razao_minima": 0.012961,
+     "razao_maxima": 0.014546
+    },
+    "Alt 13": {
+     "custo": 42.0,
+     "beneficio_minimo": 0.2301,
+     "beneficio_maximo": 0.2747,
+     "razao_minima": 0.005479,
+     "razao_maxima": 0.00654
+    },
+    "Alt 14": {
+     "custo": 19.0,
+     "beneficio_minimo": 0.0959,
+     "beneficio_maximo": 0.1421,
+     "razao_minima": 0.005047,
+     "razao_maxima": 0.007477
+    },
+    "Alt 15": {
+     "custo": 31.0,
+     "beneficio_minimo": 0.0055,
+     "beneficio_maximo": 0.0501,
+     "razao_minima": 0.000177,
+     "razao_maxima": 0.001616
+    },
+    "Alt 16": {
+     "custo": 24.0,
+     "beneficio_minimo": 0.0,
+     "beneficio_maximo": 0.0365,
+     "razao_minima": 0.0,
+     "razao_maxima": 0.001519
+    },
+    "Alt 17": {
+     "custo": 36.0,
+     "beneficio_minimo": 0.0192,
+     "beneficio_maximo": 0.0458,
+     "razao_minima": 0.000533,
+     "razao_maxima": 0.001273
+    },
+    "Alt 18": {
+     "custo": 21.0,
+     "beneficio_minimo": 0.0959,
+     "beneficio_maximo": 0.1072,
+     "razao_minima": 0.004566,
+     "razao_maxima": 0.005107
+    },
+    "Alt 19": {
+     "custo": 29.0,
+     "beneficio_minimo": 0.2195,
+     "beneficio_maximo": 0.2274,
+     "razao_minima": 0.007571,
+     "razao_maxima": 0.007841
+    },
+    "Alt 20": {
+     "custo": 44.0,
+     "beneficio_minimo": 0.3341,
+     "beneficio_maximo": 0.3534,
+     "razao_minima": 0.007593,
+     "razao_maxima": 0.008032
+    }
+   },
+   "dominancia_por_razao": [
+    {
+     "dominante": "Alt 01",
+     "dominado": "Alt 13"
+    },
+    {
+     "dominante": "Alt 01",
+     "dominado": "Alt 14"
+    },
+    {
+     "dominante": "Alt 01",
+     "dominado": "Alt 15"
+    },
+    {
+     "dominante": "Alt 01",
+     "dominado": "Alt 16"
+    },
+    {
+     "dominante": "Alt 01",
+     "dominado": "Alt 17"
+    },
+    {
+     "dominante": "Alt 01",
+     "dominado": "Alt 18"
+    },
+    {
+     "dominante": "Alt 01",
+     "dominado": "Alt 19"
+    },
+    {
+     "dominante": "Alt 01",
+     "dominado": "Alt 20"
+    },
+    {
+     "dominante": "Alt 02",
+     "dominado": "Alt 01"
+    },
+    {
+     "dominante": "Alt 02",
+     "dominado": "Alt 03"
+    },
+    {
+     "dominante": "Alt 02",
+     "dominado": "Alt 06"
+    },
+    {
+     "dominante": "Alt 02",
+     "dominado": "Alt 09"
+    },
+    {
+     "dominante": "Alt 02",
+     "dominado": "Alt 11"
+    },
+    {
+     "dominante": "Alt 02",
+     "dominado": "Alt 12"
+    },
+    {
+     "dominante": "Alt 02",
+     "dominado": "Alt 13"
+    },
+    {
+     "dominante": "Alt 02",
+     "dominado": "Alt 14"
+    },
+    {
+     "dominante": "Alt 02",
+     "dominado": "Alt 15"
+    },
+    {
+     "dominante": "Alt 02",
+     "dominado": "Alt 16"
+    },
+    {
+     "dominante": "Alt 02",
+     "dominado": "Alt 17"
+    },
+    {
+     "dominante": "Alt 02",
+     "dominado": "Alt 18"
+    },
+    {
+     "dominante": "Alt 02",
+     "dominado": "Alt 19"
+    },
+    {
+     "dominante": "Alt 02",
+     "dominado": "Alt 20"
+    },
+    {
+     "dominante": "Alt 03",
+     "dominado": "Alt 01"
+    },
+    {
+     "dominante": "Alt 03",
+     "dominado": "Alt 11"
+    },
+    {
+     "dominante": "Alt 03",
+     "dominado": "Alt 12"
+    },
+    {
+     "dominante": "Alt 03",
+     "dominado": "Alt 13"
+    },
+    {
+     "dominante": "Alt 03",
+     "dominado": "Alt 14"
+    },
+    {
+     "dominante": "Alt 03",
+     "dominado": "Alt 15"
+    },
+    {
+     "dominante": "Alt 03",
+     "dominado": "Alt 16"
+    },
+    {
+     "dominante": "Alt 03",
+     "dominado": "Alt 17"
+    },
+    {
+     "dominante": "Alt 03",
+     "dominado": "Alt 18"
+    },
+    {
+     "dominante": "Alt 03",
+     "dominado": "Alt 19"
+    },
+    {
+     "dominante": "Alt 03",
+     "dominado": "Alt 20"
+    },
+    {
+     "dominante": "Alt 04",
+     "dominado": "Alt 01"
+    },
+    {
+     "dominante": "Alt 04",
+     "dominado": "Alt 02"
+    },
+    {
+     "dominante": "Alt 04",
+     "dominado": "Alt 03"
+    },
+    {
+     "dominante": "Alt 04",
+     "dominado": "Alt 05"
+    },
+    {
+     "dominante": "Alt 04",
+     "dominado": "Alt 06"
+    },
+    {
+     "dominante": "Alt 04",
+     "dominado": "Alt 08"
+    },
+    {
+     "dominante": "Alt 04",
+     "dominado": "Alt 09"
+    },
+    {
+     "dominante": "Alt 04",
+     "dominado": "Alt 10"
+    },
+    {
+     "dominante": "Alt 04",
+     "dominado": "Alt 11"
+    },
+    {
+     "dominante": "Alt 04",
+     "dominado": "Alt 12"
+    },
+    {
+     "dominante": "Alt 04",
+     "dominado": "Alt 13"
+    },
+    {
+     "dominante": "Alt 04",
+     "dominado": "Alt 14"
+    },
+    {
+     "dominante": "Alt 04",
+     "dominado": "Alt 15"
+    },
+    {
+     "dominante": "Alt 04",
+     "dominado": "Alt 16"
+    },
+    {
+     "dominante": "Alt 04",
+     "dominado": "Alt 17"
+    },
+    {
+     "dominante": "Alt 04",
+     "dominado": "Alt 18"
+    },
+    {
+     "dominante": "Alt 04",
+     "dominado": "Alt 19"
+    },
+    {
+     "dominante": "Alt 04",
+     "dominado": "Alt 20"
+    },
+    {
+     "dominante": "Alt 05",
+     "dominado": "Alt 01"
+    },
+    {
+     "dominante": "Alt 05",
+     "dominado": "Alt 02"
+    },
+    {
+     "dominante": "Alt 05",
+     "dominado": "Alt 03"
+    },
+    {
+     "dominante": "Alt 05",
+     "dominado": "Alt 06"
+    },
+    {
+     "dominante": "Alt 05",
+     "dominado": "Alt 08"
+    },
+    {
+     "dominante": "Alt 05",
+     "dominado": "Alt 09"
+    },
+    {
+     "dominante": "Alt 05",
+     "dominado": "Alt 10"
+    },
+    {
+     "dominante": "Alt 05",
+     "dominado": "Alt 11"
+    },
+    {
+     "dominante": "Alt 05",
+     "dominado": "Alt 12"
+    },
+    {
+     "dominante": "Alt 05",
+     "dominado": "Alt 13"
+    },
+    {
+     "dominante": "Alt 05",
+     "dominado": "Alt 14"
+    },
+    {
+     "dominante": "Alt 05",
+     "dominado": "Alt 15"
+    },
+    {
+     "dominante": "Alt 05",
+     "dominado": "Alt 16"
+    },
+    {
+     "dominante": "Alt 05",
+     "dominado": "Alt 17"
+    },
+    {
+     "dominante": "Alt 05",
+     "dominado": "Alt 18"
+    },
+    {
+     "dominante": "Alt 05",
+     "dominado": "Alt 19"
+    },
+    {
+     "dominante": "Alt 05",
+     "dominado": "Alt 20"
+    },
+    {
+     "dominante": "Alt 06",
+     "dominado": "Alt 01"
+    },
+    {
+     "dominante": "Alt 06",
+     "dominado": "Alt 11"
+    },
+    {
+     "dominante": "Alt 06",
+     "dominado": "Alt 12"
+    },
+    {
+     "dominante": "Alt 06",
+     "dominado": "Alt 13"
+    },
+    {
+     "dominante": "Alt 06",
+     "dominado": "Alt 14"
+    },
+    {
+     "dominante": "Alt 06",
+     "dominado": "Alt 15"
+    },
+    {
+     "dominante": "Alt 06",
+     "dominado": "Alt 16"
+    },
+    {
+     "dominante": "Alt 06",
+     "dominado": "Alt 17"
+    },
+    {
+     "dominante": "Alt 06",
+     "dominado": "Alt 18"
+    },
+    {
+     "dominante": "Alt 06",
+     "dominado": "Alt 19"
+    },
+    {
+     "dominante": "Alt 06",
+     "dominado": "Alt 20"
+    },
+    {
+     "dominante": "Alt 07",
+     "dominado": "Alt 01"
+    },
+    {
+     "dominante": "Alt 07",
+     "dominado": "Alt 02"
+    },
+    {
+     "dominante": "Alt 07",
+     "dominado": "Alt 03"
+    },
+    {
+     "dominante": "Alt 07",
+     "dominado": "Alt 04"
+    },
+    {
+     "dominante": "Alt 07",
+     "dominado": "Alt 05"
+    },
+    {
+     "dominante": "Alt 07",
+     "dominado": "Alt 06"
+    },
+    {
+     "dominante": "Alt 07",
+     "dominado": "Alt 08"
+    },
+    {
+     "dominante": "Alt 07",
+     "dominado": "Alt 09"
+    },
+    {
+     "dominante": "Alt 07",
+     "dominado": "Alt 10"
+    },
+    {
+     "dominante": "Alt 07",
+     "dominado": "Alt 11"
+    },
+    {
+     "dominante": "Alt 07",
+     "dominado": "Alt 12"
+    },
+    {
+     "dominante": "Alt 07",
+     "dominado": "Alt 13"
+    },
+    {
+     "dominante": "Alt 07",
+     "dominado": "Alt 14"
+    },
+    {
+     "dominante": "Alt 07",
+     "dominado": "Alt 15"
+    },
+    {
+     "dominante": "Alt 07",
+     "dominado": "Alt 16"
+    },
+    {
+     "dominante": "Alt 07",
+     "dominado": "Alt 17"
+    },
+    {
+     "dominante": "Alt 07",
+     "dominado": "Alt 18"
+    },
+    {
+     "dominante": "Alt 07",
+     "dominado": "Alt 19"
+    },
+    {
+     "dominante": "Alt 07",
+     "dominado": "Alt 20"
+    },
+    {
+     "dominante": "Alt 08",
+     "dominado": "Alt 01"
+    },
+    {
+     "dominante": "Alt 08",
+     "dominado": "Alt 02"
+    },
+    {
+     "dominante": "Alt 08",
+     "dominado": "Alt 03"
+    },
+    {
+     "dominante": "Alt 08",
+     "dominado": "Alt 06"
+    },
+    {
+     "dominante": "Alt 08",
+     "dominado": "Alt 09"
+    },
+    {
+     "dominante": "Alt 08",
+     "dominado": "Alt 11"
+    },
+    {
+     "dominante": "Alt 08",
+     "dominado": "Alt 12"
+    },
+    {
+     "dominante": "Alt 08",
+     "dominado": "Alt 13"
+    },
+    {
+     "dominante": "Alt 08",
+     "dominado": "Alt 14"
+    },
+    {
+     "dominante": "Alt 08",
+     "dominado": "Alt 15"
+    },
+    {
+     "dominante": "Alt 08",
+     "dominado": "Alt 16"
+    },
+    {
+     "dominante": "Alt 08",
+     "dominado": "Alt 17"
+    },
+    {
+     "dominante": "Alt 08",
+     "dominado": "Alt 18"
+    },
+    {
+     "dominante": "Alt 08",
+     "dominado": "Alt 19"
+    },
+    {
+     "dominante": "Alt 08",
+     "dominado": "Alt 20"
+    },
+    {
+     "dominante": "Alt 09",
+     "dominado": "Alt 01"
+    },
+    {
+     "dominante": "Alt 09",
+     "dominado": "Alt 03"
+    },
+    {
+     "dominante": "Alt 09",
+     "dominado": "Alt 06"
+    },
+    {
+     "dominante": "Alt 09",
+     "dominado": "Alt 11"
+    },
+    {
+     "dominante": "Alt 09",
+     "dominado": "Alt 12"
+    },
+    {
+     "dominante": "Alt 09",
+     "dominado": "Alt 13"
+    },
+    {
+     "dominante": "Alt 09",
+     "dominado": "Alt 14"
+    },
+    {
+     "dominante": "Alt 09",
+     "dominado": "Alt 15"
+    },
+    {
+     "dominante": "Alt 09",
+     "dominado": "Alt 16"
+    },
+    {
+     "dominante": "Alt 09",
+     "dominado": "Alt 17"
+    },
+    {
+     "dominante": "Alt 09",
+     "dominado": "Alt 18"
+    },
+    {
+     "dominante": "Alt 09",
+     "dominado": "Alt 19"
+    },
+    {
+     "dominante": "Alt 09",
+     "dominado": "Alt 20"
+    },
+    {
+     "dominante": "Alt 10",
+     "dominado": "Alt 01"
+    },
+    {
+     "dominante": "Alt 10",
+     "dominado": "Alt 02"
+    },
+    {
+     "dominante": "Alt 10",
+     "dominado": "Alt 03"
+    },
+    {
+     "dominante": "Alt 10",
+     "dominado": "Alt 06"
+    },
+    {
+     "dominante": "Alt 10",
+     "dominado": "Alt 09"
+    },
+    {
+     "dominante": "Alt 10",
+     "dominado": "Alt 11"
+    },
+    {
+     "dominante": "Alt 10",
+     "dominado": "Alt 12"
+    },
+    {
+     "dominante": "Alt 10",
+     "dominado": "Alt 13"
+    },
+    {
+     "dominante": "Alt 10",
+     "dominado": "Alt 14"
+    },
+    {
+     "dominante": "Alt 10",
+     "dominado": "Alt 15"
+    },
+    {
+     "dominante": "Alt 10",
+     "dominado": "Alt 16"
+    },
+    {
+     "dominante": "Alt 10",
+     "dominado": "Alt 17"
+    },
+    {
+     "dominante": "Alt 10",
+     "dominado": "Alt 18"
+    },
+    {
+     "dominante": "Alt 10",
+     "dominado": "Alt 19"
+    },
+    {
+     "dominante": "Alt 10",
+     "dominado": "Alt 20"
+    },
+    {
+     "dominante": "Alt 11",
+     "dominado": "Alt 01"
+    },
+    {
+     "dominante": "Alt 11",
+     "dominado": "Alt 13"
+    },
+    {
+     "dominante": "Alt 11",
+     "dominado": "Alt 14"
+    },
+    {
+     "dominante": "Alt 11",
+     "dominado": "Alt 15"
+    },
+    {
+     "dominante": "Alt 11",
+     "dominado": "Alt 16"
+    },
+    {
+     "dominante": "Alt 11",
+     "dominado": "Alt 17"
+    },
+    {
+     "dominante": "Alt 11",
+     "dominado": "Alt 18"
+    },
+    {
+     "dominante": "Alt 11",
+     "dominado": "Alt 19"
+    },
+    {
+     "dominante": "Alt 11",
+     "dominado": "Alt 20"
+    },
+    {
+     "dominante": "Alt 12",
+     "dominado": "Alt 01"
+    },
+    {
+     "dominante": "Alt 12",
+     "dominado": "Alt 13"
+    },
+    {
+     "dominante": "Alt 12",
+     "dominado": "Alt 14"
+    },
+    {
+     "dominante": "Alt 12",
+     "dominado": "Alt 15"
+    },
+    {
+     "dominante": "Alt 12",
+     "dominado": "Alt 16"
+    },
+    {
+     "dominante": "Alt 12",
+     "dominado": "Alt 17"
+    },
+    {
+     "dominante": "Alt 12",
+     "dominado": "Alt 18"
+    },
+    {
+     "dominante": "Alt 12",
+     "dominado": "Alt 19"
+    },
+    {
+     "dominante": "Alt 12",
+     "dominado": "Alt 20"
+    },
+    {
+     "dominante": "Alt 13",
+     "dominado": "Alt 15"
+    },
+    {
+     "dominante": "Alt 13",
+     "dominado": "Alt 16"
+    },
+    {
+     "dominante": "Alt 13",
+     "dominado": "Alt 17"
+    },
+    {
+     "dominante": "Alt 13",
+     "dominado": "Alt 18"
+    },
+    {
+     "dominante": "Alt 14",
+     "dominado": "Alt 15"
+    },
+    {
+     "dominante": "Alt 14",
+     "dominado": "Alt 16"
+    },
+    {
+     "dominante": "Alt 14",
+     "dominado": "Alt 17"
+    },
+    {
+     "dominante": "Alt 18",
+     "dominado": "Alt 15"
+    },
+    {
+     "dominante": "Alt 18",
+     "dominado": "Alt 16"
+    },
+    {
+     "dominante": "Alt 18",
+     "dominado": "Alt 17"
+    },
+    {
+     "dominante": "Alt 19",
+     "dominado": "Alt 13"
+    },
+    {
+     "dominante": "Alt 19",
+     "dominado": "Alt 14"
+    },
+    {
+     "dominante": "Alt 19",
+     "dominado": "Alt 15"
+    },
+    {
+     "dominante": "Alt 19",
+     "dominado": "Alt 16"
+    },
+    {
+     "dominante": "Alt 19",
+     "dominado": "Alt 17"
+    },
+    {
+     "dominante": "Alt 19",
+     "dominado": "Alt 18"
+    },
+    {
+     "dominante": "Alt 20",
+     "dominado": "Alt 13"
+    },
+    {
+     "dominante": "Alt 20",
+     "dominado": "Alt 14"
+    },
+    {
+     "dominante": "Alt 20",
+     "dominado": "Alt 15"
+    },
+    {
+     "dominante": "Alt 20",
+     "dominado": "Alt 16"
+    },
+    {
+     "dominante": "Alt 20",
+     "dominado": "Alt 17"
+    },
+    {
+     "dominante": "Alt 20",
+     "dominado": "Alt 18"
+    }
+   ],
+   "dominantes": [
+    "Alt 01",
+    "Alt 02",
+    "Alt 03",
+    "Alt 04",
+    "Alt 05",
+    "Alt 06",
+    "Alt 07",
+    "Alt 08",
+    "Alt 09",
+    "Alt 10",
+    "Alt 11",
+    "Alt 12",
+    "Alt 13",
+    "Alt 14",
+    "Alt 18",
+    "Alt 19",
+    "Alt 20"
+   ],
+   "portfolios_encontrados": [
+    {
+     "projetos": [
+      "Alt 02",
+      "Alt 04",
+      "Alt 05",
+      "Alt 07",
+      "Alt 08",
+      "Alt 10"
+     ],
+     "custo": 143.0,
+     "amostras": 4
+    }
+   ],
+   "carteira_mais_frequente": {
+    "projetos": [
+     "Alt 02",
+     "Alt 04",
+     "Alt 05",
+     "Alt 07",
+     "Alt 08",
+     "Alt 10"
+    ],
+    "custo": 143.0,
+    "amostras": 4
+   },
+   "sempre_selecionados": [
+    "Alt 02",
+    "Alt 04",
+    "Alt 05",
+    "Alt 07",
+    "Alt 08",
+    "Alt 10"
+   ],
+   "nunca_selecionados": [
+    "Alt 01",
+    "Alt 03",
+    "Alt 06",
+    "Alt 09",
+    "Alt 11",
+    "Alt 12",
+    "Alt 13",
+    "Alt 14",
+    "Alt 15",
+    "Alt 16",
+    "Alt 17",
+    "Alt 18",
+    "Alt 19",
+    "Alt 20"
+   ],
+   "oscilam": [],
+   "ressalva": "Exato: as faixas de razão benefício-custo e a dominância entre faixas que não se sobrepõem, obtidas por programação linear, porque o custo é constante e o valor é linear nos pesos. Aproximado: a carteira e o 'sempre/nunca', que vêm da ordenação por razão em vértices amostrados do espaço de pesos. A dominância declarada é conservadora: dois projetos de faixas sobrepostas podem ainda assim ter ordem fixa."
+  }
+ },
+ "escolha-empate": {
+  "chave": "escolha-empate",
+  "steps_ordenacao": 3,
+  "steps_tradeoff": 0,
+  "resumo": "3 alternativas ficaram equivalentes dentro do limiar de 0.01: Igual 1, Igual 2, Igual 3. Qualquer uma delas serve; mais perguntas não separariam.",
+  "analise": {
+   "problematica": "escolha",
+   "resolvido": true,
+   "indefinidas": [],
+   "resumo": "3 alternativas ficaram equivalentes dentro do limiar de 0.01: Igual 1, Igual 2, Igual 3. Qualquer uma delas serve; mais perguntas não separariam.",
+   "potencialmente_otimas": [
+    "Igual 1",
+    "Igual 2",
+    "Igual 3"
+   ],
+   "equivalentes_no_limiar": 0.01,
+   "ressalva": "As alternativas restantes diferem em valor global por menos que o limiar de equivalência: o método para aqui.",
+   "recomendacao": null,
+   "dominancia": [
+    "Igual 1 domina Igual 2",
+    "Igual 1 domina Igual 3",
+    "Igual 2 domina Igual 1",
+    "Igual 2 domina Igual 3",
+    "Igual 3 domina Igual 1",
+    "Igual 3 domina Igual 2"
+   ]
+  }
+ }
+}

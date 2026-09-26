@@ -8,15 +8,17 @@
  * - **Qual decisão está aberta** vai na URL. Assim o botão voltar do navegador
  *   funciona, o link pode ser salvo, e recarregar a página não perde o
  *   trabalho. É o que o servidor já sabe — a URL só aponta para lá.
- * - **O que ainda não foi enviado** (rascunho do formulário, aba escolhida) vai
- *   no armazenamento local. É conveniência por navegador, não dado da decisão.
+ * - **Quais decisões este navegador já abriu** vai no armazenamento local. É
+ *   conveniência por navegador, não dado da decisão: outra máquina tem a sua
+ *   própria lista, e perdê-la não perde nada.
+ *
+ * O rascunho do formulário saiu daqui: ele é dado, e mora nos dois lados
+ * (`rascunhoSincronizado`).
  *
  * O armazenamento pode falhar — janela privada, dados bloqueados, cota cheia —
  * e nesse caso a tela precisa seguir funcionando. Por isso toda leitura e toda
  * escrita são protegidas, e a ausência de valor é sempre um caso previsto.
  */
-
-import { useCallback, useEffect, useRef, useState } from "react";
 
 const PREFIXO = "fitradeoff:";
 
@@ -43,43 +45,6 @@ function apagar(chave: string): void {
   } catch {
     /* idem */
   }
-}
-
-/**
- * Como `useState`, mas lembra entre visitas.
- *
- * O valor inicial é sempre o padrão, e o que estava salvo entra depois da
- * montagem: ler `localStorage` durante a renderização faria o HTML do servidor
- * divergir do cliente e o React reclamaria de hidratação.
- */
-export function useEstadoPersistido<T>(
-  chave: string,
-  inicial: T,
-): [T, (valor: T) => void, () => void] {
-  const [valor, setValor] = useState<T>(inicial);
-  const montado = useRef(false);
-
-  useEffect(() => {
-    const salvo = ler<T>(chave);
-    if (salvo !== null) setValor(salvo);
-    montado.current = true;
-  }, [chave]);
-
-  const definir = useCallback(
-    (novo: T) => {
-      setValor(novo);
-      if (montado.current) escrever(chave, novo);
-    },
-    [chave],
-  );
-
-  const limpar = useCallback(() => {
-    setValor(inicial);
-    apagar(chave);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chave]);
-
-  return [valor, definir, limpar];
 }
 
 /** As decisões que este navegador já abriu, da mais recente para a mais antiga. */

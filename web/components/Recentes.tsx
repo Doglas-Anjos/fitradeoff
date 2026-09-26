@@ -13,19 +13,27 @@ import { ArrowRight, ClockCounterClockwise, X } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { useIdioma } from "@/lib/i18n";
+import "@/lib/i18n/visualizacoes";
 import { esquecerRecente, lerRecentes, type Recente } from "@/lib/persistencia";
 
-function quando(instante: number): string {
+/* Recebe o tradutor de fora: e uma funcao, nao um componente, e nao pode usar
+   o hook. */
+function quando(
+  instante: number,
+  t: (chave: string, valores?: Record<string, string | number>) => string,
+): string {
   const minutos = Math.round((Date.now() - instante) / 60000);
-  if (minutos < 1) return "agora";
-  if (minutos < 60) return `há ${minutos} min`;
+  if (minutos < 1) return t("recentes.agora");
+  if (minutos < 60) return t("recentes.minutos", { n: minutos });
   const horas = Math.round(minutos / 60);
-  if (horas < 24) return `há ${horas} h`;
+  if (horas < 24) return t("recentes.horas", { n: horas });
   const dias = Math.round(horas / 24);
-  return dias === 1 ? "ontem" : `há ${dias} dias`;
+  return dias === 1 ? t("recentes.ontem") : t("recentes.dias", { n: dias });
 }
 
 export function Recentes() {
+  const { t } = useIdioma();
   const [itens, setItens] = useState<Recente[] | null>(null);
 
   // so depois da montagem: ler o armazenamento na renderizacao faria o HTML do
@@ -41,7 +49,7 @@ export function Recentes() {
         style={{ color: "var(--tinta-3)" }}
       >
         <ClockCounterClockwise size={14} />
-        Voltar a uma decisão
+        {t("recentes.titulo")}
       </h2>
 
       <ul className="divide-y" style={{ borderColor: "var(--borda)" }}>
@@ -54,7 +62,7 @@ export function Recentes() {
             >
               <span className="truncate">{item.nome}</span>
               <span className="text-[11px]" style={{ color: "var(--tinta-fraca)" }}>
-                {quando(item.em)}
+                {quando(item.em, t)}
               </span>
               <ArrowRight
                 size={13}
@@ -67,7 +75,7 @@ export function Recentes() {
                 esquecerRecente(item.id);
                 setItens(lerRecentes());
               }}
-              aria-label={`Remover ${item.nome} da lista`}
+              aria-label={t("recentes.remover", { nome: item.nome })}
               className="tatil shrink-0"
               style={{ color: "var(--tinta-fraca)" }}
             >
@@ -78,7 +86,7 @@ export function Recentes() {
       </ul>
 
       <p className="mt-2 text-[11px]" style={{ color: "var(--tinta-fraca)" }}>
-        Esta lista fica só neste navegador. As decisões em si ficam no servidor.
+        {t("recentes.nota")}
       </p>
     </section>
   );

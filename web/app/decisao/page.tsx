@@ -21,19 +21,25 @@ import { Dica } from "@/components/ui";
 
 import { EntradaProblema } from "@/components/EntradaProblema";
 import { BotaoSalvarGrafico } from "@/components/BotaoSalvarGrafico";
-import { CurvaDeValor, type Ponto } from "@/components/CurvaDeValor";
+import { AvaliacaoIntraCriterio } from "@/components/AvaliacaoIntraCriterio";
+import { type Ponto } from "@/components/CurvaDeValor";
 import { Etapas, Voltar, type Etapa } from "@/components/Etapas";
 import { Inconsistencia, type Diagnostico, type Saida } from "@/components/Inconsistencia";
+import { PainelSalvas } from "@/components/PainelSalvas";
 import { Recentes } from "@/components/Recentes";
 import { OrdenacaoPesos } from "@/components/OrdenacaoPesos";
 import { PainelProgresso } from "@/components/PainelProgresso";
 import { RangeChart, type Faixa } from "@/components/RangeChart";
 import { JulgamentoHolistico } from "@/components/JulgamentoHolistico";
 import { ResultadoAnalise } from "@/components/ResultadoAnalise";
+import { SinteseResultado } from "@/components/SinteseResultado";
 import { SensibilidadeConsequencias } from "@/components/SensibilidadeConsequencias";
 import { Visualizacoes } from "@/components/Visualizacoes";
 import { TradeoffChart } from "@/components/TradeoffChart";
 import { api, ApiError } from "@/lib/api";
+import { useIdioma } from "@/lib/i18n";
+import "@/lib/i18n/telas";
+import "@/lib/i18n/estrutura";
 import { registrarRecente } from "@/lib/persistencia";
 import type { Auditoria, Estado, Pergunta, Problema } from "@/lib/types";
 
@@ -102,6 +108,7 @@ function CarregandoDecisao() {
 }
 
 function Decisao() {
+  const { t } = useIdioma();
   const router = useRouter();
   const parametros = useSearchParams();
   const idNaUrl = parametros.get("id");
@@ -111,7 +118,6 @@ function Decisao() {
   const [pergunta, setPergunta] = useState<Pergunta | null>(null);
   const [auditoria, setAuditoria] = useState<Auditoria | null>(null);
   const [diagnostico, setDiagnostico] = useState<Diagnostico | null>(null);
-  const [curvaDe, setCurvaDe] = useState<string | null>(null);
   const [encerradoPeloUsuario, setEncerradoPeloUsuario] = useState(false);
   const areaComparacao = useRef<HTMLDivElement>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -142,7 +148,7 @@ function Decisao() {
         if (!cancelado) {
           setErro(
             e instanceof ApiError && e.status === 404
-              ? "Essa decisão não existe mais. Comece uma nova."
+              ? t("tela.decisao.erro.naoExiste")
               : String(e),
           );
           router.replace("/decisao");
@@ -217,7 +223,6 @@ function Decisao() {
     executar(async () => {
       if (!problema) return;
       setProblema(await api.curvaDeValor(problema.id, criterio, pontos));
-      setCurvaDe(null);
     });
 
   const resolverConflito = (acao: Saida["acao"], sequencia?: number) =>
@@ -273,18 +278,25 @@ function Decisao() {
   /* --- antes de existir um problema: so a entrada de dados --- */
   if (!problema) {
     return (
-      <main className="mx-auto max-w-3xl px-5 pb-24 pt-12">
-        <h1 className="display text-3xl font-semibold" style={{ color: "var(--tinta)" }}>
-          Nova decisão
-        </h1>
-        <p className="prosa mt-3 text-[15px]" style={{ color: "var(--tinta-2)" }}>
-          Comece pelas alternativas e pelos critérios. Você pode digitar, subir
-          uma planilha ou partir de um caso pronto.
+      <main className="mx-auto max-w-6xl px-5 pb-24 pt-12">
+        {/* As salvas continuam a um toque desde a primeira tela - antes elas
+            eram um passo da trilha, o que obrigava a sair do cadastro para ver o
+            que já existia -, mas não ocupam mais uma coluna da grade: o painel
+            se ancora na borda da janela e sobrepõe. Sem coluna reservada, o
+            cadastro usa a largura inteira e não muda de tamanho quando alguém
+            abre ou fecha a lista. */}
+        {/* "Nova decisão" é contexto, não o assunto da tela: o título de cada
+            passo é a pergunta daquele passo, e vem de EntradaProblema. */}
+        <p
+          className="text-[13px] font-medium tracking-wide"
+          style={{ color: "var(--tinta-3)" }}
+        >
+          {t("tela.decisao.nova")}
         </p>
-        <div className="mt-8">
+        <div className="mt-5">
           <EntradaProblema onPronto={receber} />
         </div>
-        <Recentes />
+        <PainelSalvas onAbrir={receber} ocupado={ocupado} />
         {erro && (
           <p role="alert" className="mt-5 text-sm" style={{ color: "var(--erro)" }}>
             {erro}
@@ -305,7 +317,7 @@ function Decisao() {
           className="text-sm underline underline-offset-2"
           style={{ color: "var(--tinta-3)" }}
         >
-          Outra decisão
+          {t("tela.decisao.outra")}
         </button>
       </div>
 
@@ -336,10 +348,10 @@ function Decisao() {
         <div className="min-w-0 space-y-10">
           {etapa === "problema" && (
             <Secao
-              titulo="Dados do problema"
+              titulo={t("tela.decisao.dados.titulo")}
               acessorio={
                 <Voltar
-                  rotulo="voltar ao que eu estava fazendo"
+                  rotulo={t("tela.decisao.voltarAoQueFazia")}
                   onClick={() => setRevisando(null)}
                 />
               }
@@ -348,14 +360,20 @@ function Decisao() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr style={{ color: "var(--tinta-fraca)" }}>
-                      <th className="py-1.5 text-left font-normal">Alternativa</th>
+                      {/* mesma coluna da matriz de consequências no cadastro:
+                          a frase já está no catálogo da estrutura */}
+                      <th className="py-1.5 text-left font-normal">
+                        {t("estrutura.matriz.coluna.alternativa")}
+                      </th>
                       {problema.criterios.map((c) => (
                         <th key={c.chave} className="py-1.5 text-right font-normal">
                           {c.nome}
                           <span className="block text-[10px]">
                             {c.unidade}
                             {c.unidade && " · "}
-                            {c.direcao === "max" ? "maior é melhor" : "menor é melhor"}
+                            {c.direcao === "max"
+                              ? t("termo.maiorMelhor")
+                              : t("termo.menorMelhor")}
                           </span>
                         </th>
                       ))}
@@ -378,62 +396,47 @@ function Decisao() {
               </div>
               {!estado?.elicitacao_iniciada && (
                 <div className="mt-6 border-t pt-5" style={{ borderColor: "var(--borda)" }}>
-                  <p className="mb-3 text-[13px] font-medium" style={{ color: "var(--tinta)" }}>
-                    Como o valor cresce em cada critério
-                  </p>
-                  <p className="prosa mb-3 text-[12px]" style={{ color: "var(--tinta-3)" }}>
-                    Por padrão o método assume crescimento linear. Se num critério
-                    os primeiros ganhos valem mais que os últimos, vale ajustar.
-                  </p>
-                  <ul className="space-y-1.5">
-                    {problema.criterios.map((c) => (
-                      <li key={c.chave} className="flex items-center gap-3 text-[13px]">
-                        <span className="min-w-0 flex-1 truncate" style={{ color: "var(--tinta-2)" }}>
-                          {c.nome}
-                        </span>
-                        <span style={{ color: "var(--tinta-fraca)" }}>
-                          {c.curva_de_valor ? `curva com ${c.curva_de_valor.length} pontos` : "linear"}
-                        </span>
-                        <button
-                          onClick={() => setCurvaDe(c.chave)}
-                          className="tatil underline underline-offset-2"
-                          style={{ color: "var(--accent)" }}
-                        >
-                          ajustar
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-
-                  {curvaDe && (
-                    <div className="mt-4">
-                      <CurvaDeValor
-                        criterio={problema.criterios.find((c) => c.chave === curvaDe)!}
-                        inicial={
-                          problema.criterios.find((c) => c.chave === curvaDe)
-                            ?.curva_de_valor ?? undefined
-                        }
-                        onSalvar={(pontos) => salvarCurva(curvaDe, pontos)}
-                        onCancelar={() => setCurvaDe(null)}
-                      />
-                    </div>
-                  )}
+                  {/* Aqui ela é consulta: o passo de verdade fica antes da
+                      ordenação, que é onde a decisão sobre a escala cabe. */}
+                  <AvaliacaoIntraCriterio
+                    criterios={problema.criterios}
+                    ocupado={ocupado}
+                    onSalvar={salvarCurva}
+                    comoResumo
+                  />
                 </div>
               )}
 
               <p className="mt-4 text-[12px]" style={{ color: "var(--tinta-fraca)" }}>
-                Para mudar os dados, comece outra decisão — alterar os números
-                agora invalidaria as respostas que você já deu.
+                {t("tela.decisao.dados.imutaveis")}
               </p>
             </Secao>
           )}
 
           {etapa === "ordem" && (
             <div>
+              {/* A avaliação intra-critério vem antes da ordem de importância, e
+                  é o último momento em que a escala ainda pode mudar: depois que
+                  a elicitação começa, as respostas já dadas se referem a ela.
+                  Estava só dentro da etapa "Problema", atrás de um clique que
+                  ninguém dava. */}
+              {!estado?.elicitacao_iniciada && (
+                <div
+                  className="mb-6 rounded-[var(--raio-painel)] border p-4"
+                  style={{ borderColor: "var(--borda)", background: "var(--painel)" }}
+                >
+                  <AvaliacaoIntraCriterio
+                    criterios={problema.criterios}
+                    ocupado={ocupado}
+                    onSalvar={salvarCurva}
+                  />
+                </div>
+              )}
+
               {estado?.elicitacao_iniciada && (
                 <div className="mb-4">
                   <Voltar
-                    rotulo="voltar sem mudar a ordem"
+                    rotulo={t("tela.decisao.voltarSemMudarOrdem")}
                     onClick={() => setRevisando(null)}
                   />
                 </div>
@@ -451,36 +454,53 @@ function Decisao() {
 
           {etapa === "perguntas" && estado?.elicitacao_iniciada && !encerrado && (
             <Secao
-              titulo={`Pergunta ${Math.max((estado.declaracoes ?? 1) - 1, 0) + 1}`}
-              acessorio={
-                <span className="flex items-center gap-4">
-                  <button
-                    onClick={() => responder("indiferente")}
-                    disabled={ocupado || !pergunta}
-                    className="tatil flex items-center gap-1.5 text-sm disabled:opacity-40"
-                    style={{ color: "var(--tinta-3)" }}
-                  >
-                    <Equals size={14} weight="bold" />
-                    são indiferentes
-                  </button>
-                  <button
-                    onClick={() => responder("não sei")}
-                    disabled={ocupado || !pergunta}
-                    className="tatil flex items-center gap-1.5 text-sm disabled:opacity-40"
-                    style={{ color: "var(--tinta-fraca)" }}
-                    title="Encerra este par sem assumir nada sobre os pesos"
-                  >
-                    <Question size={14} weight="bold" />
-                    não sei
-                  </button>
-                </span>
-              }
+              titulo={t("tela.decisao.pergunta.numero", {
+                n: Math.max((estado.declaracoes ?? 1) - 1, 0) + 1,
+              })}
             >
-              {pergunta && !ocupado ? (
+              {/* Enquanto a resposta viaja, a pergunta fica com a escolha
+                  confirmada em vez de virar esqueleto: trocar por um esqueleto
+                  apagaria justamente a confirmação que a pausa existe para
+                  mostrar. A chave é a contagem de declarações, então cada
+                  pergunta nova chega com o estado limpo. */}
+              {pergunta ? (
                 <TradeoffChart
+                  key={estado.declaracoes}
                   pergunta={pergunta}
                   desabilitado={ocupado}
                   onSelect={responder}
+                  /* A indiferença é uma resposta como as outras duas, então vai
+                     entre os dois cartões, onde o olho está. O botão de texto
+                     continua embaixo: é redundante de propósito, porque nem
+                     todo mundo lê um ícone redondo como "responder". */
+                  onIndiferente={() => responder("indiferente")}
+                  /* As saidas ficavam no canto do cabecalho da secao, acima e a
+                     direita da pergunta: eram as unicas acoes visiveis da tela,
+                     o que punha as escapatorias em mais destaque do que a
+                     resposta. Aqui embaixo elas sao o que sao. */
+                  rodape={
+                    <>
+                      <button
+                        onClick={() => responder("indiferente")}
+                        disabled={ocupado || !pergunta}
+                        className="tatil flex items-center gap-1.5 text-sm disabled:opacity-40"
+                        style={{ color: "var(--tinta-3)" }}
+                      >
+                        <Equals size={14} weight="bold" />
+                        {t("tela.decisao.indiferentes")}
+                      </button>
+                      <button
+                        onClick={() => responder("não sei")}
+                        disabled={ocupado || !pergunta}
+                        className="tatil flex items-center gap-1.5 text-sm disabled:opacity-40"
+                        style={{ color: "var(--tinta-fraca)" }}
+                        title={t("tela.decisao.naoSei.titulo")}
+                      >
+                        <Question size={14} weight="bold" />
+                        {t("tela.decisao.naoSei")}
+                      </button>
+                    </>
+                  }
                 />
               ) : (
                 <EsqueletoPergunta />
@@ -489,7 +509,7 @@ function Decisao() {
           )}
 
           {estado?.elicitacao_iniciada && !estado.consistente && diagnostico && (
-            <Secao titulo="Precisa da sua decisão">
+            <Secao titulo={t("tela.decisao.conflito.titulo")}>
               <Inconsistencia
                 diagnostico={diagnostico}
                 ocupado={ocupado}
@@ -498,24 +518,37 @@ function Decisao() {
             </Secao>
           )}
 
+          {/* Encerrada, a resposta vem primeiro. Ate o fim a comparacao vem
+              antes porque e ferramenta de trabalho: e olhando para ela que
+              se faz o julgamento holistico. Depois do fim ela vira consulta,
+              e deixar o resultado abaixo de um grafico fazia a tela de
+              resultado final comecar por outra coisa. Duas secoes irmas,
+              entao inverter a coluna basta -- nada se move no DOM. */}
+          <div
+            className={`flex gap-10 ${
+              encerrado ? "flex-col-reverse" : "flex-col"
+            }`}
+          >
           {(etapa === "perguntas" || etapa === "resultado") &&
             estado?.elicitacao_iniciada && estado.consistente && (
             <Secao
-              titulo="Comparar as alternativas"
+              titulo={t("tela.decisao.comparar.titulo")}
               acessorio={
                 <span className="flex items-center gap-4">
                   <BotaoSalvarGrafico
                     alvo={areaComparacao}
-                    nome={`${problema.nome} — comparação`}
+                    nome={t("tela.decisao.comparar.arquivo", {
+                      nome: problema.nome,
+                    })}
                   />
                   {!encerrado && (
                     <button
                       onClick={() => setEncerradoPeloUsuario(true)}
                       className="tatil text-[12px] underline underline-offset-2"
                       style={{ color: "var(--tinta-3)" }}
-                      title="Para de perguntar e mostra o resultado com o que já foi respondido"
+                      title={t("tela.decisao.encerrar.titulo")}
                     >
-                      já decidi, encerrar
+                      {t("tela.decisao.encerrar")}
                     </button>
                   )}
                 </span>
@@ -539,7 +572,13 @@ function Decisao() {
 
           {(etapa === "perguntas" || etapa === "resultado") && estado?.analise && (
             <Secao
-              titulo={encerrado ? "Resultado" : "Onde estamos"}
+              /* "Resultado" é a mesma palavra da trilha de etapas, então a
+                 chave vem de lá em vez de nascer duplicada aqui. */
+              titulo={
+                encerrado
+                  ? t("estrutura.etapas.resultado")
+                  : t("tela.decisao.ondeEstamos")
+              }
               acessorio={
                 encerradoPeloUsuario && !estado.encerrado ? (
                   <button
@@ -547,7 +586,7 @@ function Decisao() {
                     className="tatil text-[12px] underline underline-offset-2"
                     style={{ color: "var(--tinta-3)" }}
                   >
-                    voltar a responder
+                    {t("tela.decisao.voltarAResponder")}
                   </button>
                 ) : undefined
               }
@@ -558,16 +597,11 @@ function Decisao() {
                 </p>
               ) : (
                 <>
-                  <p
-                    className="text-[17px]"
-                    style={{
-                      color: estado.analise.resolvido
-                        ? "var(--sucesso)"
-                        : "var(--tinta)",
-                    }}
-                  >
-                    {estado.analise.resumo}
-                  </p>
+                  <SinteseResultado
+                    problema={problema}
+                    estado={estado}
+                    encerrado={encerrado}
+                  />
                   <ResultadoAnalise analise={estado.analise} />
                 </>
               )}
@@ -576,17 +610,11 @@ function Decisao() {
                 Object.keys(estado.faixas_de_valor).length > 0 && (
                   <div className="mt-8">
                     <RangeChart
-                      titulo="Valor global possível de cada alternativa"
+                      titulo={t("tela.decisao.faixasValor.titulo")}
                       dica={
-                        <Dica titulo="Por que um intervalo">
-                          <p>
-                            Como você ainda não fixou os pesos, o valor de cada
-                            alternativa não é um número: é uma faixa.
-                          </p>
-                          <p>
-                            Faixas que não se sobrepõem já decidem. Quando se
-                            cruzam, ainda falta informação.
-                          </p>
+                        <Dica titulo={t("tela.decisao.faixasValor.dica.titulo")}>
+                          <p>{t("tela.decisao.faixasValor.dica.corpo1")}</p>
+                          <p>{t("tela.decisao.faixasValor.dica.corpo2")}</p>
                         </Dica>
                       }
                       faixas={paraFaixas(
@@ -600,16 +628,11 @@ function Decisao() {
               {estado.faixas_de_peso && (
                 <div className="mt-8">
                   <RangeChart
-                    titulo="Peso ainda possível de cada critério"
+                    titulo={t("tela.decisao.faixasPeso.titulo")}
                     dica={
-                      <Dica titulo="Os pesos que você nunca informou">
-                        <p>
-                          O método deduz estas faixas das suas respostas. Você
-                          não precisou arbitrar nenhum número.
-                        </p>
-                        <p>
-                          Quanto mais você responde, mais elas estreitam.
-                        </p>
+                      <Dica titulo={t("tela.decisao.faixasPeso.dica.titulo")}>
+                        <p>{t("tela.decisao.faixasPeso.dica.corpo1")}</p>
+                        <p>{t("tela.decisao.faixasPeso.dica.corpo2")}</p>
                       </Dica>
                     }
                     faixas={paraFaixas(estado.faixas_de_peso)}
@@ -618,9 +641,10 @@ function Decisao() {
               )}
             </Secao>
           )}
+          </div>
 
           {etapa === "resultado" && encerrado && estado?.consistente && (
-            <Secao titulo="Quanto isso depende dos dados">
+            <Secao titulo={t("tela.decisao.sensibilidade.titulo")}>
               <SensibilidadeConsequencias
                 decisaoId={problema.id}
                 criterios={problema.criterios}
@@ -629,7 +653,7 @@ function Decisao() {
           )}
 
           {etapa !== "problema" && auditoria && auditoria.declaracoes.length > 0 && (
-            <Secao titulo="Por que este resultado">
+            <Secao titulo={t("tela.decisao.auditoria.titulo")}>
               <ol className="space-y-3">
                 {auditoria.declaracoes.map((d) => (
                   <li key={d.sequencia} className="flex gap-3">
@@ -652,13 +676,26 @@ function Decisao() {
           )}
         </div>
 
-        <PainelProgresso
-          problema={problema}
-          estado={estado}
-          onDesfazer={desfazer}
-          podeDesfazer={!ocupado && (estado?.declaracoes ?? 0) > 0}
-        />
+        {/* A coluna da direita acompanha a rolagem e agora só carrega o
+            progresso, que e o que muda a cada resposta. As decisoes salvas
+            sairam daqui: elas sao um atalho, e enquanto dividiam esta coluna
+            abrir e fechar a lista mudava a largura da coluna de trabalho - a
+            pergunta de tradeoff refluia embaixo dos olhos de quem estava
+            comparando as duas situacoes. */}
+        <div className="space-y-4 lg:sticky lg:top-20 lg:self-start">
+          <PainelProgresso
+            problema={problema}
+            estado={estado}
+            onDesfazer={desfazer}
+            podeDesfazer={!ocupado && (estado?.declaracoes ?? 0) > 0}
+          />
+        </div>
       </div>
+
+      {/* Fora da grade de proposito: o painel se prende a borda direita da
+          janela e sobrepoe o conteudo, entao nao pode ser filho de nada que
+          participe do layout. */}
+      <PainelSalvas onAbrir={receber} idAtual={problema.id} ocupado={ocupado} />
     </main>
   );
 }

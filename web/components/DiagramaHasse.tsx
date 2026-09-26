@@ -14,6 +14,8 @@
  */
 
 import { Dica } from "@/components/ui";
+import { useIdioma } from "@/lib/i18n";
+import "@/lib/i18n/visualizacoes";
 
 interface Aresta {
   de: string;
@@ -35,6 +37,7 @@ export function DiagramaHasse({
   arestas: Aresta[];
   destaque?: string | null;
 }) {
+  const { t } = useIdioma();
   if (!niveis.length) return null;
 
   const maiorNivel = Math.max(...niveis.map((n) => n.length));
@@ -58,21 +61,21 @@ export function DiagramaHasse({
     <figure className="m-0">
       <figcaption className="mb-3 flex items-center gap-1.5">
         <span className="text-[13px] font-medium" style={{ color: "var(--tinta-2)" }}>
-          Relações de dominância
+          {t("resultado.escolha.dominancia")}
         </span>
-        <Dica titulo="Como ler o diagrama">
+        <Dica titulo={t("viz.hasse.dica.titulo")}>
           <p>
-            Uma seta de <strong>X para Y</strong> significa que X vence Y para
-            qualquer conjunto de pesos ainda possível — não depende de mais
-            nenhuma resposta sua.
+            {t("viz.hasse.dica.corpo1.antes")}
+            <strong>{t("viz.hasse.dica.corpo1.termo")}</strong>
+            {t("viz.hasse.dica.corpo1.depois")}
           </p>
           <p>
-            Alternativas <strong>lado a lado</strong> são incomparáveis: trocam
-            de posição conforme os pesos. É entre elas que falta informação.
+            {t("viz.hasse.dica.corpo2.antes")}
+            <strong>{t("viz.hasse.dica.corpo2.termo")}</strong>
+            {t("viz.hasse.dica.corpo2.depois")}
           </p>
           <p style={{ color: "var(--tinta-3)" }}>
-            Setas redundantes são omitidas: se X vence Y e Y vence Z, a seta de
-            X para Z fica subentendida.
+            {t("viz.hasse.dica.corpo3")}
           </p>
         </Dica>
       </figcaption>
@@ -83,7 +86,7 @@ export function DiagramaHasse({
           height={altura}
           viewBox={`0 0 ${largura} ${altura}`}
           role="img"
-          aria-label="Diagrama de dominância entre as alternativas"
+          aria-label={t("viz.hasse.rotulo")}
           className="max-w-full"
         >
           <defs>
@@ -110,7 +113,7 @@ export function DiagramaHasse({
                 strokeWidth={1.2}
                 markerEnd="url(#ponta)"
               >
-                <title>{`${de} vence ${para}`}</title>
+                <title>{t("viz.hasse.vence", { de, para })}</title>
               </line>
             );
           })}
@@ -139,7 +142,7 @@ export function DiagramaHasse({
                   >
                     {nome.length > 16 ? `${nome.slice(0, 15)}…` : nome}
                   </text>
-                  <title>{`${nome} — nível ${linha + 1}`}</title>
+                  <title>{t("viz.hasse.no", { nome, n: linha + 1 })}</title>
                 </g>
               );
             }),
@@ -150,17 +153,20 @@ export function DiagramaHasse({
       {/* a leitura nao pode depender de enxergar o grafo */}
       <details className="mt-3">
         <summary className="cursor-pointer text-[11px]" style={{ color: "var(--tinta-fraca)" }}>
-          Ver como lista
+          {t("viz.hasse.verLista")}
         </summary>
         <ol className="mt-2 space-y-1 text-[12px]" style={{ color: "var(--tinta-2)" }}>
           {niveis.map((nivel, i) => (
             <li key={i}>
               <span className="num" style={{ color: "var(--tinta-fraca)" }}>
-                nível {i + 1}:
+                {t("viz.hasse.nivel", { n: i + 1 })}
               </span>{" "}
               {nivel.join(", ")}
               {nivel.length > 1 && (
-                <span style={{ color: "var(--tinta-fraca)" }}> (incomparáveis entre si)</span>
+                <span style={{ color: "var(--tinta-fraca)" }}>
+                  {" "}
+                  {t("viz.hasse.incomparaveis")}
+                </span>
               )}
             </li>
           ))}

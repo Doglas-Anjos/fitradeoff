@@ -16,7 +16,8 @@
 
 import { useState } from "react";
 
-import { Dica } from "@/components/ui";
+import { useIdioma } from "@/lib/i18n";
+import "@/lib/i18n/visualizacoes";
 
 export interface Faixa {
   rotulo: string;
@@ -40,6 +41,7 @@ export function RangeChart({
   maximoEixo?: number;
   formatar?: (valor: number) => string;
 }) {
+  const { t } = useIdioma();
   const [ativo, setAtivo] = useState<string | null>(null);
 
   return (
@@ -147,14 +149,14 @@ export function RangeChart({
           className="cursor-pointer text-[11px]"
           style={{ color: "var(--tinta-fraca)" }}
         >
-          Ver como tabela
+          {t("faixa.verTabela")}
         </summary>
         <table className="mt-2 w-full text-[12px]">
           <thead>
             <tr style={{ color: "var(--tinta-fraca)" }}>
-              <th className="py-1 text-left font-normal">Item</th>
-              <th className="py-1 text-right font-normal">Mínimo</th>
-              <th className="py-1 text-right font-normal">Máximo</th>
+              <th className="py-1 text-left font-normal">{t("faixa.item")}</th>
+              <th className="py-1 text-right font-normal">{t("faixa.minimo")}</th>
+              <th className="py-1 text-right font-normal">{t("faixa.maximo")}</th>
             </tr>
           </thead>
           <tbody>

@@ -13,6 +13,9 @@
  */
 
 import { Dica } from "@/components/ui";
+import { useIdioma } from "@/lib/i18n";
+import "@/lib/i18n/visualizacoes";
+import { corDaSerie } from "@/lib/serie";
 
 export interface AlocacaoItem {
   faixa_de_valor: [number, number];
@@ -20,7 +23,10 @@ export interface AlocacaoItem {
   definida: boolean;
 }
 
-const CORES_CLASSE = ["#2a78d6", "#1baf7a", "#eda100", "#eb6834", "#4a3aa7"];
+/* As classes usam a mesma serie categorica do resto do produto -- duas paletas
+   proximas mas diferentes leem como dois sistemas. A ordem aqui e a da serie:
+   a classe 1 tem a cor 1, e trocar o numero de classes nao repinta as outras. */
+const corDaClasse = (indice: number) => corDaSerie(indice);
 
 export function GraficoGantt({
   alocacao,
@@ -31,6 +37,7 @@ export function GraficoGantt({
   perfis: number[];
   classes: string[];
 }) {
+  const { t } = useIdioma();
   const itens = Object.entries(alocacao).sort(
     (a, b) => b[1].faixa_de_valor[0] - a[1].faixa_de_valor[0],
   );
@@ -40,17 +47,11 @@ export function GraficoGantt({
     <figure className="m-0">
       <figcaption className="mb-4 flex items-center gap-1.5">
         <span className="text-[13px] font-medium" style={{ color: "var(--tinta-2)" }}>
-          Faixa de valor e classe de cada alternativa
+          {t("viz.gantt.titulo")}
         </span>
-        <Dica titulo="Como ler">
-          <p>
-            A barra vai do menor ao maior valor global que a alternativa pode
-            ter, dado o que você já respondeu.
-          </p>
-          <p>
-            Barra inteira dentro de uma faixa: alternativa classificada. Barra
-            atravessando um perfil: ainda indefinida — e você vê por quanto.
-          </p>
+        <Dica titulo={t("viz.gantt.dica.titulo")}>
+          <p>{t("viz.gantt.dica.corpo1")}</p>
+          <p>{t("viz.gantt.dica.corpo2")}</p>
         </Dica>
       </figcaption>
 
@@ -71,9 +72,13 @@ export function GraficoGantt({
               className="truncate border-l px-1.5 py-0.5"
               style={{
                 borderColor: "var(--borda-forte)",
-                color: CORES_CLASSE[i % CORES_CLASSE.length],
+                color: corDaClasse(i),
               }}
-              title={`${classe}: de ${limites[i].toFixed(2)} a ${limites[i + 1].toFixed(2)}`}
+              title={t("viz.gantt.classeFaixa", {
+                classe,
+                de: limites[i].toFixed(2),
+                ate: limites[i + 1].toFixed(2),
+              })}
             >
               {classe}
             </div>
@@ -85,7 +90,7 @@ export function GraficoGantt({
             const [lo, hi] = dados.faixa_de_valor;
             const classeIndice = classes.indexOf(dados.classes_possiveis[0]);
             const cor = dados.definida
-              ? CORES_CLASSE[Math.max(classeIndice, 0) % CORES_CLASSE.length]
+              ? corDaClasse(Math.max(classeIndice, 0))
               : "var(--tinta-fraca)";
 
             return (
@@ -113,27 +118,40 @@ export function GraficoGantt({
                       style={{ left: `${p * 100}%`, background: "var(--borda-forte)" }}
                     />
                   ))}
+                  {/* Atributo `title`, e nao um elemento <title>.
+                      Dentro de um <div> o elemento nao e HTML valido, e o React
+                      19 o trata como titulo de documento e o ica para o <head>:
+                      a aba do navegador passava a dizer "Baixa: 0.000 a 0.000"
+                      em vez do nome do produto. Numa barra de <svg> o elemento
+                      e correto e fica onde esta -- aqui nao e svg. */}
                   <div
                     className="absolute top-1/2 h-2.5 -translate-y-1/2 rounded-[3px]"
+                    title={t("viz.gantt.barra", {
+                      nome,
+                      de: lo.toFixed(3),
+                      ate: hi.toFixed(3),
+                    })}
                     style={{
                       left: `${lo * 100}%`,
                       width: `${Math.max((hi - lo) * 100, 1)}%`,
                       background: cor,
                       opacity: dados.definida ? 0.9 : 0.55,
                     }}
-                  >
-                    <title>{`${nome}: ${lo.toFixed(3)} a ${hi.toFixed(3)}`}</title>
-                  </div>
+                  />
                 </div>
 
                 <span
                   className="w-32 truncate text-right text-[11px]"
                   style={{ color: dados.definida ? cor : "var(--tinta-fraca)" }}
-                  title={dados.classes_possiveis.join(" ou ")}
+                  title={dados.classes_possiveis.join(
+                    ` ${t("resultado.sorting.ou")} `,
+                  )}
                 >
                   {dados.definida
                     ? dados.classes_possiveis[0]
-                    : `${dados.classes_possiveis.length} classes`}
+                    : t("viz.gantt.classes", {
+                        n: dados.classes_possiveis.length,
+                      })}
                 </span>
               </div>
             );

@@ -12,6 +12,8 @@
 import { useEffect, useRef, useState } from "react";
 
 import { api, ApiError } from "@/lib/api";
+import { useIdioma } from "@/lib/i18n";
+import "@/lib/i18n/telas";
 
 interface Bolha {
   papel: "user" | "assistant";
@@ -19,13 +21,16 @@ interface Bolha {
   ferramentas?: string[];
 }
 
+/* Só as chaves: a sugestão que vai para o agente é a frase no idioma em que a
+   pessoa está lendo, então ela é resolvida na renderização, não no módulo. */
 const SUGESTOES = [
-  "Preciso escolher entre quatro fornecedores olhando custo, prazo e qualidade.",
-  "Tenho três propostas de software para comparar. Me ajuda a decidir?",
-  "Quero ordenar seis projetos por prioridade, não só escolher um.",
+  "tela.chat.sugestao1",
+  "tela.chat.sugestao2",
+  "tela.chat.sugestao3",
 ];
 
 export default function ChatPage() {
+  const { t } = useIdioma();
   const [bolhas, setBolhas] = useState<Bolha[]>([]);
   const [entrada, setEntrada] = useState("");
   const [decisaoId, setDecisaoId] = useState<string | null>(null);
@@ -80,21 +85,21 @@ export default function ChatPage() {
   if (disponivel === false) {
     return (
       <main className="mx-auto max-w-3xl px-5 pt-12">
-        <h1 className="text-2xl font-semibold">Chat de decisões</h1>
+        <h1 className="text-2xl font-semibold">{t("tela.chat.titulo")}</h1>
         <div
           className="mt-4 rounded-[var(--raio-painel)] border p-5 text-sm"
           style={{ borderColor: "var(--borda)", background: "var(--painel)" }}
         >
           <p style={{ color: "var(--tinta)" }}>
-            O chat precisa de uma chave da API da Anthropic para funcionar.
+            {t("tela.chat.semChave.aviso")}
           </p>
           <p className="mt-2" style={{ color: "var(--tinta-2)" }}>
-            Defina <code>ANTHROPIC_API_KEY</code> no ambiente onde a API roda e
-            reinicie o servidor. A{" "}
+            {t("tela.chat.semChave.antes")} <code>ANTHROPIC_API_KEY</code>{" "}
+            {t("tela.chat.semChave.meio")}{" "}
             <a href="/decisao" style={{ color: "var(--accent)" }}>
-              tela de decisão estruturada
+              {t("tela.chat.semChave.link")}
             </a>{" "}
-            funciona sem ela.
+            {t("tela.chat.semChave.depois")}
           </p>
         </div>
       </main>
@@ -104,20 +109,19 @@ export default function ChatPage() {
   return (
     <main className="mx-auto flex h-[calc(100dvh-3.5rem)] max-w-3xl flex-col px-5 pb-6 pt-8">
       <header className="mb-4">
-        <h1 className="text-2xl font-semibold">Chat de decisões</h1>
+        <h1 className="text-2xl font-semibold">{t("tela.chat.titulo")}</h1>
         <p className="mt-1 text-sm" style={{ color: "var(--tinta-2)" }}>
-          Descreva o que precisa decidir. O agente monta o modelo e conduz a
-          elicitação pelo método — as respostas continuam sendo suas.
+          {t("tela.chat.descricao")}
         </p>
       </header>
 
       <div className="flex-1 space-y-4 overflow-y-auto pr-1">
         {bolhas.length === 0 && (
           <div className="space-y-2">
-            {SUGESTOES.map((s) => (
+            {SUGESTOES.map((chave) => (
               <button
-                key={s}
-                onClick={() => enviar(s)}
+                key={chave}
+                onClick={() => enviar(t(chave))}
                 className="block w-full rounded-[var(--raio-controle)] border px-4 py-3 text-left text-sm transition hover:shadow-sm"
                 style={{
                   borderColor: "var(--borda)",
@@ -125,7 +129,7 @@ export default function ChatPage() {
                   color: "var(--tinta-2)",
                 }}
               >
-                {s}
+                {t(chave)}
               </button>
             ))}
           </div>
@@ -154,7 +158,7 @@ export default function ChatPage() {
                   className="mt-3 border-t pt-2 text-xs"
                   style={{ borderColor: "var(--borda)", color: "var(--tinta-fraca)" }}
                 >
-                  método aplicado: {b.ferramentas.join(" → ")}
+                  {t("tela.chat.metodoAplicado")} {b.ferramentas.join(" → ")}
                 </div>
               )}
             </div>
@@ -163,7 +167,7 @@ export default function ChatPage() {
 
         {ocupado && (
           <div className="text-sm" style={{ color: "var(--tinta-fraca)" }}>
-            pensando…
+            {t("tela.chat.pensando")}
           </div>
         )}
         <div ref={fim} />
@@ -189,7 +193,7 @@ export default function ChatPage() {
         <input
           value={entrada}
           onChange={(e) => setEntrada(e.target.value)}
-          placeholder="O que você precisa decidir?"
+          placeholder={t("tela.chat.entrada")}
           disabled={ocupado}
           className="flex-1 rounded-[var(--raio-controle)] border px-4 py-2 text-sm outline-none disabled:opacity-50"
           style={{
@@ -204,13 +208,14 @@ export default function ChatPage() {
           className="rounded-[var(--raio-controle)] px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
           style={{ background: "var(--accent)" }}
         >
-          Enviar
+          {t("tela.chat.enviar")}
         </button>
       </form>
 
       {decisaoId && (
         <p className="mt-2 text-xs" style={{ color: "var(--tinta-fraca)" }}>
-          decisão em andamento: <span className="num">{decisaoId}</span>
+          {t("tela.chat.emAndamento")}{" "}
+          <span className="num">{decisaoId}</span>
         </p>
       )}
     </main>

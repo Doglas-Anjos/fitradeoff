@@ -10,32 +10,34 @@
  *
  * Todas mostram o **valor intra-criterio** (0 = pior possivel, 1 = melhor
  * possivel), nao a consequencia bruta: reais e dias nao se sobrepoem num eixo.
+ *
+ * Barras e pontos sao HTML, nao SVG escalado por viewBox. Num SVG com viewBox
+ * o texto cresce junto com o desenho: os rotulos ficavam desproporcionais ao
+ * resto da pagina, os nomes de criterio precisavam ser cortados em 13 letras e
+ * os numeros do eixo, ancorados em x negativo, caiam fora da viewBox e nunca
+ * chegaram a aparecer -- o grafico tinha grade e nenhuma escala. Em HTML a
+ * tipografia obedece a escala do documento e nada e recortado. O radar
+ * continua em SVG, que e a forma natural de um desenho polar, mas com os
+ * rotulos em HTML por cima, pelo mesmo motivo.
  */
 
 import { ChartBar, ChartPolar, Circle as CircleIcon, Table } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
 
 import { Dica } from "@/components/ui";
+import { useIdioma } from "@/lib/i18n";
+import "@/lib/i18n/visualizacoes";
+import { corDaSerie } from "@/lib/serie";
 import type { CriterioOut, Problema } from "@/lib/types";
-
-/* A ordem e fixa e nunca reciclada: a cor identifica a alternativa, e uma
-   alternativa desmarcada nao pode repintar as que sobraram. Os tres primeiros
-   passam os limiares de daltonismo em todos os pares; do quarto em diante a
-   leitura se apoia tambem no rotulo direto e na legenda. */
-const SERIE = [
-  "#2a78d6", "#eb6834", "#1baf7a", "#eda100",
-  "#e87ba4", "#008300", "#4a3aa7", "#e34948",
-];
-
-const corDe = (indice: number) => SERIE[indice % SERIE.length];
 
 type Aba = "barras" | "radar" | "bolhas" | "tabela";
 
-const ABAS: { id: Aba; rotulo: string; Icone: typeof ChartBar }[] = [
-  { id: "barras", rotulo: "Barras", Icone: ChartBar },
-  { id: "radar", rotulo: "Radar", Icone: ChartPolar },
-  { id: "bolhas", rotulo: "Bolhas", Icone: CircleIcon },
-  { id: "tabela", rotulo: "Tabela", Icone: Table },
+/* O rotulo de cada aba vem do catalogo, entao aqui fica a chave. */
+const ABAS: { id: Aba; chave: string; Icone: typeof ChartBar }[] = [
+  { id: "barras", chave: "viz.aba.barras", Icone: ChartBar },
+  { id: "radar", chave: "viz.aba.radar", Icone: ChartPolar },
+  { id: "bolhas", chave: "viz.aba.bolhas", Icone: CircleIcon },
+  { id: "tabela", chave: "viz.aba.tabela", Icone: Table },
 ];
 
 interface Serie {
@@ -44,138 +46,324 @@ interface Serie {
   valores: number[];
 }
 
-/* --- barras ----------------------------------------------------------------- */
+const MARCAS = [0, 0.25, 0.5, 0.75, 1];
+const ALTURA_PLANO = 224; // px reais: a altura nao depende da largura da coluna
+const CALHA = "2.4rem"; // largura reservada aos numeros do eixo
 
-function Barras({ criterios, series }: { criterios: CriterioOut[]; series: Serie[] }) {
-  const larguraGrupo = 100 / criterios.length;
-  const larguraBarra = larguraGrupo / (series.length + 0.6);
+/* --- moldura compartilhada ---------------------------------------------------
+   Barras e pontos sao a mesma leitura com marcas diferentes: mesmo eixo, mesma
+   grade, mesmos rotulos, mesma faixa de leitura. Desenhar a moldura uma vez e o
+   que faz as duas abas parecerem o mesmo produto em vez de dois graficos que
+   por acaso convivem. */
+
+function Moldura({
+  criterios,
+  series,
+  ativo,
+  aoApontar,
+  children,
+}: {
+  criterios: CriterioOut[];
+  series: Serie[];
+  ativo: string | null;
+  aoApontar: (chave: string | null) => void;
+  children: (criterio: CriterioOut, indice: number) => React.ReactNode;
+}) {
+  const { t } = useIdioma();
+  const emFoco = criterios.find((c) => c.chave === ativo);
 
   return (
-    <svg viewBox="0 0 100 46" className="w-full" role="img" aria-label="Desempenho por critério">
-      {[0, 0.25, 0.5, 0.75, 1].map((t) => (
-        <g key={t}>
-          <line x1={0} y1={40 - t * 36} x2={100} y2={40 - t * 36}
-            stroke="var(--borda)" strokeWidth={0.15} />
-          <text x={-0.5} y={40 - t * 36 + 1} fontSize={2} textAnchor="end"
-            fill="var(--tinta-fraca)">{t}</text>
-        </g>
-      ))}
-      {criterios.map((criterio, j) => (
-        <g key={criterio.chave}>
-          {series.map((serie, i) => {
-            const altura = Math.max(serie.valores[j] * 36, 0.4);
-            return (
-              <rect
-                key={serie.nome}
-                x={j * larguraGrupo + 0.3 + i * larguraBarra}
-                y={40 - altura}
-                width={larguraBarra - 0.35 /* 2px de respiro entre barras */}
-                height={altura}
-                rx={0.5}
-                fill={serie.cor}
+    <div>
+      {/* Faixa de leitura: ocupa altura fixa mesmo vazia, entao apontar o mouse
+          nao empurra o grafico. Vazia, ela explica o que fazer; e o unico lugar
+          da tela que diz o que o eixo vertical significa. */}
+      <div
+        className="mb-3 flex h-5 items-center gap-3 overflow-hidden whitespace-nowrap text-[11px]"
+        aria-live="polite"
+      >
+        {emFoco ? (
+          <>
+            <span className="font-medium" style={{ color: "var(--tinta)" }}>
+              {emFoco.nome}
+            </span>
+            {series.map((serie, i) => (
+              <span key={serie.nome} className="flex items-center gap-1.5">
+                <span
+                  aria-hidden
+                  className="h-2 w-2 rounded-[2px]"
+                  style={{ background: serie.cor }}
+                />
+                <span style={{ color: "var(--tinta-3)" }}>{serie.nome}</span>
+                <span className="num" style={{ color: "var(--tinta)" }}>
+                  {serie.valores[criterios.indexOf(emFoco)].toFixed(3)}
+                </span>
+                {i < series.length - 1 && (
+                  <span style={{ color: "var(--borda-forte)" }}>·</span>
+                )}
+              </span>
+            ))}
+          </>
+        ) : (
+          <span style={{ color: "var(--tinta-fraca)" }}>{t("viz.eixo.legenda")}</span>
+        )}
+      </div>
+
+      <div className="flex gap-2">
+        {/* numeros do eixo, em tipografia do documento */}
+        <div className="relative shrink-0" style={{ height: ALTURA_PLANO, width: CALHA }}>
+          {MARCAS.map((m) => (
+            <span
+              key={m}
+              className="num absolute right-0 text-[10px] leading-none"
+              style={{
+                bottom: `${m * 100}%`,
+                transform: "translateY(50%)",
+                color: "var(--tinta-fraca)",
+              }}
+            >
+              {m.toFixed(2)}
+            </span>
+          ))}
+        </div>
+
+        <div className="relative flex-1" style={{ height: ALTURA_PLANO }}>
+          {MARCAS.map((m) => (
+            <span
+              key={m}
+              aria-hidden
+              className="absolute inset-x-0 h-px"
+              style={{
+                bottom: `${m * 100}%`,
+                background: m === 0 ? "var(--borda-forte)" : "var(--borda)",
+              }}
+            />
+          ))}
+
+          <div
+            className="absolute inset-0 grid"
+            style={{
+              gridTemplateColumns: `repeat(${criterios.length},minmax(0,1fr))`,
+            }}
+          >
+            {criterios.map((criterio, j) => (
+              <div
+                key={criterio.chave}
+                onMouseEnter={() => aoApontar(criterio.chave)}
+                onMouseLeave={() => aoApontar(null)}
+                onFocus={() => aoApontar(criterio.chave)}
+                onBlur={() => aoApontar(null)}
+                tabIndex={0}
+                className="relative rounded-[var(--raio-controle)] transition-colors"
+                style={{
+                  background:
+                    ativo === criterio.chave ? "var(--painel-fundo)" : "transparent",
+                }}
               >
-                <title>{`${serie.nome} · ${criterio.nome}: ${serie.valores[j].toFixed(3)}`}</title>
-              </rect>
-            );
-          })}
-          <text x={j * larguraGrupo + larguraGrupo / 2} y={44} fontSize={2}
-            textAnchor="middle" fill="var(--tinta-3)">
-            {criterio.nome.length > 14 ? criterio.nome.slice(0, 13) + "…" : criterio.nome}
-          </text>
-        </g>
-      ))}
-      <line x1={0} y1={40} x2={100} y2={40} stroke="var(--borda-forte)" strokeWidth={0.25} />
-    </svg>
+                {children(criterio, j)}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* nomes por inteiro: quebram em duas linhas em vez de virar reticencias */}
+      <div className="mt-2 flex gap-2">
+        <span className="shrink-0" style={{ width: CALHA }} />
+        <div
+          className="grid flex-1"
+          style={{ gridTemplateColumns: `repeat(${criterios.length},minmax(0,1fr))` }}
+        >
+          {criterios.map((criterio) => (
+            /* O nome tambem e alvo: apontar o rotulo e o gesto natural, e a
+               coluna de marcas sozinha e um alvo estreito perto do eixo. */
+            <span
+              key={criterio.chave}
+              onMouseEnter={() => aoApontar(criterio.chave)}
+              onMouseLeave={() => aoApontar(null)}
+              className="px-1 text-center text-[11px] leading-tight"
+              style={{
+                color: ativo === criterio.chave ? "var(--tinta)" : "var(--tinta-3)",
+              }}
+            >
+              {criterio.nome}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* --- barras ----------------------------------------------------------------- */
+
+function Barras({
+  criterios,
+  series,
+  ativo,
+  aoApontar,
+}: {
+  criterios: CriterioOut[];
+  series: Serie[];
+  ativo: string | null;
+  aoApontar: (chave: string | null) => void;
+}) {
+  const { t } = useIdioma();
+  return (
+    <div role="img" aria-label={t("viz.barras.rotulo")}>
+      <Moldura criterios={criterios} series={series} ativo={ativo} aoApontar={aoApontar}>
+        {(_criterio, j) => (
+          <div className="absolute inset-x-0 bottom-0 flex h-full items-end justify-center gap-[2px] px-[8%]">
+            {series.map((serie) => (
+              <span
+                key={serie.nome}
+                className="block flex-1 transition-[height] duration-300"
+                style={{
+                  /* piso de 2px: um valor zero precisa aparecer como zero, e nao
+                     sumir e virar dado faltante */
+                  height: `max(${serie.valores[j] * 100}%, 2px)`,
+                  maxWidth: 40,
+                  background: serie.cor,
+                  borderRadius: "4px 4px 0 0",
+                }}
+              />
+            ))}
+          </div>
+        )}
+      </Moldura>
+    </div>
+  );
+}
+
+/* --- pontos ------------------------------------------------------------------
+   Era um grafico de bolhas em que o raio e a altura codificavam o mesmo numero.
+   Codificacao redundante nao acrescenta leitura: acrescenta ruido, e faz um
+   valor alto parecer duas vezes mais alto. Marca de tamanho constante. */
+
+function Pontos({
+  criterios,
+  series,
+  ativo,
+  aoApontar,
+}: {
+  criterios: CriterioOut[];
+  series: Serie[];
+  ativo: string | null;
+  aoApontar: (chave: string | null) => void;
+}) {
+  const { t } = useIdioma();
+  return (
+    <div role="img" aria-label={t("viz.bolhas.rotulo")}>
+      <Moldura criterios={criterios} series={series} ativo={ativo} aoApontar={aoApontar}>
+        {(_criterio, j) => (
+          <div className="absolute inset-0">
+            {series.map((serie, i) => (
+              <span
+                key={serie.nome}
+                className="absolute block h-2.5 w-2.5 rounded-full transition-[bottom] duration-300"
+                style={{
+                  left: `${((i + 0.5) / series.length) * 100}%`,
+                  bottom: `${serie.valores[j] * 100}%`,
+                  transform: "translate(-50%, 50%)",
+                  background: serie.cor,
+                  /* anel da cor do painel: pontos sobrepostos continuam
+                     contaveis */
+                  boxShadow: "0 0 0 2px var(--painel)",
+                }}
+              />
+            ))}
+          </div>
+        )}
+      </Moldura>
+    </div>
   );
 }
 
 /* --- radar ------------------------------------------------------------------ */
 
 function Radar({ criterios, series }: { criterios: CriterioOut[]; series: Serie[] }) {
+  const { t } = useIdioma();
   const n = criterios.length;
   const centro = 50;
-  const raio = 33;
+  const raio = 34;
   // comeca no topo e segue em sentido horario, como no sistema de referencia
-  const ponto = (indice: number, valor: number) => {
-    const angulo = (indice / n) * 2 * Math.PI - Math.PI / 2;
-    return [
-      centro + Math.cos(angulo) * raio * valor,
-      centro + Math.sin(angulo) * raio * valor,
+  const angulo = (indice: number) => (indice / n) * 2 * Math.PI - Math.PI / 2;
+  const ponto = (indice: number, valor: number) =>
+    [
+      centro + Math.cos(angulo(indice)) * raio * valor,
+      centro + Math.sin(angulo(indice)) * raio * valor,
     ] as const;
-  };
 
   return (
-    <svg viewBox="0 0 100 100" className="mx-auto w-full max-w-md" role="img"
-      aria-label="Desempenho por critério, em radar">
-      {[0.25, 0.5, 0.75, 1].map((t) => (
-        <polygon key={t}
-          points={criterios.map((_, i) => ponto(i, t).join(",")).join(" ")}
-          fill="none" stroke="var(--borda)" strokeWidth={0.3} />
-      ))}
-      {criterios.map((criterio, i) => {
-        const [x, y] = ponto(i, 1);
-        const [tx, ty] = ponto(i, 1.22);
-        return (
-          <g key={criterio.chave}>
-            <line x1={centro} y1={centro} x2={x} y2={y} stroke="var(--borda)" strokeWidth={0.3} />
-            <text x={tx} y={ty} fontSize={2.6} textAnchor="middle" fill="var(--tinta-3)">
-              {criterio.nome.length > 12 ? criterio.nome.slice(0, 11) + "…" : criterio.nome}
-            </text>
+    <div className="relative mx-auto w-full max-w-sm">
+      <svg viewBox="0 0 100 100" className="w-full" role="img" aria-label={t("viz.radar.rotulo")}>
+        {[0.25, 0.5, 0.75, 1].map((nivel) => (
+          <polygon
+            key={nivel}
+            points={criterios.map((_, i) => ponto(i, nivel).join(",")).join(" ")}
+            fill="none"
+            stroke="var(--borda)"
+            strokeWidth={0.3}
+          />
+        ))}
+        {criterios.map((criterio, i) => {
+          const [x, y] = ponto(i, 1);
+          return (
+            <line
+              key={criterio.chave}
+              x1={centro}
+              y1={centro}
+              x2={x}
+              y2={y}
+              stroke="var(--borda)"
+              strokeWidth={0.3}
+            />
+          );
+        })}
+        {series.map((serie) => (
+          <g key={serie.nome}>
+            <polygon
+              points={serie.valores.map((v, i) => ponto(i, v).join(",")).join(" ")}
+              fill={serie.cor}
+              fillOpacity={0.1}
+              stroke={serie.cor}
+              strokeWidth={0.8}
+              strokeLinejoin="round"
+            />
+            {/* vertices: quando uma alternativa vale zero em quase tudo o
+                poligono degenera numa linha, e sem os pontos ela some */}
+            {serie.valores.map((v, i) => {
+              const [x, y] = ponto(i, v);
+              return <circle key={i} cx={x} cy={y} r={1.1} fill={serie.cor} />;
+            })}
           </g>
+        ))}
+      </svg>
+
+      {/* rotulos em HTML: nao escalam com o desenho e cabem por inteiro */}
+      {criterios.map((criterio, i) => {
+        const [x, y] = ponto(i, 1.16);
+        const naEsquerda = x < centro - 1;
+        const naDireita = x > centro + 1;
+        return (
+          <span
+            key={criterio.chave}
+            className="absolute text-[11px] leading-tight"
+            style={{
+              left: `${x}%`,
+              top: `${y}%`,
+              width: "6.5rem",
+              textAlign: naEsquerda ? "right" : naDireita ? "left" : "center",
+              transform: `translate(${
+                naEsquerda ? "-100%" : naDireita ? "0" : "-50%"
+              }, -50%)`,
+              color: "var(--tinta-3)",
+            }}
+          >
+            {criterio.nome}
+          </span>
         );
       })}
-      {series.map((serie) => (
-        <polygon key={serie.nome}
-          points={serie.valores.map((v, i) => ponto(i, v).join(",")).join(" ")}
-          fill={serie.cor} fillOpacity={0.12} stroke={serie.cor} strokeWidth={0.7}>
-          <title>{serie.nome}</title>
-        </polygon>
-      ))}
-    </svg>
-  );
-}
-
-/* --- bolhas ----------------------------------------------------------------- */
-
-function Bolhas({ criterios, series }: { criterios: CriterioOut[]; series: Serie[] }) {
-  const passoX = 100 / criterios.length;
-  return (
-    <svg viewBox="0 0 100 46" className="w-full" role="img"
-      aria-label="Desempenho por critério, em bolhas">
-      {[0, 0.25, 0.5, 0.75, 1].map((t) => (
-        <g key={t}>
-          <line x1={0} y1={40 - t * 36} x2={100} y2={40 - t * 36}
-            stroke="var(--borda)" strokeWidth={0.15} />
-          <text x={-0.5} y={40 - t * 36 + 1} fontSize={2} textAnchor="end"
-            fill="var(--tinta-fraca)">{t}</text>
-        </g>
-      ))}
-      {criterios.map((criterio, j) => (
-        <g key={criterio.chave}>
-          {series.map((serie, i) => {
-            const deslocamento = (i - (series.length - 1) / 2) * (passoX / (series.length + 2));
-            const valor = serie.valores[j];
-            return (
-              <circle key={serie.nome}
-                cx={j * passoX + passoX / 2 + deslocamento}
-                cy={40 - valor * 36}
-                // area proporcional ao valor, com piso visivel
-                r={1 + Math.sqrt(valor) * 2.2}
-                fill={serie.cor} fillOpacity={0.75}
-                stroke="var(--painel)" strokeWidth={0.35}
-              >
-                <title>{`${serie.nome} · ${criterio.nome}: ${valor.toFixed(3)}`}</title>
-              </circle>
-            );
-          })}
-          <text x={j * passoX + passoX / 2} y={44} fontSize={2} textAnchor="middle"
-            fill="var(--tinta-3)">
-            {criterio.nome.length > 14 ? criterio.nome.slice(0, 13) + "…" : criterio.nome}
-          </text>
-        </g>
-      ))}
-      <line x1={0} y1={40} x2={100} y2={40} stroke="var(--borda-forte)" strokeWidth={0.25} />
-    </svg>
+    </div>
   );
 }
 
@@ -190,19 +378,22 @@ function Tabela({
   series: Serie[];
   problema: Problema;
 }) {
+  const { t } = useIdioma();
   const [normalizado, setNormalizado] = useState(true);
   return (
     <div>
       <label className="mb-3 flex items-center gap-2 text-[12px]" style={{ color: "var(--tinta-3)" }}>
         <input type="checkbox" checked={normalizado}
           onChange={(e) => setNormalizado(e.target.checked)} />
-        mostrar valor normalizado (0 a 1) em vez da unidade original
+        {t("viz.tabela.normalizado")}
       </label>
       <div className="overflow-x-auto">
         <table className="w-full text-[12px]">
           <thead>
             <tr style={{ color: "var(--tinta-fraca)" }}>
-              <th className="py-1.5 text-left font-normal">Alternativa</th>
+              <th className="py-1.5 text-left font-normal">
+                {t("resultado.sorting.alternativa")}
+              </th>
               {criterios.map((c) => (
                 <th key={c.chave} className="py-1.5 text-right font-normal">
                   {c.nome}
@@ -250,8 +441,10 @@ export function Visualizacoes({
   /** Alternativas a exibir por padrão — em geral as ainda em disputa. */
   destaque?: string[];
 }) {
+  const { t } = useIdioma();
   const [aba, setAba] = useState<Aba>("barras");
   const [esconderEmpates, setEsconderEmpates] = useState(true);
+  const [ativo, setAtivo] = useState<string | null>(null);
   const todas = Object.keys(problema.valores ?? problema.consequencias);
   const [visiveis, setVisiveis] = useState<string[]>(
     destaque && destaque.length ? destaque : todas,
@@ -269,7 +462,7 @@ export function Visualizacoes({
   const series: Serie[] = useMemo(
     () =>
       todas
-        .map((nome, i) => ({ nome, cor: corDe(i), indice: i }))
+        .map((nome, i) => ({ nome, cor: corDaSerie(i), indice: i }))
         .filter((s) => visiveis.includes(s.nome))
         .map((s) => ({
           nome: s.nome,
@@ -290,7 +483,7 @@ export function Visualizacoes({
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex gap-1">
-          {ABAS.map(({ id, rotulo, Icone }) => {
+          {ABAS.map(({ id, chave, Icone }) => {
             const ativa = aba === id;
             return (
               <button key={id} onClick={() => setAba(id)}
@@ -301,20 +494,18 @@ export function Visualizacoes({
                   fontWeight: ativa ? 500 : 400,
                 }}>
                 <Icone size={14} weight={ativa ? "fill" : "regular"} />
-                {rotulo}
+                {t(chave)}
               </button>
             );
           })}
         </div>
-        <Dica titulo="Para que servem">
+        <Dica titulo={t("viz.dica.titulo")}>
           <p>
-            É com estes gráficos que você faz a <strong>avaliação holística</strong>:
-            olha duas alternativas reais e declara qual prefere.
+            {t("viz.dica.corpo1.antes")}
+            <strong>{t("viz.dica.corpo1.termo")}</strong>
+            {t("viz.dica.corpo1.depois")}
           </p>
-          <p>
-            Todas mostram o valor de 0 a 1 — pior a melhor dentro de cada
-            critério. Reais e dias não caberiam no mesmo eixo.
-          </p>
+          <p>{t("viz.dica.corpo2")}</p>
         </Dica>
       </div>
 
@@ -327,7 +518,7 @@ export function Visualizacoes({
               <input type="checkbox" checked={ativa} onChange={() => alternar(nome)}
                 className="sr-only" />
               <span aria-hidden className="h-3 w-3 rounded-[2px] transition-opacity"
-                style={{ background: corDe(i), opacity: ativa ? 1 : 0.25 }} />
+                style={{ background: corDaSerie(i), opacity: ativa ? 1 : 0.25 }} />
               <span style={{
                 color: ativa ? "var(--tinta-2)" : "var(--tinta-fraca)",
                 textDecoration: ativa ? "none" : "line-through",
@@ -341,14 +532,14 @@ export function Visualizacoes({
         style={{ borderColor: "var(--borda)", background: "var(--painel)" }}>
         {series.length === 0 ? (
           <p className="py-8 text-center text-sm" style={{ color: "var(--tinta-3)" }}>
-            Marque ao menos uma alternativa para ver o gráfico.
+            {t("viz.semAlternativa")}
           </p>
         ) : aba === "barras" ? (
-          <Barras criterios={criterios} series={series} />
+          <Barras criterios={criterios} series={series} ativo={ativo} aoApontar={setAtivo} />
         ) : aba === "radar" ? (
           <Radar criterios={criterios} series={series} />
         ) : aba === "bolhas" ? (
-          <Bolhas criterios={criterios} series={series} />
+          <Pontos criterios={criterios} series={series} ativo={ativo} aoApontar={setAtivo} />
         ) : (
           <Tabela criterios={criterios} series={series} problema={problema} />
         )}
@@ -357,9 +548,13 @@ export function Visualizacoes({
       <label className="mt-3 flex items-center gap-2 text-[12px]" style={{ color: "var(--tinta-3)" }}>
         <input type="checkbox" checked={esconderEmpates}
           onChange={(e) => setEsconderEmpates(e.target.checked)} />
-        esconder critérios em que todas empatam
+        {t("viz.esconderEmpates")}
         {escondidos > 0 && (
-          <span style={{ color: "var(--tinta-fraca)" }}>({escondidos} escondido{escondidos > 1 ? "s" : ""})</span>
+          <span style={{ color: "var(--tinta-fraca)" }}>
+            {t(escondidos > 1 ? "viz.escondido.varios" : "viz.escondido.um", {
+              n: escondidos,
+            })}
+          </span>
         )}
       </label>
     </div>

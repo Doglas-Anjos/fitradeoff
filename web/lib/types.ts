@@ -2,13 +2,28 @@
 
 export type Direcao = "max" | "min";
 
-export type Problematica = "escolha" | "ranking" | "sorting" | "portfolio";
+export type Problematica =
+  | "escolha"
+  | "ranking"
+  | "sorting"
+  | "portfolio"
+  /* A carteira por razao beneficio-custo: o quinto modulo, que o motor ganhou
+     depois. Esta aqui no union justamente para o compilador cobrar tratamento
+     em cada lugar que decide por problematica - sem isso ela caia no ramo de
+     "escolha" e a tela quebrava. */
+  | "beneficio_custo";
 
 export interface CriterioIn {
   chave: string;
   nome: string;
   direcao: Direcao;
   unidade?: string;
+  /* Limites do modelo aditivo com veto (de Almeida, 2013), na unidade do
+     critério. Acima do aceitável nada é penalizado; no inaceitável o critério
+     deixa de contar; entre os dois a penalidade é proporcional. Só valem em
+     escolha e ranking - a API recusa nas demais. */
+  veto_superior?: number | null;
+  veto_inferior?: number | null;
 }
 
 export interface CriterioOut extends CriterioIn {
@@ -23,6 +38,11 @@ export interface Analise {
   resolvido: boolean;
   indefinidas: number[];
   resumo: string;
+  /* Só quando há veto declarado. A ressalva que o acompanha vai em
+     `ressalva`, a mesma chave das carteiras: é sempre uma afirmação sobre como
+     o número foi obtido, e quem já trata uma trata a outra - foi assim que a
+     exportação passou a incluí-la sem precisar saber do veto. */
+  veto_ativo?: boolean;
   potencialmente_otimas?: string[];
   recomendacao?: string | null;
   dominancia?: string[];
@@ -35,6 +55,9 @@ export interface Analise {
     b: string;
     a_supera_b_em_ate: number;
     b_supera_a_em_ate: number;
+    /* Sob veto o número deixa de ser o máximo exato e passa a ser um teto
+       dele. Vem do dado, não da leitura do código. */
+    limite_superior?: boolean;
   }[];
   niveis?: string[][];
   alocacao?: Record<
@@ -43,12 +66,30 @@ export interface Analise {
   >;
   classes?: string[];
   perfis?: number[];
-  portfolios_encontrados?: { projetos: string[]; custo: number }[];
+  /* As duas leituras de carteira publicam sob este nome. `amostras` só vem da
+     leitura por razão, e diz em quantos vetores de peso aquela carteira saiu. */
+  portfolios_encontrados?: { projetos: string[]; custo: number; amostras?: number }[];
   sempre_selecionados?: string[];
   nunca_selecionados?: string[];
   oscilam?: string[];
+  /* Como o resultado foi obtido, quando não foi de forma exata: amostragem,
+     nas carteiras; envelope conservador, sob veto. */
   ressalva?: string;
   orcamento?: number;
+  /* So na carteira por razao: a faixa de razao de cada projeto e a dominancia
+     entre faixas que nao se sobrepoem. */
+  razoes?: Record<
+    string,
+    {
+      custo: number;
+      beneficio_minimo: number;
+      beneficio_maximo: number;
+      razao_minima: number;
+      razao_maxima: number;
+    }
+  >;
+  dominancia_por_razao?: { dominante: string; dominado: string }[];
+  dominantes?: string[];
   inconsistente?: boolean;
 }
 
@@ -115,4 +156,7 @@ export interface Resumo {
   alternativas: number;
   criterios: number;
   declaracoes: number;
+  /* ISO 8601, ausentes numa decisao gravada antes destes campos existirem. */
+  criado_em?: string | null;
+  atualizado_em?: string | null;
 }

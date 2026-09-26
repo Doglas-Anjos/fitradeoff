@@ -1,4 +1,9 @@
+"use client";
+
 import Link from "next/link";
+
+import { useIdioma } from "@/lib/i18n";
+import "@/lib/i18n/telas";
 
 /**
  * A home abre com o que o metodo faz, nao com o que ele e.
@@ -7,16 +12,23 @@ import Link from "next/link";
  * conjunto encolhendo a cada resposta ate sobrar uma. E o conceito inteiro do
  * FITradeoff numa figura, e e a unica coisa nesta pagina que chama atencao --
  * o resto fica quieto de proposito.
+ *
+ * Componente de cliente porque o idioma é escolha de quem está lendo, guardada
+ * no navegador: a home não pode vir do servidor já resolvida num idioma só.
  */
 
+/* Cada passo guarda a chave, não a frase: assim a legenda troca de idioma sem
+   o módulo ter de ser reavaliado. */
 const PASSOS = [
-  { restantes: 4, legenda: "no começo, quatro candidatos" },
-  { restantes: 3, legenda: "você compara duas situações" },
-  { restantes: 2, legenda: "e outra vez" },
-  { restantes: 1, legenda: "sobra uma. essa é a sua." },
+  { restantes: 4, chave: "tela.home.demo.passo1" },
+  { restantes: 3, chave: "tela.home.demo.passo2" },
+  { restantes: 2, chave: "tela.home.demo.passo3" },
+  { restantes: 1, chave: "tela.home.demo.passo4" },
 ];
 
 function Demonstracao() {
+  const { t } = useIdioma();
+
   return (
     <figure className="m-0">
       <div
@@ -46,20 +58,22 @@ function Demonstracao() {
                 ))}
               </div>
               <span className="text-sm" style={{ color: "var(--tinta-2)" }}>
-                {passo.legenda}
+                {t(passo.chave)}
               </span>
             </div>
           ))}
         </div>
       </div>
       <figcaption className="mt-3 text-xs" style={{ color: "var(--tinta-fraca)" }}>
-        Em geral bastam de duas a cinco comparações.
+        {t("tela.home.demo.legenda")}
       </figcaption>
     </figure>
   );
 }
 
 export default function Home() {
+  const { t } = useIdioma();
+
   return (
     <main className="mx-auto max-w-6xl px-5 pb-24 pt-16">
       <div className="grid gap-14 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:gap-20">
@@ -68,15 +82,11 @@ export default function Home() {
             className="display text-[2.75rem] font-semibold sm:text-[3.5rem]"
             style={{ color: "var(--tinta)" }}
           >
-            Escolha sem precisar dizer quanto vale cada coisa.
+            {t("tela.home.titulo")}
           </h1>
 
           <p className="prosa mt-6 text-[17px]" style={{ color: "var(--tinta-2)" }}>
-            Atribuir peso a critérios é difícil e as pessoas erram nisso. O
-            método FITradeoff não pede pesos: pede que você compare duas
-            situações concretas e diga qual prefere. Com poucas respostas ele
-            chega a uma recomendação — e registra o caminho, para quando alguém
-            perguntar por quê.
+            {t("tela.home.descricao")}
           </p>
 
           <div className="mt-9 flex flex-wrap items-center gap-3">
@@ -89,20 +99,19 @@ export default function Home() {
                 boxShadow: "var(--sombra)",
               }}
             >
-              Começar uma decisão
+              {t("tela.home.acao.decisao")}
             </Link>
             <Link
               href="/chat"
               className="tatil rounded-[var(--raio-controle)] border px-5 py-2.5 text-sm font-medium"
               style={{ borderColor: "var(--borda-forte)", color: "var(--tinta)" }}
             >
-              Descrever em conversa
+              {t("tela.home.acao.chat")}
             </Link>
           </div>
 
           <p className="mt-6 text-sm" style={{ color: "var(--tinta-3)" }}>
-            As duas entradas levam ao mesmo método. A conversa ajuda quando o
-            problema ainda não está organizado.
+            {t("tela.home.acao.ajuda")}
           </p>
         </div>
 
@@ -114,37 +123,22 @@ export default function Home() {
           className="display text-2xl font-semibold lg:sticky lg:top-24"
           style={{ color: "var(--tinta)" }}
         >
-          O que isso muda na prática
+          {t("tela.home.pratica.titulo")}
         </h2>
 
         <dl className="divide-y" style={{ borderColor: "var(--borda)" }}>
-          {[
-            [
-              "Você não atribui pesos",
-              "Só diz qual de duas situações prefere. O peso de cada critério é deduzido das suas respostas.",
-            ],
-            [
-              "A decisão fica registrada",
-              "Cada resposta vira uma linha em português, com autor e horário. O resultado sai com a trilha que o sustenta.",
-            ],
-            [
-              "Uma elicitação, quatro leituras",
-              "Escolher a melhor, ordenar todas, classificar em faixas ou montar uma carteira — sem responder nada de novo.",
-            ],
-            [
-              "Dá para parar no meio",
-              "Se o conjunto já estiver pequeno, você olha as faixas de valor e decide pelos dados.",
-            ],
-          ].map(([titulo, texto]) => (
-            <div key={titulo} className="py-5 first:pt-0 last:pb-0">
+          {/* A lista guarda o nome de cada item, não o texto: a chave também
+              serve de `key` estável, que o título traduzido não seria. */}
+          {["pesos", "registro", "objetivos", "parar"].map((item) => (
+            <div key={item} className="py-5 first:pt-0 last:pb-0">
               <dt className="text-[15px] font-medium" style={{ color: "var(--tinta)" }}>
-                {titulo}
+                {t(`tela.home.pratica.${item}.titulo`)}
               </dt>
               <dd
                 className="prosa mt-1.5 text-sm"
                 style={{ color: "var(--tinta-2)" }}
               >
-                {texto}
+                {t(`tela.home.pratica.${item}.texto`)}
               </dd>
             </div>
           ))}
@@ -152,8 +146,7 @@ export default function Home() {
       </div>
 
       <p className="mt-24 text-xs" style={{ color: "var(--tinta-fraca)" }}>
-        Método publicado por De Almeida et al. (2016). Implementação
-        independente, sem vínculo com o sistema oficial do CDSID-UFPE.
+        {t("tela.home.rodape")}
       </p>
     </main>
   );

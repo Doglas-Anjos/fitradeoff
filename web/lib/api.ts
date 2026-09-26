@@ -6,12 +6,23 @@
 
 import type {
   Auditoria,
+  Direcao,
   Estado,
   Pergunta,
   Problema,
   Problematica,
   Resumo,
 } from "./types";
+
+/** O que a planilha disse, antes de virar decisão. */
+export interface PlanilhaLida {
+  nome: string;
+  alternativas: string[];
+  criterios: { chave: string; nome: string; direcao: Direcao; unidade?: string }[];
+  consequencias: number[][];
+  custos: number[] | null;
+  origem: string;
+}
 
 export class ApiError extends Error {
   constructor(
@@ -46,6 +57,20 @@ async function request<T>(caminho: string, init?: RequestInit): Promise<T> {
 const post = <T>(caminho: string, corpo: unknown) =>
   request<T>(caminho, { method: "POST", body: JSON.stringify(corpo) });
 
+/** Multipart: o navegador precisa definir o boundary, entao nao usa `request`. */
+async function enviarFormulario<T>(caminho: string, corpo: FormData): Promise<T> {
+  const resposta = await fetch(caminho, { method: "POST", body: corpo });
+  if (!resposta.ok) {
+    const json = await resposta.json().catch(() => null);
+    const detalhe = json?.detail;
+    throw new ApiError(
+      resposta.status,
+      typeof detalhe === "string" ? detalhe : `Falha ${resposta.status}`,
+    );
+  }
+  return resposta.json() as Promise<T>;
+}
+
 export const api = {
   saude: () =>
     request<{ ok: boolean; chat_disponivel: boolean; armazenamento: string }>(
@@ -63,6 +88,14 @@ export const api = {
     configuracao?: Record<string, unknown>;
     custos?: number[];
   }) => post<Problema>("/api/decisoes", dados),
+
+  /** Le a planilha sem criar nada, para o decisor conferir antes. */
+  previaPlanilha: (entrada: File | string) => {
+    const corpo = new FormData();
+    if (typeof entrada === "string") corpo.append("texto", entrada);
+    else corpo.append("arquivo", entrada);
+    return enviarFormulario<PlanilhaLida>("/api/planilhas/previa", corpo);
+  },
 
   ver: (id: string) => request<Problema>(`/api/decisoes/${id}`),
   estado: (id: string) => request<Estado>(`/api/decisoes/${id}/estado`),
@@ -125,6 +158,19 @@ export const api = {
       criterios_variados: { criterio: string; para_baixo: number; para_cima: number }[];
       leitura: string;
     }>(`/api/decisoes/${id}/sensibilidade-consequencias`, { variacoes, cenarios }),
+
+  /* O problema que ainda está sendo montado. Opaco para a API de propósito: a
+     forma do formulário é assunto da interface, e muda com ela. */
+  lerRascunho: () =>
+    request<{ rascunho: unknown | null; gravado_em: string | null }>(
+      "/api/rascunho",
+    ),
+
+  gravarRascunho: (rascunho: unknown) =>
+    post<{ guardado: boolean; gravado_em: string }>("/api/rascunho", { rascunho }),
+
+  descartarRascunho: () =>
+    post<{ descartado: boolean }>("/api/rascunho/descartar", {}),
 
   chat: (
     mensagens: { papel: "user" | "assistant"; texto: string }[],

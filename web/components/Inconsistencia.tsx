@@ -16,6 +16,8 @@
 import { ArrowsLeftRight, Prohibit, Warning } from "@phosphor-icons/react";
 
 import { Botao } from "@/components/ui";
+import { useIdioma } from "@/lib/i18n";
+import "@/lib/i18n/visualizacoes";
 
 export interface Saida {
   acao: "desfazer" | "inverter" | "remover" | "reordenar";
@@ -48,6 +50,7 @@ function Declaracao({
   texto: string;
   papel: string;
 }) {
+  const { t } = useIdioma();
   return (
     <div
       className="rounded-[var(--raio-painel)] border p-4"
@@ -55,7 +58,9 @@ function Declaracao({
     >
       <div className="mb-2 flex items-baseline gap-2">
         <span className="num text-[11px]" style={{ color: "var(--tinta-fraca)" }}>
-          declaração {String(numero).padStart(2, "0")}
+          {t("elicitacao.conflito.declaracao", {
+            n: String(numero).padStart(2, "0"),
+          })}
         </span>
         <span className="text-[11px]" style={{ color: "var(--tinta-3)" }}>
           {papel}
@@ -77,6 +82,7 @@ export function Inconsistencia({
   ocupado: boolean;
   onResolver: (acao: Saida["acao"], sequencia?: number) => void;
 }) {
+  const { t } = useIdioma();
   const conflito = diagnostico.conflitos[0];
 
   return (
@@ -94,8 +100,8 @@ export function Inconsistencia({
           <Warning size={17} weight="fill" />
         )}
         {diagnostico.impossivel
-          ? "Essa afirmação não é possível aqui"
-          : "Duas respostas se contradizem"}
+          ? t("elicitacao.conflito.titulo.impossivel")
+          : t("elicitacao.conflito.titulo.par")}
       </h3>
 
       <p className="prosa mt-2 text-sm" style={{ color: "var(--tinta-2)" }}>
@@ -108,20 +114,20 @@ export function Inconsistencia({
           <Declaracao
             numero={conflito.sequencia_a}
             texto={conflito.declaracao_a}
-            papel="você disse antes"
+            papel={t("elicitacao.conflito.antes")}
           />
           <div className="flex items-center justify-center">
             <ArrowsLeftRight
               size={18}
               weight="bold"
               style={{ color: "var(--erro)" }}
-              aria-label="conflita com"
+              aria-label={t("elicitacao.conflito.icone")}
             />
           </div>
           <Declaracao
             numero={conflito.sequencia_b}
             texto={conflito.declaracao_b}
-            papel="você acabou de dizer"
+            papel={t("elicitacao.conflito.agora")}
           />
         </div>
       )}
@@ -131,14 +137,14 @@ export function Inconsistencia({
           <Declaracao
             numero={diagnostico.ultima.sequencia}
             texto={diagnostico.ultima.texto}
-            papel="você acabou de dizer"
+            papel={t("elicitacao.conflito.agora")}
           />
         </div>
       )}
 
       <div className="mt-5">
         <p className="mb-3 text-[13px] font-medium" style={{ color: "var(--tinta)" }}>
-          O que você quer fazer?
+          {t("elicitacao.conflito.pergunta")}
         </p>
         <div className="space-y-2">
           {diagnostico.saidas.map((saida, i) => (
@@ -160,7 +166,9 @@ export function Inconsistencia({
                   className="mt-1.5 block text-[12px]"
                   style={{ color: "var(--accent)" }}
                 >
-                  passa a valer: {saida.resultado}
+                  {t("elicitacao.conflito.passaAValer", {
+                    resultado: saida.resultado,
+                  })}
                 </span>
               )}
             </button>

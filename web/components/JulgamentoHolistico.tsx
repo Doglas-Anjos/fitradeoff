@@ -15,6 +15,8 @@ import { Scales } from "@phosphor-icons/react";
 import { useState } from "react";
 
 import { Botao, Dica } from "@/components/ui";
+import { useIdioma } from "@/lib/i18n";
+import "@/lib/i18n/visualizacoes";
 
 export function JulgamentoHolistico({
   alternativas,
@@ -25,6 +27,7 @@ export function JulgamentoHolistico({
   ocupado: boolean;
   onJulgar: (preferida: string, sobre: string) => void;
 }) {
+  const { t } = useIdioma();
   const [preferida, setPreferida] = useState("");
   const [sobre, setSobre] = useState("");
 
@@ -60,41 +63,34 @@ export function JulgamentoHolistico({
       <div className="mb-3 flex items-center gap-1.5">
         <Scales size={16} style={{ color: "var(--tinta-3)" }} />
         <span className="text-[13px] font-medium" style={{ color: "var(--tinta)" }}>
-          Ou compare duas alternativas reais
+          {t("elicitacao.holistico.titulo")}
         </span>
-        <Dica titulo="Avaliação holística">
-          <p>
-            Em vez de responder sobre situações hipotéticas, você olha os
-            gráficos acima e diz qual alternativa prefere.
-          </p>
-          <p>
-            Vale quando a pergunta de tradeoff fica cansativa — com muitos
-            critérios, comparar coisas reais é mais natural.
-          </p>
+        <Dica titulo={t("elicitacao.holistico.dica.titulo")}>
+          <p>{t("elicitacao.holistico.dica.corpo1")}</p>
+          <p>{t("elicitacao.holistico.dica.corpo2")}</p>
           <p style={{ color: "var(--tinta-3)" }}>
-            A declaração entra no mesmo modelo. Se contradisser uma resposta
-            anterior, o sistema avisa.
+            {t("elicitacao.holistico.dica.corpo3")}
           </p>
         </Dica>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        {seletor(preferida, setPreferida, "prefiro…")}
+        {seletor(preferida, setPreferida, t("elicitacao.holistico.prefiro"))}
         <span className="text-sm" style={{ color: "var(--tinta-3)" }}>
-          em vez de
+          {t("elicitacao.holistico.emVezDe")}
         </span>
-        {seletor(sobre, setSobre, "…a esta")}
+        {seletor(sobre, setSobre, t("elicitacao.holistico.aEsta"))}
         <Botao
           onClick={() => onJulgar(preferida, sobre)}
           disabled={!valido || ocupado}
         >
-          Registrar
+          {t("elicitacao.registrar")}
         </Botao>
       </div>
 
       {preferida && sobre && preferida === sobre && (
         <p className="mt-2 text-[12px]" style={{ color: "var(--erro)" }}>
-          Escolha duas alternativas diferentes.
+          {t("elicitacao.holistico.erro.iguais")}
         </p>
       )}
     </div>

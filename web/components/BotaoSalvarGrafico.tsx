@@ -10,6 +10,8 @@
 import { DownloadSimple } from "@phosphor-icons/react";
 import { useRef, useState } from "react";
 
+import { useIdioma } from "@/lib/i18n";
+import "@/lib/i18n/visualizacoes";
 import { salvarComoPng } from "@/lib/salvarSvg";
 
 export function BotaoSalvarGrafico({
@@ -20,6 +22,7 @@ export function BotaoSalvarGrafico({
   alvo: React.RefObject<HTMLElement | null>;
   nome: string;
 }) {
+  const { t } = useIdioma();
   const [erro, setErro] = useState<string | null>(null);
   const ocupado = useRef(false);
 
@@ -29,7 +32,7 @@ export function BotaoSalvarGrafico({
     setErro(null);
     try {
       const svg = alvo.current?.querySelector("svg");
-      if (!svg) throw new Error("não encontrei o gráfico nesta seção");
+      if (!svg) throw new Error(t("viz.salvar.erro"));
       await salvarComoPng(svg as SVGSVGElement, nome);
     } catch (e) {
       setErro(e instanceof Error ? e.message : String(e));
@@ -46,7 +49,7 @@ export function BotaoSalvarGrafico({
         style={{ color: "var(--tinta-3)" }}
       >
         <DownloadSimple size={13} />
-        salvar imagem
+        {t("viz.salvar.rotulo")}
       </button>
       {erro && (
         <span role="alert" className="text-[11px]" style={{ color: "var(--erro)" }}>

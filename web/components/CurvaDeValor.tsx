@@ -16,6 +16,8 @@ import { ArrowCounterClockwise, Check, TrendUp } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
 
 import { Botao, Dica, Entrada } from "@/components/ui";
+import { useIdioma } from "@/lib/i18n";
+import "@/lib/i18n/visualizacoes";
 import type { CriterioOut } from "@/lib/types";
 
 export type Ponto = [consequencia: number, valor: number];
@@ -37,6 +39,7 @@ function Grafico({
   criterio: CriterioOut;
   proposta?: number | null;
 }) {
+  const { t } = useIdioma();
   const largura = LARGURA - MARGEM.esq - MARGEM.dir;
   const altura = ALTURA - MARGEM.topo - MARGEM.baixo;
   const [pior, melhor] = [criterio.pior, criterio.melhor];
@@ -53,7 +56,7 @@ function Grafico({
       viewBox={`0 0 ${LARGURA} ${ALTURA}`}
       className="w-full max-w-sm"
       role="img"
-      aria-label={`Curva de valor de ${criterio.nome}`}
+      aria-label={t("elicitacao.curva.rotulo", { nome: criterio.nome })}
     >
       {[0, 0.5, 1].map((v) => (
         <g key={v}>
@@ -79,16 +82,22 @@ function Grafico({
       {ordenados.map(([c, v]) => (
         <circle key={`${c}-${v}`} cx={x(c)} cy={y(v)} r={2.6}
           fill="var(--dado-a)" stroke="var(--painel)" strokeWidth={1}>
-          <title>{`${formatar(c)} ${criterio.unidade} vale ${v.toFixed(2)}`}</title>
+          <title>
+            {t("elicitacao.curva.ponto", {
+              consequencia: formatar(c),
+              unidade: criterio.unidade ?? "",
+              valor: v.toFixed(2),
+            })}
+          </title>
         </circle>
       ))}
 
       <text x={MARGEM.esq} y={ALTURA - 8} fontSize={7} fill="var(--tinta-fraca)">
-        {formatar(pior)} (pior)
+        {t("elicitacao.curva.eixo.pior", { valor: formatar(pior) })}
       </text>
       <text x={LARGURA - MARGEM.dir} y={ALTURA - 8} fontSize={7} textAnchor="end"
         fill="var(--tinta-fraca)">
-        {formatar(melhor)} (melhor)
+        {t("elicitacao.curva.eixo.melhor", { valor: formatar(melhor) })}
       </text>
     </svg>
   );
@@ -105,6 +114,7 @@ export function CurvaDeValor({
   onSalvar: (pontos: Ponto[] | null) => void;
   onCancelar: () => void;
 }) {
+  const { t } = useIdioma();
   const [pontos, setPontos] = useState<Ponto[]>(
     inicial ?? [
       [criterio.pior, 0],
@@ -137,7 +147,7 @@ export function CurvaDeValor({
     if (!entreOnde || alvo == null) return;
     const numero = Number(resposta.replace(",", "."));
     if (!Number.isFinite(numero)) {
-      return setErro("Informe um número na unidade do critério.");
+      return setErro(t("elicitacao.curva.erro.numero"));
     }
     const [menor, maior] = [
       Math.min(entreOnde.de, entreOnde.ate),
@@ -145,7 +155,10 @@ export function CurvaDeValor({
     ];
     if (numero <= menor || numero >= maior) {
       return setErro(
-        `O desempenho precisa ficar entre ${formatar(menor)} e ${formatar(maior)}.`,
+        t("elicitacao.curva.erro.intervalo", {
+          de: formatar(menor),
+          ate: formatar(maior),
+        }),
       );
     }
     setErro(null);
@@ -163,19 +176,13 @@ export function CurvaDeValor({
       <div className="mb-1 flex items-center gap-1.5">
         <TrendUp size={16} style={{ color: "var(--tinta-3)" }} />
         <h3 className="text-[15px] font-semibold" style={{ color: "var(--tinta)" }}>
-          Curva de valor — {criterio.nome}
+          {t("elicitacao.curva.titulo", { nome: criterio.nome })}
         </h3>
-        <Dica titulo="Por que isto importa">
-          <p>
-            Sem elicitar, o método assume que valor cresce em linha reta com o
-            desempenho — a linha pontilhada no gráfico.
-          </p>
-          <p>
-            Mas ir de 45 para 30 dias pode valer muito mais que ir de 30 para
-            15. Cada resposta aqui corrige essa suposição.
-          </p>
+        <Dica titulo={t("elicitacao.curva.dica.titulo")}>
+          <p>{t("elicitacao.curva.dica.corpo1")}</p>
+          <p>{t("elicitacao.curva.dica.corpo2")}</p>
           <p style={{ color: "var(--tinta-3)" }}>
-            Pular é legítimo: a reta continua sendo uma escolha razoável.
+            {t("elicitacao.curva.dica.corpo3")}
           </p>
         </Dica>
       </div>
@@ -191,19 +198,22 @@ export function CurvaDeValor({
           {entreOnde ? (
             <>
               <p className="prosa text-[13px]" style={{ color: "var(--tinta-2)" }}>
-                Entre{" "}
+                {t("elicitacao.curva.pergunta.antes")}
                 <strong style={{ color: "var(--tinta)" }}>
                   {formatar(entreOnde.de)} {criterio.unidade}
-                </strong>{" "}
-                e{" "}
+                </strong>
+                {t("elicitacao.curva.pergunta.meio")}
                 <strong style={{ color: "var(--tinta)" }}>
                   {formatar(entreOnde.ate)} {criterio.unidade}
                 </strong>
-                , qual desempenho fica <strong>no meio do caminho em valor</strong>?
+                {t("elicitacao.curva.pergunta.depois")}
+                <strong>{t("elicitacao.curva.pergunta.termo")}</strong>?
               </p>
               <p className="mt-1.5 text-[12px]" style={{ color: "var(--tinta-3)" }}>
-                Ou seja: sair de {formatar(entreOnde.de)} até ali vale tanto
-                quanto sair dali até {formatar(entreOnde.ate)}.
+                {t("elicitacao.curva.explicacao", {
+                  de: formatar(entreOnde.de),
+                  ate: formatar(entreOnde.ate),
+                })}
               </p>
 
               <div className="mt-3 flex items-center gap-2">
@@ -213,7 +223,9 @@ export function CurvaDeValor({
                   onKeyDown={(e) => e.key === "Enter" && registrar()}
                   inputMode="decimal"
                   placeholder={formatar((entreOnde.de + entreOnde.ate) / 2)}
-                  aria-label={`Desempenho intermediário em ${criterio.nome}`}
+                  aria-label={t("elicitacao.curva.entrada.rotulo", {
+                    nome: criterio.nome,
+                  })}
                   className="num !w-28 text-right"
                   invalido={!!erro}
                 />
@@ -221,7 +233,7 @@ export function CurvaDeValor({
                   {criterio.unidade}
                 </span>
                 <Botao onClick={registrar} variante="contorno">
-                  Registrar
+                  {t("elicitacao.registrar")}
                 </Botao>
               </div>
               {erro && (
@@ -232,7 +244,7 @@ export function CurvaDeValor({
             </>
           ) : (
             <p className="text-[13px]" style={{ color: "var(--tinta-2)" }}>
-              A curva já está detalhada o bastante. Salve para usá-la na decisão.
+              {t("elicitacao.curva.detalhada")}
             </p>
           )}
 
@@ -241,7 +253,14 @@ export function CurvaDeValor({
               onClick={() => onSalvar(elicitados > 0 ? pontos : null)}
               icone={<Check size={14} weight="bold" />}
             >
-              {elicitados > 0 ? `Usar esta curva (${elicitados} pontos)` : "Usar a reta"}
+              {elicitados > 0
+                ? t(
+                    elicitados === 1
+                      ? "elicitacao.curva.usarCurva.um"
+                      : "elicitacao.curva.usarCurva.varios",
+                    { n: elicitados },
+                  )
+                : t("elicitacao.curva.usarReta")}
             </Botao>
             {elicitados > 0 && (
               <button
@@ -252,7 +271,7 @@ export function CurvaDeValor({
                 style={{ color: "var(--tinta-3)" }}
               >
                 <ArrowCounterClockwise size={13} weight="bold" />
-                recomeçar
+                {t("elicitacao.curva.recomecar")}
               </button>
             )}
             <button
@@ -260,7 +279,7 @@ export function CurvaDeValor({
               className="text-[13px] underline underline-offset-2"
               style={{ color: "var(--tinta-fraca)" }}
             >
-              cancelar
+              {t("elicitacao.curva.cancelar")}
             </button>
           </div>
         </div>

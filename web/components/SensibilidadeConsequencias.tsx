@@ -17,6 +17,8 @@ import { useState } from "react";
 
 import { Botao, Dica, Entrada } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
+import { useIdioma } from "@/lib/i18n";
+import "@/lib/i18n/visualizacoes";
 import type { CriterioOut } from "@/lib/types";
 
 interface Resultado {
@@ -49,6 +51,7 @@ export function SensibilidadeConsequencias({
   decisaoId: string;
   criterios: CriterioOut[];
 }) {
+  const { t } = useIdioma();
   const [selecionados, setSelecionados] = useState<Record<string, boolean>>(
     Object.fromEntries(criterios.map((c) => [c.chave, true])),
   );
@@ -62,7 +65,7 @@ export function SensibilidadeConsequencias({
   const rodar = async () => {
     const faixa = Number(variacao.replace(",", "."));
     if (!Number.isFinite(faixa) || faixa <= 0 || faixa > 100) {
-      return setErro("A variação precisa ser um percentual entre 0 e 100.");
+      return setErro(t("viz.sensibilidade.erro.faixa"));
     }
     setRodando(true);
     setErro(null);
@@ -88,37 +91,33 @@ export function SensibilidadeConsequencias({
     <div>
       <div className="mb-3 flex items-center gap-1.5">
         <span className="text-[13px] font-medium" style={{ color: "var(--tinta)" }}>
-          E se os números estiverem errados?
+          {t("viz.sensibilidade.titulo")}
         </span>
-        <Dica titulo="Sensibilidade nas consequências">
+        <Dica titulo={t("viz.sensibilidade.dica.titulo")}>
           <p>
-            Sorteia variações nos desempenhos que você informou e resolve o
-            problema de novo em cada cenário — com as <strong>mesmas
-            respostas</strong> suas.
+            {t("viz.sensibilidade.dica.corpo1.antes")}
+            <strong>{t("viz.sensibilidade.dica.corpo1.termo")}</strong>
+            {t("viz.sensibilidade.dica.corpo1.depois")}
           </p>
-          <p>
-            Se a recomendação se mantém na maioria dos cenários, ela não depende
-            de precisão nos dados. Se muda muito, vale conferir os números antes
-            de decidir.
-          </p>
+          <p>{t("viz.sensibilidade.dica.corpo2")}</p>
         </Dica>
       </div>
 
       <div className="flex flex-wrap items-end gap-4">
         <div>
           <span className="mb-1.5 block text-[11px]" style={{ color: "var(--tinta-3)" }}>
-            Variar em até
+            {t("viz.sensibilidade.variar")}
           </span>
           <div className="flex items-center gap-1.5">
             <Entrada
               value={variacao}
               onChange={(e) => setVariacao(e.target.value)}
               inputMode="decimal"
-              aria-label="Percentual de variação"
+              aria-label={t("viz.sensibilidade.variar.rotulo")}
               className="num !w-20 text-right"
             />
             <span className="text-sm" style={{ color: "var(--tinta-3)" }}>
-              % para mais e para menos
+              {t("viz.sensibilidade.variar.sufixo")}
             </span>
           </div>
         </div>
@@ -127,13 +126,15 @@ export function SensibilidadeConsequencias({
           disabled={rodando || escolhidos.length === 0}
           icone={<Play size={14} weight="fill" />}
         >
-          {rodando ? "Rodando…" : "Rodar 200 cenários"}
+          {rodando
+            ? t("viz.sensibilidade.rodando")
+            : t("viz.sensibilidade.rodar")}
         </Botao>
       </div>
 
       <fieldset className="mt-4">
         <legend className="mb-2 text-[11px]" style={{ color: "var(--tinta-3)" }}>
-          Critérios a variar
+          {t("viz.sensibilidade.criterios")}
         </legend>
         <div className="flex flex-wrap gap-x-4 gap-y-2">
           {criterios.map((c) => (
@@ -151,7 +152,7 @@ export function SensibilidadeConsequencias({
         </div>
         {escolhidos.length === 0 && (
           <p className="mt-2 text-[12px]" style={{ color: "var(--erro)" }}>
-            Escolha ao menos um critério.
+            {t("viz.sensibilidade.semCriterio")}
           </p>
         )}
       </fieldset>
@@ -182,21 +183,21 @@ export function SensibilidadeConsequencias({
               {pct(resultado.estabilidade)}
             </span>
             <span className="text-sm" style={{ color: "var(--tinta-2)" }}>
-              dos {resultado.cenarios} cenários mantiveram a mesma resposta
+              {t("viz.sensibilidade.mantiveram", { n: resultado.cenarios })}
             </span>
           </div>
 
           <p className="prosa mt-2 text-[13px]" style={{ color: "var(--tinta-3)" }}>
             {resultado.estabilidade >= 0.8
-              ? "A recomendação não depende de precisão nos dados que você informou."
+              ? t("viz.sensibilidade.leitura.alta")
               : resultado.estabilidade >= 0.5
-                ? "A recomendação é razoavelmente estável, mas confira os números dos critérios que mais oscilam."
-                : "A recomendação muda com facilidade. Vale revisar os dados antes de decidir."}
+                ? t("viz.sensibilidade.leitura.media")
+                : t("viz.sensibilidade.leitura.baixa")}
           </p>
 
           <div className="mt-6">
             <span className="mb-3 block text-[12px] font-medium" style={{ color: "var(--tinta-2)" }}>
-              Em quantos cenários cada alternativa apareceu na solução
+              {t("viz.sensibilidade.frequencia")}
             </span>
             <div className="space-y-2.5">
               {Object.entries(resultado.frequencia)
@@ -211,7 +212,11 @@ export function SensibilidadeConsequencias({
                           color: original ? "var(--tinta)" : "var(--tinta-3)",
                           fontWeight: original ? 500 : 400,
                         }}
-                        title={original ? `${nome} (na solução original)` : nome}>
+                        title={
+                          original
+                            ? t("viz.sensibilidade.naSolucaoOriginal", { nome })
+                            : nome
+                        }>
                         {nome}
                       </span>
                       <Barra valor={valor}
@@ -225,7 +230,7 @@ export function SensibilidadeConsequencias({
                 })}
             </div>
             <p className="mt-3 text-[11px]" style={{ color: "var(--tinta-fraca)" }}>
-              Em destaque, as que estavam na solução antes de variar nada.
+              {t("viz.sensibilidade.destaque")}
             </p>
           </div>
         </div>

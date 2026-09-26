@@ -24,6 +24,8 @@ import { ListaArrastavel } from "@/components/ListaArrastavel";
 
 import { Botao, Dica } from "@/components/ui";
 
+import { useIdioma } from "@/lib/i18n";
+import "@/lib/i18n/visualizacoes";
 import type { CriterioOut } from "@/lib/types";
 
 function formatar(valor: number): string {
@@ -31,12 +33,14 @@ function formatar(valor: number): string {
 }
 
 function FaixaDoCriterio({ criterio }: { criterio: CriterioOut }) {
+  const { t } = useIdioma();
   const unidade = criterio.unidade ? ` ${criterio.unidade}` : "";
   return (
     <span className="num text-xs" style={{ color: "var(--tinta-fraca)" }}>
-      de {formatar(criterio.pior)}
-      {unidade} (pior) até {formatar(criterio.melhor)}
-      {unidade} (melhor)
+      {t("elicitacao.faixa", {
+        pior: `${formatar(criterio.pior)}${unidade}`,
+        melhor: `${formatar(criterio.melhor)}${unidade}`,
+      })}
     </span>
   );
 }
@@ -50,6 +54,7 @@ export function OrdenacaoPesos({
   ocupado: boolean;
   onConfirmar: (ordem: string[]) => void;
 }) {
+  const { t } = useIdioma();
   const [modo, setModo] = useState<"pares" | "lista" | "global">("pares");
   const [ordem, setOrdem] = useState<string[]>(criterios.map((c) => c.chave));
 
@@ -83,36 +88,38 @@ export function OrdenacaoPesos({
           className="text-lg font-semibold tracking-tight"
           style={{ color: "var(--tinta)" }}
         >
-          Ordem de importância
+          {t("elicitacao.ordem.titulo")}
         </h2>
-        <Dica titulo="Importância de quê, exatamente">
+        <Dica titulo={t("elicitacao.ordem.dica.titulo")}>
           <p>
-            Não é qual critério importa mais no abstrato. É qual{" "}
-            <strong>faixa de desempenho</strong> vale mais.
+            {t("elicitacao.ordem.dica.corpo1.antes")}
+            <strong>{t("elicitacao.ordem.dica.corpo1.termo")}</strong>
+            {t("elicitacao.ordem.dica.corpo1.depois")}
           </p>
-          <p>
-            Prazo variando de 45 para 12 dias pode valer mais que custo variando
-            de R$ 15,80 para R$ 10,20 — ou menos. Depende dos números do seu
-            problema, não da sua opinião sobre prazo e custo.
-          </p>
+          <p>{t("elicitacao.ordem.dica.corpo2")}</p>
           <p style={{ color: "var(--tinta-3)" }}>
-            Por isso cada critério mostra a faixa ao lado do nome.
+            {t("elicitacao.ordem.dica.corpo3")}
           </p>
         </Dica>
       </div>
       <p className="prosa mt-2 text-sm" style={{ color: "var(--tinta-2)" }}>
-        Ordene do mais para o menos importante, supondo que cada critério vá do{" "}
-        <strong style={{ color: "var(--tinta)" }}>pior</strong> ao{" "}
-        <strong style={{ color: "var(--tinta)" }}>melhor</strong> desempenho
-        possível.
+        {t("elicitacao.ordem.instrucao.antes")}
+        <strong style={{ color: "var(--tinta)" }}>
+          {t("estrutura.niveis.pior")}
+        </strong>
+        {t("elicitacao.ordem.instrucao.meio")}
+        <strong style={{ color: "var(--tinta)" }}>
+          {t("estrutura.niveis.melhor")}
+        </strong>
+        {t("elicitacao.ordem.instrucao.depois")}
       </p>
 
       <div className="mt-4 flex gap-2 border-b" style={{ borderColor: "var(--borda)" }}>
         {([
-          ["pares", "Comparar dois a dois"],
-          ["lista", "Ordenar a lista"],
-          ["global", "Escolher um a um"],
-        ] as const).map(([valor, rotulo]) => (
+          ["pares", "elicitacao.modo.pares"],
+          ["lista", "elicitacao.modo.lista"],
+          ["global", "elicitacao.modo.global"],
+        ] as const).map(([valor, chave]) => (
           <button
             key={valor}
             onClick={() => setModo(valor)}
@@ -123,7 +130,7 @@ export function OrdenacaoPesos({
               fontWeight: modo === valor ? 600 : 400,
             }}
           >
-            {rotulo}
+            {t(chave)}
           </button>
         ))}
       </div>
@@ -159,7 +166,7 @@ export function OrdenacaoPesos({
             className="tatil mt-5 rounded-[var(--raio-controle)] px-4 py-2 text-sm font-medium disabled:opacity-45"
             style={{ background: "var(--accent)", color: "var(--accent-tinta)" }}
           >
-            Confirmar ordem e começar
+            {t("elicitacao.confirmarOrdem")}
           </button>
         </>
       )}
@@ -192,8 +199,11 @@ export function OrdenacaoPesos({
           {!completo ? (
             <>
               <p className="mb-3 text-sm" style={{ color: "var(--tinta)" }}>
-                Entre os que sobraram, qual você prefere levar do{" "}
-                <strong>pior</strong> ao <strong>melhor</strong> desempenho?
+                {t("elicitacao.global.pergunta.antes")}
+                <strong>{t("estrutura.niveis.pior")}</strong>
+                {t("elicitacao.global.pergunta.meio")}
+                <strong>{t("estrutura.niveis.melhor")}</strong>
+                {t("elicitacao.global.pergunta.depois")}
               </p>
               <div className="space-y-2">
                 {restantes.map((criterio) => (
@@ -238,7 +248,7 @@ export function OrdenacaoPesos({
               className="tatil rounded-[var(--raio-controle)] px-4 py-2 text-sm font-medium disabled:opacity-45"
               style={{ background: "var(--accent)", color: "var(--accent-tinta)" }}
             >
-              Confirmar ordem e começar
+              {t("elicitacao.confirmarOrdem")}
             </button>
           )}
 
@@ -248,7 +258,7 @@ export function OrdenacaoPesos({
               className="mt-3 block text-sm underline"
               style={{ color: "var(--tinta-fraca)" }}
             >
-              Desfazer última escolha
+              {t("elicitacao.global.desfazer")}
             </button>
           )}
         </div>

@@ -12,10 +12,22 @@
  * que o prazo varia de 45 para 12 dias.
  */
 
-import { ArrowCounterClockwise, Equals } from "@phosphor-icons/react";
-import { useMemo, useState } from "react";
+import {
+  ArrowCounterClockwise,
+  Barbell,
+  Check,
+  Equals,
+} from "@phosphor-icons/react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
-import { Botao, Dica } from "@/components/ui";
+import {
+  Botao,
+  BotaoEntreCartoes,
+  Dica,
+  ESPERA_CONFIRMACAO,
+} from "@/components/ui";
+import { useIdioma } from "@/lib/i18n";
+import "@/lib/i18n/visualizacoes";
 import {
   proxima,
   reconstruir,
@@ -35,25 +47,38 @@ function Cartao({
   rotulo,
   onEscolher,
   desabilitado,
+  estado,
 }: {
   criterio: CriterioOut;
   cor: string;
   rotulo: string;
   onEscolher: () => void;
   desabilitado: boolean;
+  /** Depois do clique, um cartão é o escolhido e o outro é o preterido. */
+  estado: "neutro" | "escolhido" | "preterido";
 }) {
+  const { t } = useIdioma();
   const unidade = criterio.unidade ? ` ${criterio.unidade}` : "";
+  const escolhido = estado === "escolhido";
+  const preterido = estado === "preterido";
   return (
     <button
       type="button"
       onClick={onEscolher}
       disabled={desabilitado}
-      className="tatil group flex-1 rounded-[var(--raio-painel)] border p-5 text-left disabled:opacity-50"
-      style={{ borderColor: "var(--borda)", background: "var(--painel)" }}
+      data-estado={estado}
+      className="tatil group flex flex-1 flex-col rounded-[var(--raio-painel)] border p-5 text-left transition-[opacity,border-color,box-shadow] duration-200"
+      style={{
+        borderColor: escolhido ? cor : "var(--borda)",
+        background: "var(--painel)",
+        boxShadow: escolhido ? `inset 0 0 0 1px ${cor}` : "none",
+        opacity: preterido ? 0.4 : 1,
+      }}
       onMouseEnter={(e) => {
         if (!desabilitado) e.currentTarget.style.borderColor = cor;
       }}
       onMouseLeave={(e) => {
+        if (escolhido) return;
         e.currentTarget.style.borderColor = "var(--borda)";
       }}
     >
@@ -87,16 +112,25 @@ function Cartao({
           <div className="h-full w-full rounded-[3px]" style={{ background: cor }} />
         </div>
         <div className="mt-1.5 flex justify-between text-[10px]" style={{ color: "var(--tinta-fraca)" }}>
-          <span>pior</span>
-          <span>melhor</span>
+          <span>{t("estrutura.niveis.pior")}</span>
+          <span>{t("estrutura.niveis.melhor")}</span>
         </div>
       </div>
 
+      {/* Sempre visivel, como na pergunta de tradeoff: como afordancia de hover
+          isto nao existia em tela de toque, e nada mais na tela dizia que os
+          cartoes eram clicaveis. */}
       <span
-        className="mt-4 block text-xs opacity-0 transition-opacity group-hover:opacity-100"
-        style={{ color: cor }}
+        className="mt-auto flex items-center justify-center gap-1.5 rounded-[var(--raio-controle)] border px-3 py-2 text-center text-[13px] font-medium transition-colors duration-200"
+        style={{
+          borderColor: cor,
+          background: escolhido ? cor : "transparent",
+          color: escolhido ? "var(--painel)" : cor,
+          marginTop: "1.25rem",
+        }}
       >
-        prefiro esta melhora →
+        {escolhido && <Check size={14} weight="bold" />}
+        {escolhido ? t("elicitacao.par.escolhida") : t("elicitacao.par.prefiro")}
       </span>
     </button>
   );
@@ -111,6 +145,7 @@ export function ComparacaoPares({
   ocupado: boolean;
   onConfirmar: (ordem: string[]) => void;
 }) {
+  const { t } = useIdioma();
   const [respostas, setRespostas] = useState<RespostaComparacao[]>([]);
   const chaves = useMemo(() => criterios.map((c) => c.chave), [criterios]);
   const estado = useMemo(() => reconstruir(chaves, respostas), [chaves, respostas]);
@@ -120,49 +155,101 @@ export function ComparacaoPares({
   const pronto = terminou(estado);
   const faltam = restantes(estado);
 
-  const responder = (r: RespostaComparacao) => setRespostas([...respostas, r]);
+  /* A mesma pausa da pergunta de tradeoff, pelo mesmo motivo: aqui o par
+     seguinte aparecia no mesmo quadro do clique, sem nem sequer uma ida ao
+     servidor para marcar a passagem, e a pessoa não via qual critério tinha
+     escolhido. */
+  const [escolhida, setEscolhida] = useState<RespostaComparacao | null>(null);
+  const relogio = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (relogio.current) clearTimeout(relogio.current);
+    },
+    [],
+  );
+
+  const responder = (r: RespostaComparacao) => {
+    if (escolhida || ocupado) return;
+    setEscolhida(r);
+    relogio.current = setTimeout(() => {
+      setRespostas((atuais) => [...atuais, r]);
+      setEscolhida(null);
+    }, ESPERA_CONFIRMACAO);
+  };
+
+  const estadoDe = (lado: RespostaComparacao) =>
+    escolhida === null || escolhida === "indiferente"
+      ? "neutro"
+      : escolhida === lado
+        ? "escolhido"
+        : "preterido";
 
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
         <span className="flex items-center gap-1.5">
           <span className="text-[13px] font-medium" style={{ color: "var(--tinta)" }}>
-            {pronto ? "Ordem definida" : "Qual melhora você prefere?"}
+            {pronto
+              ? t("elicitacao.par.ordemDefinida")
+              : t("elicitacao.par.pergunta")}
           </span>
-          <Dica titulo="Por que comparar assim">
+          <Dica titulo={t("elicitacao.par.dica.titulo")}>
+            <p>{t("elicitacao.par.dica.corpo1")}</p>
             <p>
-              Cada critério vai do seu pior ao seu melhor desempenho possível. A
-              pergunta é qual dessas duas melhoras vale mais para você.
-            </p>
-            <p>
-              Não é qual critério é mais importante no abstrato — é qual{" "}
-              <strong>faixa</strong> pesa mais, e a faixa está desenhada nos
-              dois cartões.
+              {t("elicitacao.par.dica.corpo2.antes")}
+              <strong>{t("elicitacao.par.dica.corpo2.termo")}</strong>
+              {t("elicitacao.par.dica.corpo2.depois")}
             </p>
           </Dica>
         </span>
         {!pronto && (
           <span className="num text-[12px]" style={{ color: "var(--tinta-3)" }}>
-            {respostas.length} respondidas · ~{faltam} restantes
+            {t(
+              respostas.length === 1
+                ? "elicitacao.par.respondidas.um"
+                : "elicitacao.par.respondidas.varios",
+              { n: respostas.length },
+            )}{" "}
+            ·{" "}
+            {t(
+              faltam === 1
+                ? "elicitacao.par.restantes.um"
+                : "elicitacao.par.restantes.varios",
+              { n: faltam },
+            )}
           </span>
         )}
       </div>
 
       {comparacao && (
         <>
-          <div className="flex flex-col gap-4 md:flex-row">
+          <div className="flex flex-col items-stretch gap-4 md:flex-row">
             <Cartao
               criterio={porChave(comparacao.a)}
               cor="var(--dado-a)"
-              rotulo="melhorar isto"
-              desabilitado={ocupado}
+              rotulo={t("elicitacao.par.melhorarIsto")}
+              desabilitado={ocupado || escolhida !== null}
+              estado={estadoDe("A")}
               onEscolher={() => responder("A")}
             />
+
+            {/* No caminho entre as duas: é ali que o olho está enquanto se
+                compara, e não abaixo dos cartões. */}
+            <BotaoEntreCartoes
+              rotulo={t("elicitacao.par.indiferente")}
+              icone={<Barbell size={20} weight={escolhida === "indiferente" ? "fill" : "regular"} />}
+              desabilitado={ocupado || escolhida !== null}
+              confirmado={escolhida === "indiferente"}
+              onClick={() => responder("indiferente")}
+            />
+
             <Cartao
               criterio={porChave(comparacao.b)}
               cor="var(--dado-b)"
-              rotulo="ou melhorar isto"
-              desabilitado={ocupado}
+              rotulo={t("elicitacao.par.ouMelhorarIsto")}
+              desabilitado={ocupado || escolhida !== null}
+              estado={estadoDe("B")}
               onEscolher={() => responder("B")}
             />
           </div>
@@ -170,22 +257,22 @@ export function ComparacaoPares({
           <div className="mt-4 flex flex-wrap items-center gap-4">
             <button
               onClick={() => responder("indiferente")}
-              disabled={ocupado}
+              disabled={ocupado || escolhida !== null}
               className="tatil flex items-center gap-1.5 text-sm disabled:opacity-40"
               style={{ color: "var(--tinta-3)" }}
             >
               <Equals size={14} weight="bold" />
-              as duas valem o mesmo
+              {t("elicitacao.par.indiferente")}
             </button>
             {respostas.length > 0 && (
               <button
                 onClick={() => setRespostas(respostas.slice(0, -1))}
-                disabled={ocupado}
+                disabled={ocupado || escolhida !== null}
                 className="tatil flex items-center gap-1.5 text-sm disabled:opacity-40"
                 style={{ color: "var(--tinta-fraca)" }}
               >
                 <ArrowCounterClockwise size={13} weight="bold" />
-                voltar uma
+                {t("elicitacao.par.voltarUma")}
               </button>
             )}
           </div>
@@ -196,7 +283,9 @@ export function ComparacaoPares({
       {estado.ordenados.length > 0 && (
         <div className="mt-6">
           <p className="mb-2 text-[11px]" style={{ color: "var(--tinta-fraca)" }}>
-            {pronto ? "Ordem final" : "Ordem parcial"}
+            {pronto
+              ? t("elicitacao.par.ordemFinal")
+              : t("elicitacao.par.ordemParcial")}
           </p>
           <ol className="space-y-1">
             {estado.ordenados.map((chave, i) => (
@@ -213,10 +302,12 @@ export function ComparacaoPares({
 
       {estado.empates.length > 0 && (
         <p className="prosa mt-4 text-[12px]" style={{ color: "var(--tinta-3)" }}>
-          Você declarou {estado.empates.length}{" "}
-          {estado.empates.length === 1 ? "empate" : "empates"}. Como o método
-          precisa de uma sequência, a posição relativa nesses pares foi
-          arbitrada — não muda o resultado, porque nada foi afirmado sobre eles.
+          {t(
+            estado.empates.length === 1
+              ? "elicitacao.par.empates.um"
+              : "elicitacao.par.empates.varios",
+            { n: estado.empates.length },
+          )}
         </p>
       )}
 
@@ -226,7 +317,7 @@ export function ComparacaoPares({
           disabled={ocupado}
           className="mt-5"
         >
-          Confirmar ordem e começar
+          {t("elicitacao.confirmarOrdem")}
         </Botao>
       )}
     </div>

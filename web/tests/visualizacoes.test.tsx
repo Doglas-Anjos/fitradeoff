@@ -96,3 +96,60 @@ describe("abas", () => {
     expect(screen.queryByText("1.000")).not.toBeInTheDocument();
   });
 });
+
+/**
+ * O eixo e os rotulos.
+ *
+ * Os graficos eram SVG escalados por viewBox. Os numeros do eixo estavam
+ * ancorados em x = -0.5, fora da viewBox "0 0 100 46", entao o navegador os
+ * recortava: o grafico teve grade e nenhuma escala durante toda a vida daquela
+ * versao, e nada avisava. Os nomes de criterio, pelo mesmo motivo de escala,
+ * eram cortados na 13a letra.
+ *
+ * Uma ressalva sobre o que estes testes provam. O recorte era um fato de
+ * layout: no jsdom os <text> existiam no DOM, entao o teste do eixo abaixo
+ * teria passado com o defeito no ar -- aquele foi achado olhando a tela, nao
+ * aqui. O que ele trava e a presenca dos rotulos daqui para a frente. Ja o
+ * teste das reticencias pega a regressao de verdade: a versao antiga escrevia
+ * "Indice de qua..." no proprio DOM.
+ */
+
+const NOMES_LONGOS: Problema = {
+  ...PROBLEMA,
+  criterios: [
+    { chave: "q", nome: "Índice de qualidade percebida", direcao: "max", unidade: "", melhor: 1, pior: 0, escala: "continua" },
+    { chave: "c", nome: "Custo unitário entregue", direcao: "min", unidade: "R$", melhor: 10, pior: 20, escala: "continua" },
+  ],
+  valores: { "Forn A": { q: 1, c: 0 }, "Forn B": { q: 0, c: 1 } },
+};
+
+describe("eixo e rotulos", () => {
+  it("mostra os numeros da escala", () => {
+    render(<Visualizacoes problema={PROBLEMA} />);
+    for (const marca of ["0.00", "0.25", "0.50", "0.75", "1.00"]) {
+      expect(screen.getByText(marca), `falta a marca ${marca}`).toBeInTheDocument();
+    }
+  });
+
+  it("escreve o nome do criterio por inteiro, sem reticencias", () => {
+    render(<Visualizacoes problema={NOMES_LONGOS} />);
+    expect(screen.getByText("Índice de qualidade percebida")).toBeInTheDocument();
+    expect(screen.queryByText(/…/)).not.toBeInTheDocument();
+  });
+
+  it("diz o que o eixo mede enquanto nada esta apontado", () => {
+    render(<Visualizacoes problema={PROBLEMA} />);
+    expect(screen.getByText(/0 = pior possível, 1 = melhor possível/)).toBeInTheDocument();
+  });
+
+  it("apontar um criterio troca a instrucao pelos valores daquele criterio", async () => {
+    const usuario = userEvent.setup();
+    render(<Visualizacoes problema={NOMES_LONGOS} />);
+
+    await usuario.hover(screen.getByText("Custo unitário entregue"));
+    expect(screen.queryByText(/0 = pior possível/)).not.toBeInTheDocument();
+    // Forn A vale 0 e Forn B vale 1 nesse criterio
+    expect(screen.getByText("0.000")).toBeInTheDocument();
+    expect(screen.getByText("1.000")).toBeInTheDocument();
+  });
+});

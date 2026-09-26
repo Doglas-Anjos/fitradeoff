@@ -320,6 +320,65 @@ body {
 }
 
 
+/* --- a terceira resposta, entre os dois cartões ---------------------------------
+
+   Um círculo com um ícone dentro não se anuncia como controle: parado, ele lê
+   como enfeite ou como legenda do que está ao lado. Os dois cartões ao redor já
+   têm botão com borda e rótulo, o que só reforça a leitura errada — se aquilo
+   fosse clicável, pareceria com eles.
+
+   O realce ao passar o mouse é o que resolve, e de propósito ele é o mesmo
+   gesto dos cartões: a superfície muda, a borda assume a cor de acento, a
+   sombra sobe. Quem já entendeu que o cartão responde ao mouse reconhece o
+   mesmo comportamento aqui e conclui a mesma coisa.
+
+   Como nos cartões, cor e fundo vivem aqui e não no `style` do componente:
+   estilo inline vence regra de classe e anularia o `:hover` em silêncio. */
+
+.marca-entre-cartoes {
+  border-color: var(--borda-forte);
+  background: var(--painel);
+  color: var(--tinta-3);
+  box-shadow: var(--sombra);
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
+}
+.botao-entre-cartoes:not(:disabled) {
+  cursor: pointer;
+}
+.botao-entre-cartoes:hover:not(:disabled) .marca-entre-cartoes {
+  background: var(--painel-fundo);
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: var(--sombra-alta);
+}
+
+.rotulo-entre-cartoes {
+  color: var(--tinta-fraca);
+  transition: color 160ms ease;
+}
+.botao-entre-cartoes:hover:not(:disabled) .rotulo-entre-cartoes {
+  color: var(--tinta-2);
+}
+
+/* Escolhido vence o hover: depois do clique a confirmação é o que a pessoa
+   precisa ver, e trocá-la porque o ponteiro ficou parado ali apagaria o
+   próprio sinal de que a resposta foi registrada. */
+.botao-entre-cartoes[data-estado="escolhido"] .marca-entre-cartoes,
+.botao-entre-cartoes[data-estado="escolhido"]:hover .marca-entre-cartoes {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-tinta);
+}
+.botao-entre-cartoes[data-estado="escolhido"] .rotulo-entre-cartoes,
+.botao-entre-cartoes[data-estado="escolhido"]:hover .rotulo-entre-cartoes {
+  color: var(--accent);
+}
+
+
 /* --- ícones das respostas de empate e de dúvida --------------------------------
 
    Duas respostas que não são "A" nem "B" precisam se explicar sozinhas num

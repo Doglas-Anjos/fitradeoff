@@ -768,24 +768,17 @@ export function BotaoEntreCartoes({
          nativa do navegador cobria o cartão da direita justamente enquanto a
          pessoa comparava os dois. Quem quiser mais que o rótulo tem a dica. */
       data-estado={confirmado ? "escolhido" : "neutro"}
-      className="tatil group flex shrink-0 flex-col items-center gap-1.5 disabled:opacity-40"
+      className="botao-entre-cartoes tatil group flex shrink-0 flex-col items-center gap-1.5 disabled:opacity-40"
     >
+      {/* Cor, fundo e realce vêm do CSS, não daqui: ver "a terceira resposta"
+          no globals.css. Estilo inline venceria o `:hover` sem avisar. */}
       <span
         aria-hidden
-        className="flex h-11 w-11 items-center justify-center rounded-full border transition-colors duration-200"
-        style={{
-          borderColor: confirmado ? "var(--accent)" : "var(--borda-forte)",
-          background: confirmado ? "var(--accent)" : "var(--painel)",
-          color: confirmado ? "var(--accent-tinta)" : "var(--tinta-3)",
-          boxShadow: "var(--sombra)",
-        }}
+        className="marca-entre-cartoes flex h-11 w-11 items-center justify-center rounded-full border"
       >
         {icone}
       </span>
-      <span
-        className="max-w-24 text-center text-[11px] leading-tight"
-        style={{ color: confirmado ? "var(--accent)" : "var(--tinta-fraca)" }}
-      >
+      <span className="rotulo-entre-cartoes max-w-24 text-center text-[11px] leading-tight">
         {rotulo}
       </span>
     </button>

@@ -53,13 +53,52 @@ class SortingProblematic(Problematic):
         return f"Classe {index + 1}"
 
     def _classes_for(self, lower: float, upper: float) -> tuple[int, ...]:
-        """Classes que a faixa de valor ``[lower, upper]`` alcanca."""
+        """Classes que a faixa de valor ``[lower, upper]`` alcanca.
+
+        A faixa e encolhida pelo limiar de equivalencia -- metade dele de cada
+        lado -- antes de se perguntar que classes ela toca. Uma ponta que passa
+        do corte por menos que isso nao conta como atravessar: e uma diferenca
+        que o metodo ja declarou irrelevante, e persegui-la custa perguntas que
+        nao mudam a classificacao de ninguem.
+
+        A metade importa, e foi medida. Duas instancias do sistema oficial:
+
+            largura  sobra menor   oficial
+            0.0171     0.0083      segue perguntando
+            0.0088     0.0005      classifica
+            0.0401     0.0186      segue perguntando
+            0.0207     0.0021      classifica
+
+        Com o limiar inteiro (0,01) a primeira linha ja classificaria, o que
+        contradiz a medida; com metade, as quatro batem. A largura da faixa nao
+        serve de criterio -- 0,0207 classifica e 0,0171 nao.
+
+        Faixa mais estreita que o limiar colapsa no meio: se o valor global nao
+        pode mais ser fixado com precisao melhor que ele, ela precisa cair em
+        algum lugar, e o meio e a leitura honesta.
+        """
         edges = (0.0,) + self._profiles + (1.0,)
+        folga = self.evaluator.equivalence / 2.0
+        baixo, alto = lower + folga, upper - folga
+
+        if baixo > alto:
+            # Faixa menor que o limiar: decide pelo meio, e por **uma** classe
+            # so. Colapsar para um ponto e cair no teste de sobreposicao abaixo
+            # devolveria duas classes quando o meio calha de ser exatamente um
+            # corte -- e a alternativa ficaria indefinida para sempre, que e o
+            # oposto do que o colapso existe para fazer. Cortes pertencem a
+            # classe de cima.
+            meio = (lower + upper) / 2.0
+            for index in range(self.n_classes - 1):
+                if meio < edges[index + 1]:
+                    return (index,)
+            return (self.n_classes - 1,)
+
         reached = []
         for index in range(self.n_classes):
             start, end = edges[index], edges[index + 1]
-            # sobreposicao entre [lower, upper] e [start, end)
-            if upper >= start and lower <= end:
+            # sobreposicao entre a faixa encolhida e [start, end)
+            if alto >= start and baixo <= end:
                 reached.append(index)
         return tuple(reached)
 
@@ -70,25 +109,8 @@ class SortingProblematic(Problematic):
         undecided = []
 
         for i, faixa in enumerate(bounds):
+            # o limiar entra dentro de `_classes_for`, encolhendo a faixa
             classes = self._classes_for(faixa.lower, faixa.upper)
-
-            # Faixa mais estreita que o limiar de equivalencia: o valor global
-            # ja nao pode ser fixado com precisao melhor que ele, e nenhuma
-            # pergunta futura decide de que lado do corte a alternativa esta.
-            # Vale o meio da faixa; insistir e perguntar por uma diferenca que o
-            # proprio metodo declarou irrelevante.
-            #
-            # O criterio e a **largura**, nao a profundidade do cruzamento --
-            # medido contra o sistema oficial, que classifica uma faixa de
-            # 0,0088 atravessando o corte por 0,0005, mas segue perguntando
-            # sobre uma de 0,0171 que o atravessa por 0,0083.
-            if (
-                len(classes) > 1
-                and faixa.upper - faixa.lower <= self.evaluator.equivalence
-            ):
-                meio = (faixa.lower + faixa.upper) / 2.0
-                classes = self._classes_for(meio, meio)
-
             nome = problem.alternatives[i]
             alocacao[nome] = {
                 "faixa_de_valor": [round(faixa.lower, 4), round(faixa.upper, 4)],

@@ -642,7 +642,7 @@
  "sorting-06": {
   "chave": "sorting-06",
   "steps_ordenacao": 8,
-  "steps_tradeoff": 22,
+  "steps_tradeoff": 18,
   "resumo": "Todas as alternativas foram classificadas.",
   "analise": {
    "problematica": "sorting",
@@ -661,7 +661,7 @@
    "alocacao": {
     "Alt 01": {
      "faixa_de_valor": [
-      0.4964,
+      0.4885,
       0.5043
      ],
      "classes_possiveis": [
@@ -671,7 +671,7 @@
     },
     "Alt 02": {
      "faixa_de_valor": [
-      0.9875,
+      0.9752,
       1.0
      ],
      "classes_possiveis": [
@@ -681,7 +681,7 @@
     },
     "Alt 03": {
      "faixa_de_valor": [
-      0.9085,
+      0.9064,
       0.9107
      ],
      "classes_possiveis": [
@@ -692,7 +692,7 @@
     "Alt 04": {
      "faixa_de_valor": [
       0.3314,
-      0.3418
+      0.3521
      ],
      "classes_possiveis": [
       "Baixa"
@@ -702,7 +702,7 @@
     "Alt 05": {
      "faixa_de_valor": [
       0.0,
-      0.0091
+      0.018
      ],
      "classes_possiveis": [
       "Baixa"
@@ -711,7 +711,7 @@
     },
     "Alt 06": {
      "faixa_de_valor": [
-      0.3848,
+      0.3804,
       0.389
      ],
      "classes_possiveis": [

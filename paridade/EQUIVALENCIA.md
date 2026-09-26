@@ -165,19 +165,18 @@ limiar, nenhuma pergunta futura decide de que lado do corte a alternativa está.
 
 ## O que permanece diferente
 
-### Ranking e classificação: uma instância cada
+### Ranking: uma pergunta, numa instância
 
-`ranking-20` fica em 22 perguntas contra 21 dele, e `sorting-06` em 22 contra
-18. São as mesmas duas problemáticas cujas divergências foram corrigidas — e
-que voltam a divergir em instâncias diferentes das que serviram de medida.
+`ranking-20` fica em 22 perguntas contra 21 dele. As 20 primeiras são idênticas;
+no passo 21 o oficial **abandona** o par `Durabilidade × Suporte técnico`, que
+ainda tinha faixa, e vai direto ao par que fecha a ordem. Nós fazemos a pergunta
+abandonada e só depois a que resolve.
 
-A leitura honesta: as regras encontradas (dominância com folga do limiar, e
-classificação pela largura da faixa) descrevem o comportamento do oficial nos
-casos em que foram medidas, e não em todos. Falta o mesmo trabalho — capturar as
-duas sequências nesses dois casos e medir o estado no passo onde divergem.
+Parece seleção com lookahead, mas não é: trocar o seletor por
+`InformationGainSelector` dá 10 perguntas nesse caso — muito abaixo das 21 — e
+quebra dois casos que hoje batem. A causa continua desconhecida.
 
-Nos dois, o **desfecho** é o mesmo: ordem completa de um lado e do outro,
-classificação completa de um lado e do outro.
+O **desfecho** é o mesmo: pré-ordem completa dos dois lados.
 
 ### Benefício-custo: mesmo resultado, menos perguntas
 

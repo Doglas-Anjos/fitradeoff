@@ -194,10 +194,10 @@ export const PARIDADE: CasoParidade[] = [
     },
     "nosso": {
       "ordenacao": 8,
-      "tradeoff": 22
+      "tradeoff": 18
     },
     "resumo": "Todas as alternativas foram classificadas.",
-    "bate": false
+    "bate": true
   },
   {
     "chave": "bc-08",
@@ -295,7 +295,7 @@ export const PARIDADE: CasoParidade[] = [
 ];
 
 export const RESUMO = {
-  bate: 13,
+  bate: 14,
   comparaveis: 16,
   travados: 1,
   maiorProblema: 20,

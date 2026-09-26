@@ -140,12 +140,12 @@ export const PARIDADE_TEXTOS = registrar({
     en: "What is still different",
   },
   "paridade.restam.instancias.titulo": {
-    pt: "Ranking e classificação: uma instância cada",
-    en: "Ranking and sorting: one instance each",
+    pt: "Ranking: uma pergunta, numa instância",
+    en: "Ranking: one question, in one instance",
   },
   "paridade.restam.instancias.corpo": {
-    pt: "Num caso de 20 alternativas o ranking fica em 22 perguntas contra 21 dele; numa classificação de 6, em 22 contra 18. São as mesmas problemáticas já corrigidas, divergindo em instâncias diferentes das que serviram de medida. Nos dois o desfecho é o mesmo — ordem completa de um lado e do outro, classificação completa de um lado e do outro.",
-    en: "In one 20-alternative case the ranking takes 22 questions against its 21; in a 6-alternative sorting, 22 against 18. These are the same problematics already fixed, diverging on instances other than the ones used as the measure. In both the outcome is the same — a complete order on both sides, a complete sorting on both sides.",
+    pt: "Num caso de 20 alternativas o ranking fica em 22 perguntas contra 21 dele. As 20 primeiras são idênticas; no passo 21 o oficial abandona um par que ainda tinha faixa e vai direto ao que fecha a ordem. Parece seleção com lookahead, mas trocar o seletor dá 10 perguntas nesse caso e quebra dois que hoje batem. A causa continua desconhecida; o desfecho é o mesmo, pré-ordem completa dos dois lados.",
+    en: "In one 20-alternative case the ranking takes 22 questions against its 21. The first 20 are identical; at step 21 the official abandons a pair that still had range and goes straight to the one that closes the order. It looks like lookahead selection, but switching the selector gives 10 questions there and breaks two cases that currently match. The cause remains unknown; the outcome is the same, a complete pre-order on both sides.",
   },
   "paridade.restam.bc.titulo": {
     pt: "Benefício-custo: mesma carteira, menos perguntas",

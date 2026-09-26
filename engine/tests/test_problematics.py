@@ -223,36 +223,49 @@ def test_sorting_classifica_quando_a_faixa_cabe_numa_classe(evaluator):
     assert alocacao["Pessima"]["classes_possiveis"] == ["Rejeitada"]
 
 
-def test_sorting_classifica_faixa_mais_estreita_que_o_limiar(evaluator):
-    """Faixa menor que o limiar decide-se pelo meio, mesmo atravessando o corte.
+def test_sorting_ignora_cruzamento_menor_que_meio_limiar(evaluator):
+    """A faixa encolhe pelo limiar antes de se perguntar que classes ela toca.
 
-    O valor global ja nao pode ser fixado com precisao melhor que o limiar:
-    perguntar mais nao diz de que lado do corte a alternativa esta. Medido
-    contra o oficial, que classifica uma faixa de 0,0088 nessa situacao.
+    A **metade** de cada lado nao e arbitraria: e o que reproduz as quatro
+    medidas feitas contra o sistema oficial. Com o limiar inteiro, a primeira
+    delas ja classificaria, e o oficial seguiu perguntando:
+
+        largura  sobra menor   oficial
+        0.0171     0.0083      segue
+        0.0088     0.0005      classifica
+        0.0401     0.0186      segue
+        0.0207     0.0021      classifica
     """
     from fitradeoff.problematics.evaluator import Evaluator
 
-    # Y fica em [0.0, 0.5] com o corte em 0.5: atravessa por zero, mas a faixa
-    # inteira mede 0.5 -- larga demais para o limiar decidir
-    problem = make_problem([[1.0, 0.0], [0.0, 1.0]], names=["X", "Y"])
-    largo = SortingProblematic(
+    sorting = SortingProblematic(
         Evaluator(evaluator.solver, equivalence=0.01), profiles=(0.5,)
     )
-    assert not largo.analyse(problem, space_for(problem, [0, 1])).resolved
+    # sobra de 0.002 de um lado: abaixo de metade do limiar, nao conta
+    assert sorting._classes_for(0.498, 0.530) == (1,)
+    # sobra de 0.008: acima da metade, atravessa mesmo
+    assert sorting._classes_for(0.492, 0.530) == (0, 1)
+    # simetrico, do outro lado do corte
+    assert sorting._classes_for(0.470, 0.502) == (0,)
 
-    # com o limiar acima da largura da faixa, o meio decide
-    frouxo = SortingProblematic(
-        Evaluator(evaluator.solver, equivalence=0.9), profiles=(0.5,)
+
+def test_sorting_faixa_mais_estreita_que_o_limiar_cai_no_meio(evaluator):
+    """Encolher uma faixa menor que o limiar a inverteria: vale o meio."""
+    from fitradeoff.problematics.evaluator import Evaluator
+
+    sorting = SortingProblematic(
+        Evaluator(evaluator.solver, equivalence=0.05), profiles=(0.5,)
     )
-    analise = frouxo.analyse(problem, space_for(problem, [0, 1]))
-    assert analise.resolved
-    for dados in analise.detail["alocacao"].values():
-        assert len(dados["classes_possiveis"]) == 1
+    # 0.498..0.502 mede 0.004, menos que o limiar; o meio (0.500) decide
+    classes = sorting._classes_for(0.498, 0.502)
+    assert len(classes) == 1
 
 
 def test_sorting_deixa_indefinida_a_alternativa_que_atravessa_perfil(evaluator):
+    # corte em 0.4 para que Y, em [0, 0.5], atravesse por 0.1 -- bem acima de
+    # metade do limiar, que e o que o encolhimento perdoa
     problem = make_problem([[1.0, 0.0], [0.0, 1.0]], names=["X", "Y"])
-    sorting = SortingProblematic(evaluator, profiles=(0.5,))
+    sorting = SortingProblematic(evaluator, profiles=(0.4,))
     analysis = sorting.analyse(problem, space_for(problem, [0, 1]))
 
     assert not analysis.resolved

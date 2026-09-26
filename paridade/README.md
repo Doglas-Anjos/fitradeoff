@@ -18,6 +18,12 @@ FIT_USER=seu@email  FIT_PASS=sua-senha  python paridade/comparar.py oficial
 # a tabela, a partir do que já foi gravado
 python paridade/comparar.py tabela
 
+# as duas sequências de perguntas lado a lado, para achar onde divergem
+FIT_USER=...  FIT_PASS=...  python paridade/comparar.py capturar ranking-20
+
+# trava a paridade medida: roda o nosso motor e confere contra resultados/
+python -m pytest paridade/
+
 # um caso só
 python paridade/comparar.py nosso ranking-20
 ```
@@ -39,6 +45,7 @@ descartável se for compartilhar o terminal.
 | [gerar_tabela.py](gerar_tabela.py) | Reescreve a tabela do relatório |
 | [gerar_web.py](gerar_web.py) | Gera os dados da tela `/paridade` |
 | [resultados/](resultados/) | As medições, versionadas: é o que torna a afirmação auditável |
+| [test_paridade.py](test_paridade.py) | Trava os números: falha se a paridade mudar |
 | [EQUIVALENCIA.md](EQUIVALENCIA.md) | O relatório |
 
 ## A política de resposta

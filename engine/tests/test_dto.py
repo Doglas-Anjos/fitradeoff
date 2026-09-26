@@ -135,10 +135,14 @@ def test_trilha_declara_que_autoria_nao_e_autenticada(service, iniciada):
 def test_resumo_da_listagem(service, iniciada):
     record, _ = load(service, iniciada)
     payload = summary_dto(record).to_dict()
+
+    # as datas sao carimbo de relogio; o resto e o contrato fixo da listagem
+    datas = {c: payload.pop(c) for c in ("criado_em", "atualizado_em") if c in payload}
     assert payload == {
         "id": iniciada, "nome": "Fornecedores", "problematica": "escolha",
         "alternativas": 4, "criterios": 3, "declaracoes": 1,
     }
+    assert set(datas) == {"criado_em", "atualizado_em"}
 
 
 # --- o servico devolve exatamente o que os DTOs definem -----------------------
@@ -149,3 +153,52 @@ def test_servico_devolve_o_mesmo_que_os_dto(service, iniciada):
     assert service.state(iniciada) == state_dto(record, session).to_dict()
     assert service.describe(iniciada) == problem_dto(record).to_dict()
     assert service.explain(iniciada) == audit_dto(record, session).to_dict()
+
+
+# --- campos que a interface le ------------------------------------------------
+
+
+def test_curva_elicitada_volta_no_criterio(service):
+    """A curva entrava no modelo mas nao voltava no DTO.
+
+    Sem ela, a tela nao distingue um criterio linear de um ja ajustado: mostrava
+    'linear' para sempre e reabria o editor vazio, descartando o que o decisor
+    tinha respondido. O modelo estava certo; faltava o campo na resposta.
+
+    Sem ordenar os criterios, porque a curva so pode ser definida antes de a
+    elicitacao comecar.
+    """
+    iniciada = service.create(
+        "Curva", ALTERNATIVAS, CRITERIOS_SPEC, CONSEQUENCIAS
+    )["id"]
+    antes = service.describe(iniciada)["criterios"][0]
+    assert "curva_de_valor" not in antes, "sem elicitar, o campo nao deve poluir"
+
+    chave = antes["chave"]
+    pior, melhor = antes["pior"], antes["melhor"]
+    meio = (pior + melhor) / 2
+    service.set_value_curve(iniciada, chave, [[pior, 0.0], [meio, 0.7], [melhor, 1.0]])
+
+    depois = service.describe(iniciada)["criterios"][0]
+    assert depois["curva_de_valor"] == [[pior, 0.0], [meio, 0.7], [melhor, 1.0]]
+
+
+def test_resumo_publica_criacao_e_ultima_modificacao(service, clock):
+    """A ultima modificacao sai da trilha, nao de um campo novo.
+
+    Derivar em vez de guardar evita um estado a mais para manter em sincronia,
+    e faz decisoes gravadas antes destes campos continuarem legiveis.
+    """
+    criada = service.create("Datas", ALTERNATIVAS, CRITERIOS_SPEC, CONSEQUENCIAS)
+    resumo = next(r for r in service.list() if r["id"] == criada["id"])
+
+    # sem declaracao nenhuma, a decisao esta como nasceu
+    assert resumo["criado_em"] == resumo["atualizado_em"]
+
+    clock.avancar(minutos=5) if hasattr(clock, "avancar") else None
+    service.rank_criteria(criada["id"], ["qualidade", "custo", "prazo"])
+    depois = next(r for r in service.list() if r["id"] == criada["id"])
+
+    assert depois["criado_em"] == resumo["criado_em"], "a criacao nao se mexe"
+    assert depois["atualizado_em"] >= resumo["atualizado_em"]
+    assert depois["declaracoes"] > resumo["declaracoes"]

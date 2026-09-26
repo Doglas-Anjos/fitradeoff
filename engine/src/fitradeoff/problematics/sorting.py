@@ -15,6 +15,7 @@ from __future__ import annotations
 from ..domain.problem import Problem
 from ..domain.weights import WeightSpace
 from .base import Analysis, Problematic
+from .portfolio import concordar
 
 
 class SortingProblematic(Problematic):
@@ -83,7 +84,12 @@ class SortingProblematic(Problematic):
         headline = (
             "Todas as alternativas foram classificadas."
             if resolved
-            else f"{len(undecided)} alternativas ainda atravessam mais de uma classe."
+            else (
+                f"{concordar(len(undecided), 'alternativa', 'alternativas')} "
+                "ainda atravessa mais de uma classe."
+                if len(undecided) == 1
+                else f"{len(undecided)} alternativas ainda atravessam mais de uma classe."
+            )
         )
 
         return Analysis(

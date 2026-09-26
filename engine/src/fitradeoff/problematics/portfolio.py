@@ -1,10 +1,10 @@
-"""Problematica de portfolio: montar a carteira dentro de um orcamento.
+"""Problematica de portfolio combinatorial: a carteira de maior beneficio.
 
 Frej et al. (2021). Para um vetor de pesos fixo, o problema e uma mochila
 binaria: escolher o subconjunto de maior beneficio agregado cujo custo total
 cabe no orcamento.
 
-ATENCAO -- esta e a unica problematica cuja resposta aqui e **aproximada**.
+ATENCAO -- a resposta aqui e **aproximada**, como na leitura beneficio-custo.
 Com os pesos ainda incertos, decidir se um projeto pertence a algum portfolio
 otimo e um problema bilevel (a escolha binaria depende dos pesos, que por sua
 vez sao variaveis): nao se resolve com um LP. O que fazemos e amostrar vertices
@@ -14,7 +14,9 @@ pratico usual.
 A consequencia precisa ser dita ao decisor: os projetos marcados como "sempre
 selecionados" ou "nunca selecionados" o sao **nas amostras avaliadas**, e nao
 necessariamente em todo o espaco de pesos. Aumentar ``samples`` aumenta a
-confianca e o custo. As outras tres problematicas nao tem essa ressalva.
+confianca e o custo. A leitura beneficio-custo (``benefit_cost.py``) parte
+dos mesmos dados com outro criterio -- eficiencia por unidade de recurso --
+e ali as faixas de razao sao exatas; so a carteira e amostrada.
 """
 
 from __future__ import annotations
@@ -26,6 +28,11 @@ from ..domain.weights import WeightSpace
 from ..solvers.base import IntegerSolver
 from .base import Analysis, Problematic
 from .evaluator import Evaluator
+
+
+def concordar(quantos: int, singular: str, plural: str) -> str:
+    """"1 projeto" e "2 projetos" -- o numero e a palavra saem juntos."""
+    return f"{quantos} {singular if quantos == 1 else plural}"
 
 
 class PortfolioProblematic(Problematic):
@@ -48,7 +55,7 @@ class PortfolioProblematic(Problematic):
         self._samples = samples
         self._seed = seed
 
-    def validate(self, problem: Problem) -> None:
+    def _validate(self, problem: Problem) -> None:
         costs = problem.require_costs()
         if min(costs) > self._budget:
             raise ValueError(
@@ -89,8 +96,9 @@ class PortfolioProblematic(Problematic):
             )
         else:
             headline = (
-                f"{total} carteiras distintas apareceram nas {len(vertices)} amostras "
-                f"de pesos; {len(as_vezes)} projetos ainda oscilam."
+                f"{concordar(total, 'carteira distinta apareceu', 'carteiras distintas apareceram')} "
+                f"nas {len(vertices)} amostras de pesos; "
+                f"{concordar(len(as_vezes), 'projeto ainda oscila', 'projetos ainda oscilam')}."
             )
 
         return Analysis(

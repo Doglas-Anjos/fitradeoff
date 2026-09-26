@@ -1,7 +1,7 @@
 [project]
 name = "fitradeoff"
 version = "0.2.0"
-description = "Motor do metodo FITradeoff - escolha, ranking, sorting e portfolio"
+description = "Motor do metodo FITradeoff - escolha, ranking, sorting e carteiras"
 requires-python = ">=3.11"
 dependencies = ["numpy>=1.26", "scipy>=1.11"]
 

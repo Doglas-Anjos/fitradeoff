@@ -27,8 +27,10 @@ from mcp.server.mcpserver import MCPServer
 INSTRUCTIONS = """\
 Apoio a decisao multicriterio pelo metodo FITradeoff (De Almeida et al., 2016).
 
-Quatro problematicas: `escolha` (qual e a melhor), `ranking` (ordenar todas),
-`sorting` (alocar em classes) e `portfolio` (carteira dentro de um orcamento).
+Cinco problematicas: `escolha` (qual e a melhor), `ranking` (ordenar todas),
+`sorting` (alocar em classes), `portfolio` (a carteira de maior beneficio
+agregado dentro do orcamento) e `beneficio_custo` (a carteira montada pela ordem
+da razao beneficio/custo, para quem quer eficiencia por unidade de recurso).
 Chame `listar_problematicas` se estiver em duvida sobre qual serve.
 
 Protocolo, nesta ordem:
@@ -51,9 +53,11 @@ esgotar as perguntas. Se o decisor quiser parar antes, apresente as faixas de
 valor e deixe que ele decida olhando os dados -- e a avaliacao holistica
 prevista pelo metodo, e `julgar` registra o que ele decidir assim.
 
-A problematica de `portfolio` devolve resultado aproximado, por amostragem do
-espaco de pesos. Diga isso ao decisor ao apresentar a carteira. As outras tres
-sao exatas.
+As problematicas de carteira (`portfolio` e `beneficio_custo`) devolvem a
+carteira como resultado aproximado, por amostragem do espaco de pesos: diga
+isso ao decisor ao apresentar a carteira. Em `beneficio_custo` as faixas de
+razao beneficio/custo e a dominancia entre faixas que nao se sobrepoem sao
+exatas; so a carteira e amostrada. As outras tres problematicas sao exatas.
 """
 
 # Falhas que o agente consegue entender e corrigir sozinho: viram resposta.
@@ -150,7 +154,13 @@ def listar_problematicas() -> dict:
     "construidas, `niveis` do pior para o melhor. `consequencias` traz uma linha "
     "por alternativa e uma coluna por criterio, na unidade real. Para "
     "`problematica='sorting'` passe configuracao={'perfis': [...]}; para "
-    "'portfolio', configuracao={'orcamento': X} e a lista `custos`."
+    "'portfolio' ou 'beneficio_custo', configuracao={'orcamento': X} e a lista "
+    "`custos`. Um criterio aceita ainda `veto_superior` e `veto_inferior`, na "
+    "unidade dele: abaixo do inferior o criterio deixa de contar e o valor "
+    "global da alternativa e penalizado (modelo aditivo com veto, de Almeida "
+    "2013). So declare veto se o decisor disser que existe um desempenho "
+    "inaceitavel -- e so em 'escolha' ou 'ranking', que sao onde o metodo o "
+    "define; nas outras o registro e recusado."
 )
 def criar_problema(
     nome: str,

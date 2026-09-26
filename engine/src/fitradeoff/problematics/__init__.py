@@ -1,6 +1,7 @@
-"""As quatro problematicas do FITradeoff, como estrategias intercambiaveis."""
+"""As cinco problematicas do FITradeoff, como estrategias intercambiaveis."""
 
 from .base import Analysis, Problematic
+from .benefit_cost import BenefitCostProblematic
 from .choice import ChoiceProblematic
 from .evaluator import Evaluator
 from .portfolio import PortfolioProblematic
@@ -9,7 +10,8 @@ from .registry import ProblematicRegistry, UnknownProblematic, default_registry
 from .sorting import SortingProblematic
 
 __all__ = [
-    "Analysis", "ChoiceProblematic", "Evaluator", "PortfolioProblematic",
+    "Analysis", "BenefitCostProblematic", "ChoiceProblematic", "Evaluator",
+    "PortfolioProblematic",
     "Problematic", "ProblematicRegistry", "RankingProblematic",
     "SortingProblematic", "UnknownProblematic", "default_registry",
 ]

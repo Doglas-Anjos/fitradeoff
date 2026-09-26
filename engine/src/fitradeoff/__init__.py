@@ -4,7 +4,7 @@ Camadas, de dentro para fora:
 
     domain/         entidades, preferencias, auditoria -- nao importa nada
     solvers/        porta de otimizacao + adaptador HiGHS
-    problematics/   escolha, ranking, sorting, portfolio (estrategias)
+    problematics/   escolha, ranking, sorting, portfolio, beneficio_custo
     elicitation/    perguntas, seletores, sessao
     repositories/   porta de persistencia + adaptadores
     application/    casos de uso

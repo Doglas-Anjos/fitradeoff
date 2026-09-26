@@ -250,12 +250,12 @@ def test_listar_resume_as_decisoes(service, criada):
 def test_problematicas_expostas_com_a_ressalva(service):
     disponiveis = service.problematics()
     assert set(disponiveis["disponiveis"]) == {
-        "escolha", "ranking", "sorting", "portfolio"
+        "escolha", "ranking", "sorting", "portfolio", "beneficio_custo"
     }
     assert "aproximado" in disponiveis["observacao"]
 
 
-# --- as quatro problematicas ponta a ponta ------------------------------------
+# --- as problematicas ponta a ponta -------------------------------------------
 
 
 def test_ranking_ponta_a_ponta(service):
@@ -309,3 +309,73 @@ def test_portfolio_ponta_a_ponta(service):
     assert "aproximado" in analise["ressalva"]
     for carteira in analise["portfolios_encontrados"]:
         assert carteira["custo"] <= 25.0 + 1e-9
+
+
+def test_beneficio_custo_sem_custos_e_recusado_na_criacao(service):
+    with pytest.raises(ValueError, match="custo de cada alternativa"):
+        service.create(
+            "Razao",
+            ALTERNATIVAS,
+            CRITERIOS_SPEC,
+            CONSEQUENCIAS,
+            problematica="beneficio_custo",
+            configuracao={"orcamento": 100.0},
+        )
+
+
+def test_beneficio_custo_sem_orcamento_e_recusado_na_criacao(service):
+    with pytest.raises(ValueError, match="orçamento positivo"):
+        service.create(
+            "Razao",
+            ALTERNATIVAS,
+            CRITERIOS_SPEC,
+            CONSEQUENCIAS,
+            problematica="beneficio_custo",
+            custos=[10.0, 12.0, 8.0, 11.0],
+        )
+
+
+def test_beneficio_custo_ponta_a_ponta(service):
+    service.create(
+        "Razao beneficio-custo",
+        ALTERNATIVAS,
+        CRITERIOS_SPEC,
+        CONSEQUENCIAS,
+        problematica="beneficio_custo",
+        configuracao={"orcamento": 25.0, "amostras": 8},
+        custos=[10.0, 12.0, 8.0, 11.0],
+    )
+    service.rank_criteria("d1", ["qualidade", "custo", "prazo"])
+    estado = service.state("d1")
+
+    analise = estado["analise"]
+    assert analise["orcamento"] == 25.0
+    assert set(analise["razoes"]) == set(ALTERNATIVAS)
+    for dados in analise["razoes"].values():
+        assert dados["razao_minima"] <= dados["razao_maxima"]
+    for carteira in analise["portfolios_encontrados"]:
+        assert carteira["custo"] <= 25.0 + 1e-9
+    assert "Aproximado" in analise["ressalva"]
+
+
+def test_mesma_elicitacao_lida_pelas_duas_carteiras(service):
+    """Trocar de problematica nao reelicita nada: o mesmo log responde as duas
+    perguntas, e as carteiras podem divergir sem que nada esteja errado."""
+    service.create(
+        "Carteira",
+        ALTERNATIVAS,
+        CRITERIOS_SPEC,
+        CONSEQUENCIAS,
+        problematica="portfolio",
+        configuracao={"orcamento": 25.0, "amostras": 8},
+        custos=[10.0, 12.0, 8.0, 11.0],
+    )
+    service.rank_criteria("d1", ["qualidade", "custo", "prazo"])
+    declaracoes = service.state("d1")["declaracoes"]
+
+    estado = service.switch_problematic(
+        "d1", "beneficio_custo", {"orcamento": 25.0, "amostras": 8}
+    )
+    assert estado["declaracoes"] == declaracoes
+    assert estado["analise"]["problematica"] == "beneficio_custo"
+    assert "razoes" in estado["analise"]

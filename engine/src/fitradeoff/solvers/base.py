@@ -109,7 +109,7 @@ class LinearSolver(ABC):
 
 
 class IntegerSolver(ABC):
-    """Otimizacao binaria, usada pela problematica de portfolio."""
+    """Otimizacao binaria, usada pela problematica de portfolio combinatorial."""
 
     @abstractmethod
     def knapsack(

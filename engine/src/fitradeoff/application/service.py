@@ -106,8 +106,11 @@ class DecisionService:
         return {
             "disponiveis": self._container.registry.describe(),
             "observacao": (
-                "A problematica de portfolio devolve resultado aproximado por "
-                "amostragem de vertices do espaco de pesos; as outras tres sao exatas."
+                "As problematicas de carteira (portfolio e beneficio-custo) "
+                "devolvem a carteira como resultado aproximado, por amostragem "
+                "de vertices do espaco de pesos; as outras tres sao exatas. Em "
+                "beneficio-custo as faixas de razao sao exatas, so a carteira e "
+                "amostrada."
             ),
         }
 
@@ -379,7 +382,8 @@ class DecisionService:
                 self._limits.check_levels(len(criterion.levels), criterion.key)
 
     def _check_settings(self, problematica: str, settings: dict) -> None:
-        if problematica == "portfolio":
+        # as duas leituras de carteira amostram vertices, e o teto e o mesmo
+        if problematica in ("portfolio", "beneficio_custo"):
             self._limits.check_samples(int(settings.get("amostras", 24)))
 
 

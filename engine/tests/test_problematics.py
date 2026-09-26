@@ -1,4 +1,4 @@
-"""As quatro problematicas, e o avaliador que as sustenta."""
+"""As cinco problematicas, e o avaliador que as sustenta."""
 
 import numpy as np
 import pytest
@@ -6,6 +6,7 @@ import pytest
 from conftest import make_problem
 from fitradeoff.domain import CriteriaRanking, WeightSpace
 from fitradeoff.problematics import (
+    BenefitCostProblematic,
     ChoiceProblematic,
     Evaluator,
     PortfolioProblematic,
@@ -261,12 +262,177 @@ def test_portfolio_e_deterministico_por_semente(evaluator):
     assert resultados[0].detail == resultados[1].detail
 
 
+# --- beneficio-custo ----------------------------------------------------------
+
+
+def beneficio_custo(evaluator, budget, **kwargs):
+    return BenefitCostProblematic(evaluator, budget=budget, **kwargs)
+
+
+def test_beneficio_custo_exige_custos(evaluator):
+    problem = make_problem([[1.0, 0.0], [0.0, 1.0]])
+    with pytest.raises(ValueError, match="custo de cada alternativa"):
+        beneficio_custo(evaluator, 10).analyse(problem, space_for(problem, [0, 1]))
+
+
+def test_beneficio_custo_exige_orcamento_positivo(evaluator):
+    with pytest.raises(ValueError, match="orçamento positivo"):
+        beneficio_custo(evaluator, 0.0)
+    with pytest.raises(ValueError, match="orçamento positivo"):
+        beneficio_custo(evaluator, -5.0)
+
+
+def test_beneficio_custo_recusa_orcamento_menor_que_tudo(evaluator):
+    problem = make_problem([[1.0, 0.0], [0.0, 1.0]], costs=[10.0, 20.0])
+    with pytest.raises(ValueError, match="Nenhuma alternativa cabe"):
+        beneficio_custo(evaluator, 5).analyse(problem, space_for(problem, [0, 1]))
+
+
+def test_faixa_de_razao_e_a_faixa_de_valor_dividida_pelo_custo(evaluator):
+    """Conta na unha: com k0 >= k1 e soma 1, k0 percorre [0.5, 1].
+
+    P vale k0, entao o seu beneficio vai de 0.5 a 1.0 e, dividido pelo custo 2,
+    a razao vai de 0.25 a 0.5. Q vale k1 = 1 - k0, entao o beneficio vai de 0 a
+    0.5 e a razao, com custo 4, de 0 a 0.125.
+    """
+    problem = make_problem([[1.0, 0.0], [0.0, 1.0]], costs=[2.0, 4.0], names=["P", "Q"])
+    analysis = beneficio_custo(evaluator, 6.0).analyse(
+        problem, space_for(problem, [0, 1])
+    )
+
+    razoes = analysis.detail["razoes"]
+    assert razoes["P"]["beneficio_minimo"] == pytest.approx(0.5)
+    assert razoes["P"]["beneficio_maximo"] == pytest.approx(1.0)
+    assert razoes["P"]["razao_minima"] == pytest.approx(0.25)
+    assert razoes["P"]["razao_maxima"] == pytest.approx(0.5)
+    assert razoes["Q"]["razao_minima"] == pytest.approx(0.0)
+    assert razoes["Q"]["razao_maxima"] == pytest.approx(0.125)
+
+
+def test_razao_minima_acima_da_maxima_do_outro_e_dominancia(evaluator):
+    """Mesmo caso: a faixa de P ([0.25, 0.5]) fica inteira acima da de Q
+    ([0, 0.125]). Nao ha vetor de pesos viavel em que Q seja mais eficiente."""
+    problem = make_problem([[1.0, 0.0], [0.0, 1.0]], costs=[2.0, 4.0], names=["P", "Q"])
+    analysis = beneficio_custo(evaluator, 6.0).analyse(
+        problem, space_for(problem, [0, 1])
+    )
+
+    assert analysis.detail["dominancia_por_razao"] == [
+        {"dominante": "P", "dominado": "Q"}
+    ]
+    assert analysis.detail["dominantes"] == ["P"]
+
+
+def test_beneficio_maior_e_custo_menor_domina_em_qualquer_peso(evaluator):
+    """Dominancia obvia, conferivel sem o solver: A e melhor que B em todos os
+    criterios (beneficio 1.0 contra 0.4) e ainda custa menos (2 contra 5)."""
+    problem = make_problem(
+        [[1.0, 1.0], [0.4, 0.4], [0.0, 0.0]],
+        costs=[2.0, 5.0, 1.0],
+        names=["A", "B", "C"],
+    )
+    analysis = beneficio_custo(evaluator, 8.0).analyse(
+        problem, space_for(problem, [0, 1])
+    )
+
+    razoes = analysis.detail["razoes"]
+    assert razoes["A"]["razao_minima"] == pytest.approx(0.5)  # 1.0 / 2
+    assert razoes["B"]["razao_maxima"] == pytest.approx(0.08)  # 0.4 / 5
+    pares = analysis.detail["dominancia_por_razao"]
+    assert {"dominante": "A", "dominado": "B"} in pares
+    assert {"dominante": "B", "dominado": "A"} not in pares
+    # C nao vale nada em nenhum peso: nao entra na carteira nem de graca
+    assert "C" in analysis.detail["nunca_selecionados"]
+
+
+def test_faixas_sobrepostas_nao_geram_dominancia(evaluator):
+    """X e Y tem o mesmo custo e faixas de valor que se cruzam: a ordem entre os
+    dois depende de informacao que o decisor ainda nao deu."""
+    problem = make_problem([[1.0, 0.0], [0.0, 1.0]], costs=[3.0, 3.0], names=["X", "Y"])
+    analysis = beneficio_custo(evaluator, 3.0).analyse(problem, WeightSpace(2))
+
+    assert analysis.detail["dominancia_por_razao"] == []
+    assert analysis.detail["dominantes"] == []
+
+
+def test_carteira_por_razao_nunca_estoura_o_orcamento(evaluator):
+    rng = np.random.default_rng(5)
+    problem = make_problem(
+        rng.random((7, 3)),
+        costs=[3.0, 7.0, 1.0, 5.0, 2.0, 9.0, 4.0],
+        names=[f"p{i}" for i in range(7)],
+    )
+    analysis = beneficio_custo(evaluator, 12.0).analyse(
+        problem, space_for(problem, [0, 1, 2])
+    )
+
+    for carteira in analysis.detail["portfolios_encontrados"]:
+        assert carteira["custo"] <= 12.0 + 1e-9
+    assert analysis.detail["carteira_mais_frequente"]["custo"] <= 12.0 + 1e-9
+
+
+def test_beneficio_custo_separa_o_exato_do_amostrado_na_ressalva(evaluator):
+    problem = make_problem([[1.0, 0.0], [0.0, 1.0]], costs=[1.0, 2.0])
+    analysis = beneficio_custo(evaluator, 3.0).analyse(
+        problem, space_for(problem, [0, 1])
+    )
+
+    ressalva = analysis.detail["ressalva"]
+    assert "Exato" in ressalva and "Aproximado" in ressalva
+    assert "amostrados" in ressalva
+
+
+def test_beneficio_custo_e_deterministico_por_semente(evaluator):
+    rng = np.random.default_rng(13)
+    problem = make_problem(
+        rng.random((6, 3)), costs=[2.0] * 6, names=[f"p{i}" for i in range(6)]
+    )
+    space = space_for(problem, [0, 1, 2])
+    resultados = [
+        beneficio_custo(evaluator, 7.0, seed=4).analyse(problem, space)
+        for _ in range(2)
+    ]
+    assert resultados[0].detail == resultados[1].detail
+
+
+def test_razao_e_mochila_podem_escolher_carteiras_diferentes(evaluator):
+    """Documenta a divergencia, que e o motivo de existirem dois modulos.
+
+    Orcamento 10. X custa 1 e vale 0.2 (razao 0.2); Y custa 10 e vale 1.0
+    (razao 0.1). A leitura por razao pega X primeiro, e ai Y nao cabe mais: fica
+    com 0.2 de beneficio. A mochila ignora a eficiencia e pega Y, que sozinho
+    vale 1.0. Nenhuma das duas esta errada -- elas respondem a perguntas
+    diferentes, e o decisor escolhe qual quer fazer.
+    """
+    problem = make_problem(
+        [[0.2, 0.2], [1.0, 1.0], [0.0, 0.0]],
+        costs=[1.0, 10.0, 1.0],
+        names=["X", "Y", "Z"],
+    )
+    space = space_for(problem, [0, 1])
+
+    por_razao = beneficio_custo(evaluator, 10.0).analyse(problem, space)
+    mochila = PortfolioProblematic(
+        evaluator, ScipyIntegerSolver(), budget=10.0
+    ).analyse(problem, space)
+
+    # o valor nao depende dos pesos aqui, logo cada leitura tem carteira unica
+    assert por_razao.resolved and mochila.resolved
+    assert por_razao.detail["carteira_mais_frequente"]["projetos"] == ["X"]
+    assert mochila.detail["portfolios_encontrados"][0]["projetos"] == ["Y"]
+    assert por_razao.detail["sempre_selecionados"] != mochila.detail[
+        "sempre_selecionados"
+    ]
+
+
 # --- registro -----------------------------------------------------------------
 
 
-def test_registro_cria_as_quatro_problematicas(evaluator):
+def test_registro_cria_todas_as_problematicas(evaluator):
     registry = default_registry()
-    assert registry.keys == ("escolha", "portfolio", "ranking", "sorting")
+    assert registry.keys == (
+        "beneficio_custo", "escolha", "portfolio", "ranking", "sorting"
+    )
 
     integer = ScipyIntegerSolver()
     assert isinstance(registry.create("escolha", evaluator, integer), ChoiceProblematic)
@@ -278,6 +444,10 @@ def test_registro_cria_as_quatro_problematicas(evaluator):
     assert isinstance(
         registry.create("portfolio", evaluator, integer, {"orcamento": 10}),
         PortfolioProblematic,
+    )
+    assert isinstance(
+        registry.create("beneficio_custo", evaluator, integer, {"orcamento": 10}),
+        BenefitCostProblematic,
     )
 
 

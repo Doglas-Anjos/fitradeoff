@@ -11,6 +11,7 @@ from typing import Callable
 
 from ..solvers.base import IntegerSolver
 from .base import Problematic
+from .benefit_cost import BenefitCostProblematic
 from .choice import ChoiceProblematic
 from .evaluator import Evaluator
 from .portfolio import PortfolioProblematic
@@ -58,7 +59,7 @@ class ProblematicRegistry:
 
 
 def default_registry() -> ProblematicRegistry:
-    """As quatro problematicas do FITradeoff."""
+    """As cinco problematicas do FITradeoff."""
     registry = ProblematicRegistry()
 
     registry.register(
@@ -86,6 +87,18 @@ def default_registry() -> ProblematicRegistry:
         lambda evaluator, integer, settings: PortfolioProblematic(
             evaluator,
             integer,
+            budget=settings.get("orcamento", 0.0),
+            samples=settings.get("amostras", 24),
+            seed=settings.get("semente", 0),
+        ),
+    )
+    # A leitura beneficio-custo nao usa solver inteiro: a selecao por razao e
+    # gulosa, nao uma mochila.
+    registry.register(
+        "beneficio_custo",
+        BenefitCostProblematic.label,
+        lambda evaluator, _integer, settings: BenefitCostProblematic(
+            evaluator,
             budget=settings.get("orcamento", 0.0),
             samples=settings.get("amostras", 24),
             seed=settings.get("semente", 0),

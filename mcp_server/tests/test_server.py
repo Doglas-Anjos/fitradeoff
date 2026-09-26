@@ -177,12 +177,14 @@ def test_explicar_fala_em_portugues(problema):
     assert trilha["declaracoes"][0]["autor"] == "decisor"
 
 
-# --- as quatro problematicas --------------------------------------------------
+# --- as problematicas ---------------------------------------------------------
 
 
 def test_listar_problematicas():
     disponiveis = srv.listar_problematicas()["disponiveis"]
-    assert set(disponiveis) == {"escolha", "ranking", "sorting", "portfolio"}
+    assert set(disponiveis) == {
+        "escolha", "ranking", "sorting", "portfolio", "beneficio_custo"
+    }
 
 
 def test_criar_com_cada_problematica():
@@ -200,7 +202,13 @@ def test_criar_com_cada_problematica():
         configuracao={"orcamento": 25.0},
         custos=[10.0, 12.0, 8.0, 11.0],
     )
-    for criada in (escolha, ranking, sorting, portfolio):
+    razao = srv.criar_problema(
+        "B", ALTERNATIVAS, CRITERIOS, CONSEQUENCIAS,
+        problematica="beneficio_custo",
+        configuracao={"orcamento": 25.0},
+        custos=[10.0, 12.0, 8.0, 11.0],
+    )
+    for criada in (escolha, ranking, sorting, portfolio, razao):
         assert "erro" not in criada
 
 
@@ -229,6 +237,22 @@ def test_portfolio_declara_a_ressalva():
     srv.ordenar_criterios(criada["id"], ["qualidade", "custo", "prazo"])
     analise = srv.situacao(criada["id"])["analise"]
     assert "aproximado" in analise["ressalva"]
+    for carteira in analise["portfolios_encontrados"]:
+        assert carteira["custo"] <= 25.0 + 1e-9
+
+
+def test_beneficio_custo_publica_as_faixas_de_razao():
+    criada = srv.criar_problema(
+        "B", ALTERNATIVAS, CRITERIOS, CONSEQUENCIAS,
+        problematica="beneficio_custo",
+        configuracao={"orcamento": 25.0, "amostras": 6},
+        custos=[10.0, 12.0, 8.0, 11.0],
+    )
+    srv.ordenar_criterios(criada["id"], ["qualidade", "custo", "prazo"])
+    analise = srv.situacao(criada["id"])["analise"]
+
+    assert set(analise["razoes"]) == set(ALTERNATIVAS)
+    assert "Aproximado" in analise["ressalva"]
     for carteira in analise["portfolios_encontrados"]:
         assert carteira["custo"] <= 25.0 + 1e-9
 

@@ -105,8 +105,8 @@ describe("a tela da pergunta", () => {
 
   it("mostra os dois cartoes com as linhas na mesma ordem", () => {
     render(<TradeoffChart pergunta={PERGUNTA} onSelect={() => {}} />);
-    const cartaoA = screen.getByRole("button", { name: /Situação A/ });
-    const cartaoB = screen.getByRole("button", { name: /Situação B/ });
+    const cartaoA = screen.getByRole("group", { name: /Situação A/ });
+    const cartaoB = screen.getByRole("group", { name: /Situação B/ });
 
     const criteriosDe = (cartao: HTMLElement) =>
       within(cartao)
@@ -124,7 +124,7 @@ describe("a tela da pergunta", () => {
        numero de elementos. */
     render(<TradeoffChart pergunta={PERGUNTA} onSelect={() => {}} />);
     const linhasDe = (nome: RegExp) =>
-      within(screen.getByRole("button", { name: nome }))
+      within(screen.getByRole("group", { name: nome }))
         .getAllByRole("term")
         .map((dt) => dt.parentElement!.parentElement!.childElementCount);
 
@@ -136,6 +136,21 @@ describe("a tela da pergunta", () => {
     // o texto existe no documento, e nao escondido atras de :hover
     expect(screen.getByText("Prefiro a Situação A")).toBeVisible();
     expect(screen.getByText("Prefiro a Situação B")).toBeVisible();
+  });
+
+  it("clicar no corpo do cartao nao responde: so o botao responde", async () => {
+    /* O cartao inteiro era clicavel, e isso transformava em resposta qualquer
+       toque dado para outra coisa -- selecionar um numero para conferir, tocar
+       na barra. Agora o cartao so agrupa; quem decide e o botao. */
+    const usuario = userEvent.setup();
+    const aoEscolher = vi.fn();
+    render(<TradeoffChart pergunta={PERGUNTA} onSelect={aoEscolher} />);
+
+    await usuario.click(screen.getByRole("group", { name: /Situação A/ }));
+    expect(aoEscolher).not.toHaveBeenCalled();
+
+    await usuario.click(screen.getByText("Prefiro a Situação A"));
+    await waitFor(() => expect(aoEscolher).toHaveBeenCalledWith("A"));
   });
 
   it("a escolha aparece confirmada antes de a tela trocar", async () => {
@@ -151,11 +166,11 @@ describe("a tela da pergunta", () => {
 
     // primeiro a tela confirma, e só então a resposta sai
     expect(aoEscolher).not.toHaveBeenCalled();
-    expect(screen.getByRole("button", { name: /Situação B/ })).toHaveAttribute(
+    expect(screen.getByRole("group", { name: /Situação B/ })).toHaveAttribute(
       "data-estado",
       "escolhido",
     );
-    expect(screen.getByRole("button", { name: /Situação A/ })).toHaveAttribute(
+    expect(screen.getByRole("group", { name: /Situação A/ })).toHaveAttribute(
       "data-estado",
       "preterido",
     );
@@ -173,7 +188,7 @@ describe("a tela da pergunta", () => {
     render(<TradeoffChart pergunta={PERGUNTA} onSelect={aoEscolher} />);
 
     await usuario.click(screen.getByText("Prefiro a Situação A"));
-    await usuario.click(screen.getByRole("button", { name: /Situação B/ }));
+    await usuario.click(screen.getByRole("group", { name: /Situação B/ }));
 
     await waitFor(() => expect(aoEscolher).toHaveBeenCalledTimes(1));
     expect(aoEscolher).toHaveBeenCalledWith("A");

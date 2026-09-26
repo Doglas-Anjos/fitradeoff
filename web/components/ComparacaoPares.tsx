@@ -12,14 +12,10 @@
  * que o prazo varia de 45 para 12 dias.
  */
 
-import {
-  ArrowCounterClockwise,
-  Barbell,
-  Check,
-  Equals,
-} from "@phosphor-icons/react";
+import { ArrowCounterClockwise, Check } from "@phosphor-icons/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { CaboDeGuerra } from "@/components/Animacoes";
 import {
   Botao,
   BotaoEntreCartoes,
@@ -62,25 +58,15 @@ function Cartao({
   const escolhido = estado === "escolhido";
   const preterido = estado === "preterido";
   return (
-    <button
-      type="button"
-      onClick={onEscolher}
-      disabled={desabilitado}
+    <div
+      /* Conjunto de informação sobre um critério, não um botão: ver a seção
+         "cartões de escolha" no globals.css. */
+      role="group"
+      aria-label={criterio.nome}
       data-estado={estado}
-      className="tatil group flex flex-1 flex-col rounded-[var(--raio-painel)] border p-5 text-left transition-[opacity,border-color,box-shadow] duration-200"
-      style={{
-        borderColor: escolhido ? cor : "var(--borda)",
-        background: "var(--painel)",
-        boxShadow: escolhido ? `inset 0 0 0 1px ${cor}` : "none",
-        opacity: preterido ? 0.4 : 1,
-      }}
-      onMouseEnter={(e) => {
-        if (!desabilitado) e.currentTarget.style.borderColor = cor;
-      }}
-      onMouseLeave={(e) => {
-        if (escolhido) return;
-        e.currentTarget.style.borderColor = "var(--borda)";
-      }}
+      data-ativo={!desabilitado}
+      className="cartao-escolha group flex flex-1 flex-col rounded-[var(--raio-painel)] border p-5 text-left"
+      style={{ "--cor-lado": cor } as React.CSSProperties}
     >
       <div className="mb-4 flex items-baseline gap-2">
         <span aria-hidden className="h-2.5 w-2.5 rounded-[2px]" style={{ background: cor }} />
@@ -117,22 +103,22 @@ function Cartao({
         </div>
       </div>
 
-      {/* Sempre visivel, como na pergunta de tradeoff: como afordancia de hover
-          isto nao existia em tela de toque, e nada mais na tela dizia que os
-          cartoes eram clicaveis. */}
-      <span
-        className="mt-auto flex items-center justify-center gap-1.5 rounded-[var(--raio-controle)] border px-3 py-2 text-center text-[13px] font-medium transition-colors duration-200"
-        style={{
-          borderColor: cor,
-          background: escolhido ? cor : "transparent",
-          color: escolhido ? "var(--painel)" : cor,
-          marginTop: "1.25rem",
-        }}
+      {/* O único alvo de clique do cartão. O rótulo visível é igual nos dois
+          lados, então o nome acessível carrega o critério -- sem isso um leitor
+          de tela anuncia dois botões idênticos e a escolha vira sorteio. */}
+      <button
+        type="button"
+        onClick={onEscolher}
+        disabled={desabilitado}
+        aria-label={`${t("elicitacao.par.prefiro")}: ${criterio.nome}`}
+        data-escolhido={escolhido}
+        className="botao-escolha tatil mt-auto flex items-center justify-center gap-1.5 rounded-[var(--raio-controle)] border px-3 py-2 text-center text-[13px] font-medium"
+        style={{ marginTop: "1.25rem" }}
       >
         {escolhido && <Check size={14} weight="bold" />}
         {escolhido ? t("elicitacao.par.escolhida") : t("elicitacao.par.prefiro")}
-      </span>
-    </button>
+      </button>
+    </div>
   );
 }
 
@@ -238,10 +224,16 @@ export function ComparacaoPares({
                 compara, e não abaixo dos cartões. */}
             <BotaoEntreCartoes
               rotulo={t("elicitacao.par.indiferente")}
-              icone={<Barbell size={20} weight={escolhida === "indiferente" ? "fill" : "regular"} />}
+              icone={<CaboDeGuerra />}
               desabilitado={ocupado || escolhida !== null}
               confirmado={escolhida === "indiferente"}
               onClick={() => responder("indiferente")}
+              dica={
+                <Dica titulo={t("elicitacao.par.indiferente.dica.titulo")}>
+                  <p>{t("elicitacao.par.indiferente.dica.corpo1")}</p>
+                  <p>{t("elicitacao.par.indiferente.dica.corpo2")}</p>
+                </Dica>
+              }
             />
 
             <Cartao
@@ -254,16 +246,12 @@ export function ComparacaoPares({
             />
           </div>
 
+          {/* O empate tinha dois botões: o do meio e um de texto aqui embaixo.
+              A redundância era intencional — nem todo mundo lê um ícone redondo
+              como "responder" — mas cobrava caro: duas formas de dar a mesma
+              resposta na mesma tela fazem procurar a diferença entre elas. Ficou
+              o do meio, que é onde o olho está, agora com dica ao lado. */}
           <div className="mt-4 flex flex-wrap items-center gap-4">
-            <button
-              onClick={() => responder("indiferente")}
-              disabled={ocupado || escolhida !== null}
-              className="tatil flex items-center gap-1.5 text-sm disabled:opacity-40"
-              style={{ color: "var(--tinta-3)" }}
-            >
-              <Equals size={14} weight="bold" />
-              {t("elicitacao.par.indiferente")}
-            </button>
             {respostas.length > 0 && (
               <button
                 onClick={() => setRespostas(respostas.slice(0, -1))}

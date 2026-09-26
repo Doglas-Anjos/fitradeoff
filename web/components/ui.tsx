@@ -744,6 +744,7 @@ export function BotaoEntreCartoes({
   onClick,
   desabilitado = false,
   confirmado = false,
+  dica,
 }: {
   /** Vira o nome acessível e a legenda sob o ícone. */
   rotulo: string;
@@ -752,15 +753,22 @@ export function BotaoEntreCartoes({
   desabilitado?: boolean;
   /** A resposta foi dada e está no ar, aguardando a tela trocar. */
   confirmado?: boolean;
+  /** Explicação do que esta resposta significa. Fica **ao lado** do botão, e
+   *  não dentro: uma dica é um controle próprio, e aninhá-la aqui faria um
+   *  botão dentro de outro — o clique viraria loteria e o leitor de tela
+   *  anunciaria duas ações onde há uma. */
+  dica?: React.ReactNode;
 }) {
-  return (
+  const botao = (
     <button
       type="button"
       onClick={onClick}
       disabled={desabilitado}
-      title={rotulo}
+      /* Sem `title`: o rótulo já está visível logo abaixo do ícone, e a bolha
+         nativa do navegador cobria o cartão da direita justamente enquanto a
+         pessoa comparava os dois. Quem quiser mais que o rótulo tem a dica. */
       data-estado={confirmado ? "escolhido" : "neutro"}
-      className="tatil group flex shrink-0 flex-col items-center gap-1.5 self-center disabled:opacity-40"
+      className="tatil group flex shrink-0 flex-col items-center gap-1.5 disabled:opacity-40"
     >
       <span
         aria-hidden
@@ -781,5 +789,14 @@ export function BotaoEntreCartoes({
         {rotulo}
       </span>
     </button>
+  );
+
+  if (!dica) return <div className="flex shrink-0 self-center">{botao}</div>;
+
+  return (
+    <div className="flex shrink-0 items-start gap-1 self-center">
+      {botao}
+      <span className="mt-2.5">{dica}</span>
+    </div>
   );
 }

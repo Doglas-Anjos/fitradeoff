@@ -259,6 +259,115 @@ body {
 }
 
 
+/* --- cartões de escolha ---------------------------------------------------------
+
+   O cartão inteiro era o botão. Parecia prático e cobrava dois preços: um clique
+   em qualquer canto do cartão -- ao selecionar um número para conferir, ao tocar
+   na barra -- virava resposta sem querer; e o retângulo enorme não dizia *onde*
+   clicar, então o "Prefiro esta" lá embaixo era enfeite.
+
+   Agora quem decide é o botão. O cartão só realça a superfície ao passar o mouse,
+   o que é a afordância certa para "isto aqui é um conjunto", sem prometer clique.
+
+   Cor, fundo e realce ficam **aqui**, não no `style` do componente: estilo
+   inline vence regra de classe, e a primeira versão disto não funcionou
+   justamente por isso -- o `background` inline anulava o `:hover` em silêncio.
+   Do componente vem só `--cor-lado`, que é dado, não estilo. */
+
+.cartao-escolha {
+  background: var(--painel);
+  border-color: var(--borda);
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    opacity 200ms ease;
+}
+.cartao-escolha[data-estado="escolhido"] {
+  border-color: var(--cor-lado);
+  box-shadow: inset 0 0 0 1px var(--cor-lado);
+}
+/* Os dois lados ficam desabilitados depois do clique. Apagar os dois por igual
+   esconderia qual foi o escolhido, então só o preterido perde força. */
+.cartao-escolha[data-estado="preterido"] {
+  opacity: 0.4;
+}
+.cartao-escolha[data-ativo="true"]:hover {
+  background: var(--painel-fundo);
+  border-color: var(--cor-lado);
+  box-shadow: var(--sombra-alta);
+}
+
+.botao-escolha {
+  border-color: var(--cor-lado);
+  background: transparent;
+  color: var(--cor-lado);
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+.botao-escolha:disabled {
+  cursor: default;
+}
+.botao-escolha[data-escolhido="true"] {
+  background: var(--cor-lado);
+  color: var(--painel);
+}
+.botao-escolha:hover:not(:disabled):not([data-escolhido="true"]) {
+  background: var(--cor-lado);
+  color: var(--painel);
+}
+
+
+/* --- ícones das respostas de empate e de dúvida --------------------------------
+
+   Duas respostas que não são "A" nem "B" precisam se explicar sozinhas num
+   ícone de 20px. Um símbolo parado não diz qual é qual; o movimento diz.
+
+   O cabo de guerra é a indiferença: os dois lados puxam e o nó não sai do
+   lugar. A oscilação é curta e simétrica de propósito — se pendesse para um
+   lado, contaria a história errada.
+
+   O ponto de interrogação é a dúvida: balança sem se decidir. Não é um erro,
+   é uma saída legítima, então o movimento é leve, não aflito.
+
+   Ambos são desligados por nome no bloco de `prefers-reduced-motion` do fim
+   deste arquivo — a regra global com `!important` reduziria a duração, mas a
+   convenção daqui é listar cada classe, e há um teste que cobra isso. */
+
+@keyframes cabo-de-guerra {
+  0%,
+  100% {
+    transform: translateX(-2.2px);
+  }
+  50% {
+    transform: translateX(2.2px);
+  }
+}
+.no-do-cabo {
+  animation: cabo-de-guerra 1.9s ease-in-out infinite;
+}
+
+@keyframes duvida-balanca {
+  0%,
+  100% {
+    transform: rotate(-9deg) translateY(0);
+  }
+  50% {
+    transform: rotate(9deg) translateY(-0.6px);
+  }
+}
+.duvida-interrogacao {
+  /* Sem `transform-box`, a origem de um `<g>` em SVG é medida contra a viewBox
+     inteira, não contra o próprio desenho: a interrogação giraria em torno de
+     um ponto fora dela. */
+  transform-box: fill-box;
+  transform-origin: 50% 80%;
+  animation: duvida-balanca 2.1s ease-in-out infinite;
+}
+
+
 /* --- movimento ----------------------------------------------------------------
 
    Tres regras, do mais barato ao mais caro: entrar e sempre ease-out, porque
@@ -439,6 +548,13 @@ body {
      tracejado do tamanho do proprio traco e deslocamento zero, a linha e
      continua. */
   .traca {
+    animation: none;
+  }
+  /* Os dois ícones de resposta param no lugar, sem desvanecer: eles não entram
+     na tela, ficam nela. Parados continuam legíveis — o nó no meio da corda e a
+     interrogação em pé dizem a mesma coisa que o movimento dizia. */
+  .no-do-cabo,
+  .duvida-interrogacao {
     animation: none;
   }
   .transicao-cor {

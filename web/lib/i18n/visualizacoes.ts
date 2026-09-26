@@ -360,6 +360,21 @@ export const VISUALIZACOES = registrar({
     pt: "as duas valem o mesmo",
     en: "both are worth the same",
   },
+  /* A dica do botão central. Quem nunca usou o método lê "as duas valem o
+     mesmo" como "tanto faz, pule" — e é o oposto: é uma afirmação forte, que
+     restringe os pesos tanto quanto escolher um lado. */
+  "elicitacao.par.indiferente.dica.titulo": {
+    pt: "As duas valem o mesmo",
+    en: "Both are worth the same",
+  },
+  "elicitacao.par.indiferente.dica.corpo1": {
+    pt: "Responda assim quando levar um critério do pior ao melhor desempenho valer exatamente o mesmo que levar o outro. Os dois lados puxam com a mesma força.",
+    en: "Answer this when taking one criterion from worst to best performance is worth exactly the same as taking the other. Both sides pull with equal force.",
+  },
+  "elicitacao.par.indiferente.dica.corpo2": {
+    pt: "Não é pular a pergunta: é uma declaração, e ela fixa a relação entre os dois pesos com a mesma força de escolher um lado.",
+    en: "This is not skipping the question: it is a statement, and it fixes the relation between the two scaling constants as firmly as picking a side.",
+  },
   "elicitacao.par.voltarUma": { pt: "voltar uma", en: "back one" },
   "elicitacao.par.ordemFinal": { pt: "Ordem final", en: "Final order" },
   "elicitacao.par.ordemParcial": { pt: "Ordem parcial", en: "Partial order" },

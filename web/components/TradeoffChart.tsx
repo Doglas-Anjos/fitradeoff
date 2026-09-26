@@ -25,9 +25,10 @@
  * o numero ao lado traz a consequencia na unidade real do problema.
  */
 
-import { Barbell, Check } from "@phosphor-icons/react";
+import { Check } from "@phosphor-icons/react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
+import { CaboDeGuerra } from "@/components/Animacoes";
 import { BotaoEntreCartoes, Dica, ESPERA_CONFIRMACAO } from "@/components/ui";
 import { useIdioma } from "@/lib/i18n";
 import { comNos } from "@/lib/i18n/estrutura";
@@ -176,31 +177,17 @@ function Painel({
   const preterido = estado === "preterido";
 
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      disabled={desabilitado}
+    <div
+      /* O cartão deixou de ser botão e virou o que sempre foi: um conjunto de
+         informação sobre uma situação. `group` com nome dá a ele identidade
+         para quem navega por leitor de tela -- e para os testes -- sem
+         prometer um clique que agora é só do botão lá embaixo. */
+      role="group"
+      aria-label={rotulo}
       data-estado={estado}
-      /* `disabled:opacity-60` sai: depois do clique os dois ficam desabilitados,
-         e apagar os dois por igual esconderia justamente qual foi o escolhido. */
-      className="tatil group flex flex-1 flex-col rounded-[var(--raio-painel)] border p-5 text-left transition-[opacity,border-color,box-shadow] duration-200"
-      style={{
-        borderColor: escolhido ? cor : "var(--borda)",
-        background: "var(--painel)",
-        boxShadow: escolhido ? `inset 0 0 0 1px ${cor}` : "none",
-        opacity: preterido ? 0.4 : 1,
-      }}
-      onMouseEnter={(e) => {
-        if (!desabilitado) {
-          e.currentTarget.style.borderColor = cor;
-          e.currentTarget.style.boxShadow = "var(--sombra-alta)";
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (escolhido) return;
-        e.currentTarget.style.borderColor = "var(--borda)";
-        e.currentTarget.style.boxShadow = "none";
-      }}
+      data-ativo={!desabilitado}
+      className="cartao-escolha group flex flex-1 flex-col rounded-[var(--raio-painel)] border p-5 text-left"
+      style={{ "--cor-lado": cor } as React.CSSProperties}
     >
       <div className="mb-5 flex items-baseline gap-2.5">
         <span
@@ -236,23 +223,21 @@ function Painel({
         </>
       )}
 
-      {/* Sempre visivel. Como afordancia de hover isto nao existia em telas de
-          toque, e a tela nao tinha nenhum sinal de que os cartoes respondiam a
-          um clique -- as unicas acoes visiveis eram as saidas de emergencia. */}
-      <span
-        className="mt-6 flex items-center justify-center gap-1.5 rounded-[var(--raio-controle)] border px-3 py-2 text-center text-[13px] font-medium transition-colors duration-200"
-        style={{
-          borderColor: cor,
-          background: escolhido ? cor : "transparent",
-          color: escolhido ? "var(--painel)" : cor,
-        }}
+      {/* O único alvo de clique do cartão. O rótulo já nomeia a situação, então
+          aqui não é preciso reforçar o nome acessível. */}
+      <button
+        type="button"
+        onClick={onSelect}
+        disabled={desabilitado}
+        data-escolhido={escolhido}
+        className="botao-escolha tatil mt-6 flex items-center justify-center gap-1.5 rounded-[var(--raio-controle)] border px-3 py-2 text-center text-[13px] font-medium"
       >
         {escolhido && <Check size={14} weight="bold" />}
         {escolhido
           ? t("elicitacao.tradeoff.escolhida")
           : t("elicitacao.tradeoff.escolher", { situacao: rotulo })}
-      </span>
-    </button>
+      </button>
+    </div>
   );
 }
 
@@ -367,12 +352,13 @@ export function TradeoffChart({
         {onIndiferente && (
           <BotaoEntreCartoes
             rotulo={t("tela.decisao.indiferentes")}
-            icone={
-              <Barbell
-                size={20}
-                weight={escolhida === "indiferente" ? "fill" : "regular"}
-              />
+            dica={
+              <Dica titulo={t("tela.decisao.indiferentes.dica.titulo")}>
+                <p>{t("tela.decisao.indiferentes.dica.corpo1")}</p>
+                <p>{t("tela.decisao.indiferentes.dica.corpo2")}</p>
+              </Dica>
             }
+            icone={<CaboDeGuerra />}
             desabilitado={desabilitado || escolhida !== null}
             confirmado={escolhida === "indiferente"}
             onClick={() => escolher("indiferente", onIndiferente)}

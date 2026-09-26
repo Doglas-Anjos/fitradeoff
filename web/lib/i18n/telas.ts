@@ -210,6 +210,33 @@ export const TELAS = registrar({
     pt: "Encerra este par sem assumir nada sobre os pesos",
     en: "Ends this pair without assuming anything about the scaling constants",
   },
+  /* A distinção que mais confunde quem chega ao método: "não sei" e "são
+     indiferentes" parecem a mesma desistência, e são opostos. Uma afirma, a
+     outra se cala. Dizer isso uma vez, no lugar certo, evita a resposta errada. */
+  "tela.decisao.naoSei.dica.titulo": {
+    pt: "Não sei responder",
+    en: "I don't know how to answer",
+  },
+  "tela.decisao.naoSei.dica.corpo1": {
+    pt: "Use quando a comparação não fizer sentido para você. O par se encerra e a pergunta não volta.",
+    en: "Use this when the comparison does not make sense to you. The pair ends and the question does not come back.",
+  },
+  "tela.decisao.naoSei.dica.corpo2": {
+    pt: "Diferente de “são indiferentes”: aquela afirma que as duas valem o mesmo e restringe os pesos; esta não afirma nada, então nada é deduzido a partir dela.",
+    en: "Different from “they are indifferent”: that one states both are worth the same and constrains the scaling constants; this one states nothing, so nothing is inferred from it.",
+  },
+  "tela.decisao.indiferentes.dica.titulo": {
+    pt: "São indiferentes",
+    en: "They are indifferent",
+  },
+  "tela.decisao.indiferentes.dica.corpo1": {
+    pt: "As duas situações valem exatamente o mesmo para você. Os dois lados puxam com a mesma força.",
+    en: "Both situations are worth exactly the same to you. Both sides pull with equal force.",
+  },
+  "tela.decisao.indiferentes.dica.corpo2": {
+    pt: "É uma resposta como A ou B, não uma forma de pular: ela restringe os pesos tanto quanto escolher um lado.",
+    en: "It is an answer like A or B, not a way to skip: it constrains the scaling constants as much as picking a side.",
+  },
   "tela.decisao.conflito.titulo": {
     pt: "Precisa da sua decisão",
     en: "Needs your decision",

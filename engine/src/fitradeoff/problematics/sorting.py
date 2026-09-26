@@ -71,6 +71,24 @@ class SortingProblematic(Problematic):
 
         for i, faixa in enumerate(bounds):
             classes = self._classes_for(faixa.lower, faixa.upper)
+
+            # Faixa mais estreita que o limiar de equivalencia: o valor global
+            # ja nao pode ser fixado com precisao melhor que ele, e nenhuma
+            # pergunta futura decide de que lado do corte a alternativa esta.
+            # Vale o meio da faixa; insistir e perguntar por uma diferenca que o
+            # proprio metodo declarou irrelevante.
+            #
+            # O criterio e a **largura**, nao a profundidade do cruzamento --
+            # medido contra o sistema oficial, que classifica uma faixa de
+            # 0,0088 atravessando o corte por 0,0005, mas segue perguntando
+            # sobre uma de 0,0171 que o atravessa por 0,0083.
+            if (
+                len(classes) > 1
+                and faixa.upper - faixa.lower <= self.evaluator.equivalence
+            ):
+                meio = (faixa.lower + faixa.upper) / 2.0
+                classes = self._classes_for(meio, meio)
+
             nome = problem.alternatives[i]
             alocacao[nome] = {
                 "faixa_de_valor": [round(faixa.lower, 4), round(faixa.upper, 4)],

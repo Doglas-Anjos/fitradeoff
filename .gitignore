@@ -19,3 +19,6 @@ decisoes/
 # skills instaladas por `npx skills` — dependem do agente, não do projeto
 .agents/
 .claude/skills/
+
+# capturas e saidas de teste: evidencia de verificacao, nao produto
+artifacts/

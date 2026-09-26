@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
 
+import { ProvedorIdioma } from "@/lib/i18n";
+import { Avisos } from "@/components/Avisos";
 import { Navegacao } from "@/components/Navegacao";
 import "./globals.css";
 
@@ -28,8 +30,12 @@ export default function RootLayout({
       className={`${GeistSans.variable} ${GeistMono.variable}`}
     >
       <body className="min-h-dvh">
-        <Navegacao />
-        {children}
+        <ProvedorIdioma>
+          <Navegacao />
+          {children}
+          {/* uma só, na raiz: duas montadas duplicam todo aviso */}
+          <Avisos />
+        </ProvedorIdioma>
       </body>
     </html>
   );

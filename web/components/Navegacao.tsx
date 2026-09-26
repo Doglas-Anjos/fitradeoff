@@ -7,12 +7,17 @@
  * sao a forma do que o metodo faz -- um intervalo que encolhe.
  */
 
+import { ArrowSquareOut } from "@phosphor-icons/react";
 import Link from "next/link";
+
+import { SeletorIdioma } from "@/components/SeletorIdioma";
+import { useIdioma } from "@/lib/i18n";
+import "@/lib/i18n/nucleo";
 import { usePathname } from "next/navigation";
 
 const DESTINOS = [
-  { href: "/decisao", rotulo: "Decisão" },
-  { href: "/chat", rotulo: "Chat" },
+  { href: "/decisao", chave: "nav.decisao" },
+  { href: "/chat", chave: "nav.chat" },
 ];
 
 function Marca() {
@@ -28,6 +33,7 @@ function Marca() {
 
 export function Navegacao() {
   const caminho = usePathname();
+  const { t } = useIdioma();
 
   return (
     <header
@@ -63,10 +69,28 @@ export function Navegacao() {
                   fontWeight: ativo ? 500 : 400,
                 }}
               >
-                {d.rotulo}
+                {t(d.chave)}
               </Link>
             );
           })}
+        </div>
+
+        {/* O método não é nosso: é do CDSID/UFPE, e quem quiser a fonte, os
+            artigos ou o sistema de referência deve chegar lá em um clique. */}
+        <div className="ml-auto flex items-center gap-2">
+          <SeletorIdioma />
+          <a
+            href="https://fitradeoff.org"
+          target="_blank"
+          rel="noopener noreferrer"
+            className="tatil flex items-center gap-1.5 rounded-[var(--raio-controle)] px-2.5 py-1.5 text-[13px]"
+          style={{ color: "var(--tinta-3)" }}
+            title={t("nav.sobre.titulo")}
+        >
+          <span className="max-sm:sr-only">{t("nav.sobre")}</span>
+          <ArrowSquareOut size={13} weight="bold" aria-hidden />
+            <span className="sr-only">{t("nav.abreEmOutraAba")}</span>
+          </a>
         </div>
       </nav>
     </header>

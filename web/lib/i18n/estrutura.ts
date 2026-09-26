@@ -419,6 +419,34 @@ export const ESTRUTURA = registrar({
     pt: "Role a tabela para o lado para ver os outros critérios.",
     en: "Scroll the table sideways to see the other criteria.",
   },
+
+  /* Colar do Excel. A dica precisa dizer *onde* a colagem começa, senão a
+     pessoa cola com o foco em qualquer lugar e os números entram deslocados —
+     e aí duvida da ferramenta, não do próprio clique. */
+  "estrutura.matriz.colar.dica": {
+    pt: "Dá para colar a tabela inteira do Excel: clique na célula onde o bloco começa e tecle Ctrl+V.",
+    en: "You can paste a whole table from Excel: click the cell where the block starts and press Ctrl+V.",
+  },
+  "estrutura.matriz.colar.feito": {
+    pt: "{n} células preenchidas.",
+    en: "{n} cells filled.",
+  },
+  "estrutura.matriz.colar.umaCelula": {
+    pt: "1 célula preenchida.",
+    en: "1 cell filled.",
+  },
+  "estrutura.matriz.colar.nada": {
+    pt: "Nada foi colado: o conteúdo não parecia uma tabela.",
+    en: "Nothing was pasted: the content did not look like a table.",
+  },
+  "estrutura.matriz.colar.foraDaGrade": {
+    pt: "{n} valores ficaram de fora: não cabem a partir dessa célula.",
+    en: "{n} values were left out: they do not fit from that cell on.",
+  },
+  "estrutura.matriz.colar.recusados": {
+    pt: "{n} valores recusados: não são níveis declarados do critério.",
+    en: "{n} values rejected: they are not declared levels of the criterion.",
+  },
   "estrutura.matriz.coluna.alternativa": {
     pt: "Alternativa",
     en: "Alternative",

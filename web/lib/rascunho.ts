@@ -269,6 +269,125 @@ export function definirCusto(r: Rascunho, linha: number, custo: string): Rascunh
   };
 }
 
+/* --- colar uma tabela inteira --------------------------------------------------
+
+   Digitar 8x5 celulas a mao e o tipo de trabalho que faz alguem desistir da
+   ferramenta e voltar para a planilha. Colar do Excel resolve, desde que a
+   colagem seja honesta sobre o que aceitou: preencher em silencio o que nao
+   entendeu seria pior do que recusar. */
+
+const naoVazias = (texto: string): string[] =>
+  texto
+    .replace(/\r\n?/g, "\n")
+    .split("\n")
+    .filter((l) => l.trim() !== "");
+
+/** O separador que a planilha usou, ou `null` se aquilo nao e uma tabela.
+ *
+ * Excel e Google Sheets copiam com TAB, que e o caso facil e o unico em que o
+ * decimal com virgula nao gera ambiguidade. Sem TAB, `;` e o proximo palpite
+ * (padrao do Excel em pt-BR).
+ *
+ * A virgula so vale **com duas linhas ou mais**, e essa condicao nao e
+ * preciosismo: copiar uma celula unica de `12,5` no Excel poe `"12,5\r\n"` na
+ * area de transferencia. Tratando a virgula como separador numa linha so, esse
+ * numero virava `12` numa celula e `5` na vizinha -- silenciosamente, com um
+ * aviso dizendo "2 celulas preenchidas". Um bloco de varias linhas separado por
+ * virgula e inequivocamente uma tabela; uma linha so, nao. */
+function separadorDe(linhas: string[]): string | null {
+  if (linhas.some((l) => l.includes("\t"))) return "\t";
+  if (linhas.some((l) => l.includes(";"))) return ";";
+  return linhas.length >= 2 ? "," : null;
+}
+
+/** O texto colado parece uma tabela? Mesmo criterio que `colarNaMatriz` usa. */
+export function pareceTabela(texto: string): boolean {
+  const linhas = naoVazias(texto);
+  return linhas.length > 0 && separadorDe(linhas) !== null;
+}
+
+export interface ResultadoColagem {
+  rascunho: Rascunho;
+  /** Celulas efetivamente escritas. */
+  preenchidas: number;
+  /** Valores que sobraram por nao caber na grade a partir da origem. */
+  foraDaGrade: number;
+  /** Valores recusados por nao serem um nivel declarado do criterio. */
+  recusados: number;
+}
+
+/**
+ * Escreve um bloco colado na matriz, a partir de (`linha`, `coluna`).
+ *
+ * Duas recusas deliberadas, ambas contadas e devolvidas para a tela avisar:
+ *
+ * - **o que nao cabe** e descartado em vez de crescer a grade. A estrutura foi
+ *   declarada no passo anterior, e colar nao e lugar de alterar quantas
+ *   alternativas existem -- isso seria mudar o problema sem o decisor pedir.
+ * - **criterio de escala construida** so aceita um nivel declarado. Um valor
+ *   fora da lista viraria uma celula que a criacao recusaria depois, longe
+ *   daqui, sem ninguem lembrar de onde veio.
+ */
+export function colarNaMatriz(
+  r: Rascunho,
+  linha: number,
+  coluna: number,
+  texto: string,
+  comCusto = false,
+): ResultadoColagem {
+  const linhasColadas = texto
+    .replace(/\r\n?/g, "\n")
+    .split("\n")
+    .filter((l, i, todas) => l.trim() !== "" || i < todas.length - 1);
+  if (linhasColadas.length === 0 || texto.trim() === "") {
+    return { rascunho: r, preenchidas: 0, foraDaGrade: 0, recusados: 0 };
+  }
+
+  const separador = separadorDe(naoVazias(texto));
+  if (separador === null) {
+    return { rascunho: r, preenchidas: 0, foraDaGrade: 0, recusados: 0 };
+  }
+  const largura = r.colunas.length + (comCusto ? 1 : 0);
+
+  const linhas = r.linhas.map((l) => ({ ...l, valores: [...l.valores] }));
+  let preenchidas = 0;
+  let foraDaGrade = 0;
+  let recusados = 0;
+
+  linhasColadas.forEach((bruta, di) => {
+    const alvo = linha + di;
+    const celulas = bruta.split(separador).map((c) => c.trim());
+    celulas.forEach((valor, dj) => {
+      const col = coluna + dj;
+      if (valor === "") return;
+      if (alvo >= linhas.length || col >= largura) {
+        foraDaGrade += 1;
+        return;
+      }
+      if (comCusto && col === r.colunas.length) {
+        linhas[alvo].custo = valor;
+        preenchidas += 1;
+        return;
+      }
+      const criterio = r.colunas[col];
+      if (criterio.escala === "discreta") {
+        const nivel = criterio.niveis.find((n) => n.trim() === valor);
+        if (nivel === undefined) {
+          recusados += 1;
+          return;
+        }
+        linhas[alvo].valores[col] = nivel;
+        preenchidas += 1;
+        return;
+      }
+      linhas[alvo].valores[col] = valor;
+      preenchidas += 1;
+    });
+  });
+
+  return { rascunho: { ...r, linhas }, preenchidas, foraDaGrade, recusados };
+}
+
 /* --- chaves ------------------------------------------------------------------- */
 
 function base(nome: string, indice: number): string {

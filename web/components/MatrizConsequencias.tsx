@@ -13,15 +13,18 @@
 import { Coins } from "@phosphor-icons/react";
 import { useEffect } from "react";
 
+import { avisar } from "@/components/Avisos";
 import { Rodape } from "@/components/Etapas";
 import { Botao, Entrada, estiloControle } from "@/components/ui";
 import { useIdioma } from "@/lib/i18n";
 import "@/lib/i18n/estrutura";
 import "@/lib/i18n/nucleo";
 import {
+  colarNaMatriz,
   definirCusto,
   definirValor,
   niveisDe,
+  pareceTabela,
   type Rascunho,
   ehCarteira,
 } from "@/lib/rascunho";
@@ -63,6 +66,56 @@ export function MatrizConsequencias({
 
   const carteira = ehCarteira(rascunho.problematica);
 
+  /** Onde a colagem começa: a célula sob o cursor.
+   *
+   * O alvo do evento é o `<input>`/`<select>` que tem o `data-campo`, e é ele
+   * quem diz a origem. O canto (0, 0) é só rede de segurança: o evento de
+   * colar vai para o elemento com foco, e todo elemento focável aqui dentro
+   * carrega `data-campo` — colar sem foco numa célula nem chega neste handler. */
+  function origemDe(alvo: EventTarget | null): [number, number] {
+    const campo = (alvo as HTMLElement | null)?.closest?.("[data-campo]");
+    const nome = campo?.getAttribute("data-campo") ?? "";
+    const celula = /^celula-(\d+)-(\d+)$/.exec(nome);
+    if (celula) return [Number(celula[1]), Number(celula[2])];
+    const custo = /^custo-(\d+)$/.exec(nome);
+    if (custo) return [Number(custo[1]), rascunho.colunas.length];
+    return [0, 0];
+  }
+
+  function aoColar(e: React.ClipboardEvent) {
+    const texto = e.clipboardData.getData("text/plain");
+    /* Uma célula só é digitação normal: interceptar atrapalharia o gesto de
+       corrigir um número copiado de outro lugar. O critério vive no rascunho,
+       junto do parse, porque os dois precisam concordar — se divergirem, ou a
+       colagem é engolida sem efeito, ou `12,5` vira duas células. */
+    if (!texto || !pareceTabela(texto)) return;
+
+    e.preventDefault();
+    const [linha, coluna] = origemDe(e.target);
+    const r = colarNaMatriz(rascunho, linha, coluna, texto, carteira);
+
+    if (r.preenchidas === 0 && r.recusados === 0 && r.foraDaGrade === 0) {
+      return avisar.erro(t("estrutura.matriz.colar.nada"));
+    }
+
+    const anterior = rascunho;
+    onAlterar(r.rascunho);
+
+    const partes = [
+      r.preenchidas === 1
+        ? t("estrutura.matriz.colar.umaCelula")
+        : t("estrutura.matriz.colar.feito", { n: r.preenchidas }),
+    ];
+    if (r.foraDaGrade > 0)
+      partes.push(t("estrutura.matriz.colar.foraDaGrade", { n: r.foraDaGrade }));
+    if (r.recusados > 0)
+      partes.push(t("estrutura.matriz.colar.recusados", { n: r.recusados }));
+
+    /* Desfazível porque colar acerta muitas células de uma vez: se a origem
+       estava errada, refazer à mão seria pior do que nunca ter colado. */
+    avisar.desfazivel(partes.join(" "), () => onAlterar(anterior));
+  }
+
   return (
     <div>
       <p className="prosa mb-3 text-[13px]" style={{ color: "var(--tinta-3)" }}>
@@ -80,7 +133,12 @@ export function MatrizConsequencias({
         </p>
       )}
 
+      <p className="mb-3 text-[12px]" style={{ color: "var(--tinta-fraca)" }}>
+        {t("estrutura.matriz.colar.dica")}
+      </p>
+
       <div
+        onPaste={aoColar}
         className="overflow-x-auto rounded-[var(--raio-painel)] border p-4"
         style={{ borderColor: "var(--borda)", background: "var(--painel)" }}
       >

@@ -95,17 +95,33 @@ class Evaluator:
             if self.is_potentially_optimal(problem, space, i)
         )
 
+    @property
+    def _folga(self) -> float:
+        """Quanto ``better`` pode ficar atras sem que isso conte como perder.
+
+        E o limiar de equivalencia, com o piso da tolerancia numerica. Exigir
+        vantagem em todo o espaco, ate a ultima casa, e mais rigor do que o
+        decisor tem: uma desvantagem maxima de 0,009 em valor global nao e uma
+        desvantagem que alguem sinta, e persegui-la custa perguntas que nao
+        mudam a conclusao.
+
+        A soma dos pesos e 1, entao a folga em valor global e comparavel a folga
+        por criterio -- e por isso o atalho de Pareto abaixo pode usar a mesma.
+        """
+        return max(self._equivalence, TOLERANCE)
+
     def dominates(
         self, problem: Problem, space: WeightSpace, better: int, worse: int
     ) -> bool:
-        """``better`` supera ``worse`` para todo vetor de pesos viavel?"""
+        """``better`` nunca fica mais que o limiar atras de ``worse``?"""
         if better == worse:
             return False
+        folga = self._folga
         difference = problem.values[worse] - problem.values[better]
-        if np.all(difference <= TOLERANCE):
+        if np.all(difference <= folga):
             return True  # dominancia de Pareto: dispensa o LP
         best = self._solver.maximize(space, difference)
-        return best is not None and best <= TOLERANCE
+        return best is not None and best <= folga
 
     def dominance_matrix(
         self, problem: Problem, space: WeightSpace, subset=None
@@ -146,14 +162,18 @@ class Evaluator:
             return matrix
         scores = problem.values @ vertices.T  # (alternativas, vertices)
 
+        # a mesma folga dos dois atalhos e do LP: se divergissem, a matriz
+        # afirmaria uma dominancia que `dominates` nega, ou o contrario
+        folga = self._folga
+
         for i in indices:
             for l in indices:
                 if i == l:
                     continue
                 difference = problem.values[l] - problem.values[i]
-                if np.all(difference <= TOLERANCE):
+                if np.all(difference <= folga):
                     matrix[i, l] = True  # dominancia de Pareto: dispensa o LP
-                elif np.any(scores[l] > scores[i] + TOLERANCE):
+                elif np.any(scores[l] > scores[i] + folga):
                     continue  # refutada por um vertice: dispensa o LP
                 else:
                     matrix[i, l] = self.dominates(problem, space, i, l)

@@ -30,22 +30,48 @@ class RankingProblematic(Problematic):
         dominance = self.evaluator.dominance_matrix(problem, space)
         n = problem.n_alternatives
 
-        dominated_by = dominance.sum(axis=0)  # quantas dominam cada alternativa
-        dominates = dominance.sum(axis=1)  # quantas cada alternativa domina
+        # Com o limiar de equivalencia a dominancia deixa de ser antissimetrica:
+        # duas alternativas a menos do limiar uma da outra superam as duas. Isso
+        # e empate, nao dominancia dupla, e precisa ser separado -- somado junto,
+        # produzia faixa invertida, com a primeira posicao maior que a ultima.
+        empate = dominance & dominance.T
+        estrita = dominance & ~dominance.T
+
+        acima = estrita.sum(axis=0)  # quantas superam cada alternativa
+        abaixo = estrita.sum(axis=1)  # quantas cada alternativa supera
 
         positions = {}
-        undecided = []
         for i in range(n):
-            first = int(dominated_by[i]) + 1
-            last = n - int(dominates[i])
-            positions[problem.alternatives[i]] = [first, last]
-            if first != last:
-                undecided.append(i)
+            positions[problem.alternatives[i]] = [
+                int(acima[i]) + 1,
+                n - int(abaixo[i]),
+            ]
+
+        # Indefinida e a alternativa que tem ao menos um par com quem nao se
+        # ordena **nem** empata. Empatar e resultado: diz que mais perguntas nao
+        # separariam as duas.
+        undecided = [
+            i
+            for i in range(n)
+            if any(
+                l != i and not estrita[i, l] and not estrita[l, i] and not empate[i, l]
+                for l in range(n)
+            )
+        ]
 
         resolved = not undecided
+        empatados = int(empate.sum()) // 2
         if resolved:
             ordem = sorted(problem.alternatives, key=lambda a: positions[a][0])
-            headline = "Ranking completo: " + " > ".join(ordem) + "."
+            if empatados:
+                headline = (
+                    "Pré-ordem completa: "
+                    + " > ".join(ordem)
+                    + f". {empatados} par(es) empatam dentro do limiar de "
+                    f"{self.evaluator.equivalence:g}."
+                )
+            else:
+                headline = "Ranking completo: " + " > ".join(ordem) + "."
         else:
             headline = (
                 f"Ranking parcial: {len(undecided)} alternativas ainda sem posição "

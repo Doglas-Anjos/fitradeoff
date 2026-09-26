@@ -136,6 +136,52 @@ def test_ranking_parcial_aponta_os_pares_indefinidos(evaluator):
     assert "X vs Y" in analysis.detail["pares_indefinidos"]
 
 
+def test_empate_no_limiar_fecha_a_ordem_como_pre_ordem(evaluator):
+    """Duas alternativas indistinguiveis nao deixam o ranking em aberto.
+
+    Com o limiar de equivalencia a dominancia deixa de ser antissimetrica: as
+    duas "superam" uma a outra. Isso e empate, e empate e resultado -- diz que
+    nenhuma pergunta futura as separaria.
+    """
+    from fitradeoff.problematics.evaluator import Evaluator
+
+    # X domina folgado; Y e Z ficam a 0,004 de distancia, dentro do limiar
+    problem = make_problem(
+        [[1.0, 1.0], [0.5, 0.5], [0.496, 0.504]], names=["X", "Y", "Z"]
+    )
+    folgado = Evaluator(evaluator.solver, equivalence=0.01)
+    analysis = RankingProblematic(folgado).analyse(problem, space_for(problem, [0, 1]))
+
+    assert analysis.resolved
+    assert "Pré-ordem completa" in analysis.headline
+    assert analysis.detail["posicoes_possiveis"]["X"] == [1, 1]
+    # Y e Z dividem a mesma faixa, e ela nao pode estar invertida
+    for nome in ("Y", "Z"):
+        primeira, ultima = analysis.detail["posicoes_possiveis"][nome]
+        assert primeira <= ultima, (nome, primeira, ultima)
+        assert [primeira, ultima] == [2, 3]
+
+
+def test_faixa_de_posicao_nunca_sai_invertida(evaluator):
+    """Regressao: somar empate como dominancia dupla dava [12-11].
+
+    A aritmetica de posicao conta quantas superam e quantas sao superadas. Se o
+    empate entrasse nas duas contagens, os dois extremos se cruzavam e a tela
+    exibia uma faixa que nao existe.
+    """
+    from fitradeoff.problematics.evaluator import Evaluator
+
+    problem = make_problem(
+        [[0.500, 0.500], [0.502, 0.498], [0.498, 0.502], [0.0, 0.0]],
+        names=["A", "B", "C", "D"],
+    )
+    folgado = Evaluator(evaluator.solver, equivalence=0.05)
+    analysis = RankingProblematic(folgado).analyse(problem, space_for(problem, [0, 1]))
+
+    for nome, (primeira, ultima) in analysis.detail["posicoes_possiveis"].items():
+        assert primeira <= ultima, (nome, primeira, ultima)
+
+
 def test_alternativa_sempre_ao_menos_tao_boa_fica_a_frente(evaluator):
     # X nunca perde para Y, ainda que empate em k0 = k1 = 0.5: dominancia fraca
     # basta para fixar a posicao no ranking

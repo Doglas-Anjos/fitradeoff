@@ -15,21 +15,41 @@
 import { ArrowDown, ArrowUp, DotsSixVertical } from "@phosphor-icons/react";
 import { useRef, useState } from "react";
 
+import { useIdioma } from "@/lib/i18n";
+import "@/lib/i18n/estrutura";
+
 export interface ItemArrastavel {
   id: string;
   titulo: string;
   detalhe?: React.ReactNode;
+  /**
+   * Substitui a exibição do título. O `titulo` continua sendo o texto que os
+   * rótulos de acessibilidade e o anúncio do movimento usam, então quem troca
+   * o corpo por um campo de edição não perde a identificação do item.
+   */
+  corpo?: React.ReactNode;
+  /**
+   * Um item em edição não se arrasta: em vários navegadores, o arrasto do pai
+   * rouba o gesto e o texto do campo deixa de poder ser selecionado.
+   */
+  arrastavel?: boolean;
+  /** Marca o item de que se está tratando agora, como o que está em edição. */
+  destacado?: boolean;
 }
 
 export function ListaArrastavel({
   itens,
   onReordenar,
   rotuloPosicao = (i) => String(i + 1),
+  acoes,
 }: {
   itens: ItemArrastavel[];
   onReordenar: (ordem: string[]) => void;
   rotuloPosicao?: (indice: number) => string;
+  /** Botões próprios do item, como editar e excluir, antes das setas. */
+  acoes?: (id: string) => React.ReactNode;
 }) {
+  const { t } = useIdioma();
   const [arrastando, setArrastando] = useState<string | null>(null);
   const [sobre, setSobre] = useState<string | null>(null);
   const [anuncio, setAnuncio] = useState("");
@@ -41,7 +61,13 @@ export function ListaArrastavel({
     const [movido] = ordem.splice(de, 1);
     ordem.splice(para, 0, movido);
     onReordenar(ordem);
-    setAnuncio(`${itens[de].titulo} agora está na posição ${para + 1} de ${itens.length}.`);
+    setAnuncio(
+      t("estrutura.lista.anuncioMovimento", {
+        item: itens[de].titulo,
+        posicao: para + 1,
+        total: itens.length,
+      }),
+    );
   };
 
   const soltar = (alvo: string) => {
@@ -66,6 +92,15 @@ export function ListaArrastavel({
         {itens.map((item, i) => {
           const sendoArrastado = arrastando === item.id;
           const alvoAtual = sobre === item.id && !sendoArrastado;
+          /* De que lado o item vai entrar: arrastando de cima para baixo ele
+             cai depois do alvo; de baixo para cima, antes. Sem deduzir isso a
+             linha ficaria sempre no mesmo lado e mentiria em metade dos casos. */
+          const origem = arrastando
+            ? itens.findIndex((x) => x.id === arrastando)
+            : -1;
+          const guiaAbaixo = alvoAtual && origem >= 0 && origem < i;
+          const guiaAcima = alvoAtual && origem >= 0 && origem > i;
+          const podeArrastar = item.arrastavel !== false;
 
           return (
             <li
@@ -73,7 +108,7 @@ export function ListaArrastavel({
               ref={(el) => {
                 referencias.current[item.id] = el;
               }}
-              draggable
+              draggable={podeArrastar}
               onDragStart={(e) => {
                 setArrastando(item.id);
                 e.dataTransfer.effectAllowed = "move";
@@ -94,15 +129,35 @@ export function ListaArrastavel({
                 e.preventDefault();
                 soltar(item.id);
               }}
-              className="tatil flex items-center gap-3 rounded-[var(--raio-painel)] border px-3 py-2.5"
-              style={{
-                borderColor: alvoAtual ? "var(--accent)" : "var(--borda)",
-                background: sendoArrastado ? "var(--painel-fundo)" : "var(--painel)",
-                opacity: sendoArrastado ? 0.5 : 1,
-                cursor: "grab",
-                boxShadow: alvoAtual ? "var(--sombra)" : "none",
-              }}
+              className="tatil entra-em-lista group relative flex items-center gap-2 rounded-[var(--raio-painel)] border px-2.5 py-2.5"
+              style={
+                {
+                  "--ordem": i,
+                  borderColor: item.destacado ? "var(--accent)" : "var(--borda)",
+                  background: sendoArrastado ? "var(--painel-fundo)" : "var(--painel)",
+                  opacity: sendoArrastado ? 0.5 : 1,
+                  cursor: podeArrastar ? "grab" : "default",
+                  boxShadow: item.destacado
+                    ? "inset 0 0 0 1px var(--accent)"
+                    : "none",
+                } as React.CSSProperties
+              }
             >
+              {/* A linha mostra onde o cartão vai cair. A borda do alvo dizia
+                  "é aqui", mas não dizia "antes ou depois deste" - que numa
+                  lista ordenada é justamente a pergunta. */}
+              {(guiaAcima || guiaAbaixo) && (
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute inset-x-2 h-0.5 rounded-full"
+                  style={{
+                    background: "var(--accent)",
+                    top: guiaAcima ? "-5px" : undefined,
+                    bottom: guiaAbaixo ? "-5px" : undefined,
+                  }}
+                />
+              )}
+
               <DotsSixVertical
                 size={16}
                 weight="bold"
@@ -119,11 +174,18 @@ export function ListaArrastavel({
               </span>
 
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm" style={{ color: "var(--tinta)" }}>
-                  {item.titulo}
-                </span>
+                {item.corpo ?? (
+                  <span
+                    className="block truncate text-sm"
+                    style={{ color: "var(--tinta)" }}
+                  >
+                    {item.titulo}
+                  </span>
+                )}
                 {item.detalhe}
               </span>
+
+              {acoes?.(item.id)}
 
               {/* mesmo efeito do arrasto, para teclado e toque impreciso */}
               <span className="flex shrink-0 gap-0.5">
@@ -131,7 +193,7 @@ export function ListaArrastavel({
                   type="button"
                   onClick={() => mover(i, i - 1)}
                   disabled={i === 0}
-                  aria-label={`Mover ${item.titulo} para cima`}
+                  aria-label={t("estrutura.lista.moverAcima", { item: item.titulo })}
                   className="tatil px-1.5 disabled:opacity-25"
                   style={{ color: "var(--tinta-3)" }}
                 >
@@ -141,7 +203,7 @@ export function ListaArrastavel({
                   type="button"
                   onClick={() => mover(i, i + 1)}
                   disabled={i === itens.length - 1}
-                  aria-label={`Mover ${item.titulo} para baixo`}
+                  aria-label={t("estrutura.lista.moverAbaixo", { item: item.titulo })}
                   className="tatil px-1.5 disabled:opacity-25"
                   style={{ color: "var(--tinta-3)" }}
                 >
@@ -154,7 +216,7 @@ export function ListaArrastavel({
       </ol>
 
       <p className="mt-2 text-[11px]" style={{ color: "var(--tinta-fraca)" }}>
-        Arraste pelos pontos à esquerda, ou use as setas.
+        {t("estrutura.lista.comoUsar")}
       </p>
     </>
   );

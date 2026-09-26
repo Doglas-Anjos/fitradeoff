@@ -9,7 +9,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import Settings, load_settings
-from .routers import chat, decisions, planilhas
+from .routers import chat, decisions, planilhas, rascunhos
 
 DESCRIPTION = """\
 API do metodo FITradeoff (De Almeida et al., 2016) para apoio a decisao
@@ -41,6 +41,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(decisions.router)
     app.include_router(planilhas.router)
     app.include_router(chat.router)
+    app.include_router(rascunhos.router)
 
     @app.get("/api/saude", tags=["infra"], summary="Estado do servico")
     def saude():

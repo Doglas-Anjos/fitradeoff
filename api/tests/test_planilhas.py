@@ -340,3 +340,134 @@ def test_sensibilidade_no_export_e_ignorada_antes_de_comecar(client):
     r = client.get(f"/api/decisoes/{criada['id']}/exportar?sensibilidade=true")
     assert r.status_code == 200
     assert "Sensibilidade" not in load_workbook(io.BytesIO(r.content)).sheetnames
+
+
+# --- configuracao junto da planilha -------------------------------------------
+
+
+def test_importar_sorting_aceita_os_perfis_do_formulario(client):
+    """A planilha descreve o problema; a leitura que se quer dele vem da tela.
+
+    Antes a importacao nao repassava `configuracao`, entao escolher 'sorting' e
+    subir uma planilha falhava com 400 -- o motor exige perfis, e nao havia por
+    onde informa-los.
+    """
+    r = client.post(
+        "/api/decisoes/importar",
+        files={"arquivo": ("dados.xlsx", como_xlsx(LINHAS_OK), XLSX)},
+        data={
+            "problematica": "sorting",
+            "configuracao": '{"perfis": [0.35, 0.7], "classes": ["Baixa", "Alta", "Topo"]}',
+        },
+    )
+    assert r.status_code == 201, r.json()
+    assert r.json()["configuracao"]["perfis"] == [0.35, 0.7]
+
+
+def test_importar_com_configuracao_ilegivel_explica(client):
+    r = client.post(
+        "/api/decisoes/importar",
+        files={"arquivo": ("dados.xlsx", como_xlsx(LINHAS_OK), XLSX)},
+        data={"problematica": "sorting", "configuracao": "{nao e json"},
+    )
+    assert r.status_code == 422
+    assert "JSON" in r.json()["detail"]
+
+
+def test_importar_sem_configuracao_segue_funcionando(client):
+    """O caminho antigo nao pode ter mudado: escolha nao precisa de nada."""
+    r = client.post(
+        "/api/decisoes/importar",
+        files={"arquivo": ("dados.xlsx", como_xlsx(LINHAS_OK), XLSX)},
+    )
+    assert r.status_code == 201
+
+
+# --- previa: ler sem gravar ---------------------------------------------------
+
+
+def test_previa_devolve_o_que_leu_sem_criar_nada(client):
+    """Conferir antes de gravar so vale se nada for gravado na conferencia."""
+    antes = len(client.get("/api/decisoes").json()["decisoes"])
+
+    r = client.post(
+        "/api/planilhas/previa",
+        files={"arquivo": ("dados.xlsx", como_xlsx(LINHAS_OK), XLSX)},
+    )
+    assert r.status_code == 200
+    corpo = r.json()
+    assert corpo["alternativas"]
+    assert corpo["criterios"][0]["direcao"] in ("max", "min")
+    assert corpo["origem"] == "dados.xlsx"
+
+    depois = len(client.get("/api/decisoes").json()["decisoes"])
+    assert depois == antes, "a previa nao pode criar decisao"
+
+
+def test_previa_aceita_texto_colado_do_excel(client):
+    """A area de transferencia do Excel vem tabulada, nao com virgula."""
+    colado = "\t".join(["Compras", "Custo", "Prazo"]) + "\n"
+    colado += "\t".join(["direcao", "min", "min"]) + "\n"
+    colado += "\t".join(["Fornecedor A", "120", "30"]) + "\n"
+    colado += "\t".join(["Fornecedor B", "95", "45"]) + "\n"
+
+    r = client.post("/api/planilhas/previa", data={"texto": colado})
+    assert r.status_code == 200, r.json()
+    corpo = r.json()
+    assert corpo["nome"] == "Compras"
+    assert corpo["alternativas"] == ["Fornecedor A", "Fornecedor B"]
+    assert [c["direcao"] for c in corpo["criterios"]] == ["min", "min"]
+    assert corpo["origem"] == "colado"
+
+
+def test_previa_sem_arquivo_nem_texto_orienta(client):
+    r = client.post("/api/planilhas/previa", data={"texto": "   "})
+    assert r.status_code == 422
+    assert "cole" in r.json()["detail"].lower()
+
+
+def test_previa_com_planilha_invalida_explica_o_que_falta(client):
+    ruim = [["X", "A", "B"], ["unidade", "", ""], ["p", 1, 2], ["q", 3, 4]]
+    r = client.post(
+        "/api/planilhas/previa",
+        files={"arquivo": ("dados.csv", como_csv(ruim), "text/csv")},
+    )
+    assert r.status_code == 422
+    assert "direcao" in r.json()["detail"]
+
+
+def test_export_sob_veto_leva_a_ressalva_junto(client):
+    """A planilha publica as faixas penalizadas; sem a ressalva ao lado, quem
+    abrir o arquivo lê um teto conservador como se fosse exato.
+
+    A ressalva chega aqui de graça porque o motor a publica sob a mesma chave
+    que as carteiras já usavam -- é sempre uma afirmação sobre como o número
+    foi obtido. Este teste existe para que essa unificação não se desfaça."""
+    criada = client.post(
+        "/api/decisoes",
+        json={
+            "nome": "Com veto",
+            "alternativas": ["A", "B", "C"],
+            "criterios": [
+                {"chave": "q", "nome": "Qualidade", "direcao": "max"},
+                {
+                    "chave": "p",
+                    "nome": "Prazo",
+                    "direcao": "min",
+                    "unidade": "dias",
+                    "veto_superior": 30,
+                    "veto_inferior": 50,
+                },
+            ],
+            "consequencias": [[0.95, 60], [0.70, 20], [0.60, 25]],
+        },
+    ).json()
+    client.post(f"/api/decisoes/{criada['id']}/ordenacao", json={"ordem": ["q", "p"]})
+
+    r = client.get(f"/api/decisoes/{criada['id']}/exportar")
+    assert r.status_code == 200
+    aba = load_workbook(io.BytesIO(r.content))["Resultado"]
+    linhas = {aba.cell(l, 1).value: aba.cell(l, 2).value for l in range(1, aba.max_row + 1)}
+
+    assert "Ressalva" in linhas, "o export saiu com as faixas e sem dizer como saíram"
+    assert "envelope" in linhas["Ressalva"]

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
@@ -39,10 +40,61 @@ def modelo():
     return _anexo(spreadsheet.modelo(), "modelo-fitradeoff.xlsx")
 
 
+@router.post("/planilhas/previa", summary="Le a planilha sem criar nada")
+async def previa(
+    arquivo: UploadFile | None = File(None),
+    texto: str = Form(""),
+):
+    """Devolve o que foi entendido da planilha, para conferencia.
+
+    Importar e criar num passo so obriga a descobrir o erro depois do fato: a
+    decisao ja existe, com a direcao trocada ou uma coluna a menos. Aqui a
+    leitura acontece sem gravar nada, e quem confere e o decisor.
+
+    Aceita arquivo ou texto colado. Colar e o caminho mais curto de todos --
+    selecionar no Excel e colar --, e o texto vem tabulado, que o leitor de CSV
+    ja reconhece.
+    """
+    if arquivo is not None:
+        conteudo = await arquivo.read()
+        nome = arquivo.filename or ""
+    elif texto.strip():
+        conteudo = texto.encode("utf-8")
+        # sem extensao real: tratamos como texto separado, que e o que a area de
+        # transferencia do Excel produz
+        nome = "colado.csv"
+    else:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "Envie um arquivo ou cole os dados da planilha.",
+        )
+
+    if len(conteudo) > MAX_BYTES:
+        raise HTTPException(
+            status.HTTP_413_CONTENT_TOO_LARGE,
+            f"São {len(conteudo) // 1024} KB; o limite é {MAX_BYTES // 1024} KB.",
+        )
+
+    try:
+        lido = spreadsheet.parse(nome, conteudo)
+    except spreadsheet.PlanilhaInvalida as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
+
+    return {
+        "nome": lido.nome,
+        "alternativas": lido.alternativas,
+        "criterios": lido.criterios,
+        "consequencias": lido.consequencias,
+        "custos": lido.custos,
+        "origem": arquivo.filename if arquivo is not None else "colado",
+    }
+
+
 @router.post("/decisoes/importar", status_code=201, summary="Cria a partir de planilha")
 async def importar(
     arquivo: UploadFile = File(...),
     problematica: str = Form("escolha"),
+    configuracao: str = Form("{}"),
     service: DecisionService = Depends(get_service),
 ):
     conteudo = await arquivo.read()
@@ -58,6 +110,22 @@ async def importar(
     except spreadsheet.PlanilhaInvalida as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
 
+    # Sorting exige perfis e as carteiras exigem orcamento; nada disso cabe na
+    # planilha, que descreve o problema e nao a leitura que se quer dele. Vem
+    # como campo separado do formulario, no mesmo envio.
+    try:
+        settings = json.loads(configuracao) if configuracao.strip() else {}
+    except json.JSONDecodeError as exc:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "A configuracao enviada nao e um JSON valido.",
+        ) from exc
+    if not isinstance(settings, dict):
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "A configuracao precisa ser um objeto.",
+        )
+
     try:
         return service.create(
             nome=importado.nome,
@@ -65,6 +133,7 @@ async def importar(
             criterios=importado.criterios,
             consequencias=importado.consequencias,
             problematica=problematica,
+            configuracao=settings,
             custos=importado.custos,
         )
     except Exception as exc:

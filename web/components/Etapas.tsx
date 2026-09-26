@@ -16,13 +16,19 @@
 import { ArrowLeft, Check, Warning } from "@phosphor-icons/react";
 import { useState } from "react";
 
+import { useIdioma } from "@/lib/i18n";
+import { comNos } from "@/lib/i18n/estrutura";
+import "@/lib/i18n/nucleo";
+
 export type Etapa = "problema" | "ordem" | "perguntas" | "resultado";
 
-const SEQUENCIA: { id: Etapa; rotulo: string }[] = [
-  { id: "problema", rotulo: "Problema" },
-  { id: "ordem", rotulo: "Importância" },
-  { id: "perguntas", rotulo: "Perguntas" },
-  { id: "resultado", rotulo: "Resultado" },
+/* A etapa guarda a chave do rótulo, não o rótulo: a sequência é constante do
+   módulo e não tem como saber em que idioma a tela está. */
+const SEQUENCIA: { id: Etapa; chave: string }[] = [
+  { id: "problema", chave: "estrutura.etapas.problema" },
+  { id: "ordem", chave: "estrutura.etapas.ordem" },
+  { id: "perguntas", chave: "estrutura.etapas.perguntas" },
+  { id: "resultado", chave: "estrutura.etapas.resultado" },
 ];
 
 export function Etapas({
@@ -38,6 +44,7 @@ export function Etapas({
   respostasEmRisco: number;
   onIr: (etapa: Etapa) => void;
 }) {
+  const { t } = useIdioma();
   const [confirmando, setConfirmando] = useState<Etapa | null>(null);
   const indiceAtual = SEQUENCIA.findIndex((e) => e.id === atual);
 
@@ -52,7 +59,7 @@ export function Etapas({
 
   return (
     <div>
-      <nav aria-label="Etapas da decisão">
+      <nav aria-label={t("estrutura.etapas.rotulo")}>
         <ol className="flex flex-wrap items-center gap-1">
           {SEQUENCIA.map((etapa, i) => {
             const alcancada = alcancadas.includes(etapa.id);
@@ -100,7 +107,7 @@ export function Etapas({
                       {i + 1}
                     </span>
                   )}
-                  {etapa.rotulo}
+                  {t(etapa.chave)}
                 </button>
               </li>
             );
@@ -111,19 +118,25 @@ export function Etapas({
       {confirmando && (
         <div
           role="alertdialog"
-          aria-label="Confirmar mudança de ordem"
+          aria-label={t("estrutura.etapas.confirmar")}
           className="mt-3 rounded-[var(--raio-painel)] border p-4"
           style={{ borderColor: "var(--borda-forte)", background: "var(--painel)" }}
         >
           <p className="flex items-start gap-2 text-sm" style={{ color: "var(--tinta)" }}>
             <Warning size={16} weight="fill" style={{ color: "var(--erro)" }} className="mt-0.5 shrink-0" />
             <span>
-              Mudar a ordem descarta suas{" "}
-              <strong>
-                {respostasEmRisco} {respostasEmRisco === 1 ? "resposta" : "respostas"}
-              </strong>
-              . Elas comparavam outra sequência de critérios e não valem para a
-              nova ordem.
+              {comNos(t("estrutura.etapas.descarte"), {
+                respostas: (
+                  <strong>
+                    {t(
+                      respostasEmRisco === 1
+                        ? "estrutura.etapas.descarte.umaResposta"
+                        : "estrutura.etapas.descarte.respostas",
+                      { n: respostasEmRisco },
+                    )}
+                  </strong>
+                ),
+              })}
             </span>
           </p>
           <div className="mt-3 flex gap-2">
@@ -136,18 +149,168 @@ export function Etapas({
               className="tatil rounded-[var(--raio-controle)] px-3 py-1.5 text-[13px] font-medium"
               style={{ background: "var(--erro)", color: "#fff" }}
             >
-              Descartar e reordenar
+              {t("estrutura.etapas.descartar")}
             </button>
             <button
               onClick={() => setConfirmando(null)}
               className="tatil rounded-[var(--raio-controle)] border px-3 py-1.5 text-[13px]"
               style={{ borderColor: "var(--borda-forte)", color: "var(--tinta)" }}
             >
-              Cancelar
+              {t("acao.cancelar")}
             </button>
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/* --- progresso de um cadastro ------------------------------------------------- */
+
+export interface Passo {
+  id: string;
+  rotulo: string;
+}
+
+/**
+ * A trilha de um cadastro em andamento.
+ *
+ * Mesma ideia da barra acima, sem o vínculo com as etapas da decisão: o
+ * cadastro tem passos diferentes conforme a forma de entrada — digitar tem
+ * estrutura e desempenhos, importar tem a planilha — e a trilha precisa dizer
+ * quantos faltam, senão cada tela parece a última.
+ *
+ * Só dá para voltar. Pular para frente significaria aceitar um passo que ainda
+ * não foi validado, e o seguinte dependeria de dados que não existem.
+ *
+ * Abaixo de `sm` a trilha some. Não por caber mal: ela quebrava em duas linhas
+ * e a segunda começava com um conector pendurado, sem nada à esquerda. No lugar
+ * dela vai o que a trilha existia para dizer -- em que passo se está e quantos
+ * faltam -- numa linha de texto e numa barra segmentada.
+ */
+export function Passos({
+  passos,
+  atual,
+  onIr,
+  rotulo,
+}: {
+  passos: Passo[];
+  atual: string;
+  onIr?: (id: string) => void;
+  rotulo?: string;
+}) {
+  const { t } = useIdioma();
+  const indiceAtual = passos.findIndex((p) => p.id === atual);
+  const posicao = indiceAtual < 0 ? 0 : indiceAtual;
+
+  return (
+    <nav aria-label={rotulo ?? t("estrutura.passos.rotulo")}>
+      <div className="sm:hidden">
+        <p className="text-[13px]" style={{ color: "var(--tinta-2)" }}>
+          {comNos(t("estrutura.passos.contador"), {
+            n: <span className="num">{posicao + 1}</span>,
+            total: <span className="num">{passos.length}</span>,
+          })}
+          {" · "}
+          <strong style={{ color: "var(--tinta)" }}>{passos[posicao]?.rotulo}</strong>
+        </p>
+        <ol className="mt-2 flex gap-1" aria-hidden>
+          {passos.map((passo, i) => (
+            <li
+              key={passo.id}
+              className="h-[3px] flex-1 rounded-[2px]"
+              style={{
+                background: i <= posicao ? "var(--accent)" : "var(--dado-trilho)",
+              }}
+            />
+          ))}
+        </ol>
+      </div>
+
+      <ol className="hidden flex-wrap items-center gap-1 sm:flex">
+        {passos.map((passo, i) => {
+          const ativo = i === indiceAtual;
+          const concluido = i < indiceAtual;
+          const clicavel = concluido && !!onIr;
+
+          return (
+            <li key={passo.id} className="flex items-center">
+              {i > 0 && (
+                <span
+                  aria-hidden
+                  className="mx-1 h-px w-5"
+                  style={{ background: "var(--borda-forte)" }}
+                />
+              )}
+              <button
+                type="button"
+                onClick={() => clicavel && onIr!(passo.id)}
+                disabled={!clicavel}
+                aria-current={ativo ? "step" : undefined}
+                className="tatil flex items-center gap-1.5 rounded-[var(--raio-controle)] px-2.5 py-1.5 text-[13px] disabled:cursor-default"
+                style={{
+                  background: ativo ? "var(--accent-suave)" : "transparent",
+                  color: ativo
+                    ? "var(--accent)"
+                    : concluido
+                      ? "var(--tinta-2)"
+                      : "var(--tinta-fraca)",
+                  fontWeight: ativo ? 600 : 400,
+                }}
+              >
+                {concluido ? (
+                  <Check size={13} weight="bold" />
+                ) : (
+                  <span
+                    aria-hidden
+                    className="num inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px]"
+                    style={{
+                      background: ativo ? "var(--accent)" : "transparent",
+                      color: ativo ? "var(--accent-tinta)" : "inherit",
+                      border: ativo ? "none" : "1px solid currentColor",
+                    }}
+                  >
+                    {i + 1}
+                  </span>
+                )}
+                {passo.rotulo}
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
+  );
+}
+
+/**
+ * O rodapé de um passo: sair pela esquerda, avançar pela direita.
+ *
+ * Fica no mesmo lugar em todas as telas do cadastro. Um "Continuar" que muda
+ * de posição a cada passo obriga a procurá-lo de novo toda vez.
+ */
+export function Rodape({
+  onVoltar,
+  rotuloVoltar,
+  children,
+}: {
+  onVoltar?: () => void;
+  rotuloVoltar?: string;
+  children: React.ReactNode;
+}) {
+  const { t } = useIdioma();
+
+  return (
+    <div
+      className="mt-8 flex flex-wrap-reverse items-center justify-between gap-4 border-t pt-5"
+      style={{ borderColor: "var(--borda)" }}
+    >
+      {onVoltar ? (
+        <Voltar rotulo={rotuloVoltar ?? t("acao.voltar")} onClick={onVoltar} />
+      ) : (
+        <span aria-hidden />
+      )}
+      <div className="flex flex-wrap items-center gap-4">{children}</div>
     </div>
   );
 }

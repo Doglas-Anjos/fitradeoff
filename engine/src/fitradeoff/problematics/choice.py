@@ -10,11 +10,14 @@ from __future__ import annotations
 from ..domain.problem import Problem
 from ..domain.weights import WeightSpace
 from .base import Analysis, Problematic
+from .veto import RESSALVA_VETO
 
 
 class ChoiceProblematic(Problematic):
     key = "escolha"
     label = "Escolha da melhor alternativa"
+    # o veto do FITradeoff esta definido para escolha e ordenacao
+    accepts_veto = True
 
     def _analyse(self, problem: Problem, space: WeightSpace) -> Analysis:
         poas = self.evaluator.potentially_optimal(problem, space)
@@ -34,6 +37,13 @@ class ChoiceProblematic(Problematic):
             undecided=poas if len(poas) > 1 else (),
             headline=headline,
             detail={
+                # primeiro no dicionario porque e a primeira coisa que o leitor
+                # precisa saber sobre os numeros que vem depois
+                **(
+                    {"veto_ativo": True, "ressalva": RESSALVA_VETO}
+                    if problem.has_veto
+                    else {}
+                ),
                 "potencialmente_otimas": problem.names_of(poas),
                 "recomendacao": (
                     problem.alternatives[poas[0]] if len(poas) == 1 else None

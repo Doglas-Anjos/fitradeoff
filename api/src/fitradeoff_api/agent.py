@@ -26,8 +26,11 @@ SYSTEM = """\
 Voce conduz decisoes multicriterio pelo metodo FITradeoff (De Almeida et al., \
 2016), conversando em portugues do Brasil.
 
-Quatro problematicas: `escolha` (qual e a melhor), `ranking` (ordenar todas), \
-`sorting` (alocar em classes) e `portfolio` (carteira dentro de um orcamento).
+Cinco problematicas: `escolha` (qual e a melhor), `ranking` (ordenar todas), \
+`sorting` (alocar em classes), `portfolio` (a carteira de maior beneficio \
+agregado dentro do orcamento) e `beneficio_custo` (a carteira montada pela \
+ordem da razao beneficio/custo, quando o decisor quer eficiencia por unidade \
+de recurso).
 
 Protocolo, nesta ordem:
 
@@ -54,8 +57,11 @@ voce afirmar sobre a decisao vem das ferramentas.
 - Se o decisor quiser parar antes do fim, mostre as faixas de valor e deixe \
 que ele decida olhando os dados -- e a avaliacao holistica prevista pelo \
 metodo, e `julgar` registra o que ele decidir assim.
-- A problematica `portfolio` devolve resultado aproximado, por amostragem do \
-espaco de pesos. Diga isso ao apresentar a carteira. As outras tres sao exatas.
+- As problematicas de carteira (`portfolio` e `beneficio_custo`) devolvem a \
+carteira de forma aproximada, por amostragem do espaco de pesos. Diga isso ao \
+apresentar a carteira. Em `beneficio_custo` as faixas de razao beneficio/custo \
+e a dominancia entre faixas disjuntas sao exatas; so a carteira e amostrada. \
+As outras tres problematicas sao exatas.
 
 Seja direto e curto. O decisor quer decidir, nao ler sobre programacao linear.\
 """
@@ -91,7 +97,9 @@ TOOLS = [
         "Registra um problema de decisao. 'criterios' e uma lista de objetos com "
         "chave, nome, direcao ('max' ou 'min') e unidade opcional. "
         "'consequencias' traz uma linha por alternativa e uma coluna por "
-        "criterio, na unidade real.",
+        "criterio, na unidade real. Um criterio aceita ainda limites de veto -- "
+        "veja a descricao deles; so declare se o decisor disser que existe um "
+        "desempenho inaceitavel, e so em 'escolha' ou 'ranking'.",
         {
             "nome": {"type": "string"},
             "alternativas": {"type": "array", "items": {"type": "string"}},
@@ -104,6 +112,18 @@ TOOLS = [
                         "nome": {"type": "string"},
                         "direcao": {"type": "string", "enum": ["max", "min"]},
                         "unidade": {"type": "string"},
+                        "veto_superior": {
+                            "type": "number",
+                            "description": "Desempenho, na unidade do criterio, "
+                            "a partir do qual nada e penalizado.",
+                        },
+                        "veto_inferior": {
+                            "type": "number",
+                            "description": "Desempenho em que o criterio deixa "
+                            "de contar. A alternativa nao e eliminada: o valor "
+                            "global dela e penalizado. So vale em 'escolha' e "
+                            "'ranking'; nas outras o registro e recusado.",
+                        },
                     },
                     "required": ["chave", "nome", "direcao"],
                     "additionalProperties": False,
@@ -115,18 +135,21 @@ TOOLS = [
             },
             "problematica": {
                 "type": "string",
-                "enum": ["escolha", "ranking", "sorting", "portfolio"],
+                "enum": [
+                    "escolha", "ranking", "sorting", "portfolio", "beneficio_custo",
+                ],
             },
             "configuracao": {
                 "type": "object",
-                "description": "Para sorting: {'perfis': [...]}. Para portfolio: "
-                "{'orcamento': X}.",
+                "description": "Para sorting: {'perfis': [...]}. Para portfolio "
+                "e beneficio_custo: {'orcamento': X}.",
                 "additionalProperties": True,
             },
             "custos": {
                 "type": "array",
                 "items": {"type": "number"},
-                "description": "Obrigatorio na problematica de portfolio.",
+                "description": "Obrigatorio nas problematicas de carteira "
+                "(portfolio e beneficio_custo).",
             },
         },
         ["nome", "alternativas", "criterios", "consequencias"],
@@ -175,7 +198,9 @@ TOOLS = [
             "id": _ID,
             "problematica": {
                 "type": "string",
-                "enum": ["escolha", "ranking", "sorting", "portfolio"],
+                "enum": [
+                    "escolha", "ranking", "sorting", "portfolio", "beneficio_custo",
+                ],
             },
             "configuracao": {"type": "object", "additionalProperties": True},
         },

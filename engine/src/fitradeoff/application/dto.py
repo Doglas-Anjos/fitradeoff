@@ -30,9 +30,17 @@ class CriterionDTO:
     melhor: float
     pior: float
     escala: str
+    # A curva elicitada precisa voltar, ou a tela nao tem como distinguir um
+    # criterio ainda linear de um ja ajustado -- e reabriria o editor vazio,
+    # perdendo o que o decisor respondeu.
+    curva_de_valor: list[list[float]] | None = None
+    # Limites de veto, na unidade original. Voltam pelo mesmo motivo da curva:
+    # sem eles a tela reabre o campo vazio e apaga o que o decisor declarou.
+    veto_superior: float | None = None
+    veto_inferior: float | None = None
 
     def to_dict(self) -> dict:
-        return asdict(self)
+        return _clean(asdict(self))
 
 
 @dataclass(frozen=True)
@@ -188,9 +196,13 @@ class SummaryDTO:
     alternativas: int
     criterios: int
     declaracoes: int
+    # ISO 8601, ou ausentes numa decisao gravada antes destes campos existirem.
+    # Quem consome precisa aguentar a falta em vez de supor uma data.
+    criado_em: str | None = None
+    atualizado_em: str | None = None
 
     def to_dict(self) -> dict:
-        return asdict(self)
+        return _clean(asdict(self))
 
 
 @dataclass(frozen=True)

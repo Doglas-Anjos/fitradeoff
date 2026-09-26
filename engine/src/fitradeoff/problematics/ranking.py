@@ -16,11 +16,14 @@ import numpy as np
 from ..domain.problem import Problem
 from ..domain.weights import WeightSpace
 from .base import Analysis, Problematic
+from .veto import RESSALVA_VETO
 
 
 class RankingProblematic(Problematic):
     key = "ranking"
     label = "Ordenacao completa das alternativas"
+    # o veto do FITradeoff esta definido para escolha e ordenacao
+    accepts_veto = True
 
     def _analyse(self, problem: Problem, space: WeightSpace) -> Analysis:
 
@@ -55,6 +58,11 @@ class RankingProblematic(Problematic):
             undecided=tuple(undecided),
             headline=headline,
             detail={
+                **(
+                    {"veto_ativo": True, "ressalva": RESSALVA_VETO}
+                    if problem.has_veto
+                    else {}
+                ),
                 "posicoes_possiveis": positions,
                 "ordem_definida": (
                     sorted(problem.alternatives, key=lambda a: positions[a][0])
@@ -81,7 +89,18 @@ class RankingProblematic(Problematic):
         favoravel, uma mal supera a outra -- e continuar perguntando sobre
         aquele par rende pouco. E a informacao que o sistema de referencia
         oferece ao lado do diagrama.
+
+        Com veto, a diferenca maxima tambem deixa de sair de um LP: maximizar
+        ``V'(a) - V'(b)`` e um problema bilinear. Vale o mesmo envelope usado na
+        dominancia -- o teto de uma menos o piso da outra e um limite superior
+        da vantagem possivel. Continua respondendo a pergunta que importa ("no
+        maximo, quanto uma pode superar a outra?"), so que por cima: se este
+        numero e pequeno, a vantagem real e menor ainda, e a conclusao de que
+        nao vale a pena insistir naquele par se mantem.
         """
+        if problem.has_veto:
+            return self._max_differences_under_veto(problem, space, dominance)
+
         solver = self.evaluator.solver
         linhas = []
         for i in range(problem.n_alternatives):
@@ -101,6 +120,36 @@ class RankingProblematic(Problematic):
                     }
                 )
         # as maiores primeiro: sao os pares em que ainda ha muito em jogo
+        linhas.sort(
+            key=lambda d: max(d["a_supera_b_em_ate"], d["b_supera_a_em_ate"]),
+            reverse=True,
+        )
+        return linhas
+
+    def _max_differences_under_veto(
+        self, problem: Problem, space: WeightSpace, dominance: np.ndarray
+    ) -> list[dict]:
+        """A mesma leitura, por envelope. Ver ``_max_differences``."""
+        envelopes = self.evaluator.penalized_bounds(problem, space)
+        linhas = []
+        for i in range(problem.n_alternatives):
+            for l in range(i + 1, problem.n_alternatives):
+                if dominance[i, l] or dominance[l, i]:
+                    continue
+                linhas.append(
+                    {
+                        "a": problem.alternatives[i],
+                        "b": problem.alternatives[l],
+                        "a_supera_b_em_ate": round(
+                            max(envelopes[i].upper - envelopes[l].lower, 0.0), 4
+                        ),
+                        "b_supera_a_em_ate": round(
+                            max(envelopes[l].upper - envelopes[i].lower, 0.0), 4
+                        ),
+                        # o numero e um teto, nao a vantagem exata
+                        "limite_superior": True,
+                    }
+                )
         linhas.sort(
             key=lambda d: max(d["a_supera_b_em_ate"], d["b_supera_a_em_ate"]),
             reverse=True,

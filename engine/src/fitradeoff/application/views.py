@@ -50,6 +50,13 @@ def problem_dto(record: DecisionRecord) -> ProblemDTO:
                 melhor=scale.best,
                 pior=scale.worst,
                 escala="construida" if criterion.is_discrete else "continua",
+                curva_de_valor=(
+                    [list(ponto) for ponto in criterion.value_points]
+                    if criterion.value_points is not None
+                    else None
+                ),
+                veto_superior=criterion.veto_upper,
+                veto_inferior=criterion.veto_lower,
             )
             for criterion, scale in zip(problem.criteria, problem.scales)
         ],
@@ -73,7 +80,22 @@ def problem_dto(record: DecisionRecord) -> ProblemDTO:
     )
 
 
+def _quando(record: DecisionRecord) -> tuple[str | None, str | None]:
+    """Criacao e ultima modificacao, em ISO 8601.
+
+    A ultima modificacao sai da trilha: a declaracao mais recente e, por
+    definicao, a ultima vez que a decisao mudou. Sem declaracao nenhuma, a
+    decisao esta como nasceu, e a criacao responde pelas duas.
+    """
+    criado = record.created_at.isoformat(timespec="seconds") if record.created_at else None
+    if not len(record.log):
+        return criado, criado
+    ultima = max(entrada.recorded_at for entrada in record.log.entries)
+    return criado, ultima.isoformat(timespec="seconds")
+
+
 def summary_dto(record: DecisionRecord) -> SummaryDTO:
+    criado, atualizado = _quando(record)
     return SummaryDTO(
         id=record.id,
         nome=record.problem.name,
@@ -81,6 +103,8 @@ def summary_dto(record: DecisionRecord) -> SummaryDTO:
         alternativas=record.problem.n_alternatives,
         criterios=record.problem.n_criteria,
         declaracoes=len(record.log),
+        criado_em=criado,
+        atualizado_em=atualizado,
     )
 
 
@@ -105,7 +129,9 @@ def _ranges(record: DecisionRecord, session: DecisionSession):
                 problem.criteria, evaluator.weight_bounds(problem, session.weight_space)
             )
         }
-        faixas = evaluator.value_bounds(problem, session.weight_space)
+        # sob veto isto devolve o envelope penalizado, que e a faixa que
+        # corresponde a recomendacao; sem veto, e a faixa de valor de sempre
+        faixas = evaluator.penalized_bounds(problem, session.weight_space)
     except InfeasibleWeightSpace:
         return {}, {}
 

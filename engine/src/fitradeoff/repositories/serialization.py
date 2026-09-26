@@ -26,7 +26,18 @@ def criterion_to_dict(criterion: Criterion) -> dict:
         data["niveis"] = list(criterion.levels)
     if criterion.value_points is not None:
         data["curva_de_valor"] = [list(p) for p in criterion.value_points]
+    # os limites de veto vao na unidade original, que e como o decisor os
+    # declarou -- e a comparacao acontece em valor, dentro de `veto_factor`
+    if criterion.veto_upper is not None:
+        data["veto_superior"] = criterion.veto_upper
+    if criterion.veto_lower is not None:
+        data["veto_inferior"] = criterion.veto_lower
     return data
+
+
+def _optional_float(data: dict, key: str) -> float | None:
+    valor = data.get(key)
+    return None if valor is None else float(valor)
 
 
 def criterion_from_dict(data: dict) -> Criterion:
@@ -41,6 +52,8 @@ def criterion_from_dict(data: dict) -> Criterion:
         value_points=(
             tuple((float(c), float(v)) for c, v in curva) if curva else None
         ),
+        veto_upper=_optional_float(data, "veto_superior"),
+        veto_lower=_optional_float(data, "veto_inferior"),
     )
 
 

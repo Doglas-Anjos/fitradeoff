@@ -11,6 +11,13 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
+# Chaves aceitas, iguais as registradas no motor. Fica num alias so porque
+# duas rotas declaram o mesmo conjunto e divergir aqui seria aceitar numa e
+# recusar na outra a mesma problematica.
+Problematica = Literal[
+    "escolha", "ranking", "sorting", "portfolio", "beneficio_custo"
+]
+
 
 class CriterionIn(BaseModel):
     chave: str = Field(min_length=1, max_length=64)
@@ -23,6 +30,22 @@ class CriterionIn(BaseModel):
         description="Pontos (consequencia, valor) da curva elicitada; sem ela a "
         "escala e linear sobre a faixa observada.",
     )
+    veto_superior: float | None = Field(
+        default=None,
+        description="Desempenho, na unidade do criterio, a partir do qual nada e "
+        "penalizado. Modelo aditivo com veto (de Almeida, 2013): so tem efeito "
+        "nas problematicas de escolha e ranking.",
+    )
+    veto_inferior: float | None = Field(
+        default=None,
+        description="Desempenho, na unidade do criterio, em que o criterio deixa "
+        "de contar. Entre os dois limites a penalidade e proporcional; "
+        "declarando so um, nao ha regiao de hesitacao.",
+    )
+    # A coerencia do par -- ordem certa para a direcao, nivel existente numa
+    # escala construida -- e conferida no dominio, em `Criterion`. Aqui seria
+    # uma segunda copia da mesma regra, e o servidor MCP, que constroi o
+    # criterio sem passar por este schema, ficaria de fora dela.
 
     @field_validator("niveis")
     @classmethod
@@ -43,7 +66,7 @@ class DecisionIn(BaseModel):
     alternativas: list[str] = Field(min_length=2)
     criterios: list[CriterionIn] = Field(min_length=2)
     consequencias: list[list[float]] = Field(min_length=2)
-    problematica: Literal["escolha", "ranking", "sorting", "portfolio"] = "escolha"
+    problematica: Problematica = "escolha"
     configuracao: dict = Field(default_factory=dict)
     custos: list[float] | None = None
 
@@ -69,7 +92,7 @@ class JudgementIn(BaseModel):
 
 
 class ProblematicIn(BaseModel):
-    problematica: Literal["escolha", "ranking", "sorting", "portfolio"]
+    problematica: Problematica
     configuracao: dict | None = None
 
 

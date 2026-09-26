@@ -11,6 +11,7 @@ nos adaptadores e na composicao.
 
 import ast
 import pathlib
+import re
 
 import pytest
 
@@ -140,7 +141,7 @@ def test_toda_problematica_registrada_declara_chave_e_rotulo():
     from fitradeoff.problematics import default_registry
 
     registry = default_registry()
-    assert len(registry.keys) == 4
+    assert len(registry.keys) == 5
     for key, label in registry.describe().items():
         assert key and label, f"Problematica '{key}' sem rotulo."
 
@@ -162,14 +163,26 @@ def test_problematicas_nao_repetem_o_tratamento_de_inconsistencia():
 
 
 def test_toda_problematica_implementa_o_template():
+    """Reconhece a problematica por ser subclasse, nao por lista de excecoes.
+
+    A lista de excecoes so cresce -- e cada nome nela e um lugar onde uma
+    problematica de verdade poderia se esconder do teste.
+    """
+    vistas = []
     for module in modules_of("problematics"):
-        if module.name in ("base.py", "evaluator.py", "registry.py", "__init__.py"):
-            continue
         source = module.read_text(encoding="utf-8")
+        if not re.search(r"^class \w+\(Problematic\):", source, re.MULTILINE):
+            continue
+        vistas.append(module.name)
         assert "def _analyse(" in source, f"problematics/{module.name} sem _analyse"
         assert "def analyse(" not in source, (
             f"problematics/{module.name} sobrescreve analyse e escapa do template."
         )
+        assert "def validate(" not in source, (
+            f"problematics/{module.name} sobrescreve validate e escapa da "
+            f"recusa do veto; implemente _validate."
+        )
+    assert len(vistas) == 5, f"esperadas as 5 problematicas, vistas {vistas}"
 
 
 def test_formatacao_de_numero_existe_num_lugar_so():

@@ -169,3 +169,42 @@ def test_curva_de_valor_sobrevive_ao_ciclo(repository, clock):
     )
     # e continua produzindo o mesmo valor
     assert lido.problem.values[0][0] == 1.0
+
+
+def test_limites_de_veto_sobrevivem_ao_ciclo(repository, clock):
+    """Mesmo risco da curva, com consequencia maior.
+
+    Um veto que se perde na gravacao nao deixa rastro: a decisao reabre sem
+    penalidade nenhuma, o resultado muda, e nada na tela diz que mudou.
+    """
+    from dataclasses import replace
+
+    problem = make_problem([[12.0, 1.0], [45.0, 2.0]])
+    com_veto = replace(
+        problem,
+        criteria=(
+            replace(problem.criteria[0], veto_upper=40.0, veto_lower=20.0),
+            problem.criteria[1],
+        ),
+    )
+    assert com_veto.has_veto
+    repository.save(
+        DecisionRecord(id="veto", problem=com_veto, created_at=clock.now())
+    )
+    lido = repository.get("veto")
+
+    assert lido.problem.criteria[0].veto_upper == 40.0
+    assert lido.problem.criteria[0].veto_lower == 20.0
+    assert lido.problem.has_veto
+    # e a penalidade apurada e a mesma de antes de gravar
+    assert lido.problem.veto_factors.tolist() == com_veto.veto_factors.tolist()
+
+
+def test_criterio_sem_veto_nao_ganha_campo_nenhum(repository, clock):
+    """O registro de quem nao usa veto nao pode mudar de forma."""
+    from fitradeoff.repositories.serialization import criterion_to_dict
+
+    problem = make_problem([[12.0, 1.0], [45.0, 2.0]])
+    gravado = criterion_to_dict(problem.criteria[0])
+    assert "veto_superior" not in gravado
+    assert "veto_inferior" not in gravado

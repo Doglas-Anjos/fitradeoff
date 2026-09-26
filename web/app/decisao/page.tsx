@@ -13,7 +13,7 @@
  * de haver resposta.
  */
 
-import { Equals, Question } from "@phosphor-icons/react";
+import { BonecoEmDuvida } from "@/components/Animacoes";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 
@@ -32,6 +32,7 @@ import { PainelProgresso } from "@/components/PainelProgresso";
 import { RangeChart, type Faixa } from "@/components/RangeChart";
 import { JulgamentoHolistico } from "@/components/JulgamentoHolistico";
 import { ResultadoAnalise } from "@/components/ResultadoAnalise";
+import { TrilhaAuditoria } from "@/components/TrilhaAuditoria";
 import { SinteseResultado } from "@/components/SinteseResultado";
 import { SensibilidadeConsequencias } from "@/components/SensibilidadeConsequencias";
 import { Visualizacoes } from "@/components/Visualizacoes";
@@ -41,7 +42,7 @@ import { useIdioma } from "@/lib/i18n";
 import "@/lib/i18n/telas";
 import "@/lib/i18n/estrutura";
 import { registrarRecente } from "@/lib/persistencia";
-import type { Auditoria, Estado, Pergunta, Problema } from "@/lib/types";
+import type { Estado, Pergunta, Problema } from "@/lib/types";
 
 function Secao({
   titulo,
@@ -116,7 +117,6 @@ function Decisao() {
   const [problema, setProblema] = useState<Problema | null>(null);
   const [estado, setEstado] = useState<Estado | null>(null);
   const [pergunta, setPergunta] = useState<Pergunta | null>(null);
-  const [auditoria, setAuditoria] = useState<Auditoria | null>(null);
   const [diagnostico, setDiagnostico] = useState<Diagnostico | null>(null);
   const [encerradoPeloUsuario, setEncerradoPeloUsuario] = useState(false);
   const areaComparacao = useRef<HTMLDivElement>(null);
@@ -130,7 +130,6 @@ function Decisao() {
       setProblema(null);
       setEstado(null);
       setPergunta(null);
-      setAuditoria(null);
       return;
     }
     if (problema?.id === idNaUrl) return;
@@ -166,7 +165,6 @@ function Decisao() {
   const sincronizar = useCallback(async (id: string) => {
     const novo = await api.estado(id);
     setEstado(novo);
-    setAuditoria(await api.auditoria(id));
 
     // o diagnóstico só faz sentido quando há contradição; buscá-lo sempre
     // seria uma chamada por resposta sem nenhum uso
@@ -470,25 +468,18 @@ function Decisao() {
                   desabilitado={ocupado}
                   onSelect={responder}
                   /* A indiferença é uma resposta como as outras duas, então vai
-                     entre os dois cartões, onde o olho está. O botão de texto
-                     continua embaixo: é redundante de propósito, porque nem
-                     todo mundo lê um ícone redondo como "responder". */
+                     entre os dois cartões, onde o olho está — e só ali. O botão
+                     de texto que repetia essa resposta aqui embaixo saiu: duas
+                     formas de responder a mesma coisa na mesma tela fazem
+                     procurar a diferença entre elas. O que restou embaixo é o
+                     "não sei", que é outra coisa. */
                   onIndiferente={() => responder("indiferente")}
                   /* As saidas ficavam no canto do cabecalho da secao, acima e a
                      direita da pergunta: eram as unicas acoes visiveis da tela,
                      o que punha as escapatorias em mais destaque do que a
                      resposta. Aqui embaixo elas sao o que sao. */
                   rodape={
-                    <>
-                      <button
-                        onClick={() => responder("indiferente")}
-                        disabled={ocupado || !pergunta}
-                        className="tatil flex items-center gap-1.5 text-sm disabled:opacity-40"
-                        style={{ color: "var(--tinta-3)" }}
-                      >
-                        <Equals size={14} weight="bold" />
-                        {t("tela.decisao.indiferentes")}
-                      </button>
+                    <span className="flex items-center gap-1.5">
                       <button
                         onClick={() => responder("não sei")}
                         disabled={ocupado || !pergunta}
@@ -496,10 +487,14 @@ function Decisao() {
                         style={{ color: "var(--tinta-fraca)" }}
                         title={t("tela.decisao.naoSei.titulo")}
                       >
-                        <Question size={14} weight="bold" />
+                        <BonecoEmDuvida tamanho={16} />
                         {t("tela.decisao.naoSei")}
                       </button>
-                    </>
+                      <Dica titulo={t("tela.decisao.naoSei.dica.titulo")}>
+                        <p>{t("tela.decisao.naoSei.dica.corpo1")}</p>
+                        <p>{t("tela.decisao.naoSei.dica.corpo2")}</p>
+                      </Dica>
+                    </span>
                   }
                 />
               ) : (
@@ -652,28 +647,12 @@ function Decisao() {
             </Secao>
           )}
 
-          {etapa !== "problema" && auditoria && auditoria.declaracoes.length > 0 && (
-            <Secao titulo={t("tela.decisao.auditoria.titulo")}>
-              <ol className="space-y-3">
-                {auditoria.declaracoes.map((d) => (
-                  <li key={d.sequencia} className="flex gap-3">
-                    <span
-                      className="num shrink-0 text-xs"
-                      style={{ color: "var(--tinta-fraca)" }}
-                    >
-                      {String(d.sequencia).padStart(2, "0")}
-                    </span>
-                    <span className="prosa text-sm" style={{ color: "var(--tinta-2)" }}>
-                      {d.declaracao}
-                    </span>
-                  </li>
-                ))}
-              </ol>
-              <p className="prosa mt-5 text-xs" style={{ color: "var(--tinta-fraca)" }}>
-                {auditoria.leitura}
-              </p>
-            </Secao>
-          )}
+          {/* A trilha era uma seção sempre aberta, com as declarações e nada
+              além. Virou botão por dois motivos: quem decide não precisa dela
+              na frente o tempo todo, e quem audita precisa de mais do que ela
+              mostrava — as restrições que cada declaração impôs ao espaço de
+              pesos, que é onde a recomendação de fato se sustenta. */}
+          {etapa !== "problema" && <TrilhaAuditoria decisaoId={problema.id} />}
         </div>
 
         {/* A coluna da direita acompanha a rolagem e agora só carrega o

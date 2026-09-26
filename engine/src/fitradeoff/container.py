@@ -51,18 +51,42 @@ class Container:
 
     @property
     def evaluator(self) -> Evaluator:
-        return Evaluator(self.solver, equivalence=self.equivalence)
+        """Evaluator com o limiar padrao do processo."""
+        return self.evaluator_for()
 
-    def problematic(self, key: str, settings: dict | None = None) -> Problematic:
+    def evaluator_for(self, equivalence: float | None = None) -> Evaluator:
+        """Evaluator com o limiar da decisao, ou o do processo se ela nao fixar um.
+
+        ``None`` nao e zero: significa que a decisao nao escolheu limiar nenhum,
+        e ai vale o padrao montado aqui. Resolver isso num lugar so evita que
+        cada chamador invente a sua propria regra de fallback.
+        """
+        return Evaluator(
+            self.solver,
+            equivalence=self.equivalence if equivalence is None else equivalence,
+        )
+
+    def problematic(
+        self,
+        key: str,
+        settings: dict | None = None,
+        equivalence: float | None = None,
+    ) -> Problematic:
         return self.registry.create(
-            key, self.evaluator, self.integer_solver, settings
+            key, self.evaluator_for(equivalence), self.integer_solver, settings
         )
 
     def session_for(self, record: DecisionRecord) -> DecisionSession:
-        """Monta a sessao de uma decisao persistida."""
+        """Monta a sessao de uma decisao persistida.
+
+        O limiar de equivalencia vem do registro, nao daqui: e o que faz reabrir
+        a decisao devolver o mesmo resultado, em qualquer processo.
+        """
         return DecisionSession(
             problem=record.problem,
-            problematic=self.problematic(record.problematic_key, record.settings),
+            problematic=self.problematic(
+                record.problematic_key, record.settings, record.equivalence
+            ),
             selector=self.make_selector(),
             presenter=self.presenter,
             clock=self.clock,

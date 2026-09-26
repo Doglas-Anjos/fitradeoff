@@ -53,6 +53,11 @@ def decisao(client):
         ("post", "/api/decisoes/fantasma/julgamento", {"preferida": "A", "sobre": "B"}),
         ("post", "/api/decisoes/fantasma/sensibilidade", {"limiares": [0.01]}),
         ("post", "/api/decisoes/fantasma/problematica", {"problematica": "ranking"}),
+        (
+            "post",
+            "/api/decisoes/fantasma/limiar-de-equivalencia",
+            {"limiar_de_equivalencia": 0.02},
+        ),
     ],
 )
 def test_decisao_inexistente_devolve_404(client, metodo, caminho, corpo):
@@ -483,3 +488,85 @@ def test_sem_veto_nenhuma_ressalva_aparece(client, decisao):
     analise = client.get(f"/api/decisoes/{decisao}/estado").json()["analise"]
     assert "veto_ativo" not in analise
     assert "ressalva" not in analise
+
+
+# --- limiar de equivalência ---------------------------------------------------
+
+# Curva de valor identidade nos dois critérios: sem ela a escala se ajusta à
+# faixa observada e duas alternativas quaisquer viram 0 e 1, apagando justamente
+# a diferença pequena que o limiar existe para julgar.
+CURVA_IDENTIDADE = [[0.0, 0.0], [1.0, 1.0]]
+
+PROXIMAS = {
+    "nome": "Proximas",
+    "alternativas": ["X", "Y"],
+    "criterios": [
+        {"chave": "a", "nome": "A", "direcao": "max",
+         "curva_de_valor": CURVA_IDENTIDADE},
+        {"chave": "b", "nome": "B", "direcao": "max",
+         "curva_de_valor": CURVA_IDENTIDADE},
+    ],
+    # X supera Y por no máximo 0,03; Y supera X por no máximo 0,005. As duas
+    # ficam potencialmente ótimas, e a maior distância cai entre o padrão (0,01)
+    # e 0,05: é o limiar, e só ele, que decide se o processo encerra.
+    "consequencias": [[0.53, 0.50], [0.50, 0.54]],
+}
+
+
+def iniciar_proximas(client, **extra):
+    decisao = client.post("/api/decisoes", json={**PROXIMAS, **extra}).json()["id"]
+    client.post(f"/api/decisoes/{decisao}/ordenacao", json={"ordem": ["a", "b"]})
+    return decisao
+
+
+def test_o_limiar_padrao_continua_em_um_centesimo(client, decisao):
+    estado = client.get(f"/api/decisoes/{decisao}/estado").json()
+    assert estado["limiar_de_equivalencia"] == 0.01
+
+
+def test_limiar_proprio_na_criacao_muda_o_resultado(client):
+    padrao = client.get(f"/api/decisoes/{iniciar_proximas(client)}/estado").json()
+    outro = iniciar_proximas(client, limiar_de_equivalencia=0.05)
+    folgado = client.get(f"/api/decisoes/{outro}/estado").json()
+
+    assert padrao["analise"]["resolvido"] is False
+    assert folgado["analise"]["resolvido"] is True
+    assert folgado["analise"]["equivalentes_no_limiar"] == 0.05
+
+
+def test_ajustar_o_limiar_rele_o_mesmo_log(client):
+    decisao = iniciar_proximas(client)
+    antes = client.get(f"/api/decisoes/{decisao}/estado").json()
+
+    r = client.post(
+        f"/api/decisoes/{decisao}/limiar-de-equivalencia",
+        json={"limiar_de_equivalencia": 0.05},
+    )
+    assert r.status_code == 200
+    assert r.json()["analise"]["resolvido"] is True
+    assert r.json()["declaracoes"] == antes["declaracoes"]
+
+
+def test_o_limiar_sobrevive_a_reabertura(client):
+    """Cada requisição monta um container novo e relê o arquivo. Se o limiar
+    vivesse no processo, este estado voltaria com 0,01."""
+    decisao = iniciar_proximas(client, limiar_de_equivalencia=0.05)
+
+    estado = client.get(f"/api/decisoes/{decisao}/estado").json()
+    auditoria = client.get(f"/api/decisoes/{decisao}/auditoria").json()
+    assert estado["limiar_de_equivalencia"] == 0.05
+    assert auditoria["limiar_de_equivalencia"] == 0.05
+
+
+@pytest.mark.parametrize("absurdo", [5.0, -1.0, 0.9])
+def test_limiar_fora_da_faixa_e_recusado(client, decisao, absurdo):
+    r = client.post(
+        f"/api/decisoes/{decisao}/limiar-de-equivalencia",
+        json={"limiar_de_equivalencia": absurdo},
+    )
+    assert r.status_code == 409
+    detalhe = r.json()["detail"]
+    assert "entre 0 e 0.5" in detalhe
+    # a mensagem tem de separar os dois limiares, ou o próximo leitor repete a
+    # confusão que já custou um diagnóstico errado neste projeto
+    assert "sensibilidade" in detalhe

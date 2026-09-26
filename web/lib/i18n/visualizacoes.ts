@@ -249,6 +249,14 @@ export const VISUALIZACOES = registrar({
     pt: "de {pior} (pior) até {melhor} (melhor)",
     en: "from {pior} (worst) to {melhor} (best)",
   },
+  /* Uma ponta da faixa desenhada, quando não há altura para nomear as pontas
+     numa linha própria. Fica como chave, e não como parênteses colados no
+     componente, porque a pontuação também é escolha de idioma: o dia em que o
+     inglês preferir "worst: 45 days" a troca é aqui. */
+  "elicitacao.faixa.extremo": {
+    pt: "{valor} ({nivel})",
+    en: "{valor} ({nivel})",
+  },
   "elicitacao.confirmarOrdem": {
     pt: "Confirmar ordem e começar",
     en: "Confirm order and start",

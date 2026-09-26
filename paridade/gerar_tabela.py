@@ -38,7 +38,17 @@ resumo = ("\n**%d de %d casos** que o sistema oficial completa batem em número 
 
 doc = RAIZ / "EQUIVALENCIA.md"
 texto = doc.read_text(encoding="utf-8")
-texto = texto.replace("<!-- TABELA -->", "\n".join(linhas) + "\n" + resumo)
-doc.write_text(texto, encoding="utf-8")
+bloco = ("<!-- inicio:tabela -->\n" + "\n".join(linhas) + "\n" + resumo
+         + "<!-- fim:tabela -->")
+novo, trocas = re.subn(r"<!-- inicio:tabela -->.*?<!-- fim:tabela -->",
+                       lambda _m: bloco, texto, flags=re.S)
+# Sem os marcadores o gerador escreveria nada e sairia calado, e o relatorio
+# ficaria exibindo a medicao anterior como se fosse a atual -- pior do que
+# falhar, porque ninguem percebe.
+if trocas != 1:
+    raise SystemExit(
+        "EQUIVALENCIA.md precisa de exatamente um par de marcadores "
+        "<!-- inicio:tabela --> / <!-- fim:tabela -->; achei %d" % trocas)
+doc.write_text(novo, encoding="utf-8")
 print("\n".join(linhas))
 print(resumo)

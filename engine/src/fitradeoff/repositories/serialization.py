@@ -70,6 +70,7 @@ def record_to_dict(record: DecisionRecord) -> dict:
         "consequencias": problem.consequences.tolist(),
         "custos": list(problem.costs) if problem.costs else None,
         "configuracao": record.settings,
+        "limiar_de_equivalencia": record.equivalence,
         "auditoria": record.log.to_list(),
     }
 
@@ -89,5 +90,8 @@ def record_from_dict(data: dict) -> DecisionRecord:
         log=AuditLog.from_list(data.get("auditoria", [])),
         problematic_key=data.get("problematica", "escolha"),
         settings=data.get("configuracao", {}),
+        # ausente nos registros gravados antes do campo existir: None ali
+        # significa "usa o padrao", que e exatamente como eles se comportavam
+        equivalence=_optional_float(data, "limiar_de_equivalencia"),
         created_at=datetime.fromisoformat(created) if created else None,
     )

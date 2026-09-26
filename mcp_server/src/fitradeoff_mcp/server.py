@@ -160,7 +160,9 @@ def listar_problematicas() -> dict:
     "global da alternativa e penalizado (modelo aditivo com veto, de Almeida "
     "2013). So declare veto se o decisor disser que existe um desempenho "
     "inaceitavel -- e so em 'escolha' ou 'ranking', que sao onde o metodo o "
-    "define; nas outras o registro e recusado."
+    "define; nas outras o registro e recusado. "
+    "`limiar_de_equivalencia` so precisa vir se o decisor pedir outro limiar "
+    "que nao o padrao 0,01 -- veja `definir_limiar_de_equivalencia`."
 )
 def criar_problema(
     nome: str,
@@ -170,6 +172,7 @@ def criar_problema(
     problematica: str = "escolha",
     configuracao: dict | None = None,
     custos: list[float] | None = None,
+    limiar_de_equivalencia: float | None = None,
 ) -> dict:
     return service().create(
         nome=nome,
@@ -179,6 +182,7 @@ def criar_problema(
         problematica=problematica,
         configuracao=configuracao,
         custos=custos,
+        limiar_de_equivalencia=limiar_de_equivalencia,
     )
 
 
@@ -259,6 +263,21 @@ def mudar_problematica(
     id: str, problematica: str, configuracao: dict | None = None
 ) -> dict:
     return service().switch_problematic(id, problematica, configuracao)
+
+
+@tool(
+    "Ajusta o limiar de equivalencia entre ALTERNATIVAS desta decisao e rele o "
+    "mesmo log, sem reelicitar nada. Duas alternativas cujo valor global difere "
+    "por menos que o limiar contam como indiferentes: e o criterio de parada do "
+    "metodo, e subi-lo encerra antes, enquanto baixa-lo pede mais perguntas. O "
+    "padrao e 0,01, o mesmo do sistema oficial; aceita de 0 a 0,5, na escala de "
+    "valor global, que vai de 0 a 1. Nao confunda com `analise_sensibilidade`, "
+    "que varre outra coisa: a folga entre os pesos de dois CRITERIOS. Passe nulo "
+    "para voltar ao padrao. So chame se o decisor pedir -- o limiar e uma "
+    "escolha dele sobre quanta diferenca ainda importa, nao sua."
+)
+def definir_limiar_de_equivalencia(id: str, limiar: float | None = None) -> dict:
+    return service().set_equivalence(id, limiar)
 
 
 @tool(

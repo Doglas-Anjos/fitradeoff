@@ -151,6 +151,10 @@ def state_dto(record: DecisionRecord, session: DecisionSession) -> StateDTO:
         problematica=record.problematic_key,
         elicitacao_iniciada=session.started,
         declaracoes=len(session.log),
+        # sai do evaluator que esta de fato avaliando, e nao do registro: assim
+        # o que a tela mostra e o que produziu o resultado ao lado, sem que um
+        # fallback esquecido aqui possa fazer os dois divergirem
+        limiar_de_equivalencia=session.problematic.evaluator.equivalence,
     )
 
     if not session.started:
@@ -216,5 +220,6 @@ def audit_dto(record: DecisionRecord, session: DecisionSession) -> AuditDTO:
         ],
         restricoes_ativas=list(session.constraint_sources()),
         leitura=LEITURA_DA_TRILHA,
+        limiar_de_equivalencia=session.problematic.evaluator.equivalence,
         analise=analise,
     )

@@ -136,6 +136,7 @@ def test_arquivo_gravado_e_json_legivel(tmp_path, record):
     assert set(dados) == {
         "id", "nome", "problematica", "criado_em", "alternativas",
         "criterios", "consequencias", "custos", "configuracao", "auditoria",
+        "limiar_de_equivalencia",
     }
 
 
@@ -208,3 +209,21 @@ def test_criterio_sem_veto_nao_ganha_campo_nenhum(repository, clock):
     gravado = criterion_to_dict(problem.criteria[0])
     assert "veto_superior" not in gravado
     assert "veto_inferior" not in gravado
+
+
+def test_limiar_de_equivalencia_sobrevive_ao_ciclo(repository, record):
+    """Sem isto, reabrir a decisao a avaliaria com outro limiar -- e a
+    recomendacao gravada passaria a depender de quem abriu o arquivo."""
+    record.equivalence = 0.05
+    repository.save(record)
+    assert repository.get("abc123").equivalence == 0.05
+
+
+def test_registro_gravado_antes_do_campo_volta_sem_limiar(record):
+    """Arquivo antigo nao tem a chave. ``None`` e "usa o padrao", que e
+    exatamente o comportamento que ele tinha quando foi gravado."""
+    from fitradeoff.repositories.serialization import record_from_dict, record_to_dict
+
+    dados = record_to_dict(record)
+    del dados["limiar_de_equivalencia"]
+    assert record_from_dict(dados).equivalence is None

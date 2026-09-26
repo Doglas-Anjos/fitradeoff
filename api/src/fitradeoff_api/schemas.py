@@ -69,6 +69,13 @@ class DecisionIn(BaseModel):
     problematica: Problematica = "escolha"
     configuracao: dict = Field(default_factory=dict)
     custos: list[float] | None = None
+    limiar_de_equivalencia: float | None = Field(
+        default=None,
+        description="Diferença máxima de valor global abaixo da qual duas "
+        "alternativas contam como indiferentes e a elicitação para. Nulo usa o "
+        "padrão do serviço (0,01, o do sistema oficial). Não é o limiar da "
+        "análise de sensibilidade, que é folga entre os pesos de dois critérios.",
+    )
 
     @field_validator("alternativas")
     @classmethod
@@ -94,6 +101,16 @@ class JudgementIn(BaseModel):
 class ProblematicIn(BaseModel):
     problematica: Problematica
     configuracao: dict | None = None
+
+
+class LimiarDeEquivalenciaIn(BaseModel):
+    # Sem `ge`/`le` de proposito: a faixa aceitavel e conferida no motor, pelo
+    # mesmo motivo do par de veto em `CriterionIn` -- o servidor MCP nao passa
+    # por este schema, e uma regra declarada so aqui o deixaria de fora dela.
+    limiar_de_equivalencia: float | None = Field(
+        default=None,
+        description="Novo limiar; nulo devolve a decisão ao padrão do serviço.",
+    )
 
 
 class SensitivityIn(BaseModel):

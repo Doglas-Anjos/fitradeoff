@@ -1,25 +1,31 @@
 "use client";
 
 /**
- * Ordenacao das constantes de escala, em dois modos.
+ * Ordenacao das constantes de escala, em tres modos.
  *
- * O metodo admite dois caminhos para a mesma declaracao, e eles pedem coisas
- * diferentes do decisor:
+ * O metodo admite mais de um caminho para a mesma declaracao, e eles pedem
+ * coisas diferentes do decisor:
  *
+ * - **pares**: confrontar dois criterios de cada vez. E o caminho do metodo, e
+ *   o padrao: comparar dois e sempre mais facil que ordenar sete.
  * - **lista**: reordenar tudo de uma vez. Rapido para quem ja sabe a ordem.
  * - **avaliacao global**: escolher, uma de cada vez, qual criterio mais pesa
  *   supondo que ele va do pior ao melhor desempenho possivel. Mais lento, e
  *   mais fiel ao que o metodo pergunta -- a pergunta nao e "qual criterio e
  *   mais importante" no abstrato, e sim "qual faixa de desempenho vale mais".
  *
- * Por isso o segundo modo mostra a faixa real de cada criterio: sem ver que o
- * prazo varia de 45 a 12 dias, "prazo e importante" nao quer dizer nada.
+ * Por isso **os tres** mostram a faixa real de cada criterio, no mesmo desenho
+ * (`FaixaCriterio`): sem ver que o prazo varia de 45 a 12 dias, "prazo e
+ * importante" nao quer dizer nada, e a resposta muda conforme o modo escolhido
+ * -- que e o unico defeito que uma tela com tres caminhos para a mesma
+ * pergunta nao pode ter. Por um tempo so o modo par a par desenhava a faixa.
  */
 
 import { CheckCircle } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 
 import { ComparacaoPares } from "@/components/ComparacaoPares";
+import { FaixaCriterio } from "@/components/FaixaCriterio";
 import { ListaArrastavel } from "@/components/ListaArrastavel";
 
 import { Botao, Dica } from "@/components/ui";
@@ -27,23 +33,6 @@ import { Botao, Dica } from "@/components/ui";
 import { useIdioma } from "@/lib/i18n";
 import "@/lib/i18n/visualizacoes";
 import type { CriterioOut } from "@/lib/types";
-
-function formatar(valor: number): string {
-  return Number.isInteger(valor) ? String(valor) : valor.toPrecision(4).replace(/\.?0+$/, "");
-}
-
-function FaixaDoCriterio({ criterio }: { criterio: CriterioOut }) {
-  const { t } = useIdioma();
-  const unidade = criterio.unidade ? ` ${criterio.unidade}` : "";
-  return (
-    <span className="num text-xs" style={{ color: "var(--tinta-fraca)" }}>
-      {t("elicitacao.faixa", {
-        pior: `${formatar(criterio.pior)}${unidade}`,
-        melhor: `${formatar(criterio.melhor)}${unidade}`,
-      })}
-    </span>
-  );
-}
 
 export function OrdenacaoPesos({
   criterios,
@@ -154,7 +143,14 @@ export function OrdenacaoPesos({
                 return {
                   id: chave,
                   titulo: criterio.nome,
-                  detalhe: <FaixaDoCriterio criterio={criterio} />,
+                  /* Variante compacta: a linha da lista ja carrega alca,
+                     numero e duas setas, e a faixa de tres alturas do cartao
+                     empurraria as setas para fora da tela estreita. */
+                  detalhe: (
+                    <span className="mt-1 block">
+                      <FaixaCriterio criterio={criterio} variante="compacta" />
+                    </span>
+                  ),
                 };
               })}
               onReordenar={setOrdem}
@@ -205,38 +201,24 @@ export function OrdenacaoPesos({
                 <strong>{t("estrutura.niveis.melhor")}</strong>
                 {t("elicitacao.global.pergunta.depois")}
               </p>
+              {/* A faixa ficava numa barra de 120px cravados ao lado do nome:
+                  em tela estreita ela espremia o texto, e desenhava um salto
+                  que nao batia com o do modo par a par. Agora e a mesma figura
+                  dali, na largura que houver, embaixo do nome -- que e onde o
+                  olho ja esta quando le o criterio. */}
               <div className="space-y-2">
                 {restantes.map((criterio) => (
                   <button
                     key={criterio.chave}
+                    type="button"
                     onClick={() => setEscolhidos([...escolhidos, criterio.chave])}
-                    className="flex w-full items-center gap-3 rounded-[var(--raio-controle)] border px-3 py-3 text-left transition hover:shadow-sm"
+                    className="block w-full rounded-[var(--raio-controle)] border px-3 py-3 text-left transition hover:shadow-sm"
                     style={{ borderColor: "var(--borda)" }}
                   >
-                    <span className="flex-1">
-                      <span className="block text-sm font-medium">{criterio.nome}</span>
-                      <FaixaDoCriterio criterio={criterio} />
+                    <span className="block text-sm font-medium">{criterio.nome}</span>
+                    <span className="mt-2 block">
+                      <FaixaCriterio criterio={criterio} />
                     </span>
-                    {/* a barra mostra o salto completo que o criterio oferece */}
-                    <svg width="120" height="20" role="presentation">
-                      <rect
-                        x={0}
-                        y={4}
-                        width={120}
-                        height={12}
-                        rx={4}
-                        fill="var(--dado-trilho)"
-                      />
-                      <rect
-                        x={0}
-                        y={4}
-                        width={120}
-                        height={12}
-                        rx={4}
-                        fill="var(--accent)"
-                        opacity={0.85}
-                      />
-                    </svg>
                   </button>
                 ))}
               </div>

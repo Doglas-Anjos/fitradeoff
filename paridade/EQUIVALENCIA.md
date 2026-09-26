@@ -77,7 +77,7 @@ critério e marcamos o que é idêntico nas duas situações.
 | `ranking-12` | 12 × 5 | 8/14 | 8/14 | **bate** |
 | `escolha-15` | 15 × 3 | 3/6 | 3/6 | **bate** |
 | `ranking-15` | 15 × 3 | 3/12 | 3/12 | **bate** |
-| `sorting-06` | 6 × 5 | 8/18 | 8/22 | difere |
+| `sorting-06` | 6 × 5 | 8/18 | 8/18 | **bate** |
 | `bc-08` | 8 × 4 | 5/17 | 5/17 | **bate** |
 | `escolha-20` | 20 × 5 | 8/12 | 8/12 | **bate** |
 | `ranking-20` | 20 × 5 | 8/21 | 8/22 | difere |
@@ -85,10 +85,8 @@ critério e marcamos o que é idêntico nas duas situações.
 | `bc-20` | 20 × 4 | 5/17 | 5/11 | difere |
 | `escolha-empate` | 3 × 3 | **trava** | 3/0 | oficial não completa |
 
+**14 de 16 casos** que o sistema oficial completa batem em número de perguntas, nas duas fases — ordenação das constantes de escala e elicitação por decomposição. Em 1 caso o oficial não completa.
 <!-- fim:tabela -->
-
-**13 de 16 casos** que o sistema oficial completa batem em número de perguntas, nas duas fases — ordenação das constantes de escala e elicitação por decomposição. Em 1 caso o oficial não completa.
-
 
 ## O que a comparação encontrou
 
@@ -97,12 +95,15 @@ sequências de perguntas e diferenciar. Nas três, as perguntas iniciais eram
 **idênticas** — mesmos pares, mesmos pontos de bisseção — e a diferença estava
 em **quando cada sistema para**.
 
-As três correções estão no motor e valem para a maioria dos casos, mas **não
-fecham tudo**: `sorting-06` e `ranking-20` continuam divergindo. Vale dizer por
-quê, porque é um risco de método: cada correção foi medida contra o caso em que
-a divergência apareceu, e casos novos mostraram que a regra encontrada não
-generaliza por completo. O número de casos que batem subiu de 10 para 13 em 16,
-e os três que restam estão na seção seguinte.
+As três correções estão no motor, e duas delas precisaram de uma segunda medida
+para valer de fato. A regra do sorting encontrada na primeira instância — a
+largura da faixa — não descrevia o método: uma segunda instância deu o
+contraexemplo, e o critério verdadeiro (a sobra sobre o corte, contra metade do
+limiar) só apareceu com os dois pontos de medida na mesa.
+
+O risco fica registrado porque é de método, não de código: regra inferida de uma
+instância passa nos testes escritos contra aquela instância. É por isso que a
+suíte roda os 17 casos, e não um. De 10 para **14 de 16**.
 
 ### A pergunta de abertura
 

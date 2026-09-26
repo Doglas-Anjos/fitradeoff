@@ -102,6 +102,10 @@ class StateDTO:
     problematica: str
     elicitacao_iniciada: bool
     declaracoes: int
+    # Limiar em vigor nesta decisao, ja resolvido. A tela de revisao o edita e
+    # portanto precisa ler o valor corrente -- supor o padrao mostraria 0,01
+    # numa decisao que roda com outro.
+    limiar_de_equivalencia: float
     consistente: bool
     encerrado: bool | None = None
     analise: AnalysisDTO | None = None
@@ -121,6 +125,7 @@ class StateDTO:
                 "problematica": self.problematica,
                 "elicitacao_iniciada": self.elicitacao_iniciada,
                 "declaracoes": self.declaracoes,
+                "limiar_de_equivalencia": self.limiar_de_equivalencia,
                 "consistente": self.consistente,
                 "encerrado": self.encerrado,
                 "analise": self.analise.to_dict() if self.analise else None,
@@ -167,6 +172,10 @@ class AuditDTO:
     declaracoes: list[StatementDTO]
     restricoes_ativas: list[str]
     leitura: str
+    # Sem ele a trilha nao reconstitui o resultado: o limiar entra na folga do
+    # teste de dominancia e no criterio de parada, entao dois limiares
+    # diferentes fecham a mesma decisao de maneiras diferentes.
+    limiar_de_equivalencia: float
     analise: AnalysisDTO | None = None
     nota_sobre_autoria: str = (
         "O campo 'autor' e declarado por quem chamou, nao autenticado pelo "
@@ -180,6 +189,7 @@ class AuditDTO:
                 "declaracoes": [d.to_dict() for d in self.declaracoes],
                 "restricoes_ativas": self.restricoes_ativas,
                 "analise": self.analise.to_dict() if self.analise else None,
+                "limiar_de_equivalencia": self.limiar_de_equivalencia,
                 "leitura": self.leitura,
                 "nota_sobre_autoria": self.nota_sobre_autoria,
             }

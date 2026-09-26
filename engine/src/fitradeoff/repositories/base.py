@@ -29,6 +29,21 @@ class DecisionRecord:
     problematic_key: str = "escolha"
     settings: dict = field(default_factory=dict)
     created_at: datetime | None = None
+    #: Limiar de equivalencia entre ALTERNATIVAS desta decisao. Mora aqui, e nao
+    #: no container, por dois motivos: reabrir a decisao tem de reproduzir o
+    #: mesmo resultado -- com o limiar no processo, a recomendacao passaria a
+    #: depender de quem carregou o arquivo --, e a auditoria precisa poder dizer
+    #: com que limiar aquele resultado saiu.
+    #:
+    #: Fora de ``settings`` de proposito: ``settings`` e a configuracao da
+    #: problematica (perfis do sorting, orcamento da carteira) e trocar de
+    #: problematica a substitui inteira. O limiar atravessa a troca, porque e da
+    #: decisao e nao da leitura que se faz dela.
+    #:
+    #: ``None`` nao e zero: e "esta decisao nao escolheu", e ai vale o padrao do
+    #: container. E o que mantem identico o comportamento de quem nunca
+    #: configurou nada -- inclusive dos registros gravados antes deste campo.
+    equivalence: float | None = None
 
 
 class DecisionRepository(ABC):

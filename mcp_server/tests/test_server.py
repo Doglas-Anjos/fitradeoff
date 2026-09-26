@@ -37,6 +37,7 @@ FERRAMENTAS = {
     "explicar",
     "mudar_problematica",
     "analise_sensibilidade",
+    "definir_limiar_de_equivalencia",
 }
 
 
@@ -66,7 +67,7 @@ def test_assinaturas_preservadas_apesar_do_decorador():
     propriedades = set(tools["criar_problema"].input_schema["properties"])
     assert propriedades == {
         "nome", "alternativas", "criterios", "consequencias",
-        "problematica", "configuracao", "custos",
+        "problematica", "configuracao", "custos", "limiar_de_equivalencia",
     }
 
 
@@ -286,3 +287,29 @@ def test_listar_problemas(problema):
     srv.criar_problema("Outro", ALTERNATIVAS, CRITERIOS, CONSEQUENCIAS)
     decisoes = srv.listar_problemas()["decisoes"]
     assert len(decisoes) == 2
+
+
+def test_limiar_de_equivalencia_e_configuravel(problema):
+    """O padrao continua 0,01, e a troca atravessa a fronteira do processo:
+    cada chamada monta um servico novo e rele o arquivo."""
+    assert srv.situacao(problema["id"])["limiar_de_equivalencia"] == 0.01
+
+    ajustada = srv.definir_limiar_de_equivalencia(problema["id"], 0.05)
+    assert ajustada["limiar_de_equivalencia"] == 0.05
+    assert srv.situacao(problema["id"])["limiar_de_equivalencia"] == 0.05
+
+    srv.definir_limiar_de_equivalencia(problema["id"], None)
+    assert srv.situacao(problema["id"])["limiar_de_equivalencia"] == 0.01
+
+
+def test_limiar_absurdo_devolve_erro_legivel(problema):
+    erro = srv.definir_limiar_de_equivalencia(problema["id"], 42.0)
+    assert "entre 0 e 0.5" in erro["erro"]
+
+
+def test_criar_com_limiar_proprio(problema):
+    criada = srv.criar_problema(
+        "Com limiar", ALTERNATIVAS, CRITERIOS, CONSEQUENCIAS,
+        limiar_de_equivalencia=0.05,
+    )
+    assert srv.situacao(criada["id"])["limiar_de_equivalencia"] == 0.05

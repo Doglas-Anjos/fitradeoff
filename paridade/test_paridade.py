@@ -10,6 +10,14 @@ Sem este arquivo, uma mudança no motor podia alterar essa contagem em silêncio
 o relatório e a tela de paridade passariam a afirmar um número que já não é
 verdade. Aqui a afirmação vira asserção.
 
+Contagem de perguntas, porém, não é resultado. Uma mudança podia manter os
+números e trocar o vencedor, o tipo de desfecho, a classe de uma alternativa ou
+a carteira. Por isso a segunda metade do arquivo compara o **resultado**, lido
+por `extrair.py` da tela final que o oficial deixou gravada. Nos 16 casos que
+ele completa o resultado bate em todos — inclusive nos dois em que o número de
+perguntas diverge, que é o que dá a essas duas divergências o caráter de
+diferença de processo e não de conclusão.
+
 Roda sem rede e sem conta: o lado oficial é o que ficou gravado em
 `resultados/oficial.json`, medido com `comparar.py oficial`. Comparar contra o
 arquivo é o ponto — é ele que a tela exibe e que o relatório cita.
@@ -29,7 +37,8 @@ RAIZ = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(RAIZ))
 sys.path.insert(0, str(RAIZ.parent / "engine" / "src"))
 
-from casos import CASOS  # noqa: E402
+import extrair  # noqa: E402
+from casos import CASOS, POR_CHAVE  # noqa: E402
 from comparar import roda_nosso  # noqa: E402
 
 RESULTADOS = RAIZ / "resultados"
@@ -38,10 +47,13 @@ RESULTADOS = RAIZ / "resultados"
 #: Não são falhas escondidas: estão no relatório e na tela. Ficam aqui para que
 #: **fechar** um deles também quebre o teste — e obrigue a atualizar os dois.
 DIVERGENCIAS = {
-    # o oficial abandona um par que ainda tem faixa; causa não identificada
+    # o oficial abandona um par que ainda tem faixa; causa não identificada.
+    # O desfecho é o mesmo, e `test_mesmo_tipo_de_desfecho_no_ranking` o trava:
+    # a divergência é de percurso, não de conclusão.
     "ranking-20": (21, 22),
     # a nossa parada dispara quando a carteira está definida; ele continua.
-    # A carteira final é a mesma, conferida projeto a projeto.
+    # A carteira final é a mesma — agora por asserção, em
+    # `test_mesma_carteira_do_oficial`, e não mais por conferência à mão.
     "bc-20": (17, 11),
 }
 
@@ -100,6 +112,123 @@ def test_respondemos_onde_o_oficial_trava(chave, oficial, nosso):
         "%s passou a completar no oficial; a afirmação do relatório mudou" % chave
     )
     assert nosso[chave]["resumo"]
+
+
+# --- o resultado, e não só o que ele custou em perguntas ---------------------------
+#
+# Não há divergência de resultado conhecida: nos 16 casos que o oficial completa
+# os dois sistemas chegam ao mesmo lugar. Se um dia aparecer uma, ela se declara
+# aqui como `DIVERGENCIAS` faz — nomeada, com o que se sabe dela. Afrouxar a
+# asserção para acomodá-la devolveria o buraco que esta seção veio fechar.
+
+#: Problemáticas cujo resultado é comparado abaixo. É inventário, conferido por
+#: `test_toda_problematica_medida_tem_o_resultado_travado`.
+RESULTADO_TRAVADO = {"escolha", "ranking", "sorting", "beneficio_custo"}
+
+
+def _chaves(modulo):
+    return sorted(c["chave"] for c in CASOS
+                  if c["modulo"] == modulo and c["chave"] not in NAO_COMPLETA)
+
+
+def _tela_final(chave, oficial):
+    """O caso e a tela que o oficial deixou, conferida antes de ser lida.
+
+    Medição faltando é falha, e não skip: um `oficial.json` incompleto faria as
+    comparações de resultado sumirem sem que a suíte mudasse de cor.
+    """
+    registro = oficial.get(chave)
+    assert registro and not registro.get("erro"), (
+        "%s não tem medição do oficial; refaça `comparar.py oficial`" % chave
+    )
+    tela = registro.get("tela_final")
+    assert tela, (
+        "%s foi medido sem guardar a tela final; refaça `comparar.py oficial`" % chave
+    )
+    return POR_CHAVE[chave], tela
+
+
+def _desfecho_nosso(analise):
+    """Ordem completa é cada nível do Hasse com uma alternativa só.
+
+    Sai dos níveis e não do `resumo`, que é texto escrito para o decisor ler e
+    pode ser reformulado sem que o desfecho mude.
+    """
+    return (extrair.ORDEM_COMPLETA
+            if all(len(nivel) == 1 for nivel in analise["niveis"])
+            else extrair.PRE_ORDEM)
+
+
+@pytest.mark.parametrize("chave", _chaves("escolha"))
+def test_mesmo_vencedor_do_oficial(chave, oficial, nosso):
+    """A recomendação aponta a mesma alternativa dos dois lados."""
+    caso, tela = _tela_final(chave, oficial)
+    assert nosso[chave]["analise"]["recomendacao"] == extrair.extrai_vencedor(
+        tela, caso["alternativas"])
+
+
+@pytest.mark.parametrize("chave", _chaves("ranking"))
+def test_mesmo_tipo_de_desfecho_no_ranking(chave, oficial, nosso):
+    """Ordem completa dos dois lados, ou pré-ordem dos dois.
+
+    A ordem em si não dá para comparar: o oficial a entrega como diagrama de
+    Hasse desenhado, e a tela não a escreve em lugar nenhum. O tipo de desfecho
+    é o que sobra — e não é pouco, porque é ele que muda quando o limiar de
+    equivalência passa a valer ou deixa de valer.
+    """
+    _, tela = _tela_final(chave, oficial)
+    assert _desfecho_nosso(nosso[chave]["analise"]) == \
+        extrair.extrai_desfecho_do_ranking(tela)
+
+
+@pytest.mark.parametrize("chave", _chaves("sorting"))
+def test_mesma_classe_para_cada_alternativa(chave, oficial, nosso):
+    """Alternativa por alternativa, e não "quantas ficaram em cada classe".
+
+    Comparar o total por classe deixaria passar uma troca entre duas.
+    """
+    caso, tela = _tela_final(chave, oficial)
+    delas = extrair.extrai_classes(tela, caso["alternativas"],
+                                   caso["configuracao"]["classes"])
+    alocacao = nosso[chave]["analise"]["alocacao"]
+    for alternativa in caso["alternativas"]:
+        possiveis = alocacao[alternativa]["classes_possiveis"]
+        # lista de um elemento: o oficial só encerra com a alocação única, e
+        # ficar com duas classes possíveis também é divergir dele
+        assert possiveis == [delas[alternativa]], (
+            "%s: o oficial fecha em %s, nós em %s"
+            % (alternativa, delas[alternativa], possiveis)
+        )
+
+
+@pytest.mark.parametrize("chave", _chaves("beneficio_custo"))
+def test_mesma_carteira_do_oficial(chave, oficial, nosso):
+    """O mesmo conjunto de projetos; a ordem de exibição difere e não conta.
+
+    Vale para `bc-20`, onde ele faz seis perguntas a mais: a carteira sai igual
+    entre os 2²⁰ subconjuntos possíveis. Era o que sustentava a divergência
+    declarada acima, conferido à mão uma vez; aqui passa a ser verificado.
+    """
+    caso, tela = _tela_final(chave, oficial)
+    nossa = nosso[chave]["analise"]["carteira_mais_frequente"]["projetos"]
+    assert set(nossa) == extrair.extrai_carteira(tela, caso["alternativas"])
+
+
+def test_toda_problematica_medida_tem_o_resultado_travado():
+    """Problemática nova entra comparando resultado, ou este teste avisa.
+
+    Um caso de `portfolio` acrescentado a `casos.py` passaria a ter as
+    perguntas contadas e o resultado ignorado, com a suíte verde: é o mesmo
+    buraco que esta seção veio fechar, um nível acima. A segunda asserção pega
+    o outro lado do mesmo risco — parametrização vazia gera zero testes, e zero
+    testes passam.
+    """
+    medidas = {c["modulo"] for c in CASOS if c["chave"] not in NAO_COMPLETA}
+    assert medidas <= RESULTADO_TRAVADO, (
+        "sem comparação de resultado: %s" % sorted(medidas - RESULTADO_TRAVADO)
+    )
+    for modulo in sorted(RESULTADO_TRAVADO):
+        assert _chaves(modulo), "nenhum caso de %s para comparar" % modulo
 
 
 def test_o_placar_do_relatorio_confere(oficial, nosso):

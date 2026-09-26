@@ -16,6 +16,7 @@ import { ArrowCounterClockwise, Check } from "@phosphor-icons/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { CaboDeGuerra } from "@/components/Animacoes";
+import { FaixaCriterio } from "@/components/FaixaCriterio";
 import {
   Botao,
   BotaoEntreCartoes,
@@ -32,10 +33,6 @@ import {
   type RespostaComparacao,
 } from "@/lib/ordenacaoPorComparacao";
 import type { CriterioOut } from "@/lib/types";
-
-function formatar(v: number): string {
-  return Number.isInteger(v) ? String(v) : v.toPrecision(4).replace(/\.?0+$/, "");
-}
 
 function Cartao({
   criterio,
@@ -54,7 +51,6 @@ function Cartao({
   estado: "neutro" | "escolhido" | "preterido";
 }) {
   const { t } = useIdioma();
-  const unidade = criterio.unidade ? ` ${criterio.unidade}` : "";
   const escolhido = estado === "escolhido";
   const preterido = estado === "preterido";
   return (
@@ -79,28 +75,10 @@ function Cartao({
         {criterio.nome}
       </p>
 
-      {/* a faixa que está em jogo, desenhada */}
+      {/* a faixa que está em jogo, desenhada — o mesmo desenho que os outros
+          modos de ordenação usam, para que a pergunta seja a mesma em todos */}
       <div className="mt-4">
-        <div className="mb-1.5 flex justify-between text-[11px]">
-          <span className="num" style={{ color: "var(--tinta-fraca)" }}>
-            {formatar(criterio.pior)}
-            {unidade}
-          </span>
-          <span className="num" style={{ color: cor }}>
-            {formatar(criterio.melhor)}
-            {unidade}
-          </span>
-        </div>
-        <div
-          className="h-2.5 w-full overflow-hidden rounded-[3px]"
-          style={{ background: "var(--dado-trilho)" }}
-        >
-          <div className="h-full w-full rounded-[3px]" style={{ background: cor }} />
-        </div>
-        <div className="mt-1.5 flex justify-between text-[10px]" style={{ color: "var(--tinta-fraca)" }}>
-          <span>{t("estrutura.niveis.pior")}</span>
-          <span>{t("estrutura.niveis.melhor")}</span>
-        </div>
+        <FaixaCriterio criterio={criterio} cor={cor} />
       </div>
 
       {/* O único alvo de clique do cartão. O rótulo visível é igual nos dois

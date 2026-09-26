@@ -16,7 +16,7 @@ Legenda: **✅ temos** · **◐ parcial** · **❌ falta**
 | 1.4 | Critério contínuo com marcação de inteiro | ✅ | A marcação é preservada no rascunho e valida os valores da matriz sem inventar campo no contrato do motor |
 | 1.5 | **Avaliação intra-critério por elicitação de pontos** | ✅ | Elicitação por bisseção, com a reta desenhada por baixo. Desde 25/09 é passo do fluxo, antes da ordenação — estava só dentro da etapa "Problema", onde ninguém achava |
 | 1.6 | Input Page — revisão dos dados antes de começar | ✅ | A etapa "Problema", acessível a qualquer momento |
-| 1.7 | **Limiar de equivalência editável** | ◐ | O limiar existe no motor (`DEFAULT_EQUIVALENCE`, 0,01) e não é configurável por nenhuma interface. Não confundir com `epsilon`, que é folga entre constantes de escala. Confirmado com captura: lá fica na tela de revisão, com valor padrão 0,01, e pode ser alterado durante a elicitação |
+| 1.7 | **Limiar de equivalência editável** | ◐ | Padrão 0,01, o mesmo dele, e configurável por decisão pela API e pelo MCP; o valor é gravado no registro, para que reabrir a decisão reproduza o resultado. Falta o controle na tela. Não confundir com `epsilon`, que é folga entre constantes de escala. Confirmado com captura: lá fica na tela de revisão, com valor padrão 0,01, e pode ser alterado durante a elicitação |
 | 1.8 | **Mecanismo de veto** | ◐ | Implementado para escolha e ordenação, como lá. A penalidade é a de de Almeida (2013); a dominância sai de um envelope conservador por LP, porque o valor penalizado é quadrático nos pesos. Faixas mais largas que as verdadeiras, nunca mais estreitas — e a ressalva acompanha o resultado. Ver a seção "O veto" abaixo |
 
 ## 2. Ordenação das constantes de escala
@@ -298,7 +298,7 @@ depois da matriz, imediatamente antes de criar a decisão válida no motor.
 
 | Item | Situação |
 |---|---|
-| 1.7 · Limiar de equivalência editável na tela | Existe **só no motor**, fixo em 0,01. O que a API e o chat expõem é o `epsilon`, que é outra coisa: folga entre pesos de critérios, não indiferença entre alternativas |
+| 1.7 · Limiar de equivalência editável na tela | Configurável por decisão na API e no MCP, e gravado com o registro — reabrir devolve o mesmo resultado. Falta o controle na tela |
 | 2.2 · Gráfico na *overall evaluation* | O modo par a par, que é o do método, já tem |
 | 3.4 · Tela dedicada a níveis intermediários | O motor respeita os níveis nas perguntas |
 | 4.7 · Evolução das faixas ao longo das perguntas | Mostramos o estado atual, não a série histórica |

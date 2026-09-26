@@ -15,6 +15,7 @@ from ..schemas import (
     ConsequenceSensitivityIn,
     DecisionIn,
     JudgementIn,
+    LimiarDeEquivalenciaIn,
     ProblematicIn,
     CurvaDeValorIn,
     RankingIn,
@@ -54,6 +55,7 @@ def criar(dados: DecisionIn, service: DecisionService = Depends(get_service)):
             problematica=dados.problematica,
             configuracao=dados.configuracao,
             custos=dados.custos,
+            limiar_de_equivalencia=dados.limiar_de_equivalencia,
         )
     )
 
@@ -114,6 +116,20 @@ def trocar(
         lambda: service.switch_problematic(
             decisao_id, dados.problematica, dados.configuracao
         )
+    )
+
+
+@router.post(
+    "/decisoes/{decisao_id}/limiar-de-equivalencia",
+    summary="Ajusta o limiar de equivalencia entre alternativas",
+)
+def limiar_de_equivalencia(
+    decisao_id: str,
+    dados: LimiarDeEquivalenciaIn,
+    service: DecisionService = Depends(get_service),
+):
+    return _run(
+        lambda: service.set_equivalence(decisao_id, dados.limiar_de_equivalencia)
     )
 
 

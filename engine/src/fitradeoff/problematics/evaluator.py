@@ -22,6 +22,20 @@ from ..solvers.base import Bounds, InfeasibleWeightSpace, LinearSolver, TOLERANC
 # restricao entre constantes de escala de dois CRITERIOS. Objetos distintos.
 DEFAULT_EQUIVALENCE = 0.01
 
+# Faixa aceitavel para um limiar vindo de fora. O valor global de uma
+# alternativa vive em [0, 1] -- cada criterio e normalizado para [0, 1] e os
+# pesos somam 1 --, entao o limiar se le na mesma regua:
+#
+#   0,0  desliga a equivalencia; so a tolerancia numerica do solver sobra;
+#   0,5  ja declara indiferentes duas alternativas separadas por metade de tudo
+#        o que ha para separar -- dai para cima o limiar nao decide mais nada,
+#        responde "tanto faz" a qualquer pergunta.
+#
+# Acima de 0,5 nao ha uso legitimo, e ha um engano provavel: percentual digitado
+# sem dividir por cem. Recusar e mais util do que devolver "todas equivalentes".
+MIN_EQUIVALENCE = 0.0
+MAX_EQUIVALENCE = 0.5
+
 
 class Evaluator:
     """Consultas sobre quais alternativas o espaco de pesos ainda admite."""

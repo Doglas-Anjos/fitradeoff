@@ -24,6 +24,9 @@ FIT_USER=...  FIT_PASS=...  python paridade/comparar.py capturar ranking-20
 # trava a paridade medida: roda o nosso motor e confere contra resultados/
 python -m pytest paridade/
 
+# só o leitor da tela final do oficial, sem rodar o motor (instantâneo)
+python -m pytest paridade/test_extrair.py
+
 # um caso só
 python paridade/comparar.py nosso ranking-20
 ```
@@ -45,8 +48,40 @@ descartável se for compartilhar o terminal.
 | [gerar_tabela.py](gerar_tabela.py) | Reescreve a tabela do relatório |
 | [gerar_web.py](gerar_web.py) | Gera os dados da tela `/paridade` |
 | [resultados/](resultados/) | As medições, versionadas: é o que torna a afirmação auditável |
-| [test_paridade.py](test_paridade.py) | Trava os números: falha se a paridade mudar |
+| [extrair.py](extrair.py) | Lê o resultado na tela final que o oficial deixou gravada |
+| [test_paridade.py](test_paridade.py) | Trava a paridade: falha se ela mudar |
+| [test_extrair.py](test_extrair.py) | Testa o leitor contra telas reais |
 | [EQUIVALENCIA.md](EQUIVALENCIA.md) | O relatório |
+
+## O que a suíte trava
+
+Duas coisas, e as duas contra `resultados/oficial.json` — a medição gravada do
+sistema de referência, não um valor que alguém digitou como esperado.
+
+**Quantas perguntas.** Os passos de ordenação das constantes de escala e os de
+tradeoff, caso a caso. As duas divergências que permanecem estão declaradas por
+nome no teste, com o vão exato: fechar uma delas também quebra o teste, de
+propósito, para obrigar a atualizar o relatório e a tela junto.
+
+**A que resultado se chega.** Cada caso guarda o texto da tela final do oficial,
+e `extrair.py` tira dela o que ele concluiu, conforme a problemática:
+
+| | Comparado |
+|---|---|
+| escolha | o vencedor |
+| ranking | o tipo de desfecho: ordem completa ou pré-ordem |
+| sorting | a classe de cada alternativa, uma a uma |
+| benefício-custo | o conjunto de projetos da carteira (a ordem de exibição difere) |
+
+Isso fecha um buraco real: antes, uma mudança no motor podia manter a contagem
+de perguntas e trocar o vencedor sem que nada reclamasse. Nos 16 casos que o
+oficial completa o resultado bate em **todos** — inclusive em `ranking-20` e
+`bc-20`, onde o número de perguntas diverge. É o que sustenta a afirmação de que
+essas duas divergências são de percurso, não de conclusão.
+
+O leitor falha alto quando não entende a tela, em vez de devolver vazio. Não é
+zelo: um extrator que devolvesse nada deixaria a comparação passar sem comparar
+coisa alguma, e a suíte ficaria verde afirmando o que já não verifica.
 
 ## A política de resposta
 

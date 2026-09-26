@@ -379,3 +379,122 @@ def test_mesma_elicitacao_lida_pelas_duas_carteiras(service):
     assert estado["declaracoes"] == declaracoes
     assert estado["analise"]["problematica"] == "beneficio_custo"
     assert "razoes" in estado["analise"]
+
+
+# --- limiar de equivalencia ---------------------------------------------------
+
+# Curva de valor identidade nos dois criterios. Sem ela a escala se ajusta a
+# faixa observada e duas alternativas quaisquer viram 0 e 1 -- nao haveria como
+# construir duas que diferem por pouco, que e o unico caso em que o limiar
+# decide alguma coisa.
+CURVA_IDENTIDADE = [[0.0, 0.0], [1.0, 1.0]]
+
+CRITERIOS_PROXIMOS = [
+    {"chave": "a", "nome": "Criterio A", "direcao": "max",
+     "curva_de_valor": CURVA_IDENTIDADE},
+    {"chave": "b", "nome": "Criterio B", "direcao": "max",
+     "curva_de_valor": CURVA_IDENTIDADE},
+]
+
+# Com k_a >= k_b, X supera Y por no maximo 0,03 e Y supera X por no maximo
+# 0,005: as duas ficam potencialmente otimas, e a maior das duas distancias cai
+# entre o padrao (0,01) e 0,05. E o caso construido para que o limiar, e so ele,
+# decida se o processo encerra.
+CONSEQUENCIAS_PROXIMAS = [[0.53, 0.50], [0.50, 0.54]]
+
+
+def proximas(service, limiar=None):
+    """Decisao das duas alternativas quase empatadas, com os pesos ja ordenados."""
+    criada = service.create(
+        "Proximas", ["X", "Y"], CRITERIOS_PROXIMOS, CONSEQUENCIAS_PROXIMAS,
+        limiar_de_equivalencia=limiar,
+    )
+    service.rank_criteria(criada["id"], ["a", "b"])
+    return criada["id"]
+
+
+def test_sem_configurar_o_limiar_continua_em_um_centesimo(service, criada):
+    """A paridade medida com o sistema oficial esta presa neste numero: quem
+    nao configurar nada tem de continuar vendo exatamente 0,01."""
+    assert service.state(criada["id"])["limiar_de_equivalencia"] == 0.01
+    # e nada foi gravado no registro: 'None' e "usa o padrao do processo"
+    assert service.container.repository.get(criada["id"]).equivalence is None
+
+
+def test_o_limiar_da_decisao_muda_o_resultado(service):
+    padrao = service.state(proximas(service))
+    folgado = service.state(proximas(service, 0.05))
+
+    assert padrao["analise"]["potencialmente_otimas"] == ["X", "Y"]
+    assert padrao["analise"]["resolvido"] is False
+
+    assert folgado["analise"]["resolvido"] is True
+    assert folgado["analise"]["equivalentes_no_limiar"] == 0.05
+
+
+def test_mudar_o_limiar_rele_o_mesmo_log(service):
+    """Reinterpretacao, nao reelicitacao: o log fica do mesmo tamanho."""
+    decisao = proximas(service)
+    antes = service.state(decisao)
+    depois = service.set_equivalence(decisao, 0.05)
+
+    assert antes["analise"]["resolvido"] is False
+    assert depois["analise"]["resolvido"] is True
+    assert depois["declaracoes"] == antes["declaracoes"]
+
+
+def test_nulo_devolve_a_decisao_ao_padrao(service):
+    decisao = proximas(service, 0.05)
+    voltou = service.set_equivalence(decisao, None)
+    assert voltou["limiar_de_equivalencia"] == 0.01
+    assert voltou["analise"]["resolvido"] is False
+
+
+def test_o_limiar_sobrevive_a_gravacao_e_a_releitura(service, container):
+    """Outro servico sobre o mesmo repositorio e o que acontece ao reabrir a
+    decisao. O adaptador de memoria serializa a cada gravacao, entao o campo
+    passa pelo mesmo caminho que percorreria em disco."""
+    decisao = proximas(service, 0.05)
+    reaberta = DecisionService(container)
+
+    assert reaberta.state(decisao)["limiar_de_equivalencia"] == 0.05
+    assert reaberta.state(decisao)["analise"]["resolvido"] is True
+    assert reaberta.explain(decisao)["limiar_de_equivalencia"] == 0.05
+
+
+def test_reordenar_os_criterios_nao_perde_o_limiar(service):
+    """Reordenar descarta o log e remonta o registro do zero; o limiar nao e
+    declaracao do decisor e nao pode ser descartado junto."""
+    decisao = proximas(service, 0.05)
+    service.rank_criteria(decisao, ["b", "a"])
+    assert service.state(decisao)["limiar_de_equivalencia"] == 0.05
+
+
+def test_trocar_de_problematica_nao_perde_o_limiar(service):
+    """O limiar e da decisao, nao da leitura -- por isso nao mora em
+    `configuracao`, que a troca de problematica substitui inteira."""
+    trocada = service.switch_problematic(proximas(service, 0.05), "ranking")
+    assert trocada["limiar_de_equivalencia"] == 0.05
+
+
+@pytest.mark.parametrize("aceito", [0.0, 0.5])
+def test_as_pontas_da_faixa_sao_aceitas(service, aceito):
+    decisao = proximas(service)
+    assert service.set_equivalence(decisao, aceito)["limiar_de_equivalencia"] == aceito
+
+
+@pytest.mark.parametrize("absurdo", [5.0, -0.1, 0.9, float("nan")])
+def test_limiar_fora_da_faixa_e_recusado(service, absurdo):
+    decisao = proximas(service)
+    with pytest.raises(InvalidRequest, match="entre 0 e 0.5"):
+        service.set_equivalence(decisao, absurdo)
+
+
+def test_a_recusa_separa_os_dois_limiares(service):
+    """A mensagem precisa citar o outro parametro: confundir os dois ja custou
+    um diagnostico errado neste projeto."""
+    with pytest.raises(InvalidRequest, match="sensibilidade"):
+        service.create(
+            "x", ALTERNATIVAS, CRITERIOS_SPEC, CONSEQUENCIAS,
+            limiar_de_equivalencia=0.9,
+        )

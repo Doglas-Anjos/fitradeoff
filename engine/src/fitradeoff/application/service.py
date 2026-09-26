@@ -18,6 +18,11 @@ from ..container import Container
 from ..domain.preferences import HolisticJudgement, Preference
 from ..domain.problem import Criterion, Problem
 from ..elicitation.session import DecisionSession
+from ..problematics.evaluator import (
+    DEFAULT_EQUIVALENCE,
+    MAX_EQUIVALENCE,
+    MIN_EQUIVALENCE,
+)
 from ..repositories.base import DecisionRecord
 from ..repositories.serialization import criterion_from_dict
 from .dto import ScenarioDTO, SensitivityDTO
@@ -143,6 +148,7 @@ class DecisionService:
         problematica: str = "escolha",
         configuracao: dict | None = None,
         custos: Sequence[float] | None = None,
+        limiar_de_equivalencia: float | None = None,
     ) -> dict:
         if problematica not in self._container.registry.keys:
             raise InvalidRequest(
@@ -155,6 +161,7 @@ class DecisionService:
 
         settings = configuracao or {}
         self._check_settings(problematica, settings)
+        equivalence = self._check_equivalence(limiar_de_equivalencia)
 
         problem = Problem(
             name=nome,
@@ -168,6 +175,7 @@ class DecisionService:
             problem=problem,
             problematic_key=problematica,
             settings=settings,
+            equivalence=equivalence,
             created_at=self._container.clock.now(),
         )
         # a problematica confere o que ela propria exige, antes de persistir
@@ -252,6 +260,29 @@ class DecisionService:
 
         record.problematic_key = problematica
         record.settings = settings
+        # o limiar de equivalencia nao e tocado: e da decisao, nao da leitura
+        self._container.repository.save(record)
+        return state_dto(record, self._container.session_for(record)).to_dict()
+
+    def set_equivalence(self, record_id: str, limiar: float | None) -> dict:
+        """Troca o limiar de equivalencia da decisao e rele o mesmo log.
+
+        Nada e reelicitado. O limiar entra como folga no teste de dominancia e
+        no criterio de parada, entao muda-lo reinterpreta as declaracoes que ja
+        existem -- mesma ideia de ``DecisionSession.with_epsilon``, um andar
+        acima: quem sabe remontar a problematica com outro evaluator e o
+        container, nao a sessao.
+
+        No sistema oficial o limiar e editavel durante a elicitacao, e nao so na
+        revisao inicial; por isso nao ha aqui a trava que ``set_value_curve``
+        tem. A diferenca e real: mudar a curva de valor muda a escala em que as
+        respostas ja dadas foram dadas, enquanto o limiar nao toca em nenhuma
+        restricao -- so em quanta diferenca ainda vale a pena perseguir.
+
+        ``None`` devolve a decisao ao padrao do processo.
+        """
+        record, _ = self._load(record_id)
+        record.equivalence = self._check_equivalence(limiar)
         self._container.repository.save(record)
         return state_dto(record, self._container.session_for(record)).to_dict()
 
@@ -263,7 +294,8 @@ class DecisionService:
         O parametro varrido e o ``epsilon`` -- a folga entre as constantes de
         escala de dois CRITERIOS --, nao o limiar de equivalencia entre
         ALTERNATIVAS. Sao coisas diferentes, e chamar esta de "limiar de
-        equivalencia" era o que confundia as duas.
+        equivalencia" era o que confundia as duas. Quem quer mexer naquele outro
+        procura ``set_equivalence``.
         """
         self._limits.check_sensitivity(len(limiares))
         record, session = self._load(record_id)
@@ -386,6 +418,34 @@ class DecisionService:
             if criterion.levels is not None:
                 self._limits.check_levels(len(criterion.levels), criterion.key)
 
+    def _check_equivalence(self, limiar: float | None) -> float | None:
+        """Confere o limiar pedido; ``None`` atravessa como "usa o padrao".
+
+        A conferencia fica aqui, e nao no schema da API, porque o servidor MCP
+        monta o pedido sem passar por schema nenhum: a regra declarada la
+        deixaria uma das duas portas sem porteiro.
+        """
+        if limiar is None:
+            return None
+        try:
+            valor = float(limiar)
+        except (TypeError, ValueError):
+            raise InvalidRequest(
+                f"O limiar de equivalência precisa ser um número; veio {limiar!r}."
+            ) from None
+        # NaN reprova nesta comparacao, que e o que se quer: ele atravessaria o
+        # motor inteiro sem erro e envenenaria todo teste de dominancia
+        if not MIN_EQUIVALENCE <= valor <= MAX_EQUIVALENCE:
+            raise InvalidRequest(
+                f"O limiar de equivalência precisa ficar entre "
+                f"{MIN_EQUIVALENCE:g} e {MAX_EQUIVALENCE:g}; veio {valor:g}. "
+                f"Ele compara os valores globais de duas alternativas, que vivem "
+                f"em [0, 1]; o padrão do FITradeoff é {DEFAULT_EQUIVALENCE:g}. "
+                f"Não confunda com os limiares da análise de "
+                f"sensibilidade, que são folga entre os pesos de dois critérios."
+            )
+        return valor
+
     def _check_settings(self, problematica: str, settings: dict) -> None:
         # as duas leituras de carteira amostram vertices, e o teto e o mesmo
         if problematica in ("portfolio", "beneficio_custo"):
@@ -399,6 +459,7 @@ def _without_log(record: DecisionRecord) -> DecisionRecord:
         problem=record.problem,
         problematic_key=record.problematic_key,
         settings=record.settings,
+        equivalence=record.equivalence,
         created_at=record.created_at,
     )
 

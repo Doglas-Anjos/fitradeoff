@@ -42,10 +42,29 @@
   --dado-b: #c2410c;
   --dado-trilho: #e4e4e7;
 
+  /* Serie categorica: a ordem e fixa e nunca reciclada -- a cor identifica a
+     alternativa, e desmarcar uma nao pode repintar as que sobraram.
+     Medida com o validador de paleta (OKLab, simulacao Machado 2009):
+     separacao minima entre vizinhas 9,1 dE em protanopia, acima do alvo de 8.
+     Tres delas ficam abaixo de 3:1 contra o painel branco; isso e admissivel
+     porque a leitura nao depende so da cor -- ha rotulo direto em cada marca e
+     a aba de tabela. O modo escuro tem passos proprios, escolhidos e validados
+     contra o painel escuro, e nao um clareamento automatico destes. */
+  --serie-1: #2a78d6;
+  --serie-2: #eb6834;
+  --serie-3: #1baf7a;
+  --serie-4: #eda100;
+  --serie-5: #e87ba4;
+  --serie-6: #008300;
+  --serie-7: #4a3aa7;
+  --serie-8: #e34948;
+
   /* estado */
   --sucesso: #15803d;
+  --aviso: #a16207;
   --erro: #b91c1c;
   --erro-suave: #fef2f2;
+  --veu: rgba(24, 24, 27, 0.45);
 
   /* sombra tingida com o tom do fundo, nunca preto puro */
   --sombra: 0 1px 2px rgba(24, 24, 27, 0.04), 0 4px 12px rgba(24, 24, 27, 0.04);
@@ -79,9 +98,23 @@
     --dado-b: #ce7c18;
     --dado-trilho: #3f3f46;
 
+    /* Passos proprios do modo escuro: mesma matiz, luminosidade dentro da
+       banda do fundo escuro. Os oito passam contraste de 3:1 contra o painel,
+       o que os originais nao faziam -- o violeta ficava em 2,07:1. */
+    --serie-1: #3791ff;
+    --serie-2: #f2590a;
+    --serie-3: #03ad77;
+    --serie-4: #c38400;
+    --serie-5: #dd6193;
+    --serie-6: #28af24;
+    --serie-7: #877dfe;
+    --serie-8: #fc4547;
+
     --sucesso: #4ade80;
+    --aviso: #fbbf24;
     --erro: #f87171;
     --erro-suave: #2a1515;
+    --veu: rgba(0, 0, 0, 0.65);
 
     --sombra: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.25);
     --sombra-alta: 0 2px 4px rgba(0, 0, 0, 0.35), 0 12px 28px rgba(0, 0, 0, 0.4);
@@ -106,9 +139,19 @@
   --dado-a: #19a594;
   --dado-b: #ce7c18;
   --dado-trilho: #3f3f46;
+  --serie-1: #3791ff;
+  --serie-2: #f2590a;
+  --serie-3: #03ad77;
+  --serie-4: #c38400;
+  --serie-5: #dd6193;
+  --serie-6: #28af24;
+  --serie-7: #877dfe;
+  --serie-8: #fc4547;
   --sucesso: #4ade80;
+  --aviso: #fbbf24;
   --erro: #f87171;
   --erro-suave: #2a1515;
+  --veu: rgba(0, 0, 0, 0.65);
 }
 
 @theme inline {
@@ -124,6 +167,7 @@
   --color-accent: var(--accent);
   --color-accent-suave: var(--accent-suave);
   --color-sucesso: var(--sucesso);
+  --color-aviso: var(--aviso);
   --color-erro: var(--erro);
 
   --radius-painel: var(--raio-painel);
@@ -212,4 +256,192 @@ body {
   background: var(--painel-fundo);
   border-radius: var(--raio-controle);
   animation: pulso 1.6s ease-in-out infinite;
+}
+
+
+/* --- movimento ----------------------------------------------------------------
+
+   Tres regras, do mais barato ao mais caro: entrar e sempre ease-out, porque
+   comeca rapido e responde na hora; nada entra de escala zero, porque nada no
+   mundo aparece do nada; e tudo isto desliga em prefers-reduced-motion.
+
+   Duracoes curtas de proposito. Acima de 300ms uma transicao de interface
+   comeca a parecer espera, nao resposta. */
+
+:root {
+  --saida: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@keyframes desvanecer-entrando {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes subir-entrando {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.entra-desvanecendo {
+  animation: desvanecer-entrando 160ms var(--saida) both;
+}
+
+.entra-subindo {
+  animation: subir-entrando 220ms var(--saida) both;
+}
+
+/* Cor muda mais devagar que posicao: o olho perdoa cor lenta, nao perdoa
+   movimento lento. */
+.transicao-cor {
+  transition: color 200ms ease;
+}
+
+/* Entrada de item em lista, com atraso em cascata pela ordem.
+   O atraso e curto: acima de 80ms entre itens a lista parece carregar devagar. */
+.entra-em-lista {
+  animation: subir-entrando 240ms var(--saida) both;
+  animation-delay: calc(var(--ordem, 0) * 40ms);
+}
+
+/* `both` deixa o transform da animacao valendo depois que ela acaba, e um
+   transform diferente de `none` abre um contexto de empilhamento. Cada cartao
+   vira entao uma ilha: um `z-index` alto dentro dele nao passa por cima do
+   irmao seguinte, e a ajuda que abria dentro de um cartao aparecia por baixo do
+   cartao da direita, cortada ao meio.
+
+   Levantar a ilha inteira enquanto ela tem uma ajuda aberta resolve para
+   qualquer cartao, e nao so para o que tem o problema hoje. */
+.entra-em-lista:has([role="dialog"]) {
+  position: relative;
+  z-index: 40;
+}
+
+/* As duas leituras de carteira, desenhadas em movimento.
+ *
+ * Nao e enfeite: e a diferenca entre elas. A combinatorial escolhe um conjunto
+ * de uma vez -- a elipse se fecha em volta e os pontos aparecem juntos. A por
+ * razao desce uma lista ordenada enquanto o orcamento permitir -- os pontos
+ * acendem um apos o outro. Quem passa o mouse de um lado para o outro ve o que
+ * o helper leva tres paragrafos para explicar.
+ *
+ * Isto so existe na tela de criar decisao, e e visto uma vez por decisao: e o
+ * caso em que animar ensina em vez de atrasar. Numa acao repetida dezenas de
+ * vezes por dia a resposta seria nao animar nada. */
+@keyframes tracar {
+  from {
+    stroke-dashoffset: var(--comprimento, 180);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Um traco que se desenha. Serve a elipse da carteira e as ligacoes da escolha:
+   e sempre a mesma ideia -- a linha esta sendo feita agora, nao estava ali. */
+.traca {
+  stroke-dasharray: var(--comprimento, 180);
+  animation: tracar var(--duracao, 560ms) var(--saida) both;
+  animation-delay: calc(var(--ordem, 0) * 90ms);
+}
+
+/* A escolha: as ligacoes se desenham de baixo para cima -- as comparacoes
+   acontecendo -- e so entao a vencedora aparece. A ordem e o argumento: a
+   recomendacao vem das comparacoes, nao antes delas. */
+.surge-vencedora {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: surgir-ponto 300ms var(--saida) both;
+  animation-delay: 420ms;
+}
+
+/* A ordenacao: as alternativas entram pela esquerda, de cima para baixo. A
+   cascata e o resultado -- primeira, segunda, terceira -- e nao um efeito de
+   entrada qualquer. O deslocamento vai em unidades do viewBox, nao em pixels
+   de tela: dentro de um SVG e assim que o transform e medido. */
+@keyframes entrar-da-esquerda {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.entra-da-esquerda {
+  animation: entrar-da-esquerda 300ms var(--saida) both;
+  animation-delay: calc(var(--ordem, 0) * 95ms);
+}
+
+/* A classificacao: as faixas primeiro, as alternativas depois. E a diferenca
+   para a ordenacao, e esta inteira na ordem -- as classes ja existiam, quem as
+   definiu foi o decisor, e o que o metodo faz e alocar dentro delas. */
+.surge-faixa {
+  animation: desvanecer-entrando 220ms var(--saida) both;
+  animation-delay: calc(var(--ordem, 0) * 80ms);
+}
+
+.cai-na-faixa {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: surgir-ponto 240ms var(--saida) both;
+  animation-delay: calc(300ms + var(--ordem, 0) * 60ms);
+}
+
+@keyframes surgir-ponto {
+  from {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* `fill-box` porque num SVG a origem do transform e o canto do viewBox por
+   padrao: sem isso o ponto cresce vindo do canto da figura, e nao do proprio
+   centro. */
+.surge-ponto {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: surgir-ponto 260ms var(--saida) both;
+  animation-delay: calc(var(--ordem, 0) * 110ms);
+}
+
+.surge-conjunto {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: surgir-ponto 320ms var(--saida) both;
+  animation-delay: 140ms;
+}
+
+.surge-marca {
+  transform-origin: center;
+  animation: surgir-ponto 180ms var(--saida) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .entra-desvanecendo,
+  .entra-subindo,
+  .entra-em-lista,
+  .surge-ponto,
+  .surge-conjunto,
+  .surge-marca,
+  .surge-vencedora,
+  .entra-da-esquerda,
+  .surge-faixa,
+  .cai-na-faixa {
+    animation: desvanecer-entrando 1ms both;
+  }
+  /* O traco aparece inteiro, sem se desenhar. O `stroke-dasharray` fica: com o
+     tracejado do tamanho do proprio traco e deslocamento zero, a linha e
+     continua. */
+  .traca {
+    animation: none;
+  }
+  .transicao-cor {
+    transition: none;
+  }
 }

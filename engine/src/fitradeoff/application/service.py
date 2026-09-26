@@ -256,9 +256,14 @@ class DecisionService:
         return state_dto(record, self._container.session_for(record)).to_dict()
 
     def sensitivity(self, record_id: str, limiares: Sequence[float]) -> dict:
-        """Reprocessa o mesmo log com outros limiares de equivalencia.
+        """Reprocessa o mesmo log com outras folgas de preferencia estrita.
 
         Nada e reelicitado: a analise de sensibilidade e uma releitura do log.
+
+        O parametro varrido e o ``epsilon`` -- a folga entre as constantes de
+        escala de dois CRITERIOS --, nao o limiar de equivalencia entre
+        ALTERNATIVAS. Sao coisas diferentes, e chamar esta de "limiar de
+        equivalencia" era o que confundia as duas.
         """
         self._limits.check_sensitivity(len(limiares))
         record, session = self._load(record_id)

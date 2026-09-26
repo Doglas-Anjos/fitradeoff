@@ -262,9 +262,9 @@ def mudar_problematica(
 
 
 @tool(
-    "Analise de sensibilidade: reprocessa as mesmas respostas com outros limiares "
-    "de equivalencia, para mostrar o quanto a conclusao depende deles. Nada e "
-    "reelicitado."
+    "Analise de sensibilidade: reprocessa as mesmas respostas com outras folgas "
+    "de preferencia estrita entre os pesos dos criterios, para mostrar o quanto a "
+    "conclusao depende delas. Nada e reelicitado."
 )
 def analise_sensibilidade(id: str, limiares: list[float]) -> dict:
     return service().sensitivity(id, limiares)

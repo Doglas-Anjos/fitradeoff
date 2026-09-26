@@ -91,19 +91,89 @@ class Bracket:
         return min(inside, key=lambda v: abs(v - self.midpoint))
 
 
-def brackets_from_log(problem: Problem, log: AuditLog) -> tuple[Bracket, ...]:
-    """Reconstroi os intervalos de busca a partir das declaracoes registradas."""
+def brackets_from_log(
+    problem: Problem, log: AuditLog, abertura: bool = True
+) -> tuple[Bracket, ...]:
+    """Reconstroi os intervalos de busca a partir das declaracoes registradas.
+
+    Com ``abertura``, o primeiro par oferecido e o mais importante contra o
+    menos importante -- e nao dois consecutivos. E o que o sistema oficial faz,
+    e tem razao de ser: essa e a razao de pesos mais larga que existe, entao
+    responde-la corta o espaco de pesos no ponto de maior ignorancia. Depois de
+    respondida ela sai da lista e nao volta; o refinamento segue par a par.
+
+    A ordem em que as perguntas sao feitas nao muda o espaco de pesos final --
+    restricoes lineares se intersectam, e intersecao e comutativa. Por isso a
+    abertura pode ser revista a qualquer momento, como qualquer outra resposta:
+    o que vale e o conjunto do log, nao a sequencia.
+    """
     ranking = log.last_of_type(CriteriaRanking)
     if ranking is None:
         return ()
 
-    brackets = [
+    ordem = ranking.order
+    respostas = tuple(log.of_type(TradeoffAnswer))
+
+    brackets: list[Bracket] = []
+    # com dois criterios o par extremo ja e o consecutivo: nao ha o que abrir
+    if abertura and len(ordem) >= 3:
+        topo, base = ordem[0], ordem[-1]
+        respondida = any(
+            a.criterion == topo and a.rival == base for a in respostas
+        )
+        if not respondida:
+            brackets.append(Bracket(criterion=topo, rival=base))
+
+    consecutivos = [
         Bracket(criterion=higher, rival=lower)
-        for higher, lower in zip(ranking.order, ranking.order[1:])
+        for higher, lower in zip(ordem, ordem[1:])
     ]
-    for answer in log.of_type(TradeoffAnswer):
+    brackets += consecutivos
+    for answer in respostas:
         brackets = [bracket.narrowed_by(answer) for bracket in brackets]
+
+    if abertura and len(ordem) >= 3:
+        brackets = _propagar_abertura(brackets, ordem, respostas)
     return tuple(brackets)
+
+
+def _propagar_abertura(
+    brackets: list[Bracket],
+    ordem: tuple[int, ...],
+    respostas: tuple[TradeoffAnswer, ...],
+) -> list[Bracket]:
+    """Leva o piso da razao extrema para os pares consecutivos.
+
+    Sem isto a abertura vira armadilha. A razao extrema ``k_base / k_topo`` e o
+    **produto** das razoes consecutivas, e cada fator esta em (0, 1] porque a
+    ordem ja foi declarada. Entao, se o produto e no minimo ``v``, cada fator
+    tambem e no minimo ``v`` -- nenhum deles pode ser menor sem derrubar o
+    produto abaixo de ``v``.
+
+    Quem nao propaga isso pergunta sobre um par consecutivo no meio de uma faixa
+    que ja nao existe, e uma das duas respostas esvazia o espaco de pesos: o
+    decisor recebe "as declaracoes se contradizem" por ter respondido o que lhe
+    foi perguntado. Foi assim que este defeito apareceu -- so com a resposta B,
+    porque preferir A limita o produto **por cima**, e um teto no produto nao
+    diz nada sobre cada fator (os outros podem valer 1).
+    """
+    topo, base = ordem[0], ordem[-1]
+    piso = 0.0
+    for a in respostas:
+        if a.criterion != topo or a.rival != base:
+            continue
+        if a.preference is Preference.SECOND or a.preference is Preference.INDIFFERENT:
+            piso = max(piso, a.value)
+    if piso <= 0.0:
+        return brackets
+
+    pares = set(zip(ordem, ordem[1:]))
+    return [
+        replace(b, lower=max(b.lower, min(piso, b.upper)))
+        if (b.criterion, b.rival) in pares
+        else b
+        for b in brackets
+    ]
 
 
 # --- enunciado ----------------------------------------------------------------

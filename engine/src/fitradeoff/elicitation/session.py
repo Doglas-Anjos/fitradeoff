@@ -43,6 +43,10 @@ class DecisionSession:
     presenter: QuestionPresenter = field(default_factory=QuestionPresenter)
     clock: Clock = field(default_factory=SystemClock)
     epsilon: float = DEFAULT_EPSILON
+    #: abre a elicitacao pelo par mais importante x menos importante, como o
+    #: sistema oficial. Desligado, so pares consecutivos sao perguntados -- uma
+    #: pergunta a menos, mesmo resultado.
+    abertura_extrema: bool = True
     log: AuditLog = field(default_factory=AuditLog)
     _cache: dict = field(default_factory=dict, repr=False)
 
@@ -62,7 +66,7 @@ class DecisionSession:
 
     @property
     def brackets(self) -> tuple[Bracket, ...]:
-        return brackets_from_log(self.problem, self.log)
+        return brackets_from_log(self.problem, self.log, self.abertura_extrema)
 
     @property
     def started(self) -> bool:
@@ -150,9 +154,11 @@ class DecisionSession:
         return replace(self, log=self.log.without_last(), _cache={})
 
     def with_epsilon(self, epsilon: float) -> "DecisionSession":
-        """Reprocessa o mesmo log com outro limiar de equivalencia.
+        """Reprocessa o mesmo log com outra folga de preferencia estrita.
 
         E a analise de sensibilidade: nada e reelicitado, so reinterpretado.
+        Nao confundir com o limiar de equivalencia entre alternativas, que vive
+        no ``Evaluator``.
         """
         return replace(self, epsilon=epsilon, _cache={})
 

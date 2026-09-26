@@ -23,7 +23,7 @@ from .elicitation.questions import QuestionPresenter
 from .elicitation.selectors import QuestionSelector, WidestBracketSelector
 from .elicitation.session import DecisionSession
 from .problematics.base import Problematic
-from .problematics.evaluator import Evaluator
+from .problematics.evaluator import DEFAULT_EQUIVALENCE, Evaluator
 from .problematics.registry import ProblematicRegistry, default_registry
 from .repositories.base import DecisionRecord, DecisionRepository
 from .repositories.adapters import (
@@ -46,10 +46,12 @@ class Container:
     presenter: QuestionPresenter = field(default_factory=QuestionPresenter)
     make_selector: Callable[[], QuestionSelector] = WidestBracketSelector
     epsilon: float = DEFAULT_EPSILON
+    equivalence: float = DEFAULT_EQUIVALENCE
+    abertura_extrema: bool = True
 
     @property
     def evaluator(self) -> Evaluator:
-        return Evaluator(self.solver)
+        return Evaluator(self.solver, equivalence=self.equivalence)
 
     def problematic(self, key: str, settings: dict | None = None) -> Problematic:
         return self.registry.create(
@@ -65,6 +67,7 @@ class Container:
             presenter=self.presenter,
             clock=self.clock,
             epsilon=self.epsilon,
+            abertura_extrema=self.abertura_extrema,
             log=record.log,
         )
 
@@ -72,6 +75,8 @@ class Container:
 def build_container(
     storage: Path | str | None = None,
     epsilon: float = DEFAULT_EPSILON,
+    equivalence: float = DEFAULT_EQUIVALENCE,
+    abertura_extrema: bool = True,
     make_selector: Callable[[], QuestionSelector] = WidestBracketSelector,
     clock: Clock | None = None,
 ) -> Container:
@@ -89,4 +94,6 @@ def build_container(
         clock=clock or SystemClock(),
         make_selector=make_selector,
         epsilon=epsilon,
+        equivalence=equivalence,
+        abertura_extrema=abertura_extrema,
     )

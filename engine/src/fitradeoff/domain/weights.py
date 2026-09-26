@@ -11,9 +11,14 @@ from dataclasses import dataclass, replace
 from enum import Enum
 from typing import Iterable
 
-# Limiar de equivalencia: preferencia estrita vira desigualdade com folga, para
-# que o espaco de pesos nao degenere em faces de medida nula. Corresponde ao
-# "equivalence threshold" ajustavel do sistema original.
+# Folga da preferencia estrita: k_i - k_j >= epsilon, para que o espaco de pesos
+# nao degenere em faces de medida nula. O valor e escolha nossa, de condicionamento
+# numerico; nao vem da documentacao do FITradeoff.
+#
+# Nao confundir com o "equivalence threshold" do sistema oficial, cujo padrao e
+# 0,01: aquele compara os valores globais de duas ALTERNATIVAS para declara-las
+# indiferentes; este aqui e folga entre as constantes de escala de dois CRITERIOS.
+# Sao parametros distintos, sobre objetos distintos.
 DEFAULT_EPSILON = 1e-4
 
 

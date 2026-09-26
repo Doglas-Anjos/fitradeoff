@@ -13,16 +13,33 @@ from ..domain.problem import Problem
 from ..domain.weights import WeightSpace
 from ..solvers.base import Bounds, InfeasibleWeightSpace, LinearSolver, TOLERANCE
 
+# Limiar de equivalencia entre ALTERNATIVAS: diferenca maxima entre os valores
+# globais de duas alternativas abaixo da qual elas podem ser consideradas
+# indiferentes. E o "equivalence threshold" do sistema oficial, cujo padrao e
+# 0,01 -- adotamos o mesmo para que as duas plataformas parem no mesmo ponto.
+#
+# Nao confundir com DEFAULT_EPSILON (domain/weights.py), que e folga de
+# restricao entre constantes de escala de dois CRITERIOS. Objetos distintos.
+DEFAULT_EQUIVALENCE = 0.01
+
 
 class Evaluator:
     """Consultas sobre quais alternativas o espaco de pesos ainda admite."""
 
-    def __init__(self, solver: LinearSolver) -> None:
+    def __init__(
+        self, solver: LinearSolver, equivalence: float = DEFAULT_EQUIVALENCE
+    ) -> None:
         self._solver = solver
+        self._equivalence = equivalence
 
     @property
     def solver(self) -> LinearSolver:
         return self._solver
+
+    @property
+    def equivalence(self) -> float:
+        """Limiar abaixo do qual duas alternativas contam como indiferentes."""
+        return self._equivalence
 
     def is_consistent(self, space: WeightSpace) -> bool:
         """O espaco de pesos ainda e nao vazio?
@@ -228,6 +245,49 @@ class Evaluator:
             return self.dominates(problem, space, better, worse)
         envelopes = self.penalized_bounds(problem, space)
         return self._envelopes_separate(envelopes, better, worse)
+
+    def are_equivalent(
+        self, problem: Problem, space: WeightSpace, i: int, l: int
+    ) -> bool:
+        """Os valores globais de ``i`` e ``l`` ficam dentro do limiar, sempre?
+
+        Criterio do sistema oficial: se a diferenca maxima entre os valores
+        globais de duas alternativas, sobre todo o espaco de pesos viavel, nao
+        passa do limiar, entao nenhuma pergunta futura vai separa-las de forma
+        relevante -- e perguntar mais so cansa o decisor.
+
+        Sao dois LPs, um por sentido: a diferenca maxima de ``i`` sobre ``l`` e
+        a de ``l`` sobre ``i``. Ambas dentro do limiar significa faixas que se
+        sobrepoem o bastante para nao haver o que decidir.
+
+        Com veto declarado o teste **nao** se aplica: o valor penalizado e
+        quadratico nos pesos, e o envelope conservador de ``penalized_bounds``
+        e mais largo que a faixa real. Declarar indiferenca sobre um envelope
+        largo esconderia uma diferenca que existe -- entao aqui o erro seguro e
+        nao declarar, e seguir perguntando.
+        """
+        if i == l:
+            return True
+        if self._equivalence <= 0.0 or problem.has_veto:
+            return False
+        for a, b in ((i, l), (l, i)):
+            gap = self._solver.maximize(space, problem.values[a] - problem.values[b])
+            if gap is None or gap > self._equivalence:
+                return False
+        return True
+
+    def all_equivalent(
+        self, problem: Problem, space: WeightSpace, indices
+    ) -> bool:
+        """Todas as alternativas do conjunto sao indiferentes entre si?"""
+        indices = tuple(indices)
+        if len(indices) <= 1:
+            return False
+        return all(
+            self.are_equivalent(problem, space, indices[a], indices[b])
+            for a in range(len(indices))
+            for b in range(a + 1, len(indices))
+        )
 
     def weight_bounds(self, problem: Problem, space: WeightSpace) -> tuple[Bounds, ...]:
         """Faixa possivel de cada constante de escala."""

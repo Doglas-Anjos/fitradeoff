@@ -64,10 +64,78 @@ def test_intervalos_sao_derivados_do_log(clock):
     log = AuditLog().record(CriteriaRanking((0, 1, 2)), clock)
     log = log.record(TradeoffAnswer(0, 1, 0.5, Preference.FIRST), clock)
 
-    brackets = brackets_from_log(problem, log)
+    brackets = brackets_from_log(problem, log, abertura=False)
     assert len(brackets) == 2
     assert brackets[0].upper == 0.5  # par (0, 1) foi estreitado
     assert brackets[1].width == 1.0  # par (1, 2) segue intacto
+
+
+def test_abertura_confronta_o_mais_importante_com_o_menos(clock):
+    """O primeiro par oferecido e (topo, base), nao dois consecutivos."""
+    problem = make_problem([[1.0, 2.0, 3.0], [3.0, 2.0, 1.0]])
+    log = AuditLog().record(CriteriaRanking((0, 1, 2)), clock)
+
+    brackets = brackets_from_log(problem, log)
+    assert len(brackets) == 3
+    assert (brackets[0].criterion, brackets[0].rival) == (0, 2)
+
+
+def test_abertura_sai_da_lista_depois_de_respondida(clock):
+    """Pergunta de abertura e feita uma vez so: respondida, nao volta."""
+    problem = make_problem([[1.0, 2.0, 3.0], [3.0, 2.0, 1.0]])
+    log = AuditLog().record(CriteriaRanking((0, 1, 2)), clock)
+    log = log.record(TradeoffAnswer(0, 2, 0.5, Preference.FIRST), clock)
+
+    pares = [(b.criterion, b.rival) for b in brackets_from_log(problem, log)]
+    assert (0, 2) not in pares
+    assert pares == [(0, 1), (1, 2)]
+
+
+def test_piso_da_abertura_alcanca_os_pares_consecutivos(clock):
+    """A razao extrema e o produto das consecutivas: piso nela e piso em todas.
+
+    Sem isto o seletor perguntaria sobre um par no meio de uma faixa que ja nao
+    existe, e uma das respostas esvaziaria o espaco de pesos.
+    """
+    problem = make_problem([[1.0, 2.0, 3.0], [3.0, 2.0, 1.0]])
+    log = AuditLog().record(CriteriaRanking((0, 1, 2)), clock)
+    log = log.record(TradeoffAnswer(0, 2, 0.9, Preference.SECOND), clock)
+
+    for b in brackets_from_log(problem, log):
+        assert b.lower >= 0.9, (b.criterion, b.rival, b.lower)
+
+
+def test_preferir_A_na_abertura_nao_move_piso_nenhum(clock):
+    """Teto no produto nao implica teto em cada fator: os outros podem valer 1."""
+    problem = make_problem([[1.0, 2.0, 3.0], [3.0, 2.0, 1.0]])
+    log = AuditLog().record(CriteriaRanking((0, 1, 2)), clock)
+    log = log.record(TradeoffAnswer(0, 2, 0.9, Preference.FIRST), clock)
+
+    assert all(b.lower == 0.0 for b in brackets_from_log(problem, log))
+
+
+def test_com_dois_criterios_nao_ha_abertura_separada(clock):
+    """O par extremo ja e o consecutivo: abrir por ele seria repetir."""
+    problem = make_problem([[1.0, 2.0], [3.0, 4.0]])
+    log = AuditLog().record(CriteriaRanking((0, 1)), clock)
+    assert len(brackets_from_log(problem, log)) == 1
+
+
+def test_ordem_das_respostas_nao_muda_os_intervalos(clock):
+    """Restricoes se intersectam, e intersecao comuta.
+
+    E o que autoriza rever a abertura depois, em vez de so no comeco.
+    """
+    problem = make_problem([[1.0, 2.0, 3.0], [3.0, 2.0, 1.0]])
+    base = AuditLog().record(CriteriaRanking((0, 1, 2)), clock)
+    a = TradeoffAnswer(0, 2, 0.5, Preference.FIRST)
+    b = TradeoffAnswer(0, 1, 0.25, Preference.FIRST)
+
+    antes = brackets_from_log(problem, base.record(a, clock).record(b, clock))
+    depois = brackets_from_log(problem, base.record(b, clock).record(a, clock))
+    assert sorted(antes, key=lambda x: (x.criterion, x.rival)) == sorted(
+        depois, key=lambda x: (x.criterion, x.rival)
+    )
 
 
 def test_sem_ordenacao_nao_ha_intervalos(clock):

@@ -208,7 +208,8 @@ TOOLS = [
     ),
     _tool(
         "analise_sensibilidade",
-        "Reprocessa as mesmas respostas com outros limiares de equivalencia.",
+        "Reprocessa as mesmas respostas com outras folgas de preferencia "
+        "estrita entre os pesos dos criterios.",
         {"id": _ID, "limiares": {"type": "array", "items": {"type": "number"}}},
         ["id", "limiares"],
     ),

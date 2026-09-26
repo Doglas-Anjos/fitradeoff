@@ -2,7 +2,9 @@
 
 De Almeida et al. (2016). Uma alternativa e potencialmente otima (POA) se
 existe ao menos um vetor de pesos viavel que a torna a melhor de todas. O
-processo termina quando resta uma unica POA.
+processo termina quando resta uma unica POA -- ou quando as que sobraram sao
+indiferentes entre si dentro do limiar de equivalencia, porque a partir dai
+nenhuma pergunta separa mais nada e insistir so cansa o decisor.
 """
 
 from __future__ import annotations
@@ -21,9 +23,17 @@ class ChoiceProblematic(Problematic):
 
     def _analyse(self, problem: Problem, space: WeightSpace) -> Analysis:
         poas = self.evaluator.potentially_optimal(problem, space)
+        equivalentes = self.evaluator.all_equivalent(problem, space, poas)
 
         if len(poas) == 1:
             headline = f"Recomendação: {problem.alternatives[poas[0]]}."
+        elif equivalentes:
+            headline = (
+                f"{len(poas)} alternativas ficaram equivalentes dentro do limiar "
+                f"de {self.evaluator.equivalence:g}: "
+                f"{', '.join(problem.names_of(poas))}. "
+                "Qualquer uma delas serve; mais perguntas não separariam."
+            )
         else:
             headline = (
                 f"{len(poas)} alternativas seguem potencialmente ótimas: "
@@ -33,8 +43,8 @@ class ChoiceProblematic(Problematic):
         dominance = self.evaluator.dominance_matrix(problem, space, subset=poas)
         return Analysis(
             problematic=self.key,
-            resolved=len(poas) <= 1,
-            undecided=poas if len(poas) > 1 else (),
+            resolved=len(poas) <= 1 or equivalentes,
+            undecided=() if (len(poas) <= 1 or equivalentes) else poas,
             headline=headline,
             detail={
                 # primeiro no dicionario porque e a primeira coisa que o leitor
@@ -45,6 +55,18 @@ class ChoiceProblematic(Problematic):
                     else {}
                 ),
                 "potencialmente_otimas": problem.names_of(poas),
+                **(
+                    {
+                        "equivalentes_no_limiar": self.evaluator.equivalence,
+                        "ressalva": (
+                            "As alternativas restantes diferem em valor global "
+                            "por menos que o limiar de equivalência: o método "
+                            "para aqui."
+                        ),
+                    }
+                    if equivalentes
+                    else {}
+                ),
                 "recomendacao": (
                     problem.alternatives[poas[0]] if len(poas) == 1 else None
                 ),

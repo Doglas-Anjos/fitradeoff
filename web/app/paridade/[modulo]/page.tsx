@@ -20,10 +20,23 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 
 import { Ponto, Secao, TabelaCasos } from "@/app/paridade/pecas";
+import { TintaCabecalho } from "@/components/TintaCabecalho";
 import { casosDe, moduloPorRota, placarDe } from "@/app/paridade/modulos";
 import { useIdioma } from "@/lib/i18n";
 import "@/lib/i18n/paridade";
 import { MEDIDO_EM } from "@/lib/paridade";
+
+/* Uma semente por módulo: cinco páginas irmãs com o quadro idêntico leem como
+   imagem colada. Derivada do nome da rota, então é estável entre carregamentos
+   e distinta entre telas sem precisar de tabela. */
+function sementeDe(rota: string): number {
+  let n = 2166136261;
+  for (const letra of rota) {
+    n = (n ^ letra.charCodeAt(0)) >>> 0;
+    n = Math.imul(n, 16777619) >>> 0;
+  }
+  return n;
+}
 
 export default function ModuloPage() {
   const { t } = useIdioma();
@@ -32,7 +45,7 @@ export default function ModuloPage() {
 
   if (!modulo) {
     return (
-      <main className="mx-auto max-w-4xl px-5 py-12 sm:py-16">
+      <main className="mx-auto max-w-5xl px-5 py-12 sm:py-16">
         <p className="text-[14px]" style={{ color: "var(--tinta-2)" }}>
           {t("paridade.modulo.naoEncontrado")}
         </p>
@@ -56,36 +69,44 @@ export default function ModuloPage() {
   const nomeOficial = t(`${base}.oficial`);
 
   return (
-    <main className="mx-auto max-w-4xl px-5 py-12 sm:py-16">
-      <Link
-        href="/paridade"
-        className="tatil inline-flex items-center gap-1.5 text-[13px]"
-        style={{ color: "var(--tinta-3)" }}
-      >
-        <ArrowLeft size={13} aria-hidden />
-        {t("paridade.modulo.voltar")}
-      </Link>
-
-      <h1
-        className="display mt-3 text-3xl font-semibold sm:text-4xl"
-        style={{ color: "var(--tinta)" }}
-      >
-        {nome}
-      </h1>
-      <p className="prosa mt-3 text-base" style={{ color: "var(--tinta-2)" }}>
-        {t(`${base}.resumo`)}
-      </p>
-      <p className="mt-2 text-[12px]" style={{ color: "var(--tinta-fraca)" }}>
-        {/* O nome de lá só aparece quando difere do nosso: em inglês os dois
-            são a mesma palavra, e repeti-la diria ao leitor que há uma
-            diferença onde não há. */}
-        {nomeOficial !== nome && (
-          <>
-            {t("paridade.modulo.nomeOficial")} “{nomeOficial}” ·{" "}
-          </>
-        )}
-        {t("paridade.medidoEm", { data: MEDIDO_EM })}
-      </p>
+    <main className="mx-auto max-w-5xl px-5 py-12 sm:py-16">
+      {/* O mesmo cartão escuro das outras telas. Estas cinco páginas abriam
+          com título solto sobre o fundo, e num produto em que toda tela começa
+          por um cabeçalho pintado isso lia como página de outro lugar. */}
+      <header className="cabecalho-escuro p-6 sm:p-8">
+        <TintaCabecalho semente={sementeDe(modulo.rota)} />
+        <Link
+          href="/paridade"
+          /* Sem `.sobrelinha` aqui: o traço dela mais a seta dariam dois
+             marcadores de entrada no mesmo elemento. A seta já é o sinal, e
+             diz para onde. */
+          className="tatil -mx-1.5 inline-flex items-center gap-1.5 rounded-[var(--raio-controle)] px-1.5 py-1 text-[11px] font-bold uppercase tracking-[0.16em]"
+          style={{ color: "#8fc5ff" }}
+        >
+          <ArrowLeft size={12} weight="bold" aria-hidden />
+          {t("paridade.modulo.voltar")}
+        </Link>
+        <h1 className="display mt-3 text-[32px] font-semibold text-white sm:text-[40px]">
+          {nome}
+        </h1>
+        <p
+          className="prosa mt-3 max-w-2xl text-base"
+          style={{ color: "var(--navy-tinta-2)" }}
+        >
+          {t(`${base}.resumo`)}
+        </p>
+        <p className="mt-2.5 text-[12px]" style={{ color: "var(--navy-tinta-2)" }}>
+          {/* O nome de lá só aparece quando difere do nosso: em inglês os dois
+              são a mesma palavra, e repeti-la diria ao leitor que há uma
+              diferença onde não há. */}
+          {nomeOficial !== nome && (
+            <>
+              {t("paridade.modulo.nomeOficial")} “{nomeOficial}” ·{" "}
+            </>
+          )}
+          {t("paridade.medidoEm", { data: MEDIDO_EM })}
+        </p>
+      </header>
 
       <div
         className="mt-8 rounded-[var(--raio-painel)] border p-6"

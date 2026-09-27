@@ -28,7 +28,7 @@ import { aleatorio, criarPincelada, pintarPincelada, prepararTela } from "@/lib/
 /** Teal, azul e âmbar: as três da paleta que aparecem sobre navy. */
 const CORES = ["#2fd39a", "#6fb0ee", "#f7bd3a", "#2fd39a", "#6fb0ee"];
 
-export function TintaCabecalho() {
+export function TintaCabecalho({ semente = 4711 }: { semente?: number }) {
   const tela = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -45,7 +45,11 @@ export function TintaCabecalho() {
       if (largura < 2 || altura < 2) return;
       prepararTela(canvas, ctx, largura, altura);
 
-      const sorteia = aleatorio(4711);
+      /* Semente por tela. Fixa dentro de cada uma -- sortear a cada
+         carregamento leria como instabilidade --, mas diferente entre elas:
+         cinco cabeçalhos com o quadro idêntico leem como imagem colada, e não
+         como tinta. */
+      const sorteia = aleatorio(semente);
       const entre = (a: number, b: number) => a + sorteia() * (b - a);
 
       /* O cabeçalho é largo e baixo, então o traço acompanha: comprimento
@@ -98,7 +102,7 @@ export function TintaCabecalho() {
     const observador = new ResizeObserver(() => pintar());
     observador.observe(pai);
     return () => observador.disconnect();
-  }, []);
+  }, [semente]);
 
   return (
     <canvas

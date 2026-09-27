@@ -17,6 +17,33 @@ import { useIdioma } from "@/lib/i18n";
 import "@/lib/i18n/paridade";
 import type { CasoParidade } from "@/lib/paridade";
 
+/**
+ * Destaque dentro de uma frase do catálogo.
+ *
+ * O texto vem por chave, numa língua de cada vez, e às vezes uma palavra
+ * carrega a frase inteira -- nesta área, "quando parar de perguntar" é a ideia
+ * que o resto do parágrafo existe para sustentar. Marcar isso com `**` no
+ * catálogo é natural para quem escreve, e o defeito é igualmente natural:
+ * `t()` devolve texto simples, e os asteriscos foram para a tela.
+ *
+ * A alternativa seria partir a frase em três chaves -- antes, termo, depois --
+ * como outra área do projeto faz. Em três idiomas isso são nove entradas para
+ * uma ênfase, e cada tradução passa a ter de acertar onde a frase se parte.
+ * Aqui o tradutor move os asteriscos junto com a palavra.
+ */
+export function Realce({ texto }: { texto: string }) {
+  return (
+    <>
+      {texto.split("**").map((parte, i) =>
+        /* Os ímpares são o que estava entre marcas. Se alguém deixar uma marca
+           sem par, o resto da frase sai sem destaque -- feio, e visível, que é
+           melhor do que sumir com o texto. */
+        i % 2 ? <strong key={i}>{parte}</strong> : <span key={i}>{parte}</span>,
+      )}
+    </>
+  );
+}
+
 export function Secao({
   id,
   titulo,

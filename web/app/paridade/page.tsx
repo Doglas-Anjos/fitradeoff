@@ -25,9 +25,17 @@
 import { ArrowRight } from "@phosphor-icons/react";
 import Link from "next/link";
 
-import { ParDeTelas, Ponto, Secao, Sumario, TabelaCasos } from "@/app/paridade/pecas";
+import {
+  ParDeTelas,
+  Ponto,
+  Realce,
+  Secao,
+  Sumario,
+  TabelaCasos,
+} from "@/app/paridade/pecas";
 import { MODULOS, placarDe, type Modulo } from "@/app/paridade/modulos";
 import { useIdioma } from "@/lib/i18n";
+import { TintaCabecalho } from "@/components/TintaCabecalho";
 import "@/lib/i18n/paridade";
 import { MEDIDO_EM, PARIDADE, RESUMO } from "@/lib/paridade";
 
@@ -104,11 +112,12 @@ export default function ParidadePage() {
 
   return (
     <main className="mx-auto max-w-7xl px-5 py-12 sm:py-16">
-      <header className="cabecalho-escuro max-w-5xl p-6 sm:p-9">
-        <p
-          className="text-[12px] font-semibold uppercase tracking-[0.14em]"
-          style={{ color: "#8fc5ff" }}
-        >
+      {/* Largura inteira, como os cabeçalhos das outras telas. Com
+          `max-w-5xl` ele parava na metade do corpo e lia como um bloco solto
+          no canto, e não como o topo da página. */}
+      <header className="cabecalho-escuro p-6 sm:p-9">
+        <TintaCabecalho semente={20873} />
+        <p className="sobrelinha" style={{ color: "#8fc5ff" }}>
           {t("paridade.editorial")}
         </p>
         <h1
@@ -166,7 +175,9 @@ export default function ParidadePage() {
         <div className="prosa space-y-3 text-[15px]" style={{ color: "var(--tinta-2)" }}>
           <p>{t("paridade.significa.corpo1")}</p>
           <p>{t("paridade.significa.corpo2")}</p>
-          <p>{t("paridade.significa.corpo3")}</p>
+          <p>
+            <Realce texto={t("paridade.significa.corpo3")} />
+          </p>
         </div>
       </Secao>
 

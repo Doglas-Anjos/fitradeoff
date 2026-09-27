@@ -113,6 +113,26 @@ describe("o catálogo da paridade", () => {
   });
 });
 
+describe("marcação do catálogo não vaza para a tela", () => {
+  /* O catálogo usa `**` para destacar uma palavra dentro da frase, porque em
+     três idiomas partir a frase em três chaves daria nove entradas por ênfase.
+     `t()` devolve texto simples, então quem esquecer de passar pelo `Realce`
+     imprime os asteriscos -- foi o que aconteceu, e só apareceu numa captura. */
+  it.each([
+    ["a visão geral", <ParidadePage key="g" />],
+    ["um módulo", <ModuloPage key="m" />],
+  ])("%s não imprime asterisco de marcação", (_nome, tela) => {
+    const { container } = render(tela);
+    expect(container.textContent).not.toMatch(/\*\*/);
+  });
+
+  it("o destaque vira <strong>, e não some", () => {
+    render(<ParidadePage />);
+    const forte = screen.getByText("quando parar de perguntar");
+    expect(forte.tagName).toBe("STRONG");
+  });
+});
+
 describe("a visão geral", () => {
   it("não deixa escapar chave de tradução", () => {
     const { container } = render(<ParidadePage />);

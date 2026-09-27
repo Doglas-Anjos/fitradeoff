@@ -17,6 +17,7 @@ import { useEffect, useRef, useState } from "react";
 import { Botao, Entrada } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useIdioma } from "@/lib/i18n";
+import { TintaCabecalho } from "@/components/TintaCabecalho";
 import "@/lib/i18n/telas";
 
 interface Bolha {
@@ -86,10 +87,8 @@ export default function ChatPage() {
     return (
       <main className="mx-auto max-w-5xl px-5 py-12 sm:py-16">
         <header className="cabecalho-escuro max-w-4xl p-6 sm:p-8">
-          <p
-            className="text-[12px] font-semibold uppercase tracking-[0.14em]"
-            style={{ color: "#8fc5ff" }}
-          >
+          <TintaCabecalho semente={9412} />
+          <p className="sobrelinha" style={{ color: "#8fc5ff" }}>
             {t("tela.chat.editorial")}
           </p>
           <h1 className="display mt-3 text-3xl font-semibold text-white sm:text-4xl">
@@ -172,10 +171,8 @@ export default function ChatPage() {
   return (
     <main className="mx-auto flex h-[calc(100dvh-4rem)] max-w-5xl flex-col px-5 pb-5 pt-6 sm:pt-8">
       <header className="cabecalho-escuro mb-5 max-w-none px-6 py-5">
-        <p
-          className="text-[11px] font-semibold uppercase tracking-[0.14em]"
-          style={{ color: "#8fc5ff" }}
-        >
+        <TintaCabecalho semente={31607} />
+        <p className="sobrelinha" style={{ color: "#8fc5ff" }}>
           {t("tela.chat.editorial")}
         </p>
         <h1 className="display mt-2 text-3xl font-semibold text-white">{t("tela.chat.titulo")}</h1>

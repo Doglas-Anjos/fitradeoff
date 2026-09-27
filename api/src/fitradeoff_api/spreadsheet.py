@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import csv
 import io
+import zipfile
 from dataclasses import dataclass
 from typing import Any, Iterable, Sequence
 
@@ -178,7 +179,59 @@ def parse_linhas(linhas: Sequence[Sequence[Any]]) -> ProblemaImportado:
     )
 
 
+# Tetos da leitura. O de upload (2 MB) mede o arquivo comprimido, e um .xlsx de
+# 1,8 MB chegou a 20 MB de XML e 380 mil linhas -- 57 s de processador para ler.
+# Uma planilha legitima cabe folgada abaixo de todos: 500 alternativas, o teto
+# do motor, mais as linhas de metadado.
+LINHAS_UTEIS_MAX = 600
+# As vazias contam a parte e com folga: a formatacao do Excel costuma deixar
+# milhares delas, e recusar por isso seria recusar planilha legitima.
+LINHAS_LIDAS_MAX = 20_000
+COLUNAS_MAX = 64
+# Soma dos tamanhos descomprimidos declarados no .zip, conferida antes de abrir.
+DESCOMPRIMIDO_MAX = 20 * 1024 * 1024
+
+
+def _limitadas(linhas: Iterable[Sequence[Any]]) -> list[list[Any]]:
+    """As linhas com conteudo, parando assim que a planilha passar de um teto.
+
+    Para no meio, e nao depois: a leitura e preguicosa, entao recusar na linha
+    601 e nao ler as outras 379 mil.
+    """
+    uteis: list[list[Any]] = []
+    for lidas, linha in enumerate(linhas, start=1):
+        if lidas > LINHAS_LIDAS_MAX:
+            raise PlanilhaInvalida(
+                f"A planilha passa de {LINHAS_LIDAS_MAX} linhas. Apague as linhas "
+                "vazias do fim, ou copie so a tabela para uma planilha nova."
+            )
+        linha = list(linha)[:COLUNAS_MAX]
+        if not any(_texto(c) for c in linha):
+            continue
+        uteis.append(linha)
+        if len(uteis) > LINHAS_UTEIS_MAX:
+            raise PlanilhaInvalida(
+                f"A planilha tem mais de {LINHAS_UTEIS_MAX} linhas preenchidas; o "
+                "motor aceita ate 500 alternativas."
+            )
+    return uteis
+
+
 def parse_xlsx(conteudo: bytes) -> ProblemaImportado:
+    try:
+        with zipfile.ZipFile(io.BytesIO(conteudo)) as pacote:
+            descomprimido = sum(item.file_size for item in pacote.infolist())
+    except zipfile.BadZipFile as exc:
+        raise PlanilhaInvalida(
+            "Nao consegui ler o arquivo como .xlsx. Se ele veio do Excel "
+            "97-2003 (.xls), salve como .xlsx ou .csv antes de enviar."
+        ) from exc
+    if descomprimido > DESCOMPRIMIDO_MAX:
+        raise PlanilhaInvalida(
+            f"Aberto, o arquivo teria {descomprimido // (1024 * 1024)} MB; o limite "
+            f"e {DESCOMPRIMIDO_MAX // (1024 * 1024)} MB. Copie so a tabela para "
+            "uma planilha nova."
+        )
     try:
         livro = load_workbook(io.BytesIO(conteudo), data_only=True, read_only=True)
     except Exception as exc:  # noqa: BLE001
@@ -187,7 +240,17 @@ def parse_xlsx(conteudo: bytes) -> ProblemaImportado:
             "97-2003 (.xls), salve como .xlsx ou .csv antes de enviar."
         ) from exc
     aba = livro[livro.sheetnames[0]]
-    return parse_linhas([list(linha) for linha in aba.iter_rows(values_only=True)])
+    # Em modo preguicoso o arquivo so e lido aqui, na iteracao: um XML truncado
+    # ou um trecho corrompido do .zip estoura agora, e nao no `load_workbook`.
+    try:
+        linhas = _limitadas(aba.iter_rows(values_only=True, max_col=COLUNAS_MAX))
+    except PlanilhaInvalida:
+        raise
+    except Exception as exc:  # noqa: BLE001
+        raise PlanilhaInvalida(
+            "O arquivo .xlsx esta corrompido. Abra no Excel, salve de novo e envie."
+        ) from exc
+    return parse_linhas(linhas)
 
 
 def parse_csv(conteudo: bytes) -> ProblemaImportado:
@@ -206,7 +269,7 @@ def parse_csv(conteudo: bytes) -> ProblemaImportado:
         dialeto = csv.Sniffer().sniff(amostra, delimiters=",;\t")
     except csv.Error:
         dialeto = csv.excel
-    return parse_linhas(list(csv.reader(io.StringIO(texto), dialeto)))
+    return parse_linhas(_limitadas(csv.reader(io.StringIO(texto), dialeto)))
 
 
 def parse(nome_arquivo: str, conteudo: bytes) -> ProblemaImportado:

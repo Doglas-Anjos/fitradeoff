@@ -8,17 +8,27 @@ aqui: as duas escolhas sao de infraestrutura, e nenhuma delas muda resultado.
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator, Callable
+from contextlib import asynccontextmanager
 from functools import lru_cache
+from typing import Any, TypeVar
 from pathlib import Path
 
+import anyio.from_thread
 from fastapi import Depends, HTTPException, Request, status
+from fastapi.concurrency import run_in_threadpool
 from fitradeoff import DecisionService, build_container
 from fitradeoff.application import LimitExceeded
 from fitradeoff.application.service import InvalidRequest
 from fitradeoff.problematics.registry import UnknownProblematic
-from fitradeoff.repositories import RecordNotFound
+from fitradeoff.repositories import (
+    ConcurrentModification,
+    RecordNotFound,
+    StorageUnavailable,
+)
 from fitradeoff.solvers import HighsLinearSolver
 from fitradeoff.solvers.base import InfeasibleWeightSpace
+from fitradeoff_mcp.vagas import Cheio, Ocupado
 
 from . import identidade
 from .config import Settings, load_settings
@@ -74,7 +84,7 @@ def acervo(request: Request, settings: Settings = Depends(get_settings)) -> Path
     return caminho
 
 
-def get_service(caminho: Path = Depends(acervo)) -> DecisionService:
+def montar_servico(caminho: Path, settings: Settings) -> DecisionService:
     """Servico da requisicao, com um solver proprio.
 
     Um solver por requisicao, e nao um por processo. Parece desperdicio -- o
@@ -89,9 +99,111 @@ def get_service(caminho: Path = Depends(acervo)) -> DecisionService:
     analise resolve centenas de LPs sobre um punhado de espacos de peso, e isso um
     solver recem-criado ja aproveita.
     """
-    return DecisionService(
-        build_container(storage=caminho, solver=HighsLinearSolver())
-    )
+    try:
+        return DecisionService(
+            build_container(
+                storage=caminho,
+                solver=HighsLinearSolver(),
+                database_url=settings.database_url,
+            )
+        )
+    except StorageUnavailable as exc:
+        # A primeira requisicao abre o pool do banco; se ele esta fora do ar, a
+        # falha aparece aqui, antes de qualquer rota -- e precisa ser 503 tambem.
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE, str(exc), headers={"Retry-After": "5"}
+        ) from exc
+
+
+#: Convencao do nginx para "o cliente fechou a conexao antes da resposta". Nao
+#: chega a ninguem -- o cliente ja foi --, mas fica no registro de acesso.
+CLIENTE_DESISTIU = 499
+
+
+@asynccontextmanager
+async def vaga(request: Request, pessoa: Path) -> AsyncIterator[None]:
+    """Uma vaga de calculo desta pessoa, ou 503 depois de esperar demais.
+
+    As vagas sao do aplicativo (``app.state.vagas``) e as mesmas do MCP montado
+    nele: ver ``fitradeoff_mcp.vagas``.
+    """
+    try:
+        async with request.app.state.vagas.de(pessoa):
+            # O servidor nao cancela um pedido quando o navegador desiste dele.
+            # Sem esta checagem, quem recarrega a pagina durante um calculo lento
+            # deixa pedidos abandonados na propria fila, que calculam para
+            # ninguem -- e o pedido novo espera atras deles.
+            if await request.is_disconnected():
+                raise HTTPException(
+                    CLIENTE_DESISTIU, "O cliente desconectou antes da vez deste pedido."
+                )
+            yield
+    except Cheio as exc:
+        raise HTTPException(
+            status.HTTP_429_TOO_MANY_REQUESTS, str(exc), headers={"Retry-After": "5"}
+        ) from exc
+    except Ocupado as exc:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE, str(exc), headers={"Retry-After": "5"}
+        ) from exc
+
+
+async def get_service(
+    request: Request,
+    caminho: Path = Depends(acervo),
+    settings: Settings = Depends(get_settings),
+) -> AsyncIterator[DecisionService]:
+    """Servico de uma rota que calcula: espera a vez da pessoa antes de rodar.
+
+    Assincrona de proposito. A espera acontece no laco de eventos, antes de a
+    rota -- que e sincrona -- ocupar um trabalhador; quem espera nao gasta vaga
+    de ninguem. A vaga fica presa ate a resposta sair.
+    """
+    async with vaga(request, caminho):
+        yield montar_servico(caminho, settings)
+
+
+_T = TypeVar("_T")
+
+
+def em_vaga(request: Request, pessoa: Path) -> Callable[[Callable[[], _T]], _T]:
+    """Roda uma funcao sincrona com uma vaga de calculo, de dentro de uma thread.
+
+    Para o chat. A conversa passa a maior parte do tempo esperando a resposta
+    do modelo, que e rede, nao calculo; segurar uma vaga durante tudo isso
+    tomaria o lugar de quem de fato calcula. Aqui a vaga e pedida em volta de
+    cada ferramenta, e so dela. A thread da conversa espera; o calculo roda num
+    trabalhador proprio.
+    """
+
+    def rodar(funcao: Callable[[], _T]) -> _T:
+        async def com_vaga() -> _T:
+            async with vaga(request, pessoa):
+                return await run_in_threadpool(funcao)
+
+        return anyio.from_thread.run(com_vaga)
+
+    return rodar
+
+
+def get_service_leve(
+    caminho: Path = Depends(acervo), settings: Settings = Depends(get_settings)
+) -> DecisionService:
+    """Servico das rotas que nao calculam: listar, abrir, criar, favoritar.
+
+    Fora da fila para que continuem respondendo na hora mesmo com a pessoa
+    calculando. A lista de quem usa isto e fechada num teste: uma rota nova
+    entra na fila por padrao, e sair dela e decisao explicita.
+    """
+    return montar_servico(caminho, settings)
+
+
+#: Servico de uma rota que calcula. ``scope="function"``: a vaga e devolvida
+#: quando a rota termina, e nao depois de a resposta chegar ao cliente -- um
+#: cliente lento baixando a exportacao nao segura vaga de calculo.
+CALCULO: Any = Depends(get_service, scope="function")
+#: Servico de uma rota que nao calcula. Ver ``get_service_leve``.
+LEVE: Any = Depends(get_service_leve)
 
 
 def translate(exc: Exception) -> HTTPException:
@@ -102,6 +214,14 @@ def translate(exc: Exception) -> HTTPException:
     """
     if isinstance(exc, RecordNotFound):
         return HTTPException(status.HTTP_404_NOT_FOUND, str(exc))
+    if isinstance(exc, StorageUnavailable):
+        return HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE, str(exc), headers={"Retry-After": "5"}
+        )
+    if isinstance(exc, ConcurrentModification):
+        # 409 e nao 500: nada quebrou, outra janela chegou primeiro. A tela
+        # rele a decisao e mostra o que mudou.
+        return HTTPException(status.HTTP_409_CONFLICT, str(exc))
     if isinstance(exc, LimitExceeded):
         return HTTPException(status.HTTP_413_CONTENT_TOO_LARGE, str(exc))
     if isinstance(exc, (InvalidRequest, UnknownProblematic)):

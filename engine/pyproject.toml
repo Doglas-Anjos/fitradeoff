@@ -7,6 +7,8 @@ dependencies = ["numpy>=1.26", "scipy>=1.11", "highspy>=1.11"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
+# So para quem guarda as decisoes no PostgreSQL (FITRADEOFF_DATABASE_URL).
+postgres = ["psycopg[binary]>=3.2", "psycopg-pool>=3.2"]
 
 [build-system]
 requires = ["setuptools>=68"]

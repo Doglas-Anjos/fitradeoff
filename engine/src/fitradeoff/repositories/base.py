@@ -19,6 +19,26 @@ class RecordNotFound(Exception):
     """Nao ha registro com esse identificador."""
 
 
+class StorageUnavailable(Exception):
+    """O armazenamento nao respondeu -- o banco caiu, ou nao ha conexao livre.
+
+    Com nome proprio para que a API responda 503 ("tente de novo") em vez de um
+    500 generico, e sem que ela precise conhecer o driver do banco.
+    """
+
+
+class ConcurrentModification(Exception):
+    """A decisao mudou entre a leitura e a gravacao deste pedido.
+
+    Cada caso de uso le o registro, calcula e grava -- e o calculo leva de
+    milissegundos a segundos. Duas abas, ou o chat e a tela, respondendo a mesma
+    decisao nesse intervalo fariam a segunda gravacao apagar a primeira, e uma
+    declaracao sumiria da trilha sem aviso. Recusar a segunda e o que preserva a
+    auditoria: quem recebe isto rele a decisao e decide de novo, agora vendo o
+    que a outra janela fez.
+    """
+
+
 @dataclass
 class DecisionRecord:
     """Tudo o que precisa ser persistido de uma decisao."""
@@ -63,6 +83,46 @@ class DecisionRecord:
     favorite: bool = False
 
 
+@dataclass(frozen=True)
+class DecisionSummary:
+    """O que a listagem mostra de uma decisao -- e nada alem disso.
+
+    Existe como tipo proprio para que um adaptador possa responder a listagem
+    sem montar o registro inteiro: a matriz de consequencias e a trilha sao a
+    maior parte de cada decisao, e a listagem nao usa nenhuma das duas.
+    """
+
+    id: str
+    nome: str
+    problematica: str
+    alternativas: int
+    criterios: int
+    declaracoes: int
+    criado_em: datetime | None
+    #: A declaracao mais recente e, por definicao, a ultima vez que a decisao
+    #: mudou. Sem declaracao nenhuma, ela esta como nasceu, e a criacao responde
+    #: pelas duas.
+    atualizado_em: datetime | None
+    favorita: bool = False
+
+    @staticmethod
+    def of(record: "DecisionRecord") -> "DecisionSummary":
+        entradas = record.log.entries
+        return DecisionSummary(
+            id=record.id,
+            nome=record.problem.name,
+            problematica=record.problematic_key,
+            alternativas=record.problem.n_alternatives,
+            criterios=record.problem.n_criteria,
+            declaracoes=len(entradas),
+            criado_em=record.created_at,
+            atualizado_em=(
+                max(e.recorded_at for e in entradas) if entradas else record.created_at
+            ),
+            favorita=record.favorite,
+        )
+
+
 class DecisionRepository(ABC):
     """Armazenamento de decisoes."""
 
@@ -77,6 +137,10 @@ class DecisionRepository(ABC):
 
     @abstractmethod
     def delete(self, record_id: str) -> None: ...
+
+    def summaries(self) -> list[DecisionSummary]:
+        """A listagem. O padrao monta cada registro; um banco responde sem isso."""
+        return [DecisionSummary.of(record) for record in self.list()]
 
     def exists(self, record_id: str) -> bool:
         try:

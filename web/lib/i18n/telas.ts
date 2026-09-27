@@ -36,6 +36,15 @@ import { registrar } from "./index";
 import "./nucleo";
 
 export const TELAS = registrar({
+  // --- indicador de cálculo em andamento (IndicadorCalculando) ---
+  // A segunda frase aparece depois de 3 s e dá o motivo sem culpar ninguém: a
+  // demora pode ser do tamanho da decisão ou da fila de cálculo do servidor.
+  "calculando.agora": { pt: "Calculando…", en: "Calculating…", es: "Calculando…" },
+  "calculando.demora": {
+    pt: "Calculando… Decisões grandes, ou um servidor com outros cálculos em andamento, podem levar alguns segundos.",
+    en: "Calculating… Large decisions, or a server busy with other calculations, can take a few seconds.",
+    es: "Calculando… Las decisiones grandes, o un servidor con otros cálculos en curso, pueden tardar unos segundos.",
+  },
   // --- home -----------------------------------------------------------------
   /* As quatro legendas da demonstração: o conjunto encolhendo a cada resposta.
      Minúscula inicial de propósito, são legenda e não frase. */

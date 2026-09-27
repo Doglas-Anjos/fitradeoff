@@ -33,14 +33,20 @@ from .problematics import (
     SortingProblematic,
     default_registry,
 )
-from .repositories import DecisionRecord, RecordNotFound
+from .repositories import (
+    ConcurrentModification,
+    DecisionRecord,
+    RecordNotFound,
+    StorageUnavailable,
+)
 
 __all__ = [
     "AuditLog", "ChoiceProblematic", "Container", "Criterion", "DecisionRecord",
     "DecisionService", "DecisionSession", "Direction", "Evaluator",
     "InformationGainSelector", "InvalidRequest", "LimitExceeded", "Limits",
     "PortfolioProblematic",
-    "Preference", "Problem", "RankingProblematic", "RecordNotFound",
+    "Preference", "Problem", "RankingProblematic", "RecordNotFound", "ConcurrentModification",
+    "StorageUnavailable",
     "SortingProblematic", "WeightSpace", "WidestBracketSelector",
     "build_container", "default_registry",
 ]

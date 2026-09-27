@@ -86,6 +86,13 @@ def test_custo_nao_positivo_e_recusado():
         make_problem([[1.0, 2.0], [3.0, 4.0]], costs=[1.0, 0.0])
 
 
+@pytest.mark.parametrize("custo", [float("nan"), float("inf")])
+def test_custo_nao_finito_e_recusado(custo):
+    # `NaN <= 0` e falso: a checagem antiga deixava um custo NaN passar
+    with pytest.raises(ValueError, match="finitos"):
+        make_problem([[1.0, 2.0], [3.0, 4.0]], costs=[1.0, custo])
+
+
 def test_matriz_de_valor_respeita_direcao():
     problem = make_problem(
         [[10.0, 10.0], [20.0, 20.0]], directions=[Direction.MAX, Direction.MIN]

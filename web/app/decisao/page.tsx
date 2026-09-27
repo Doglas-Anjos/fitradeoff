@@ -20,6 +20,7 @@ import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Dica } from "@/components/ui";
 
 import { EntradaProblema } from "@/components/EntradaProblema";
+import { IndicadorCalculando } from "@/components/IndicadorCalculando";
 import { BotaoSalvarGrafico } from "@/components/BotaoSalvarGrafico";
 import { AvaliacaoIntraCriterio } from "@/components/AvaliacaoIntraCriterio";
 import { type Ponto } from "@/components/CurvaDeValor";
@@ -303,6 +304,7 @@ function Decisao() {
           <EntradaProblema onPronto={receber} />
         </div>
         <PainelSalvas onAbrir={receber} ocupado={ocupado} />
+        <IndicadorCalculando ativo={ocupado} />
         {erro && (
           <p role="alert" className="mt-5 text-sm" style={{ color: "var(--erro)" }}>
             {erro}
@@ -712,6 +714,7 @@ function Decisao() {
           janela e sobrepoe o conteudo, entao nao pode ser filho de nada que
           participe do layout. */}
       <PainelSalvas onAbrir={receber} idAtual={problema.id} ocupado={ocupado} />
+      <IndicadorCalculando ativo={ocupado} />
     </main>
   );
 }

@@ -62,7 +62,32 @@ class Settings:
             os.environ.get("FITRADEOFF_DATA", Path.home() / ".fitradeoff" / "decisoes")
         ).expanduser().resolve()
     )
+    #: Com URL, as decisoes vao para o PostgreSQL e ``storage`` passa a dizer so
+    #: de quem elas sao. Fora do ``repr`` porque carrega a senha do banco, e um
+    #: ``print(settings)`` num log de depuracao a publicaria.
+    database_url: str | None = field(
+        default_factory=lambda: os.environ.get("FITRADEOFF_DATABASE_URL") or None,
+        repr=False,
+    )
     cors_origins: list[str] = field(default_factory=_origins)
+    #: Calculos simultaneos por pessoa, e no total do processo. O total fica
+    #: abaixo dos 40 trabalhadores do servidor para que as rotas que nao calculam
+    #: sempre encontrem vaga. Ver ``fitradeoff_mcp.vagas``.
+    vagas_por_pessoa: int = field(
+        default_factory=lambda: int(os.environ.get("FITRADEOFF_VAGAS_POR_PESSOA", "2"))
+    )
+    vagas_no_total: int = field(
+        default_factory=lambda: int(os.environ.get("FITRADEOFF_VAGAS_NO_TOTAL", "24"))
+    )
+    #: Pedidos de uma pessoa esperando vaga, alem dos que rodam. Acima disso,
+    #: 429 -- so um cliente com defeito chega aqui.
+    esperando_por_pessoa: int = field(
+        default_factory=lambda: int(os.environ.get("FITRADEOFF_ESPERANDO_POR_PESSOA", "8"))
+    )
+    #: Segundos esperando vaga antes de desistir com 503.
+    espera_por_vaga: float = field(
+        default_factory=lambda: float(os.environ.get("FITRADEOFF_ESPERA_POR_VAGA", "60"))
+    )
     anthropic_api_key: str | None = field(
         default_factory=lambda: os.environ.get("ANTHROPIC_API_KEY")
     )
@@ -160,6 +185,18 @@ class Settings:
         e o que fecha a emissao de chaves atras de um token.
         """
         return bool(self.mcp_hosts)
+
+
+def vagas_de(settings: Settings):
+    """As vagas de calculo configuradas. Uma fabrica so, para os dois aplicativos."""
+    from fitradeoff_mcp.vagas import Vagas
+
+    return Vagas(
+        por_pessoa=settings.vagas_por_pessoa,
+        no_total=settings.vagas_no_total,
+        espera=settings.espera_por_vaga,
+        esperando_por_pessoa=settings.esperando_por_pessoa,
+    )
 
 
 def load_settings() -> Settings:

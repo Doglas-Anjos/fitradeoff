@@ -6,10 +6,10 @@ dicionario do DTO correspondente, ja definido no motor.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from fitradeoff import DecisionService
 
-from ..deps import get_service, translate
+from ..deps import CALCULO, LEVE, translate
 from ..schemas import (
     AnswerIn,
     ConsequenceSensitivityIn,
@@ -36,17 +36,17 @@ def _run(acao):
 
 
 @router.get("/problematicas", summary="Problematicas disponiveis")
-def problematicas(service: DecisionService = Depends(get_service)):
+def problematicas(service: DecisionService = LEVE):
     return _run(service.problematics)
 
 
 @router.get("/decisoes", summary="Lista as decisoes")
-def listar(service: DecisionService = Depends(get_service)):
+def listar(service: DecisionService = LEVE):
     return {"decisoes": _run(service.list)}
 
 
 @router.post("/decisoes", status_code=201, summary="Cria uma decisao")
-def criar(dados: DecisionIn, service: DecisionService = Depends(get_service)):
+def criar(dados: DecisionIn, service: DecisionService = LEVE):
     return _run(
         lambda: service.create(
             nome=dados.nome,
@@ -62,48 +62,48 @@ def criar(dados: DecisionIn, service: DecisionService = Depends(get_service)):
 
 
 @router.get("/decisoes/{decisao_id}", summary="Problema completo")
-def ver(decisao_id: str, service: DecisionService = Depends(get_service)):
+def ver(decisao_id: str, service: DecisionService = LEVE):
     return _run(lambda: service.describe(decisao_id))
 
 
 @router.get("/decisoes/{decisao_id}/estado", summary="Situacao atual")
-def estado(decisao_id: str, service: DecisionService = Depends(get_service)):
+def estado(decisao_id: str, service: DecisionService = CALCULO):
     return _run(lambda: service.state(decisao_id))
 
 
 @router.post("/decisoes/{decisao_id}/ordenacao", summary="Ordena os criterios por peso")
 def ordenar(
-    decisao_id: str, dados: RankingIn, service: DecisionService = Depends(get_service)
+    decisao_id: str, dados: RankingIn, service: DecisionService = CALCULO
 ):
     return _run(lambda: service.rank_criteria(decisao_id, dados.ordem))
 
 
 @router.get("/decisoes/{decisao_id}/pergunta", summary="Proxima pergunta de tradeoff")
-def pergunta(decisao_id: str, service: DecisionService = Depends(get_service)):
+def pergunta(decisao_id: str, service: DecisionService = CALCULO):
     return _run(lambda: service.next_question(decisao_id))
 
 
 @router.post("/decisoes/{decisao_id}/resposta", summary="Registra uma resposta")
 def responder(
-    decisao_id: str, dados: AnswerIn, service: DecisionService = Depends(get_service)
+    decisao_id: str, dados: AnswerIn, service: DecisionService = CALCULO
 ):
     return _run(lambda: service.answer(decisao_id, dados.preferencia))
 
 
 @router.post("/decisoes/{decisao_id}/julgamento", summary="Avaliacao holistica")
 def julgar(
-    decisao_id: str, dados: JudgementIn, service: DecisionService = Depends(get_service)
+    decisao_id: str, dados: JudgementIn, service: DecisionService = CALCULO
 ):
     return _run(lambda: service.judge(decisao_id, dados.preferida, dados.sobre))
 
 
 @router.post("/decisoes/{decisao_id}/desfazer", summary="Desfaz a ultima declaracao")
-def desfazer(decisao_id: str, service: DecisionService = Depends(get_service)):
+def desfazer(decisao_id: str, service: DecisionService = CALCULO):
     return _run(lambda: service.undo(decisao_id))
 
 
 @router.get("/decisoes/{decisao_id}/auditoria", summary="Trilha da decisao")
-def auditoria(decisao_id: str, service: DecisionService = Depends(get_service)):
+def auditoria(decisao_id: str, service: DecisionService = CALCULO):
     return _run(lambda: service.explain(decisao_id))
 
 
@@ -111,7 +111,7 @@ def auditoria(decisao_id: str, service: DecisionService = Depends(get_service)):
 def trocar(
     decisao_id: str,
     dados: ProblematicIn,
-    service: DecisionService = Depends(get_service),
+    service: DecisionService = CALCULO,
 ):
     return _run(
         lambda: service.switch_problematic(
@@ -127,7 +127,7 @@ def trocar(
 def limiar_de_equivalencia(
     decisao_id: str,
     dados: LimiarDeEquivalenciaIn,
-    service: DecisionService = Depends(get_service),
+    service: DecisionService = CALCULO,
 ):
     return _run(
         lambda: service.set_equivalence(decisao_id, dados.limiar_de_equivalencia)
@@ -141,7 +141,7 @@ def limiar_de_equivalencia(
 def favorita(
     decisao_id: str,
     dados: FavoritaIn,
-    service: DecisionService = Depends(get_service),
+    service: DecisionService = LEVE,
 ):
     # Devolve o resumo da decisao, e nao o estado: e a linha da listagem que
     # muda, e e ela que quem chamou precisa repintar.
@@ -152,7 +152,7 @@ def favorita(
 def sensibilidade(
     decisao_id: str,
     dados: SensitivityIn,
-    service: DecisionService = Depends(get_service),
+    service: DecisionService = CALCULO,
 ):
     return _run(lambda: service.sensitivity(decisao_id, dados.limiares))
 
@@ -164,7 +164,7 @@ def sensibilidade(
 def sensibilidade_consequencias(
     decisao_id: str,
     dados: ConsequenceSensitivityIn,
-    service: DecisionService = Depends(get_service),
+    service: DecisionService = CALCULO,
 ):
     return _run(
         lambda: service.consequence_sensitivity(
@@ -177,7 +177,7 @@ def sensibilidade_consequencias(
 
 
 @router.get("/decisoes/{decisao_id}/diagnostico", summary="Diagnostico de inconsistencia")
-def diagnostico(decisao_id: str, service: DecisionService = Depends(get_service)):
+def diagnostico(decisao_id: str, service: DecisionService = CALCULO):
     return _run(lambda: service.diagnose(decisao_id))
 
 
@@ -185,7 +185,7 @@ def diagnostico(decisao_id: str, service: DecisionService = Depends(get_service)
 def resolver_inconsistencia(
     decisao_id: str,
     dados: ResolucaoIn,
-    service: DecisionService = Depends(get_service),
+    service: DecisionService = CALCULO,
 ):
     return _run(
         lambda: service.resolve_inconsistency(decisao_id, dados.acao, dados.sequencia)
@@ -196,7 +196,7 @@ def resolver_inconsistencia(
 def curva_de_valor(
     decisao_id: str,
     dados: CurvaDeValorIn,
-    service: DecisionService = Depends(get_service),
+    service: DecisionService = CALCULO,
 ):
     return _run(
         lambda: service.set_value_curve(decisao_id, dados.criterio, dados.pontos)

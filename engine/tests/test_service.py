@@ -532,3 +532,31 @@ def test_a_recusa_separa_os_dois_limiares(service):
             "x", ALTERNATIVAS, CRITERIOS_SPEC, CONSEQUENCIAS,
             limiar_de_equivalencia=0.9,
         )
+
+
+# --- entrada nao finita ------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "configuracao",
+    [
+        {"orcamento": float("nan")},
+        {"orcamento": float("inf")},
+        {"perfis": [[1.0, float("nan")]]},
+    ],
+)
+def test_configuracao_com_valor_nao_finito_e_recusada_e_nao_grava(service, configuracao):
+    """Um orcamento NaN era aceito e gravado; dali em diante nenhuma resposta
+    sobre a decisao conseguia ser serializada."""
+    with pytest.raises(InvalidRequest, match="nao finito"):
+        service.create(
+            "Carteira", ALTERNATIVAS, CRITERIOS_SPEC, CONSEQUENCIAS,
+            problematica="portfolio", configuracao=configuracao,
+            custos=[1.0] * len(ALTERNATIVAS),
+        )
+    assert service.list() == []
+
+
+def test_trocar_para_configuracao_nao_finita_e_recusado(service, criada):
+    with pytest.raises(InvalidRequest, match="nao finito"):
+        service.switch_problematic(criada["id"], "escolha", {"x": float("nan")})

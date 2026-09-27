@@ -212,8 +212,10 @@ class Problem:
         if self.costs is not None:
             if len(self.costs) != len(self.alternatives):
                 raise ValueError("A lista de custos nao cobre todas as alternativas.")
-            if any(c <= 0 for c in self.costs):
-                raise ValueError("Os custos devem ser estritamente positivos.")
+            # `not c > 0`, e nao `c <= 0`: NaN falha em qualquer comparacao, e
+            # `NaN <= 0` e falso -- um custo NaN passava pela forma antiga.
+            if any(not (c > 0) or c == float("inf") for c in self.costs):
+                raise ValueError("Os custos devem ser estritamente positivos e finitos.")
 
     @property
     def n_alternatives(self) -> int:

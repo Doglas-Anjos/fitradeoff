@@ -38,6 +38,7 @@ from starlette.routing import Route
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 from .server import escopo_da_chamada, server
+from .vagas import Vagas
 
 Resolvedor = Callable[[str], Path | None]
 """Chave apresentada -> diretorio de dados que ela abre, ou ``None`` se nao vale.
@@ -60,6 +61,13 @@ preenchido aqui nao chegaria a ferramenta. O escopo chega, porque o transporte
 carrega a propria requisicao HTTP junto da mensagem.
 """
 
+CAMPO_DAS_VAGAS = "fitradeoff_vagas"
+"""Onde a autenticacao deixa as vagas de calculo do aplicativo, pelo mesmo motivo.
+
+As vagas sao do aplicativo, e nao do modulo: a API e o MCP montados juntos
+dividem as mesmas, e cada pessoa segura no maximo duas somando os dois lados.
+"""
+
 
 class Autenticacao:
     """Recusa, no nivel HTTP, quem nao apresentou chave valida.
@@ -75,11 +83,19 @@ class Autenticacao:
     """
 
     def __init__(
-        self, seguinte: ASGIApp, resolvedor: Resolvedor, *, caminho: str = CAMINHO
+        self,
+        seguinte: ASGIApp,
+        resolvedor: Resolvedor,
+        *,
+        caminho: str = CAMINHO,
+        vagas: Vagas | None = None,
     ) -> None:
         self.seguinte = seguinte
         self.resolvedor = resolvedor
         self.caminho = caminho
+        # Sem vagas dadas, o aplicativo ganha as proprias: nenhum MCP montado
+        # fica sem limite por esquecimento de quem montou.
+        self.vagas = vagas or Vagas()
 
     def _minha(self, scope: Scope) -> bool:
         caminho: str = scope.get("path", "")
@@ -116,6 +132,7 @@ class Autenticacao:
         # que a URL carrega -- justamente a de menor confianca -- ficava escrita
         # no log do servidor a cada chamada.
         scope[CAMPO_NO_ESCOPO] = escopo
+        scope[CAMPO_DAS_VAGAS] = self.vagas
         scope["path"] = caminho
         # `raw_path` e a versao em bytes que alguns roteadores preferem; deixa-la
         # com a chave dentro faria o roteamento discordar do caminho reescrito,
@@ -202,7 +219,14 @@ class EscopoDaChave:
 
         marca = escopo_da_chamada.set(escopo)
         try:
-            return await call_next(ctx)
+            vagas = requisicao.scope.get(CAMPO_DAS_VAGAS)
+            # So a execucao de ferramenta calcula. Iniciar a conversa ou listar as
+            # ferramentas nao pode ficar esperando atras dos calculos da pessoa.
+            if vagas is None or ctx.method != "tools/call":
+                return await call_next(ctx)
+            # `Ocupado` segue adiante e o SDK o devolve como erro da chamada.
+            async with vagas.de(escopo):
+                return await call_next(ctx)
         finally:
             escopo_da_chamada.reset(marca)
 
@@ -278,6 +302,7 @@ def montar(
     caminho: str = CAMINHO,
     hosts_publicos: list[str] | None = None,
     respostas_em_json: bool = False,
+    vagas: Vagas | None = None,
 ) -> Starlette:
     """Liga o endpoint MCP a um aplicativo que ja existe -- o da API.
 
@@ -295,7 +320,9 @@ def montar(
         hosts_publicos=hosts_publicos,
         respostas_em_json=respostas_em_json,
     )
-    externo.add_middleware(Autenticacao, resolvedor=resolvedor, caminho=caminho)
+    externo.add_middleware(
+        Autenticacao, resolvedor=resolvedor, caminho=caminho, vagas=vagas
+    )
     # `methods=None` deixa passar GET, POST e DELETE, que e o que o transporte
     # streamable-HTTP usa: canal de eventos, mensagens e encerramento.
     externo.router.routes.append(Route(caminho, endpoint=interno, methods=None))

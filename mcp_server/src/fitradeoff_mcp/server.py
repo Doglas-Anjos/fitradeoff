@@ -19,6 +19,8 @@ from fitradeoff import (
     InvalidRequest,
     LimitExceeded,
     RecordNotFound,
+    ConcurrentModification,
+    StorageUnavailable,
     build_container,
 )
 from fitradeoff.problematics.registry import UnknownProblematic
@@ -66,6 +68,8 @@ exatas; so a carteira e amostrada. As outras tres problematicas sao exatas.
 _ESPERADAS = (
     InvalidRequest,
     RecordNotFound,
+    ConcurrentModification,
+    StorageUnavailable,
     UnknownProblematic,
     InfeasibleWeightSpace,
     LimitExceeded,
@@ -136,7 +140,12 @@ def _build_service() -> DecisionService:
     aproveita.
     """
     return DecisionService(
-        build_container(storage=storage_directory(), solver=HighsLinearSolver())
+        build_container(
+            storage=storage_directory(),
+            solver=HighsLinearSolver(),
+            # com banco, o diretorio resolvido pela chave vira o dono das linhas
+            database_url=os.environ.get("FITRADEOFF_DATABASE_URL") or None,
+        )
     )
 
 

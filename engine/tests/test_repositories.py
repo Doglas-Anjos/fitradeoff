@@ -1,4 +1,4 @@
-"""Persistencia: os dois adaptadores devem se comportar identicamente."""
+"""Persistencia: os adaptadores devem se comportar identicamente."""
 
 import json
 
@@ -14,11 +14,21 @@ from fitradeoff.repositories import (
 )
 
 
-@pytest.fixture(params=["memoria", "arquivo"])
+@pytest.fixture(params=["memoria", "arquivo", "postgres"])
 def repository(request, tmp_path):
-    """Cada teste roda contra os dois adaptadores."""
+    """Cada teste roda contra os tres adaptadores.
+
+    O do PostgreSQL e pulado sem banco de teste configurado (ver conftest), e
+    recebe um dono novo a cada teste: a listagem de um teste nao ve o que outro
+    gravou.
+    """
     if request.param == "memoria":
         return InMemoryDecisionRepository()
+    if request.param == "postgres":
+        from fitradeoff.repositories.postgres import PostgresDecisionRepository
+
+        pool = request.getfixturevalue("pg_pool")
+        return PostgresDecisionRepository(pool, request.getfixturevalue("novo_dono")())
     return JsonFileDecisionRepository(tmp_path)
 
 

@@ -5,12 +5,24 @@ from __future__ import annotations
 import json
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from pathlib import Path
+
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Request,
+    UploadFile,
+    status,
+)
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import Response
 from fitradeoff import DecisionService
 
 from .. import spreadsheet
-from ..deps import get_service, translate
+from ..deps import CALCULO, acervo, translate, vaga
 
 router = APIRouter(prefix="/api", tags=["planilhas"])
 
@@ -42,8 +54,12 @@ def modelo():
 
 @router.post("/planilhas/previa", summary="Le a planilha sem criar nada")
 async def previa(
+    request: Request,
     arquivo: UploadFile | None = File(None),
     texto: str = Form(""),
+    # Nao grava nada, mas le: e leitura de planilha custa processador. Sem dono,
+    # qualquer pessoa sem login prenderia o servidor com ela.
+    pasta: Path = Depends(acervo),
 ):
     """Devolve o que foi entendido da planilha, para conferencia.
 
@@ -75,8 +91,11 @@ async def previa(
             f"São {len(conteudo) // 1024} KB; o limite é {MAX_BYTES // 1024} KB.",
         )
 
+    # Fora do laco de eventos: a rota e assincrona, e ler a planilha aqui mesmo
+    # pararia o servidor inteiro -- nao so este pedido -- ate a leitura acabar.
     try:
-        lido = spreadsheet.parse(nome, conteudo)
+        async with vaga(request, pasta):
+            lido = await run_in_threadpool(spreadsheet.parse, nome, conteudo)
     except spreadsheet.PlanilhaInvalida as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
 
@@ -95,7 +114,7 @@ async def importar(
     arquivo: UploadFile = File(...),
     problematica: str = Form("escolha"),
     configuracao: str = Form("{}"),
-    service: DecisionService = Depends(get_service),
+    service: DecisionService = CALCULO,
 ):
     conteudo = await arquivo.read()
     if len(conteudo) > MAX_BYTES:
@@ -105,8 +124,10 @@ async def importar(
             f"{MAX_BYTES // 1024} KB.",
         )
 
+    # fora do laco de eventos, pelo mesmo motivo da previa; a vaga ja veio com
+    # o servico
     try:
-        importado = spreadsheet.parse(arquivo.filename or "", conteudo)
+        importado = await run_in_threadpool(spreadsheet.parse, arquivo.filename or "", conteudo)
     except spreadsheet.PlanilhaInvalida as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
 
@@ -127,7 +148,8 @@ async def importar(
         )
 
     try:
-        return service.create(
+        return await run_in_threadpool(
+            service.create,
             nome=importado.nome,
             alternativas=importado.alternativas,
             criterios=importado.criterios,
@@ -144,7 +166,7 @@ async def importar(
 def exportar(
     decisao_id: str,
     sensibilidade: bool = False,
-    service: DecisionService = Depends(get_service),
+    service: DecisionService = CALCULO,
 ):
     """Planilha com entrada, resultado, perguntas e trilha.
 

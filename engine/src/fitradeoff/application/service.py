@@ -9,6 +9,7 @@ sessao por replay, agem, e persistem apenas o log.
 
 from __future__ import annotations
 
+import math
 import secrets
 from typing import Callable, Iterable, Sequence
 
@@ -23,7 +24,7 @@ from ..problematics.evaluator import (
     MAX_EQUIVALENCE,
     MIN_EQUIVALENCE,
 )
-from ..repositories.base import DecisionRecord
+from ..repositories.base import DecisionRecord, DecisionSummary
 from ..repositories.serialization import criterion_from_dict
 from .dto import ScenarioDTO, SensitivityDTO
 from .inconsistency import diagnosticar, resolver
@@ -120,9 +121,11 @@ class DecisionService:
         }
 
     def list(self) -> list[dict]:
+        # `summaries`, e nao `list`: com banco, a listagem sai de uma consulta
+        # so, sem trazer matriz de consequencias nem trilha de ninguem.
         return [
-            summary_dto(record).to_dict()
-            for record in self._container.repository.list()
+            summary_dto(resumo).to_dict()
+            for resumo in self._container.repository.summaries()
         ]
 
     def describe(self, record_id: str) -> dict:
@@ -308,7 +311,7 @@ class DecisionService:
         record = self._container.repository.get(record_id)
         record.favorite = bool(favorita)
         self._container.repository.save(record)
-        return summary_dto(record).to_dict()
+        return summary_dto(DecisionSummary.of(record)).to_dict()
 
     def sensitivity(self, record_id: str, limiares: Sequence[float]) -> dict:
         """Reprocessa o mesmo log com outras folgas de preferencia estrita.
@@ -471,9 +474,26 @@ class DecisionService:
         return valor
 
     def _check_settings(self, problematica: str, settings: dict) -> None:
+        # A configuracao chega como dicionario livre, sem tipo por campo, e o JSON
+        # do Python aceita `NaN` e `Infinity`. Um orcamento NaN era aceito,
+        # gravado, e dali em diante toda resposta sobre a decisao falhava ao ser
+        # serializada: a decisao ficava inutilizavel.
+        _recusar_nao_finitos(settings, "configuracao")
         # as duas leituras de carteira amostram vertices, e o teto e o mesmo
         if problematica in ("portfolio", "beneficio_custo"):
             self._limits.check_samples(int(settings.get("amostras", 24)))
+
+
+def _recusar_nao_finitos(valor, onde: str) -> None:
+    """Levanta ``InvalidRequest`` se houver NaN ou infinito em qualquer nivel."""
+    if isinstance(valor, float) and not math.isfinite(valor):
+        raise InvalidRequest(f"Valor nao finito em '{onde}': {valor}.")
+    if isinstance(valor, dict):
+        for chave, item in valor.items():
+            _recusar_nao_finitos(item, f"{onde}.{chave}")
+    elif isinstance(valor, (list, tuple)):
+        for posicao, item in enumerate(valor):
+            _recusar_nao_finitos(item, f"{onde}[{posicao}]")
 
 
 def _without_log(record: DecisionRecord) -> DecisionRecord:

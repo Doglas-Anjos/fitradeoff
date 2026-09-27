@@ -95,3 +95,44 @@ CONSEQUENCIAS = [
 ]
 
 ALTERNATIVAS = ["Fornecedor A", "Fornecedor B", "Fornecedor C", "Fornecedor D"]
+
+
+# --- PostgreSQL ---------------------------------------------------------------
+#
+# Os testes do banco rodam contra um PostgreSQL de verdade, e sao pulados quando
+# nao ha um. Simular o banco provaria o adaptador contra a simulacao: RLS, a
+# trava de versao e o TOAST so existem no servidor.
+#
+#   FITRADEOFF_TEST_DATABASE_URL=postgresql://fitradeoff_app:...@127.0.0.1:55432/fitradeoff_teste
+#
+# O papel precisa ser comum -- sem superusuario nem BYPASSRLS --, ou os testes
+# de Row-Level Security passariam com a trava desligada.
+
+
+@pytest.fixture(scope="session")
+def pg_url():
+    import os
+
+    url = os.environ.get("FITRADEOFF_TEST_DATABASE_URL")
+    if not url:
+        pytest.skip("sem FITRADEOFF_TEST_DATABASE_URL: testes do PostgreSQL pulados")
+    pytest.importorskip("psycopg")
+    yield url
+    from fitradeoff.repositories.postgres import fechar_pools
+
+    fechar_pools()
+
+
+@pytest.fixture
+def pg_pool(pg_url):
+    from fitradeoff.repositories.postgres import pool_para
+
+    return pool_para(pg_url)
+
+
+@pytest.fixture
+def novo_dono():
+    """Um dono que nenhum outro teste usa: o banco e compartilhado entre eles."""
+    import uuid
+
+    return lambda: uuid.uuid4().hex

@@ -226,6 +226,12 @@ Os dados ficam em `~/.fitradeoff/decisoes` (configurável por `FITRADEOFF_DATA`)
 | Variável | Para quê |
 |---|---|
 | `FITRADEOFF_DATA` | onde as decisões são gravadas |
+| `FITRADEOFF_DATABASE_URL` | grava as decisões no PostgreSQL em vez de arquivos (ver abaixo) |
+| `FITRADEOFF_DB_POOL` | conexões por processo com o banco (padrão 10) |
+| `FITRADEOFF_VAGAS_POR_PESSOA` | cálculos simultâneos por pessoa; o excedente espera a vez (padrão 2) |
+| `FITRADEOFF_VAGAS_NO_TOTAL` | cálculos simultâneos no processo, abaixo dos 40 trabalhadores (padrão 24) |
+| `FITRADEOFF_ESPERA_POR_VAGA` | segundos esperando vaga antes de responder 503 (padrão 60) |
+| `FITRADEOFF_ESPERANDO_POR_PESSOA` | pedidos de uma pessoa na fila, além dos que rodam; acima disso, 429 (padrão 8) |
 | `FITRADEOFF_MCP_URL` | endereço do MCP que a tela de chaves manda copiar |
 | `FITRADEOFF_MCP_HOSTS` | domínios públicos do MCP, separados por vírgula — **declarar é o que diz "publiquei"** |
 | `FITRADEOFF_ADMIN_TOKEN` | segredo que libera emitir chaves de fora deste computador |
@@ -237,6 +243,59 @@ Os dados ficam em `~/.fitradeoff/decisoes` (configurável por `FITRADEOFF_DATA`)
 | `FITRADEOFF_MCP_JSON` | responder num JSON só, em vez de fluxo de eventos (padrão desligado) |
 | `FITRADEOFF_ACEITAR_CHAVES_DO_COFRE` | se as chaves da tela valem neste servidor (padrão ligado) |
 | `ANTHROPIC_API_KEY` | só para a rota `/api/chat`, que não tem mais tela |
+
+### Decisões no PostgreSQL
+
+Sem `FITRADEOFF_DATABASE_URL`, cada decisão é um arquivo JSON — o certo para quem
+roda no próprio computador, sem nada para instalar. Com ela, as decisões vão para
+o PostgreSQL, que é o certo quando há várias pessoas, ou mais de um processo
+escrevendo: transação no lugar de arquivo reescrito, e uma gravação que apagaria a
+de outra janela é recusada (409) em vez de aceita em silêncio.
+
+**Um papel próprio para a aplicação, sem superusuário.** Superusuário e
+`BYPASSRLS` ignoram Row-Level Security, e é ela a segunda camada do isolamento
+entre pessoas. A partida avisa no log quando o papel pode ignorá-la.
+
+```sql
+CREATE ROLE fitradeoff_app LOGIN PASSWORD '...' NOSUPERUSER NOBYPASSRLS;
+CREATE DATABASE fitradeoff OWNER fitradeoff_app;
+```
+
+```bash
+export FITRADEOFF_DATABASE_URL=postgresql://fitradeoff_app:...@host/fitradeoff
+python -m fitradeoff.repositories.postgres esquema            # cria as tabelas (a API também cria ao subir)
+python -m fitradeoff.repositories.postgres importar ~/.fitradeoff/decisoes   # traz os arquivos; pode repetir
+```
+
+O desenho está comentado em [`postgres.py`](engine/src/fitradeoff/repositories/postgres.py).
+Em resumo: o problema vai num `jsonb` só, porque o motor sempre lê a matriz
+inteira; a listagem sai de colunas próprias, sem tocar no documento; a trilha tem
+uma linha por declaração, então responder é um `INSERT` pequeno e desfazer, um
+`DELETE`; e a chave primária começa pelo dono, então o filtro de isolamento é
+também o caminho do índice.
+
+Medido com 10.201 decisões no banco (400 donos), para um dono com 201 decisões:
+
+| Operação | Arquivo | PostgreSQL |
+|---|---|---|
+| listar | 96 ms | 2,6 ms |
+| responder e desfazer | 66 ms | 35 ms |
+| marcar favorita | 34 ms | 17 ms |
+| abrir a maior decisão permitida (500 × 30) | 5 ms | 10 ms |
+
+Abrir fica mais lento porque os 289 KB do documento atravessam a rede; o servidor
+responde a consulta em 0,03 ms. É 0,2% dos 5 a 6 s que o solver leva nessa mesma
+decisão.
+
+Ainda em arquivo, mesmo com banco: o rascunho do formulário e o cofre de chaves do
+MCP. Com mais de uma máquina servindo a API, os dois precisam de volume
+compartilhado até migrarem também.
+
+Os testes do banco rodam contra um PostgreSQL de verdade e são pulados sem ele:
+
+```bash
+FITRADEOFF_TEST_DATABASE_URL=postgresql://fitradeoff_app:...@127.0.0.1:5432/fitradeoff_teste pytest
+```
 
 ### As duas telas
 

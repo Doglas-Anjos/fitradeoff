@@ -13,6 +13,7 @@ iteracoes que o runner nao expoe.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from collections.abc import Callable
 from typing import Any
 
 import anthropic
@@ -229,10 +230,20 @@ class Turno:
 class DecisionAgent:
     """Conduz a conversa, chamando o motor pelas ferramentas."""
 
-    def __init__(self, service: DecisionService, api_key: str, model: str) -> None:
+    def __init__(
+        self,
+        service: DecisionService,
+        api_key: str,
+        model: str,
+        em_vaga: Callable[[Callable[[], Any]], Any] | None = None,
+    ) -> None:
         self._service = service
         self._client = anthropic.Anthropic(api_key=api_key)
         self._model = model
+        # Roda cada ferramenta com uma vaga de calculo da pessoa. So a
+        # ferramenta: a espera pelo modelo, que e a maior parte da conversa, nao
+        # ocupa vaga de ninguem. Sem ele (testes, uso direto), roda sem fila.
+        self._em_vaga = em_vaga or (lambda funcao: funcao())
 
     def _executar(self, nome: str, args: dict) -> Any:
         """Traduz a chamada da ferramenta para o caso de uso correspondente."""
@@ -265,7 +276,7 @@ class DecisionAgent:
         if nome not in despacho:
             return {"erro": f"Ferramenta desconhecida: {nome}"}
         try:
-            return despacho[nome]()
+            return self._em_vaga(despacho[nome])
         except Exception as exc:  # noqa: BLE001
             # O agente precisa da mensagem para se corrigir sozinho -- uma
             # excecao que sobe aqui derrubaria a conversa inteira.

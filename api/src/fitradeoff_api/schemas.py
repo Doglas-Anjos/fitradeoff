@@ -9,17 +9,31 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 # Chaves aceitas, iguais as registradas no motor. Fica num alias so porque
 # duas rotas declaram o mesmo conjunto e divergir aqui seria aceitar numa e
 # recusar na outra a mesma problematica.
+
+
+class Entrada(BaseModel):
+    """Base de toda entrada: nenhum numero pode ser NaN nem infinito.
+
+    O JSON do Python aceita ``NaN`` e ``Infinity``, e o Pydantic os aceita num
+    campo ``float`` por padrao. Um valor desses que chegasse ao registro
+    quebraria toda resposta seguinte sobre a decisao, porque a resposta JSON os
+    recusa. Os dicionarios livres (``configuracao``) sao conferidos no motor.
+    """
+
+    model_config = ConfigDict(allow_inf_nan=False)
+
+
 Problematica = Literal[
     "escolha", "ranking", "sorting", "portfolio", "beneficio_custo"
 ]
 
 
-class CriterionIn(BaseModel):
+class CriterionIn(Entrada):
     chave: str = Field(min_length=1, max_length=64)
     nome: str = Field(min_length=1, max_length=200)
     direcao: Literal["max", "min"] = "max"
@@ -61,7 +75,7 @@ class CriterionIn(BaseModel):
         return valor
 
 
-class DecisionIn(BaseModel):
+class DecisionIn(Entrada):
     nome: str = Field(min_length=1, max_length=200)
     alternativas: list[str] = Field(min_length=2)
     criterios: list[CriterionIn] = Field(min_length=2)
@@ -85,25 +99,25 @@ class DecisionIn(BaseModel):
         return valor
 
 
-class RankingIn(BaseModel):
+class RankingIn(Entrada):
     ordem: list[str] = Field(min_length=2, description="Chaves, do maior peso ao menor")
 
 
-class AnswerIn(BaseModel):
+class AnswerIn(Entrada):
     preferencia: str = Field(description="'A', 'B' ou 'indiferente'")
 
 
-class JudgementIn(BaseModel):
+class JudgementIn(Entrada):
     preferida: str
     sobre: str
 
 
-class ProblematicIn(BaseModel):
+class ProblematicIn(Entrada):
     problematica: Problematica
     configuracao: dict | None = None
 
 
-class LimiarDeEquivalenciaIn(BaseModel):
+class LimiarDeEquivalenciaIn(Entrada):
     # Sem `ge`/`le` de proposito: a faixa aceitavel e conferida no motor, pelo
     # mesmo motivo do par de veto em `CriterionIn` -- o servidor MCP nao passa
     # por este schema, e uma regra declarada so aqui o deixaria de fora dela.
@@ -113,30 +127,30 @@ class LimiarDeEquivalenciaIn(BaseModel):
     )
 
 
-class FavoritaIn(BaseModel):
+class FavoritaIn(Entrada):
     # Estado desejado, e nao "alterna": duas abas abertas na mesma lista
     # alternariam uma contra a outra e o resultado dependeria da ordem de
     # chegada. Com o valor explicito, reenviar o mesmo pedido nao muda nada.
     favorita: bool = Field(description="Marca (true) ou desmarca (false).")
 
 
-class SensitivityIn(BaseModel):
+class SensitivityIn(Entrada):
     limiares: list[float] = Field(min_length=1)
 
 
-class VariacaoIn(BaseModel):
+class VariacaoIn(Entrada):
     criterio: str
     para_baixo: float = Field(default=10.0, ge=0, le=100)
     para_cima: float = Field(default=10.0, ge=0)
 
 
-class ConsequenceSensitivityIn(BaseModel):
+class ConsequenceSensitivityIn(Entrada):
     variacoes: list[VariacaoIn] = Field(min_length=1)
     cenarios: int = Field(default=200, ge=1, le=2000)
     semente: int = 0
 
 
-class CurvaDeValorIn(BaseModel):
+class CurvaDeValorIn(Entrada):
     criterio: str
     pontos: list[tuple[float, float]] | None = Field(
         default=None,
@@ -144,22 +158,22 @@ class CurvaDeValorIn(BaseModel):
     )
 
 
-class ResolucaoIn(BaseModel):
+class ResolucaoIn(Entrada):
     acao: Literal["desfazer", "inverter", "remover"]
     sequencia: int | None = None
 
 
-class ChatMessage(BaseModel):
+class ChatMessage(Entrada):
     papel: Literal["user", "assistant"]
     texto: str
 
 
-class ChatIn(BaseModel):
+class ChatIn(Entrada):
     mensagens: list[ChatMessage] = Field(min_length=1)
     decisao_id: str | None = None
 
 
-class ChaveIn(BaseModel):
+class ChaveIn(Entrada):
     """O rotulo com que a chave sera reconhecida na tela.
 
     O teto vem do cofre, e o minimo existe porque uma chave sem nome, entre

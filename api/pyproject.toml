@@ -4,7 +4,9 @@ version = "0.3.0"
 description = "API HTTP do metodo FITradeoff"
 requires-python = ">=3.11"
 dependencies = [
-    "fitradeoff",
+    # o extra traz o driver do PostgreSQL, usado quando FITRADEOFF_DATABASE_URL
+    # estiver definida; sem ela, nada dele e importado
+    "fitradeoff[postgres]",
     "fitradeoff-mcp",
     "fastapi>=0.115",
     "uvicorn[standard]>=0.30",

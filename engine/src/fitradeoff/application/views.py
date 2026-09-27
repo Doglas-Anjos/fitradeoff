@@ -9,7 +9,7 @@ from __future__ import annotations
 from ..elicitation.questions import QuestionBrief
 from ..elicitation.session import DecisionSession
 from ..problematics.base import Analysis
-from ..repositories.base import DecisionRecord
+from ..repositories.base import DecisionRecord, DecisionSummary
 from ..solvers.base import InfeasibleWeightSpace
 from .dto import (
     AnalysisDTO,
@@ -80,32 +80,21 @@ def problem_dto(record: DecisionRecord) -> ProblemDTO:
     )
 
 
-def _quando(record: DecisionRecord) -> tuple[str | None, str | None]:
-    """Criacao e ultima modificacao, em ISO 8601.
-
-    A ultima modificacao sai da trilha: a declaracao mais recente e, por
-    definicao, a ultima vez que a decisao mudou. Sem declaracao nenhuma, a
-    decisao esta como nasceu, e a criacao responde pelas duas.
-    """
-    criado = record.created_at.isoformat(timespec="seconds") if record.created_at else None
-    if not len(record.log):
-        return criado, criado
-    ultima = max(entrada.recorded_at for entrada in record.log.entries)
-    return criado, ultima.isoformat(timespec="seconds")
+def _iso(instante) -> str | None:
+    return instante.isoformat(timespec="seconds") if instante else None
 
 
-def summary_dto(record: DecisionRecord) -> SummaryDTO:
-    criado, atualizado = _quando(record)
+def summary_dto(resumo: DecisionSummary) -> SummaryDTO:
     return SummaryDTO(
-        id=record.id,
-        nome=record.problem.name,
-        problematica=record.problematic_key,
-        alternativas=record.problem.n_alternatives,
-        criterios=record.problem.n_criteria,
-        declaracoes=len(record.log),
-        criado_em=criado,
-        atualizado_em=atualizado,
-        favorita=record.favorite,
+        id=resumo.id,
+        nome=resumo.nome,
+        problematica=resumo.problematica,
+        alternativas=resumo.alternativas,
+        criterios=resumo.criterios,
+        declaracoes=resumo.declaracoes,
+        criado_em=_iso(resumo.criado_em),
+        atualizado_em=_iso(resumo.atualizado_em),
+        favorita=resumo.favorita,
     )
 
 

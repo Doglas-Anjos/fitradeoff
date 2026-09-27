@@ -10,7 +10,8 @@ from __future__ import annotations
 
 from fitradeoff.solvers import HighsLinearSolver, ScipyIntegerSolver
 
-from fitradeoff_api.deps import get_service
+from fitradeoff_api.config import Settings
+from fitradeoff_api.deps import montar_servico
 
 
 def test_a_api_resolve_os_lp_pelo_highs(tmp_path):
@@ -19,7 +20,7 @@ def test_a_api_resolve_os_lp_pelo_highs(tmp_path):
     A diferenca e de vazao, nao de resultado: medido nesta maquina, com dezesseis
     conexoes simultaneas, 16,3 req/s pelo scipy contra 56,8 por aqui.
     """
-    servico = get_service(tmp_path)
+    servico = montar_servico(tmp_path, Settings(storage=tmp_path))
     assert isinstance(servico.container.solver, HighsLinearSolver)
 
 
@@ -31,8 +32,8 @@ def test_cada_requisicao_tem_o_proprio_solver(tmp_path):
     56,8 com um por requisicao. Se alguem promover o solver a instancia de modulo
     para "aproveitar o cache", isto avisa.
     """
-    primeiro = get_service(tmp_path).container.solver
-    segundo = get_service(tmp_path).container.solver
+    primeiro = montar_servico(tmp_path, Settings(storage=tmp_path)).container.solver
+    segundo = montar_servico(tmp_path, Settings(storage=tmp_path)).container.solver
     assert primeiro is not segundo
 
 
@@ -43,4 +44,4 @@ def test_a_mochila_continua_no_scipy(tmp_path):
     problematicas de carteira segue no scipy, sem ter sido perfilada. Registrado
     aqui para que a troca do LP nao seja lida como troca de tudo.
     """
-    assert isinstance(get_service(tmp_path).container.integer_solver, ScipyIntegerSolver)
+    assert isinstance(montar_servico(tmp_path, Settings(storage=tmp_path)).container.integer_solver, ScipyIntegerSolver)

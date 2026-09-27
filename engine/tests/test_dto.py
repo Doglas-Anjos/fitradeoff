@@ -4,6 +4,7 @@ import pytest
 
 from conftest import ALTERNATIVAS, CONSEQUENCIAS, CRITERIOS_SPEC
 from fitradeoff import DecisionService
+from fitradeoff.repositories import DecisionSummary
 from fitradeoff.application import (
     AnalysisDTO,
     AuditDTO,
@@ -134,7 +135,7 @@ def test_trilha_declara_que_autoria_nao_e_autenticada(service, iniciada):
 
 def test_resumo_da_listagem(service, iniciada):
     record, _ = load(service, iniciada)
-    payload = summary_dto(record).to_dict()
+    payload = summary_dto(DecisionSummary.of(record)).to_dict()
 
     # as datas sao carimbo de relogio; o resto e o contrato fixo da listagem
     datas = {c: payload.pop(c) for c in ("criado_em", "atualizado_em") if c in payload}

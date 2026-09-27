@@ -104,19 +104,37 @@ def build_container(
     make_selector: Callable[[], QuestionSelector] = WidestBracketSelector,
     clock: Clock | None = None,
     solver: LinearSolver | None = None,
+    database_url: str | None = None,
 ) -> Container:
-    """Composicao padrao: HiGHS via scipy, e disco quando houver diretorio.
+    """Composicao padrao: HiGHS via scipy; PostgreSQL, disco ou memoria.
+
+    ``database_url`` manda as decisoes para o PostgreSQL, e ``storage`` passa a
+    dizer so de quem elas sao (ver ``dono_do_acervo``). Sem URL, ``storage`` e o
+    diretorio dos arquivos, como sempre foi.
 
     ``solver`` troca o adaptador de programacao linear sem mexer aqui.
     ``HighsLinearSolver`` chama o mesmo HiGHS direto e resolve o mesmo problema
     bem mais rapido; o padrao segue sendo o do scipy porque e o que tem historico
     em producao, e a escolha e de quem monta, nao do motor.
     """
-    repository = (
-        JsonFileDecisionRepository(storage)
-        if storage is not None
-        else InMemoryDecisionRepository()
-    )
+    if database_url:
+        # Importado aqui, e nao no topo: o driver e dependencia opcional, e quem
+        # roda a plataforma no proprio computador nao precisa dele instalado.
+        from .repositories.postgres import (
+            PostgresDecisionRepository,
+            dono_do_acervo,
+            pool_para,
+        )
+
+        # O acervo ja resolvido pela identidade vira o dono no banco; o pool e
+        # do processo, o repositorio e deste pedido.
+        repository: DecisionRepository = PostgresDecisionRepository(
+            pool_para(database_url), dono_do_acervo(storage or "")
+        )
+    elif storage is not None:
+        repository = JsonFileDecisionRepository(storage)
+    else:
+        repository = InMemoryDecisionRepository()
     return Container(
         solver=solver or ScipyLinearSolver(),
         integer_solver=ScipyIntegerSolver(),

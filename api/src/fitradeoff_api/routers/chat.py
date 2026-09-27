@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from pathlib import Path
+
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fitradeoff import DecisionService
 
 from ..agent import DecisionAgent
 from ..config import Settings
-from ..deps import get_service, get_settings
+from ..deps import LEVE, acervo, em_vaga, get_settings
 from ..schemas import ChatIn
 
 router = APIRouter(prefix="/api", tags=["chat"])
@@ -16,8 +18,12 @@ router = APIRouter(prefix="/api", tags=["chat"])
 @router.post("/chat", summary="Conversa com o agente de decisao")
 def conversar(
     dados: ChatIn,
+    request: Request,
     settings: Settings = Depends(get_settings),
-    service: DecisionService = Depends(get_service),
+    pasta: Path = Depends(acervo),
+    # Fora da fila como um todo: a conversa espera o modelo quase o tempo
+    # inteiro. A vaga e pedida em volta de cada ferramenta (``em_vaga``).
+    service: DecisionService = LEVE,
 ):
     if not settings.chat_enabled:
         raise HTTPException(
@@ -30,6 +36,7 @@ def conversar(
         service=service,
         api_key=settings.anthropic_api_key,
         model=settings.chat_model,
+        em_vaga=em_vaga(request, pasta),
     )
     turno = agente.conversar(
         mensagens=[{"role": m.papel, "content": m.texto} for m in dados.mensagens],

@@ -1,6 +1,11 @@
-"""As quatro problematicas sobre o mesmo caso e a mesma elicitacao.
+"""Quatro leituras do mesmo caso, a partir de uma unica elicitacao.
 
 O decisor responde uma vez; as quatro leituras saem do mesmo log de auditoria.
+
+Sao quatro das **cinco** problematicas registradas: escolha, ranking, sorting e
+portfolio combinatorial. Falta `beneficio_custo`, a outra leitura de carteira,
+que chegou depois deste exemplo -- o nome do arquivo ficou como estava para nao
+quebrar o comando publicado no README.
 
     python examples/quatro_problematicas.py
 """

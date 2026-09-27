@@ -139,10 +139,17 @@ class Autenticacao:
         do_caminho: str | None = None
         if caminho.startswith(self.caminho + "/"):
             resto = caminho[len(self.caminho) + 1 :].strip("/")
-            # Uma barra no meio nao e chave: e caminho que este servidor nao
-            # serve, e aceita-lo mandaria ao roteador um caminho que ele nao
-            # reconhece.
-            if resto and "/" not in resto:
+            if not resto:
+                # `/mcp/` e a mesma rota com uma barra a mais. Sem isto o
+                # roteador responde 307 para `/mcp`, e a documentacao do ChatGPT
+                # manda cadastrar a URL exatamente assim, com a barra no fim: o
+                # cliente que nao seguir o redirecionamento nao conecta, e o que
+                # seguir paga uma ida e volta em cada chamada.
+                caminho = self.caminho
+            elif "/" not in resto:
+                # Uma barra no meio nao e chave: e caminho que este servidor nao
+                # serve, e aceita-lo mandaria ao roteador um caminho que ele nao
+                # reconhece.
                 do_caminho = resto
                 caminho = self.caminho
 

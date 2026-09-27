@@ -44,7 +44,7 @@ uma suíte que está no repositório.
 | Paridade medida contra o sistema oficial | **17 casos**, versionados — ver abaixo |
 | Decisão em grupo | a fazer |
 
-**1075 testes**: 582 de motor e API, 40 do servidor MCP, 50 de paridade e 403 de interface.
+**1079 testes**: 582 de motor e API, 44 do servidor MCP, 50 de paridade e 403 de interface.
 Entre eles, um decisor-oráculo que verifica a invariante central do método (a alternativa
 verdadeiramente ótima nunca sai do conjunto de POAs), testes que auditam a própria
 arquitetura e testes de entrada não confiável.
@@ -315,6 +315,13 @@ A forma com a chave na URL existe porque, sem ela, o caso de uso que motivou o m
 existiria: o painel do claude.ai pede um endereço e nada mais, sem campo de cabeçalho. Em troca, a
 chave aparece em histórico de navegador e em log de servidor — daí uma chave por cliente, e revogar
 a que saiu de uso.
+
+As quatro formas de endereço respondem igual, porque os painéis normalizam a URL de jeitos
+diferentes e a documentação do ChatGPT manda cadastrar com a barra no fim:
+
+```
+/mcp        /mcp/        /mcp/<chave>        /mcp/<chave>/
+```
 
 O modo é sem sessão (`stateless_http`): cada requisição se explica por inteiro, então reiniciar a
 API não derruba a conversa em andamento do cliente.

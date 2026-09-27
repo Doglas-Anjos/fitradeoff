@@ -29,11 +29,27 @@ if (-not (Test-Path $python)) {
     exit 1
 }
 
-if (-not (Get-Command cloudflared -ErrorAction SilentlyContinue)) {
+# No PATH, ou avulso em LOCALAPPDATA. O instalador MSI precisa de elevacao e
+# falha com 1603 sem ela; o executavel avulso nao precisa de nada, e sair dele
+# e apagar um arquivo.
+$portatil = Join-Path $env:LOCALAPPDATA "cloudflared\cloudflared.exe"
+$cloudflared = $null
+if (Get-Command cloudflared -ErrorAction SilentlyContinue) {
+    $cloudflared = "cloudflared"
+} elseif (Test-Path $portatil) {
+    $cloudflared = $portatil
+}
+
+if (-not $cloudflared) {
     Write-Host "cloudflared nao encontrado." -ForegroundColor Yellow
-    Write-Host "  winget install --id Cloudflare.cloudflared"
     Write-Host ""
-    Write-Host "Ele abre um endereco https temporario sem conta e sem cadastro."
+    Write-Host "Sem instalador, sem administrador:"
+    Write-Host "  mkdir `"$env:LOCALAPPDATA\cloudflared`""
+    Write-Host "  curl -L -o `"$portatil`" https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe"
+    Write-Host ""
+    Write-Host "Ou, numa janela de administrador:  winget install --id Cloudflare.cloudflared"
+    Write-Host ""
+    Write-Host "Ele abre um endereco https temporario, sem conta e sem cadastro."
     exit 1
 }
 
@@ -41,7 +57,7 @@ $registro = Join-Path $env:TEMP "fitradeoff-tunel.log"
 if (Test-Path $registro) { Remove-Item $registro -Force }
 
 Write-Host "Abrindo o tunel..." -ForegroundColor Cyan
-$tunel = Start-Process cloudflared `
+$tunel = Start-Process $cloudflared `
     -ArgumentList @("tunnel", "--url", "http://127.0.0.1:$Porta", "--no-autoupdate") `
     -RedirectStandardError $registro -RedirectStandardOutput "$registro.saida" `
     -PassThru -WindowStyle Hidden

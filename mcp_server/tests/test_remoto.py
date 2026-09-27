@@ -238,3 +238,27 @@ def test_a_chave_da_url_nao_sobrevive_no_escopo(acervos, tmp_path):
     assert "chave-a" not in str(scope.get("path"))
     # E o escopo resolvido chegou para quem executa a ferramenta.
     assert scope[remoto.CAMPO_NO_ESCOPO] == acervos["chave-a"]
+
+
+@pytest.mark.parametrize(
+    "caminho",
+    [
+        "/mcp",
+        "/mcp/",  # a documentacao do ChatGPT manda cadastrar assim
+    ],
+)
+def test_a_barra_no_fim_e_a_mesma_rota(cliente, caminho):
+    """Sem isto o roteador responde 307, e nem todo cliente MCP segue."""
+    resposta = cliente.post(
+        caminho,
+        json=pedido("tools/list"),
+        headers={**CABECALHOS, "Authorization": "Bearer chave-a"},
+    )
+    assert resposta.status_code == 200
+    assert len(resultado(resposta)["tools"]) == FERRAMENTAS_ESPERADAS
+
+
+@pytest.mark.parametrize("caminho", ["/mcp/chave-a", "/mcp/chave-a/"])
+def test_a_chave_na_url_tolera_barra_no_fim(cliente, caminho):
+    resposta = cliente.post(caminho, json=pedido("tools/list"), headers=CABECALHOS)
+    assert resposta.status_code == 200

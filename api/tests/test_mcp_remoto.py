@@ -197,3 +197,90 @@ def test_dominio_nao_declarado_e_recusado(tmp_path):
             headers={**CABECALHOS, "Authorization": f"Bearer {texto}"},
         )
     assert resposta.status_code == 421
+
+
+# --- os dois ajustes do servidor publicado ------------------------------------
+
+
+def test_resposta_em_json_dispensa_o_fluxo_de_eventos(tmp_path):
+    """Para quem tem um encaminhamento simples na frente.
+
+    Um proxy que acumule a resposta antes de repassar faz a ferramenta parecer
+    travada, sem erro nenhum. Com JSON nao ha o que acumular.
+    """
+    settings = Settings(storage=tmp_path / "decisoes", mcp_json=True)
+    _, texto = cofre.criar(settings, "Atras de um proxy")
+
+    with TestClient(create_mcp_app(settings), base_url=LOCAL) as c:
+        resposta = c.post(
+            "/mcp", json=PEDIDO, headers={**CABECALHOS, "Authorization": f"Bearer {texto}"}
+        )
+
+    assert resposta.status_code == 200
+    assert resposta.headers["content-type"].startswith("application/json")
+    # Um JSON de verdade, e nao linhas `data:` que o cliente teria de juntar.
+    assert len(resposta.json()["result"]["tools"]) == 14
+
+
+def test_o_fluxo_de_eventos_continua_sendo_o_padrao(tmp_path):
+    settings = Settings(storage=tmp_path / "decisoes")
+    _, texto = cofre.criar(settings, "Padrao")
+
+    with TestClient(create_mcp_app(settings), base_url=LOCAL) as c:
+        resposta = c.post(
+            "/mcp", json=PEDIDO, headers={**CABECALHOS, "Authorization": f"Bearer {texto}"}
+        )
+
+    assert resposta.headers["content-type"].startswith("text/event-stream")
+
+
+def test_o_cofre_pode_ser_desligado_neste_servidor(tmp_path):
+    """Atras da aplicacao principal, a chave do cofre so seria um vetor a mais."""
+    import time
+
+    import jwt
+
+    settings = Settings(
+        storage=tmp_path / "decisoes",
+        aceitar_chaves_do_cofre=False,
+        jwt_secret="segredo-compartilhado-entre-as-duas-aplicacoes",
+        jwt_issuer="https://principal.exemplo.org",
+        jwt_audience="fitradeoff-mcp",
+    )
+    _, texto = cofre.criar(settings, "Nao deve valer aqui")
+    assinado = jwt.encode(
+        {
+            "sub": "pessoa-1",
+            "iss": "https://principal.exemplo.org",
+            "aud": "fitradeoff-mcp",
+            "exp": int(time.time()) + 300,
+        },
+        settings.jwt_secret,
+        algorithm="HS256",
+    )
+
+    with TestClient(create_mcp_app(settings), base_url=LOCAL) as c:
+        recusada = c.post(
+            "/mcp", json=PEDIDO, headers={**CABECALHOS, "Authorization": f"Bearer {texto}"}
+        )
+        aceita = c.post(
+            "/mcp",
+            json=PEDIDO,
+            headers={**CABECALHOS, "Authorization": f"Bearer {assinado}"},
+        )
+
+    assert recusada.status_code == 401, "a chave do cofre nao pode abrir este servidor"
+    assert aceita.status_code == 200, "a assercao assinada continua abrindo"
+
+
+def test_a_chave_do_cofre_vale_por_padrao(tmp_path):
+    """Desligar e escolha: o servidor local nao muda de comportamento sozinho."""
+    settings = Settings(storage=tmp_path / "decisoes")
+    assert settings.aceitar_chaves_do_cofre is True
+
+    _, texto = cofre.criar(settings, "Local")
+    with TestClient(create_mcp_app(settings), base_url=LOCAL) as c:
+        resposta = c.post(
+            "/mcp", json=PEDIDO, headers={**CABECALHOS, "Authorization": f"Bearer {texto}"}
+        )
+    assert resposta.status_code == 200

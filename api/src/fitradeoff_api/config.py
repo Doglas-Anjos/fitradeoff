@@ -15,6 +15,24 @@ def _origins() -> list[str]:
     return ["http://localhost:3000", "http://127.0.0.1:3000"]
 
 
+def _ligado(nome: str, padrao: bool) -> bool:
+    """Le uma chave liga-desliga do ambiente.
+
+    Aceita as escritas que alguem usaria sem consultar documentacao. O que nao
+    for reconhecido cai no padrao, em vez de virar `False` em silencio: um
+    "sim" escrito em portugues nao pode desligar uma protecao por engano.
+    """
+    bruto = os.environ.get(nome)
+    if bruto is None:
+        return padrao
+    limpo = bruto.strip().lower()
+    if limpo in {"1", "true", "sim", "yes", "on"}:
+        return True
+    if limpo in {"0", "false", "nao", "não", "no", "off"}:
+        return False
+    return padrao
+
+
 def _mcp_hosts() -> list[str]:
     """Dominios por onde o MCP remoto e alcancado de fora desta maquina.
 
@@ -57,6 +75,33 @@ class Settings:
         ).rstrip("/")
     )
     mcp_hosts: list[str] = field(default_factory=_mcp_hosts)
+    mcp_json: bool = field(
+        default_factory=lambda: _ligado("FITRADEOFF_MCP_JSON", False)
+    )
+    """Responder num JSON so, em vez de um fluxo de eventos.
+
+    O padrao e o fluxo, que e o que o transporte usa por natureza e o que
+    permite mandar sinal de vida numa ferramenta demorada. Trocar por JSON faz
+    sentido quando ha um encaminhamento simples na frente: um proxy que acumule
+    a resposta antes de repassar faz a ferramenta parecer travada, sem erro
+    nenhum, e com JSON nao ha o que acumular.
+
+    Nao se perde nada aqui: a troca custaria as perguntas do servidor de volta
+    ao cliente, e nenhuma das catorze ferramentas faz isso.
+    """
+    aceitar_chaves_do_cofre: bool = field(
+        default_factory=lambda: _ligado("FITRADEOFF_ACEITAR_CHAVES_DO_COFRE", True)
+    )
+    """Se as chaves emitidas na tela valem neste servidor.
+
+    Num servidor atras da aplicacao principal, ninguem precisa delas: todo mundo
+    entra pela aplicacao, que assina. Desligar aqui remove de vez o vetor da
+    chave vazada em log de proxy ou em historico de navegador, sem tirar nada do
+    servidor local, onde a tela vive.
+
+    O preco e que um cliente que fale direto com este servidor -- o Claude Code
+    do seu notebook, por exemplo -- deixa de entrar por ele.
+    """
     admin_token: str | None = field(
         default_factory=lambda: os.environ.get("FITRADEOFF_ADMIN_TOKEN") or None
     )

@@ -44,7 +44,7 @@ uma suíte que está no repositório.
 | Paridade medida contra o sistema oficial | **17 casos**, versionados — ver abaixo |
 | Decisão em grupo | a fazer |
 
-**1071 testes**: 578 de motor e API, 40 do servidor MCP, 50 de paridade e 403 de interface.
+**1075 testes**: 582 de motor e API, 40 do servidor MCP, 50 de paridade e 403 de interface.
 Entre eles, um decisor-oráculo que verifica a invariante central do método (a alternativa
 verdadeiramente ótima nunca sai do conjunto de POAs), testes que auditam a própria
 arquitetura e testes de entrada não confiável.
@@ -233,6 +233,8 @@ Os dados ficam em `~/.fitradeoff/decisoes` (configurável por `FITRADEOFF_DATA`)
 | `FITRADEOFF_JWT_JWKS_URL` | onde buscar a chave pública dela (RS256) |
 | `FITRADEOFF_JWT_SECRET` | o segredo compartilhado, se for HS256 |
 | `FITRADEOFF_JWT_MAX_VALIDADE` | por quantos segundos, no máximo, um token pode valer (padrão 900) |
+| `FITRADEOFF_MCP_JSON` | responder num JSON só, em vez de fluxo de eventos (padrão desligado) |
+| `FITRADEOFF_ACEITAR_CHAVES_DO_COFRE` | se as chaves da tela valem neste servidor (padrão ligado) |
 | `ANTHROPIC_API_KEY` | só para a rota `/api/chat`, que não tem mais tela |
 
 ### As duas telas
@@ -381,6 +383,7 @@ O resto é o que vale **se** alguém alcançar a porta assim mesmo:
 | Custo limitado | 500 alternativas, 30 critérios, 200 amostras, 20 limiares — o preço de uma requisição é limitado por construção, não por sorte |
 | Log limpo | a chave que viaja na URL é apagada do escopo antes de a requisição seguir, então não chega ao registro de acesso |
 | Processo sem privilégio | o container roda como usuário comum, dono apenas do próprio volume |
+| Cofre desligável | atrás da aplicação principal, `FITRADEOFF_ACEITAR_CHAVES_DO_COFRE=0` deixa só a asserção assinada |
 
 E o que **não** está coberto — por escolha, não por esquecimento:
 
@@ -441,6 +444,17 @@ bastam.
 causa do painel do claude.ai, que não tem campo de cabeçalho; a aplicação principal é servidor e
 não tem essa limitação. Um token na URL entra no registro de acesso dela, e aí o segredo está em
 disco do lado de lá.
+
+Atrás dela, **as chaves do cofre não precisam valer**. Ninguém entra por elas ali: todo mundo
+vem pela aplicação, que assina. `FITRADEOFF_ACEITAR_CHAVES_DO_COFRE=0` no servidor publicado remove
+de vez o vetor da chave vazada em log de proxy ou em histórico de navegador, sem tirar nada do
+servidor local, onde a tela vive. O preço é que um cliente falando direto com o servidor publicado
+— o Claude Code do seu notebook — deixa de entrar por ele.
+
+Se o encaminhamento dela acumular a resposta antes de repassar, a ferramenta parece travar sem
+erro nenhum. `FITRADEOFF_MCP_JSON=1` troca o fluxo de eventos por um JSON só, e aí não há o que
+acumular. Nada se perde: a troca custaria as perguntas do servidor de volta ao cliente, e nenhuma
+das catorze ferramentas faz isso.
 
 Três coisas que costumam morder na integração:
 

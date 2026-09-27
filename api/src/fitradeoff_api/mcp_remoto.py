@@ -59,6 +59,7 @@ def create_mcp_app(settings: Settings | None = None) -> Starlette:
         app,
         identidade.resolver(settings),
         hosts_publicos=settings.mcp_hosts,
+        respostas_em_json=settings.mcp_json,
     )
     return app
 

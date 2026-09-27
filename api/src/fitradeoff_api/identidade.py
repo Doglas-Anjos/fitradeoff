@@ -133,6 +133,12 @@ def resolver(settings: Settings) -> Resolvedor:
 
     def para(apresentado: str) -> Path | None:
         if apresentado.startswith(cofre.PREFIXO):
+            if not settings.aceitar_chaves_do_cofre:
+                # Servidor atras da aplicacao principal: aqui ninguem precisa de
+                # chave do cofre, e recusa-las remove o vetor da chave vazada em
+                # log de proxy ou em historico de navegador.
+                logger.warning("chave do cofre recusada: desligada neste servidor")
+                return None
             return do_cofre(apresentado)
 
         if not settings.jwt_configurado:

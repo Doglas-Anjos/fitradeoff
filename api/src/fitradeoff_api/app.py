@@ -70,6 +70,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app,
         identidade.resolver(settings),
         hosts_publicos=settings.mcp_hosts,
+        respostas_em_json=settings.mcp_json,
     )
 
     @app.get("/api/saude", tags=["infra"], summary="Estado do servico")

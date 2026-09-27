@@ -215,6 +215,7 @@ def criar_app(
     *,
     caminho: str = CAMINHO,
     hosts_publicos: list[str] | None = None,
+    respostas_em_json: bool = False,
 ) -> Starlette:
     """O endpoint MCP autenticado, pronto para montar num servidor ASGI.
 
@@ -227,6 +228,13 @@ def criar_app(
     O modo e sem sessao (``stateless_http``): cada requisicao se explica por
     inteiro, entao reiniciar a API nao derruba a conversa em andamento do
     cliente, e nao ha estado de sessao para dois processos disputarem.
+
+    ``respostas_em_json`` troca o fluxo de eventos por um JSON so. O fluxo e o
+    padrao, e e o que permite dar sinal de vida numa ferramenta demorada; o JSON
+    serve quando ha um encaminhamento simples na frente, porque um proxy que
+    acumule a resposta antes de repassar faz a ferramenta parecer travada, sem
+    erro nenhum. Nenhuma das catorze ferramentas pergunta de volta ao cliente,
+    que e a unica coisa que a troca custaria.
     """
     _registrar_escopo()
 
@@ -251,6 +259,7 @@ def criar_app(
     return server.streamable_http_app(
         streamable_http_path=caminho,
         stateless_http=True,
+        json_response=respostas_em_json,
         transport_security=seguranca,
     )
 
@@ -261,6 +270,7 @@ def montar(
     *,
     caminho: str = CAMINHO,
     hosts_publicos: list[str] | None = None,
+    respostas_em_json: bool = False,
 ) -> Starlette:
     """Liga o endpoint MCP a um aplicativo que ja existe -- o da API.
 
@@ -272,7 +282,12 @@ def montar(
     ``Mount`` responder um redirecionamento ao caminho sem barra final, o que num
     POST alguns clientes nao seguem.
     """
-    interno = criar_app(resolvedor, caminho=caminho, hosts_publicos=hosts_publicos)
+    interno = criar_app(
+        resolvedor,
+        caminho=caminho,
+        hosts_publicos=hosts_publicos,
+        respostas_em_json=respostas_em_json,
+    )
     externo.add_middleware(Autenticacao, resolvedor=resolvedor, caminho=caminho)
     # `methods=None` deixa passar GET, POST e DELETE, que e o que o transporte
     # streamable-HTTP usa: canal de eventos, mensagens e encerramento.

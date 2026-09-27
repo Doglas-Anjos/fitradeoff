@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import time
 from collections.abc import Callable
 from pathlib import Path
 
@@ -76,7 +77,7 @@ def _verificar(settings: Settings, token: str) -> dict | None:
             chave = settings.jwt_secret
             algoritmos = ["HS256"]
 
-        return jwt.decode(
+        declaracoes = jwt.decode(
             token,
             chave,
             # A lista e nossa, nunca do token: aceitar o algoritmo que o
@@ -97,6 +98,19 @@ def _verificar(settings: Settings, token: str) -> dict | None:
         # pode derrubar o processo.
         logger.warning("nao foi possivel verificar o token: %s", type(exc).__name__)
         return None
+
+    # A assinatura confere, mas a janela ainda pode ser longa demais. Um token
+    # vazado vale ate expirar, e nao ha como cancela-lo antes: o tamanho da
+    # janela e a unica defesa, e ela precisa ser nossa.
+    restante = int(declaracoes["exp"]) - time.time()
+    if restante > settings.jwt_max_validade + FOLGA_DE_RELOGIO:
+        logger.warning(
+            "token recusado: vale por %d s, acima do teto de %d s",
+            restante,
+            settings.jwt_max_validade,
+        )
+        return None
+    return declaracoes
 
 
 _clientes_jwks: dict[str, jwt.PyJWKClient] = {}

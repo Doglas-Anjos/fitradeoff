@@ -237,3 +237,49 @@ def test_texto_qualquer_nao_derruba_o_resolvedor(tmp_path):
 
     for lixo in ["", "   ", "nao.e.um.token", "fit_", "a" * 5000]:
         assert resolve(lixo) is None
+
+
+# --- a janela do token --------------------------------------------------------
+
+
+def test_token_de_vida_longa_e_recusado(tmp_path):
+    """Sem lista de revogacao, a janela e a unica defesa -- e precisa ser nossa.
+
+    Pedir tokens curtos a aplicacao da frente e aceitar os longos assim mesmo
+    seria pedir por educacao o que nao se verifica.
+    """
+    settings = ajustes(tmp_path)
+    oito_horas = int(time.time()) + 8 * 3600
+
+    assert identidade.resolver(settings)(token(exp=oito_horas)) is None
+
+
+def test_token_dentro_da_janela_passa(tmp_path):
+    settings = ajustes(tmp_path)
+    assert settings.jwt_max_validade == 900
+
+    dentro = int(time.time()) + 600
+    assert identidade.resolver(settings)(token(exp=dentro)) is not None
+
+
+def test_o_teto_da_janela_e_configuravel(tmp_path):
+    """Quem tem motivo para uma janela maior eleva o teto conscientemente."""
+    uma_hora = int(time.time()) + 3600
+    apertado = ajustes(tmp_path)
+    folgado = ajustes(tmp_path, jwt_max_validade=7200)
+
+    assert identidade.resolver(apertado)(token(exp=uma_hora)) is None
+    assert identidade.resolver(folgado)(token(exp=uma_hora)) is not None
+
+
+def test_a_folga_de_relogio_nao_derruba_o_token_no_limite(tmp_path):
+    """Um token emitido com exatamente a janela maxima nao pode ser recusado.
+
+    O relogio da aplicacao da frente pode estar alguns segundos adiantado, e sem
+    folga o token chegaria valendo um pouco mais que o teto -- recusado por um
+    desencontro de NTP, o que seria impossivel de diagnosticar do outro lado.
+    """
+    settings = ajustes(tmp_path)
+    no_limite = int(time.time()) + settings.jwt_max_validade + 10
+
+    assert identidade.resolver(settings)(token(exp=no_limite)) is not None

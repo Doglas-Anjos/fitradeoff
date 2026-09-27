@@ -31,6 +31,7 @@ services:
       FITRADEOFF_JWT_AUDIENCE: ${FITRADEOFF_JWT_AUDIENCE:-}
       FITRADEOFF_JWT_JWKS_URL: ${FITRADEOFF_JWT_JWKS_URL:-}
       FITRADEOFF_JWT_SECRET: ${FITRADEOFF_JWT_SECRET:-}
+      FITRADEOFF_JWT_MAX_VALIDADE: ${FITRADEOFF_JWT_MAX_VALIDADE:-900}
     volumes:
       # As decisoes e o cofre de chaves vivem aqui. E o unico estado do servico:
       # guarde-o no backup, e nao o recrie por engano -- recriar o volume revoga

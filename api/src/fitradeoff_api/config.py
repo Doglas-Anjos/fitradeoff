@@ -80,6 +80,22 @@ class Settings:
     jwt_secret: str | None = field(
         default_factory=lambda: os.environ.get("FITRADEOFF_JWT_SECRET") or None
     )
+    jwt_max_validade: int = field(
+        default_factory=lambda: int(
+            os.environ.get("FITRADEOFF_JWT_MAX_VALIDADE", "900")
+        )
+    )
+    """Por quantos segundos, no maximo, um token pode continuar valendo.
+
+    Nao ha lista de revogacao: um token vazado vale ate expirar, e ninguem aqui
+    consegue cancela-lo antes disso. O unico controle que sobra e a janela, e
+    ela e nossa -- de nada adiantaria pedir a aplicacao da frente que emitisse
+    tokens curtos e aceitar os longos assim mesmo.
+
+    Quinze minutos e folgado para o uso real, em que a aplicacao da frente
+    assina a cada requisicao que encaminha. Se a integracao emitir tokens mais
+    longos que isto, eles sao recusados -- e o motivo aparece no registro.
+    """
 
     @property
     def chat_enabled(self) -> bool:

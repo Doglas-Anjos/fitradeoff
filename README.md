@@ -44,7 +44,7 @@ uma suíte que está no repositório.
 | Paridade medida contra o sistema oficial | **17 casos**, versionados — ver abaixo |
 | Decisão em grupo | a fazer |
 
-**1067 testes**: 574 de motor e API, 40 do servidor MCP, 50 de paridade e 403 de interface.
+**1071 testes**: 578 de motor e API, 40 do servidor MCP, 50 de paridade e 403 de interface.
 Entre eles, um decisor-oráculo que verifica a invariante central do método (a alternativa
 verdadeiramente ótima nunca sai do conjunto de POAs), testes que auditam a própria
 arquitetura e testes de entrada não confiável.
@@ -232,6 +232,7 @@ Os dados ficam em `~/.fitradeoff/decisoes` (configurável por `FITRADEOFF_DATA`)
 | `FITRADEOFF_JWT_AUDIENCE` | o `aud` que ela põe no token para este serviço |
 | `FITRADEOFF_JWT_JWKS_URL` | onde buscar a chave pública dela (RS256) |
 | `FITRADEOFF_JWT_SECRET` | o segredo compartilhado, se for HS256 |
+| `FITRADEOFF_JWT_MAX_VALIDADE` | por quantos segundos, no máximo, um token pode valer (padrão 900) |
 | `ANTHROPIC_API_KEY` | só para a rota `/api/chat`, que não tem mais tela |
 
 ### As duas telas
@@ -381,17 +382,15 @@ O resto é o que vale **se** alguém alcançar a porta assim mesmo:
 | Log limpo | a chave que viaja na URL é apagada do escopo antes de a requisição seguir, então não chega ao registro de acesso |
 | Processo sem privilégio | o container roda como usuário comum, dono apenas do próprio volume |
 
-E o que **não** está coberto, para não haver ilusão:
+E o que **não** está coberto — por escolha, não por esquecimento:
 
-- **Limite de taxa não existe.** O lugar natural dele é a borda — a aplicação principal ou o proxy,
-  que veem o tráfego inteiro. Nada impede pôr um aqui também.
-- **A quantidade de decisões não tem teto.** Cada decisão é limitada em tamanho; o número delas,
-  não. Um portador de credencial válida e má intenção enche o disco, e `listar_problemas` fica mais
-  lento a cada arquivo, porque lê todos.
-- **Um JWT vale até o `exp`.** Não há lista de revogação: peça tokens de minutos à aplicação
-  principal, não de horas.
-- **O log da aplicação da frente é dela.** Se ela encaminhar `/mcp/<chave>`, a chave vai para o
-  registro *dela*. Do lado de fora ela pode usar o cabeçalho `Authorization`, que não é registrado.
+- **Não há limite de taxa.** O lugar dele é a borda, que vê o tráfego inteiro; espalhar o controle
+  por dois lugares faria os dois discordarem.
+- **A quantidade de decisões não tem teto.** O método existe para reduzir o que se pede ao decisor;
+  pôr um teto no número de decisões limitaria o produto para resolver um problema que é de
+  operação. O controle certo é de infraestrutura — acompanhar o espaço do volume.
+- **O log da aplicação da frente é dela.** O nosso não guarda mais a chave; o dela guarda, se ela
+  encaminhar na URL. Por isso o contrato pede o cabeçalho `Authorization`.
 
 ### Atrás de outra aplicação
 
@@ -416,7 +415,7 @@ O que o token precisa trazer:
 | Claim | Papel |
 |---|---|
 | `sub` | quem é a pessoa. É o que separa um acervo do outro, então precisa ser estável |
-| `exp` | validade. Exigido sempre; a folga para relógio fora de hora é de 30s |
+| `exp` | validade. Exigido sempre, e **limitado**: um token que valha mais que `FITRADEOFF_JWT_MAX_VALIDADE` (padrão 15min) é recusado |
 | `iss` | quem assinou, conferido contra `FITRADEOFF_JWT_ISSUER` |
 | `aud` | para quem o token vale, conferido contra `FITRADEOFF_JWT_AUDIENCE` |
 
@@ -433,10 +432,22 @@ cofre entram. Um verificador que aceitasse qualquer assinatura seria pior do que
 nunca vira componente de caminho: o diretório é o resumo de `iss` + `sub`. Um identificador cru
 traria junto o problema do `..` e deixaria a lista de quem usa a plataforma legível no disco.
 
-Duas coisas que costumam morder na integração:
+Não há lista de revogação: um token vazado vale até expirar. Por isso a janela é curta e o teto
+é **nosso** — pedir tokens curtos e aceitar os longos assim mesmo seria pedir por educação o que
+não se verifica. A aplicação da frente assina a cada requisição que encaminha, então minutos
+bastam.
+
+**Ela manda no cabeçalho `Authorization`, nunca na URL.** A forma com a chave na URL existe por
+causa do painel do claude.ai, que não tem campo de cabeçalho; a aplicação principal é servidor e
+não tem essa limitação. Um token na URL entra no registro de acesso dela, e aí o segredo está em
+disco do lado de lá.
+
+Três coisas que costumam morder na integração:
 
 - O `Host` que a aplicação da frente encaminha precisa estar em `FITRADEOFF_MCP_HOSTS`. Se ela
   reescreve para um nome interno, é esse nome que vai na lista — senão, `421`.
+- Relógios. A folga é de 30s nos dois sentidos; além disso, token recusado sem explicação útil do
+  outro lado.
 - A chave do cofre (`fit_...`) continua valendo em paralelo, para o cliente do próprio dono que
   fala direto com o servidor. O prefixo é o que distingue as duas formas.
 

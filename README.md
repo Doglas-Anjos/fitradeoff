@@ -35,6 +35,7 @@ uma suíte que está no repositório.
 | Servidor MCP (14 ferramentas) | **pronto** — stdio e HTTP remoto, com chave |
 | Superfície pública do MCP | **pronto** — imagem, composição e túnel |
 | Identidade vinda de outra aplicação | **pronto** — JWT assinado, um acervo por pessoa |
+| Autenticação de `/api` | **pronto** — atrás de quem autentica; local segue sem cadastro |
 | API HTTP (FastAPI) | **pronto** — 27 rotas |
 | Tela de decisão estruturada | **pronto** — com os gráficos |
 | Tela de chaves do MCP | **pronto** — emitir, listar e revogar |
@@ -44,7 +45,7 @@ uma suíte que está no repositório.
 | Paridade medida contra o sistema oficial | **17 casos**, versionados — ver abaixo |
 | Decisão em grupo | a fazer |
 
-**1079 testes**: 582 de motor e API, 44 do servidor MCP, 50 de paridade e 403 de interface.
+**1108 testes**: 611 de motor e API, 44 do servidor MCP, 50 de paridade e 403 de interface.
 Entre eles, um decisor-oráculo que verifica a invariante central do método (a alternativa
 verdadeiramente ótima nunca sai do conjunto de POAs), testes que auditam a própria
 arquitetura e testes de entrada não confiável.
@@ -335,7 +336,7 @@ alcançável — e o que se publica **não** é a porta 8000.
 
 `fitradeoff_api.mcp_remoto` serve `/mcp` e `/saude`, e mais nada. Não é uma regra de proxy: é um
 aplicativo que não tem as outras rotas. Uma regra de proxy está a um erro de digitação de publicar
-`/api` junto — que não tem autenticação nesta versão — e esse erro não aparece em teste nenhum,
+`/api` junto — e esse erro não aparece em teste nenhum,
 aparece quando alguém acha as decisões. [`test_mcp_remoto.py`](api/tests/test_mcp_remoto.py)
 afirma pela negativa o que este aplicativo não serve.
 
@@ -451,6 +452,18 @@ bastam.
 causa do painel do claude.ai, que não tem campo de cabeçalho; a aplicação principal é servidor e
 não tem essa limitação. Um token na URL entra no registro de acesso dela, e aí o segredo está em
 disco do lado de lá.
+
+**As rotas de `/api` passam a exigir a mesma afirmação.** Configurar um verificador é o que fecha
+a porta: sem ele, a instalação local segue atendendo sem cadastro, como sempre; com ele, não há
+mais chamada anônima, e cada `sub` alcança o próprio acervo — decisões e rascunho. O estado
+perigoso, publicado e aberto, não é alcançável por esquecimento, porque é a mesma configuração que
+liga a integração e que tranca a porta.
+
+Junto disso, emitir chave do cofre passa a exigir `FITRADEOFF_ADMIN_TOKEN` mesmo vindo da rede
+interna. A chave do cofre abre o acervo do **dono**, não o de quem a pediu: onde há gente
+autenticada entrando, emiti-la seria o caminho mais curto para ler as decisões alheias. A
+consequência prática é que a tela *Conectar* não emite chaves num servidor atrás da aplicação
+principal — chave por pessoa é o passo seguinte.
 
 Atrás dela, **as chaves do cofre não precisam valer**. Ninguém entra por elas ali: todo mundo
 vem pela aplicação, que assina. `FITRADEOFF_ACEITAR_CHAVES_DO_COFRE=0` no servidor publicado remove

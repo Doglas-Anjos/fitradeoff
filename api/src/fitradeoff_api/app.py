@@ -25,9 +25,15 @@ seguem o fluxo classico de elicitacao, e `/mcp`, o servidor MCP por HTTP, em que
 o assistente do proprio decisor conduz a conversa usando exatamente as mesmas
 operacoes.
 
-As rotas de `/api` nao tem autenticacao nesta versao: quem alcanca a porta ve
-todas as decisoes. `/mcp` tem, porque foi feito para ser alcancado de fora --
-exige chave portadora, emitida em `/api/chaves`.
+Quem esta chamando depende de onde isto roda. No computador do decisor, atras de
+nada, `/api` atende sem cadastro: quem alcanca a porta ja e o dono da maquina.
+Com um verificador de identidade configurado -- ou seja, com uma aplicacao
+autenticando na frente -- nao ha mais chamada anonima, e cada pessoa alcanca o
+proprio acervo.
+
+`/mcp` exige credencial sempre, porque foi feito para ser alcancado de fora:
+chave portadora emitida em `/api/chaves`, ou a afirmacao assinada da aplicacao
+da frente.
 """
 
 
@@ -75,10 +81,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/api/saude", tags=["infra"], summary="Estado do servico")
     def saude():
+        # Sem o caminho do armazenamento. Era util quando a plataforma rodava so
+        # na maquina do decisor; num endereco publico e um caminho de disco do
+        # servidor entregue a quem perguntar, e ninguem na interface o lia.
         return {
             "ok": True,
             "chat_disponivel": settings.chat_enabled,
-            "armazenamento": str(settings.storage),
+            "autenticado_por_terceiros": settings.jwt_configurado,
         }
 
     return app

@@ -127,6 +127,29 @@ def _jwks(url: str) -> jwt.PyJWKClient:
     return _clientes_jwks[url]
 
 
+def assercao(settings: Settings, apresentado: str) -> Path | None:
+    """So a afirmacao assinada -- o acervo de quem a aplicacao da frente diz ser.
+
+    Separada de ``resolver`` de proposito. As chaves do cofre existem para o
+    cliente MCP do dono; aceita-las tambem em ``/api`` deixaria uma chave
+    emitida para um assistente virar credencial de navegador, o que nao e o que
+    ninguem espera ao emiti-la.
+    """
+    if not settings.jwt_configurado:
+        return None
+
+    declaracoes = _verificar(settings, apresentado)
+    if declaracoes is None:
+        return None
+
+    pessoa = str(declaracoes.get("sub") or "").strip()
+    if not pessoa:
+        return None
+
+    emissor = settings.jwt_issuer or str(declaracoes.get("iss") or "")
+    return acervo_de(settings, emissor, pessoa)
+
+
 def resolver(settings: Settings) -> Resolvedor:
     """O ``Resolvedor`` que o MCP usa: o que foi apresentado -> onde gravar."""
     do_cofre = cofre.resolver(settings)
@@ -141,20 +164,6 @@ def resolver(settings: Settings) -> Resolvedor:
                 return None
             return do_cofre(apresentado)
 
-        if not settings.jwt_configurado:
-            return None
-
-        declaracoes = _verificar(settings, apresentado)
-        if declaracoes is None:
-            return None
-
-        pessoa = str(declaracoes.get("sub") or "").strip()
-        if not pessoa:
-            return None
-
-        # O emissor verificado, quando exigimos um; senao o que o token traz,
-        # que a essa altura ja passou pela assinatura.
-        emissor = settings.jwt_issuer or str(declaracoes.get("iss") or "")
-        return acervo_de(settings, emissor, pessoa)
+        return assercao(settings, apresentado)
 
     return para

@@ -2,12 +2,19 @@
 
 Estas rotas emitem credencial, e por isso sao as unicas da API com porta:
 
-*Do proprio computador* -- passa. E quem chega pelo navegador local, pelo
-rewrite do Next, ou por um tunel SSH ate o hospedeiro, que o SSH ja autenticou.
+*Do proprio computador, sem aplicacao autenticando na frente* -- passa. E quem
+chega pelo navegador local, pelo rewrite do Next, ou por um tunel SSH ate o
+hospedeiro, que o SSH ja autenticou.
 
-*De qualquer outro lugar* -- exige ``FITRADEOFF_ADMIN_TOKEN`` no cabecalho
-``X-Fitradeoff-Admin``, e recusa com 503 enquanto esse token nao existir.
-Administrar de longe e uma decisao, entao precisa ser configurada.
+*De qualquer outro lugar, ou com uma aplicacao autenticando na frente* -- exige
+``FITRADEOFF_ADMIN_TOKEN`` no cabecalho ``X-Fitradeoff-Admin``, e recusa com 503
+enquanto esse token nao existir. Administrar de longe e uma decisao, entao
+precisa ser configurada.
+
+A segunda metade dessa regra fecha uma escalada: a chave do cofre abre o acervo
+do dono da plataforma, e nao o de quem a pediu. Onde ha gente autenticada
+entrando -- e chegando, por tabela, da rede interna -- emitir uma chave viraria
+o caminho mais curto para ler as decisoes alheias.
 
 O endereco de origem nao prova muita coisa quando ha proxy no caminho: um proxy
 que publique a porta 8000 chega como ``127.0.0.1`` igual ao navegador local.
@@ -44,9 +51,14 @@ def gestao_liberada(
     request: Request, settings: Settings = Depends(get_settings)
 ) -> None:
     """Deixa passar so quem pode emitir e revogar chaves."""
-    anfitriao = request.client.host if request.client else None
-    if anfitriao in LOOPBACK:
-        return
+    # Atras de uma aplicacao que autentica, a premissa do loopback deixa de
+    # valer: quem chega por ela tambem chega da rede interna, e uma chave do
+    # cofre abre o acervo do dono, nao o de quem a pediu. Sem esta trava, um
+    # visitante autenticado emitiria para si uma credencial do acervo alheio.
+    if not settings.jwt_configurado:
+        anfitriao = request.client.host if request.client else None
+        if anfitriao in LOOPBACK:
+            return
 
     if not settings.admin_token:
         raise HTTPException(

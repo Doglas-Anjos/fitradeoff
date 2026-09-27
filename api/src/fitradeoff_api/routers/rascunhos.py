@@ -15,9 +15,9 @@ mexer nos dois lados a cada campo novo. O que a API garante e o contrato de
 verdade: que o que foi gravado volta igual, e que o arquivo em disco continua
 sendo JSON valido.
 
-Sem autenticacao, como o resto desta versao: um rascunho por instalacao, e quem
-alcanca a porta o ve. Quando entrar login, ele passa a ter dono, do mesmo jeito
-que as decisoes.
+Tem dono, do mesmo jeito que as decisoes: atras de uma aplicacao que autentica,
+cada pessoa tem o seu. Sem verificador configurado -- a plataforma rodando no
+computador do decisor -- continua sendo um por instalacao.
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from ..config import Settings
-from ..deps import get_settings
+from ..deps import acervo, get_settings
 
 router = APIRouter(prefix="/api", tags=["rascunho"])
 
@@ -41,19 +41,29 @@ router = APIRouter(prefix="/api", tags=["rascunho"])
 LIMITE_BYTES = 512 * 1024
 
 
-def caminho(settings: Settings) -> Path:
-    """Fora do diretorio das decisoes, de proposito.
+def caminho(pasta: Path, settings: Settings) -> Path:
+    """Fora do diretorio das decisoes, de proposito, e um por pessoa.
 
     O repositorio do motor lista decisoes com ``glob("*.json")`` naquele
     diretorio: um rascunho ali dentro apareceria na lista de decisoes salvas
-    como um registro corrompido, e a listagem o ignoraria em silencio.
+    como um registro corrompido, e a listagem o ignoraria em silencio. Por isso
+    o arquivo fica ao lado da pasta, e nao dentro dela.
+
+    O caminho do dono da maquina continua sendo o de sempre. Mudar o nome de
+    lugar levaria junto o rascunho que estivesse pela metade -- e este modulo
+    existe justamente porque meia hora de digitacao perdida sem aviso e
+    inaceitavel.
     """
-    return settings.storage.parent / "rascunho.json"
+    if pasta == settings.storage:
+        return settings.storage.parent / "rascunho.json"
+    return pasta.parent / f"{pasta.name}.rascunho.json"
 
 
 @router.get("/rascunho", summary="O rascunho guardado, se houver")
-def ler(settings: Settings = Depends(get_settings)) -> dict[str, Any]:
-    arquivo = caminho(settings)
+def ler(
+    pasta: Path = Depends(acervo), settings: Settings = Depends(get_settings)
+) -> dict[str, Any]:
+    arquivo = caminho(pasta, settings)
     if not arquivo.exists():
         return {"rascunho": None, "gravado_em": None}
     try:
@@ -70,7 +80,9 @@ def ler(settings: Settings = Depends(get_settings)) -> dict[str, Any]:
 
 @router.post("/rascunho", summary="Guarda o rascunho")
 def gravar(
-    corpo: dict[str, Any], settings: Settings = Depends(get_settings)
+    corpo: dict[str, Any],
+    pasta: Path = Depends(acervo),
+    settings: Settings = Depends(get_settings),
 ) -> dict[str, Any]:
     rascunho = corpo.get("rascunho")
     if rascunho is None:
@@ -94,7 +106,7 @@ def gravar(
             "Rascunho grande demais para ser guardado.",
         )
 
-    arquivo = caminho(settings)
+    arquivo = caminho(pasta, settings)
     arquivo.parent.mkdir(parents=True, exist_ok=True)
     # Escrita em dois passos: um corte no meio do write deixaria JSON pela
     # metade, e a leitura seguinte perderia o rascunho inteiro em vez de
@@ -106,7 +118,9 @@ def gravar(
 
 
 @router.post("/rascunho/descartar", summary="Esquece o rascunho")
-def descartar(settings: Settings = Depends(get_settings)) -> dict[str, bool]:
-    arquivo = caminho(settings)
+def descartar(
+    pasta: Path = Depends(acervo), settings: Settings = Depends(get_settings)
+) -> dict[str, bool]:
+    arquivo = caminho(pasta, settings)
     arquivo.unlink(missing_ok=True)
     return {"descartado": True}

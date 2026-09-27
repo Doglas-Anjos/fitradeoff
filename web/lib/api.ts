@@ -92,9 +92,11 @@ async function enviarFormulario<T>(caminho: string, corpo: FormData): Promise<T>
 
 export const api = {
   saude: () =>
-    request<{ ok: boolean; chat_disponivel: boolean; armazenamento: string }>(
-      "/api/saude",
-    ),
+    request<{
+      ok: boolean;
+      chat_disponivel: boolean;
+      autenticado_por_terceiros: boolean;
+    }>("/api/saude"),
 
   listar: () => request<{ decisoes: Resumo[] }>("/api/decisoes"),
 

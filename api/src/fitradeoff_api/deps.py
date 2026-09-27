@@ -74,21 +74,24 @@ def acervo(request: Request, settings: Settings = Depends(get_settings)) -> Path
     return caminho
 
 
-# Um solver por processo, e nao um por requisicao. Ele guarda um modelo montado
-# por espaco de pesos, e e esse reaproveitamento que paga a troca -- um solver
-# novo a cada requisicao comecaria com o cache vazio e jogaria fora parte do
-# ganho. Compartilhar e seguro porque o adaptador serializa o acesso internamente:
-# um modelo do HiGHS nao aceita duas threads dentro dele, e a API roda endpoints
-# sincronos no pool de threads.
-#
-# O acervo nao entra nisto: o solver so resolve LP sobre um espaco de pesos e nao
-# ve decisao nem dono. Quem isola um acervo do outro e o repositorio, que continua
-# sendo montado por requisicao com o caminho de quem chamou.
-_SOLVER = HighsLinearSolver()
-
-
 def get_service(caminho: Path = Depends(acervo)) -> DecisionService:
-    return DecisionService(build_container(storage=caminho, solver=_SOLVER))
+    """Servico da requisicao, com um solver proprio.
+
+    Um solver por requisicao, e nao um por processo. Parece desperdicio -- o
+    adaptador guarda modelos do HiGHS montados, e um solver novo comeca com o
+    cache vazio --, mas o contrario sai mais caro: um modelo do HiGHS nao aceita
+    duas threads dentro dele, entao compartilhar exige serializar o acesso, e a
+    trava custa mais do que o cache frio economiza. Medido nesta maquina, com
+    dezesseis conexoes simultaneas: 16,3 req/s com o solver do scipy, 41,7 com um
+    solver unico atras de trava, 56,8 com um por requisicao.
+
+    O reuso que paga a troca acontece dentro da requisicao, nao entre elas: uma
+    analise resolve centenas de LPs sobre um punhado de espacos de peso, e isso um
+    solver recem-criado ja aproveita.
+    """
+    return DecisionService(
+        build_container(storage=caminho, solver=HighsLinearSolver())
+    )
 
 
 def translate(exc: Exception) -> HTTPException:

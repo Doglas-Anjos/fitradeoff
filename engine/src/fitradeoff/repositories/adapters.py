@@ -114,11 +114,20 @@ class JsonFileDecisionRepository(DecisionRepository):
         records = []
         for path in sorted(self._directory.glob("*.json")):
             try:
-                records.append(
-                    record_from_dict(json.loads(path.read_text(encoding="utf-8")))
-                )
-            except (json.JSONDecodeError, KeyError, ValueError):
-                continue  # arquivo corrompido ou de outra versao: ignora
+                dados = json.loads(path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
+                continue  # arquivo corrompido: ignora
+            # Conferido, e nao capturado: um `.json` de topo lista ou numero nao e
+            # registro, e indexa-lo por nome levantaria TypeError. Recusar aqui,
+            # pelo formato, deixa a captura abaixo estreita -- se `record_from_dict`
+            # ganhar um defeito que levante TypeError, ele aparece em vez de virar
+            # uma listagem vazia.
+            if not isinstance(dados, dict):
+                continue
+            try:
+                records.append(record_from_dict(dados))
+            except (KeyError, ValueError):
+                continue  # de outra versao: ignora
         return records
 
     def delete(self, record_id: str) -> None:

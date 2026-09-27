@@ -22,6 +22,7 @@ from fitradeoff import (
     build_container,
 )
 from fitradeoff.problematics.registry import UnknownProblematic
+from fitradeoff.solvers import HighsLinearSolver
 from fitradeoff.solvers.base import InfeasibleWeightSpace
 from mcp.server.mcpserver import MCPServer
 
@@ -127,8 +128,16 @@ def _build_service() -> DecisionService:
     agente -- por tres meios: identificadores confinados ao diretorio de dados,
     tetos de tamanho em ``Limits``, e validacao de toda declaracao relida do
     disco antes de virar restricao.
+
+    O solver e novo a cada composicao, de proposito: guardar um entre chamadas
+    contrariaria a regra logo abaixo, e nao e preciso. O reuso de modelo que paga
+    a troca acontece *dentro* de uma chamada -- uma analise resolve centenas de
+    LPs sobre um punhado de espacos de peso --, e isso um solver recem-criado ja
+    aproveita.
     """
-    return DecisionService(build_container(storage=storage_directory()))
+    return DecisionService(
+        build_container(storage=storage_directory(), solver=HighsLinearSolver())
+    )
 
 
 # Recriado a cada chamada para que a variavel de ambiente valha inclusive nos

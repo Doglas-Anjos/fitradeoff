@@ -11,9 +11,16 @@
 
 FROM python:3.11-slim
 
+# O numpy e o scipy abrem um pool de threads do BLAS por nucleo visivel. Os LPs
+# do metodo tem meia dezena de variaveis: paralelizar algebra deste tamanho nao
+# economiza tempo nenhum -- medido, 12,4 s contra 12,9 s -- e reserva memoria a
+# rodo. Com as tres em 1, o commit do processo cai de 1,5 GB para 124 MB.
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    FITRADEOFF_DATA=/dados/decisoes
+    FITRADEOFF_DATA=/dados/decisoes \
+    OMP_NUM_THREADS=1 \
+    OPENBLAS_NUM_THREADS=1 \
+    MKL_NUM_THREADS=1
 
 WORKDIR /app
 

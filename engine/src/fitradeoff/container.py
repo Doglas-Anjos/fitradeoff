@@ -103,15 +103,22 @@ def build_container(
     abertura_extrema: bool = True,
     make_selector: Callable[[], QuestionSelector] = WidestBracketSelector,
     clock: Clock | None = None,
+    solver: LinearSolver | None = None,
 ) -> Container:
-    """Composicao padrao: HiGHS via scipy, e disco quando houver diretorio."""
+    """Composicao padrao: HiGHS via scipy, e disco quando houver diretorio.
+
+    ``solver`` troca o adaptador de programacao linear sem mexer aqui.
+    ``HighsLinearSolver`` chama o mesmo HiGHS direto e resolve o mesmo problema
+    bem mais rapido; o padrao segue sendo o do scipy porque e o que tem historico
+    em producao, e a escolha e de quem monta, nao do motor.
+    """
     repository = (
         JsonFileDecisionRepository(storage)
         if storage is not None
         else InMemoryDecisionRepository()
     )
     return Container(
-        solver=ScipyLinearSolver(),
+        solver=solver or ScipyLinearSolver(),
         integer_solver=ScipyIntegerSolver(),
         repository=repository,
         registry=default_registry(),

@@ -127,6 +127,23 @@ def test_arquivo_corrompido_e_ignorado_na_listagem(tmp_path, record):
     assert [r.id for r in repo.list()] == ["abc123"]
 
 
+def test_json_valido_que_nao_e_registro_tambem_e_ignorado(tmp_path, record):
+    """JSON bem formado, mas que nao e um registro, nao pode derrubar a listagem.
+
+    O caso do arquivo corrompido acima cobre o que nem parseia. Este cobre o que
+    parseia e ainda assim nao serve: um indice, uma anotacao, uma exportacao
+    deixada na pasta. Indexar por nome um topo que e lista ou numero levanta
+    TypeError, que nao e o mesmo erro do arquivo truncado.
+    """
+    repo = JsonFileDecisionRepository(tmp_path)
+    repo.save(record)
+    (tmp_path / "indice.json").write_text('[{"id": "x"}]', encoding="utf-8")
+    (tmp_path / "numero.json").write_text("42", encoding="utf-8")
+    (tmp_path / "texto.json").write_text('"so um texto"', encoding="utf-8")
+
+    assert [r.id for r in repo.list()] == ["abc123"]
+
+
 def test_arquivo_gravado_e_json_legivel(tmp_path, record):
     repo = JsonFileDecisionRepository(tmp_path)
     repo.save(record)

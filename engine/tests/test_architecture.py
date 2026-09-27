@@ -89,15 +89,17 @@ def test_dominio_nao_importa_solver_algum():
         assert not violacoes, f"domain/{module.name} importa {sorted(violacoes)}."
 
 
-def test_scipy_so_aparece_no_adaptador():
+def test_solver_so_aparece_no_adaptador():
     """Trocar de solver deve ser trocar um arquivo, nao caçar imports.
 
-    Tres lugares podem nomear scipy, e nenhum deles e regra de negocio: o
-    adaptador que o encapsula, o ``__init__`` que o reexporta, e o container,
-    que e justamente onde a escolha de implementacao e feita.
+    So os adaptadores que encapsulam cada solver, o ``__init__`` que os
+    reexporta e o container, onde a escolha de implementacao e feita. Nenhum
+    desses lugares e regra de negocio -- e a lista nao cresce com o tempo: um
+    solver novo entra como um arquivo aqui, nao como um import espalhado.
     """
     permitidos = {
         ROOT / "solvers" / "scipy_solver.py",
+        ROOT / "solvers" / "highs_solver.py",
         ROOT / "solvers" / "__init__.py",
         ROOT / "container.py",
     }

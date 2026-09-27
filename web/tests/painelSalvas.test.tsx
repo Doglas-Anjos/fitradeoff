@@ -407,3 +407,95 @@ describe("PainelSalvas: largura", () => {
     );
   });
 });
+
+describe("PainelSalvas: favoritas", () => {
+  it("sobe as favoritas acima do critério escolhido, inclusive do alfabeto", async () => {
+    const { decisoes } = datados();
+    /* "Zoneamento" é a última no alfabeto e a mais recente; marcar "Aquisição",
+       que é a primeira no alfabeto e a mais antiga, faz cada ordenação provar
+       uma coisa diferente. */
+    const comFavorita = decisoes.map((d) =>
+      d.id === "a" ? { ...d, favorita: true } : d,
+    );
+    vi.spyOn(api, "listar").mockResolvedValue({ decisoes: comFavorita });
+    render(<PainelSalvas onAbrir={() => {}} />);
+    await abrirPainel();
+    await screen.findByText("Aquisição de frota");
+
+    expect(itensDaLista()[0]).toContain("Aquisição de frota");
+
+    await userEvent.click(screen.getByRole("radio", { name: "Nome" }));
+    expect(itensDaLista()[0]).toContain("Aquisição de frota");
+
+    /* Entre as não favoritas o critério de sempre continua mandando: o
+       destaque é um desempate por cima, não uma ordenação nova. */
+    const porNome = itensDaLista();
+    expect(porNome[1]).toContain("Merenda escolar");
+    expect(porNome[2]).toContain("Zoneamento urbano");
+  });
+
+  it("alterna pelo teclado, e a lista se reorganiza na hora", async () => {
+    const { decisoes } = datados();
+    vi.spyOn(api, "listar").mockResolvedValue({ decisoes });
+    const favoritar = vi
+      .spyOn(api, "favoritar")
+      .mockImplementation(async (id, favorita) => ({ id, favorita }) as never);
+    render(<PainelSalvas onAbrir={() => {}} />);
+    await abrirPainel();
+    await screen.findByText("Aquisição de frota");
+
+    // por data, a mais antiga está no fim
+    expect(itensDaLista()[2]).toContain("Aquisição de frota");
+
+    const estrela = screen.getByRole("button", {
+      name: "Favorita: Aquisição de frota",
+    });
+    expect(estrela).toHaveAttribute("aria-pressed", "false");
+
+    /* Botão de verdade: chega pelo Tab e responde ao Espaço. Um ícone com
+       `onClick` passaria no teste do mouse e deixaria o teclado de fora. */
+    estrela.focus();
+    await userEvent.keyboard(" ");
+
+    expect(favoritar).toHaveBeenCalledWith("a", true);
+    await waitFor(() => expect(estrela).toHaveAttribute("aria-pressed", "true"));
+    expect(itensDaLista()[0]).toContain("Aquisição de frota");
+  });
+
+  it("a decisão aberta não pode ser reaberta, mas pode ser favoritada", async () => {
+    vi.spyOn(api, "listar").mockResolvedValue({ decisoes: RESUMOS });
+    vi.spyOn(api, "favoritar").mockImplementation(
+      async (id, favorita) => ({ id, favorita }) as never,
+    );
+    render(<PainelSalvas onAbrir={() => {}} idAtual="aaa" />);
+    await abrirPainel();
+    await screen.findByText("aberta agora");
+
+    expect(
+      screen.getByText("Seleção de fornecedor").closest("button"),
+    ).toBeDisabled();
+
+    const estrela = screen.getByRole("button", {
+      name: "Favorita: Seleção de fornecedor",
+    });
+    expect(estrela).toBeEnabled();
+    await userEvent.click(estrela);
+    await waitFor(() => expect(estrela).toHaveAttribute("aria-pressed", "true"));
+  });
+
+  it("desfaz a marcação quando o servidor recusa, em vez de mentir", async () => {
+    vi.spyOn(api, "listar").mockResolvedValue({ decisoes: RESUMOS });
+    vi.spyOn(api, "favoritar").mockRejectedValue(new Error("sem rede"));
+    render(<PainelSalvas onAbrir={() => {}} />);
+    await abrirPainel();
+    await screen.findByText("Seleção de fornecedor");
+
+    const estrela = screen.getByRole("button", {
+      name: "Favorita: Seleção de fornecedor",
+    });
+    await userEvent.click(estrela);
+
+    await waitFor(() => expect(estrela).toHaveAttribute("aria-pressed", "false"));
+    expect(screen.getByRole("alert")).toHaveTextContent(/favorita/i);
+  });
+});

@@ -7,9 +7,9 @@
  * lembrava de manter juntas: o resumo já divergia na pontuação, e o mapa, nos
  * rótulos. Com a tradução entrando, a terceira cópia seria o catálogo.
  *
- * Aqui ficam as duas peças, e só elas. O que cada tela faz com o resumo - onde
- * põe, que tamanho usa, se mostra o rótulo longo - continua na tela, porque é
- * aí que as duas realmente diferem.
+ * Aqui ficam as peças comuns, e só elas. O que cada tela faz com o resumo -
+ * onde põe, que tamanho usa, se mostra o rótulo longo - continua na tela,
+ * porque é aí que as duas realmente diferem.
  */
 
 import { ListNumbers, Scales, SlidersHorizontal, Stack, Trophy } from "@phosphor-icons/react";
@@ -88,4 +88,23 @@ export function resumir(r: Resumo, t: Traduz): string {
     );
   }
   return partes.join(" · ");
+}
+
+/**
+ * Favoritas antes das outras, e nada além disso.
+ *
+ * Vale nas duas telas, então mora aqui: a regra de ordem foi justamente o tipo
+ * de coisa que já divergiu quando cada uma tinha a sua cópia.
+ *
+ * Empate devolve 0 de propósito. Isto é um desempate que se compõe com a ordem
+ * que cada tela escolheu - a do servidor, a data, o alfabeto -, e não a
+ * substitui: `Array.prototype.sort` é estável, então entre duas favoritas (ou
+ * duas comuns) continua valendo o critério de baixo.
+ *
+ * O destaque ganha até da ordem alfabética escolhida à mão. É o ponto da
+ * marcação: quem favorita quer aquelas decisões no topo, não espalhadas pela
+ * lista conforme a inicial do nome.
+ */
+export function favoritasPrimeiro(a: Resumo, b: Resumo): number {
+  return Number(b.favorita ?? false) - Number(a.favorita ?? false);
 }

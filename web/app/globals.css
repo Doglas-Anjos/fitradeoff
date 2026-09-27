@@ -1299,3 +1299,21 @@ textarea:hover {
   background: var(--accent);
   opacity: 0.55;
 }
+
+/* As três respostas da curva de valor. São a mesma escolha que o resto do
+   produto faz — preferir A, preferir B, ou tanto faz —, então usam o mesmo
+   gesto: cartão com borda que acende no ponteiro. */
+.opcao-curva {
+  border-color: var(--borda-forte);
+  background: var(--painel);
+  color: var(--tinta-2);
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
+}
+.opcao-curva:hover {
+  border-color: var(--accent);
+  background: var(--accent-suave);
+  color: var(--accent);
+}

@@ -643,6 +643,52 @@ export const VISUALIZACOES = registrar({
     en: "Use the straight line",
     es: "Usar la recta",
   },
+  "elicitacao.curva.qualMetade": {
+    pt: "Qual metade traz mais ganho de valor?",
+    en: "Which half brings the greater increase in value?",
+    es: "¿Qué mitad trae mayor ganancia de valor?",
+  },
+  "elicitacao.curva.opcao.indiferente": {
+    pt: "As duas valem o mesmo",
+    en: "Both are worth the same",
+    es: "Las dos valen lo mismo",
+  },
+  "elicitacao.curva.opcao.baixo.curto": {
+    pt: "a de baixo",
+    en: "the lower one",
+    es: "la de abajo",
+  },
+  "elicitacao.curva.opcao.alto.curto": {
+    pt: "a de cima",
+    en: "the upper one",
+    es: "la de arriba",
+  },
+  "elicitacao.curva.opcao.indiferente.curto": {
+    pt: "tanto faz",
+    en: "either",
+    es: "da igual",
+  },
+  "elicitacao.curva.tabela.titulo": {
+    pt: "O que você já respondeu",
+    en: "What you have answered",
+    es: "Lo que ya respondió",
+  },
+  "elicitacao.curva.tabela.ciclo": { pt: "Ciclo", en: "Cycle", es: "Ciclo" },
+  "elicitacao.curva.tabela.comparadas": {
+    pt: "De · meio · até",
+    en: "From · mid · to",
+    es: "De · medio · hasta",
+  },
+  "elicitacao.curva.tabela.resposta": {
+    pt: "Resposta",
+    en: "Answer",
+    es: "Respuesta",
+  },
+  "elicitacao.curva.apertado": {
+    pt: "A faixa já está estreita: a próxima resposta fecha este ponto.",
+    en: "The range is already narrow: the next answer settles this point.",
+    es: "El rango ya está estrecho: la próxima respuesta cierra este punto.",
+  },
   "elicitacao.curva.recomecar": { pt: "recomeçar", en: "start over", es: "reiniciar" },
   "elicitacao.curva.cancelar": { pt: "cancelar", en: "cancel", es: "cancelar" },
   "elicitacao.curva.eixo.pior": { pt: "{valor} (pior)", en: "{valor} (worst)", es: "{valor} (peor)" },

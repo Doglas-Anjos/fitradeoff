@@ -7,15 +7,24 @@
  * 30 dias pode valer muito mais do que ir de 30 para 15 — e é essa curva, não a
  * reta, que entra no modelo aditivo.
  *
- * A elicitação é por bisseção: dado um intervalo, qual desempenho fica no meio
- * do caminho *em valor*? Cada resposta fixa um ponto. Quem não quiser responder
- * fica com a reta, que é o padrão e continua sendo uma escolha legítima.
+ * A elicitação é por bisseção, e a pergunta é uma escolha entre duas metades:
+ * "ganhar de 42 a 65 vale mais, ou de 65 a 88?". Três respostas -- a de baixo,
+ * a de cima, ou tanto faz -- e cada uma estreita onde o ponto pode estar.
+ *
+ * Antes se pedia o número: "qual desempenho fica no meio do caminho em valor?".
+ * Está certo e é mais rápido para quem sabe responder, mas obriga o decisor a
+ * produzir uma grandeza, e o método existe justamente para não fazer isso --
+ * em toda outra tela ele só compara. É também como o sistema de referência
+ * pergunta, com as mesmas três opções.
+ *
+ * Quem não quiser responder fica com a reta, que é o padrão e continua sendo
+ * uma escolha legítima.
  */
 
 import { ArrowCounterClockwise, Check, TrendUp } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
 
-import { Botao, Dica, Entrada } from "@/components/ui";
+import { Botao, Dica } from "@/components/ui";
 import { useIdioma } from "@/lib/i18n";
 import "@/lib/i18n/visualizacoes";
 import type { CriterioOut } from "@/lib/types";
@@ -103,6 +112,16 @@ function Grafico({
   );
 }
 
+/** Quantos ciclos antes de aceitar o meio do intervalo sem perguntar mais. */
+const CICLOS_MAX = 6;
+
+interface Ciclo {
+  baixo: number;
+  meio: number;
+  alto: number;
+  resposta: "baixo" | "alto" | "indiferente";
+}
+
 export function CurvaDeValor({
   criterio,
   inicial,
@@ -121,8 +140,10 @@ export function CurvaDeValor({
       [criterio.melhor, 1],
     ],
   );
-  const [resposta, setResposta] = useState("");
-  const [erro, setErro] = useState<string | null>(null);
+  /* Onde o ponto procurado ainda pode estar. Vai encolhendo a cada resposta;
+     `null` quer dizer "ainda não comecei este vão". */
+  const [busca, setBusca] = useState<{ baixo: number; alto: number } | null>(null);
+  const [ciclos, setCiclos] = useState<Ciclo[]>([]);
 
   /* A próxima pergunta cai no maior vão de valor ainda sem ponto: é onde a
      reta pode estar mais longe da verdade. */
@@ -139,34 +160,63 @@ export function CurvaDeValor({
   }, [pontos]);
 
   const alvo = vao ? (vao[0][1] + vao[1][1]) / 2 : null;
-  const entreOnde = vao
-    ? { de: vao[0][0], ate: vao[1][0], deValor: vao[0][1], ateValor: vao[1][1] }
-    : null;
 
-  const registrar = () => {
-    if (!entreOnde || alvo == null) return;
-    const numero = Number(resposta.replace(",", "."));
-    if (!Number.isFinite(numero)) {
-      return setErro(t("elicitacao.curva.erro.numero"));
+  /* As pontas do vão em ordem de VALOR, não de número: `de` é a consequência
+     que vale menos e `ate` a que vale mais. Num critério de minimizar isso
+     inverte o eixo -- 90 dias vale menos que 10 --, e é assim que tem de ser.
+     Ordenando por número, a pergunta saía como "ganhar de 10 a 50 dias", que é
+     uma piora; perguntar qual piora traz mais ganho de valor não quer dizer
+     nada. Em ordem de valor as duas metades são sempre melhoras. */
+  const pontas = vao ? { de: vao[0][0], ate: vao[1][0] } : null;
+
+  /* A busca corre num parâmetro de 0 a 1 ao longo de `de` → `ate`, e não na
+     consequência: assim a mesma conta serve para maximizar e minimizar, sem
+     um `if` de direção em cada linha. */
+  const s0 = busca ? busca.baixo : 0;
+  const s1 = busca ? busca.alto : 1;
+  const emS = (v: number) =>
+    pontas ? pontas.de + v * (pontas.ate - pontas.de) : 0;
+  const meioS = (s0 + s1) / 2;
+  const meio = pontas ? emS(meioS) : null;
+
+  /* Quando a faixa fica menor que 1/64 do vão, outra pergunta não move o ponto
+     o bastante para valer o cansaço. */
+  const apertado = s1 - s0 <= 1 / 64;
+
+  const fixar = (consequencia: number) => {
+    if (alvo == null) return;
+    setPontos([...pontos, [consequencia, alvo]]);
+    setBusca(null);
+    setCiclos([]);
+  };
+
+  /* As três respostas do método.
+     "A primeira metade traz mais ganho" significa que o valor sobe rápido logo
+     no começo da melhora, logo o ponto de meio-valor está ANTES do meio -- e a
+     busca desce. "A segunda" é o contrário. Indiferente encerra: o meio
+     testado é o ponto procurado. */
+  const responder = (resposta: Ciclo["resposta"]) => {
+    if (!pontas || meio == null || alvo == null) return;
+    setCiclos([
+      ...ciclos,
+      { baixo: emS(s0), meio, alto: emS(s1), resposta },
+    ]);
+
+    if (resposta === "indiferente") return fixar(meio);
+
+    const nova =
+      resposta === "baixo" ? { baixo: s0, alto: meioS } : { baixo: meioS, alto: s1 };
+
+    if (ciclos.length + 1 >= CICLOS_MAX || nova.alto - nova.baixo <= 1 / 64) {
+      return fixar(emS((nova.baixo + nova.alto) / 2));
     }
-    const [menor, maior] = [
-      Math.min(entreOnde.de, entreOnde.ate),
-      Math.max(entreOnde.de, entreOnde.ate),
-    ];
-    if (numero <= menor || numero >= maior) {
-      return setErro(
-        t("elicitacao.curva.erro.intervalo", {
-          de: formatar(menor),
-          ate: formatar(maior),
-        }),
-      );
-    }
-    setErro(null);
-    setResposta("");
-    setPontos([...pontos, [numero, alvo]]);
+    setBusca(nova);
   };
 
   const elicitados = pontos.length - 2;
+  const unidade = criterio.unidade ? ` ${criterio.unidade}` : "";
+  const faixaTexto = (de: number, ate: number) =>
+    `${formatar(de)}${unidade} → ${formatar(ate)}${unidade}`;
 
   return (
     <div
@@ -181,64 +231,118 @@ export function CurvaDeValor({
         <Dica titulo={t("elicitacao.curva.dica.titulo")}>
           <p>{t("elicitacao.curva.dica.corpo1")}</p>
           <p>{t("elicitacao.curva.dica.corpo2")}</p>
-          <p style={{ color: "var(--tinta-3)" }}>
-            {t("elicitacao.curva.dica.corpo3")}
-          </p>
+          <p style={{ color: "var(--tinta-3)" }}>{t("elicitacao.curva.dica.corpo3")}</p>
         </Dica>
       </div>
 
       <div className="mt-4 flex flex-col gap-5 sm:flex-row sm:items-start">
-        <Grafico
-          pontos={pontos}
-          criterio={criterio}
-          proposta={entreOnde ? (entreOnde.de + entreOnde.ate) / 2 : null}
-        />
+        <Grafico pontos={pontos} criterio={criterio} proposta={meio} />
 
         <div className="min-w-0 flex-1">
-          {entreOnde ? (
+          {pontas && meio != null ? (
             <>
               <p className="prosa text-[13px]" style={{ color: "var(--tinta-2)" }}>
-                {t("elicitacao.curva.pergunta.antes")}
-                <strong style={{ color: "var(--tinta)" }}>
-                  {formatar(entreOnde.de)} {criterio.unidade}
-                </strong>
-                {t("elicitacao.curva.pergunta.meio")}
-                <strong style={{ color: "var(--tinta)" }}>
-                  {formatar(entreOnde.ate)} {criterio.unidade}
-                </strong>
-                {t("elicitacao.curva.pergunta.depois")}
-                <strong>{t("elicitacao.curva.pergunta.termo")}</strong>?
-              </p>
-              <p className="mt-1.5 text-[12px]" style={{ color: "var(--tinta-3)" }}>
-                {t("elicitacao.curva.explicacao", {
-                  de: formatar(entreOnde.de),
-                  ate: formatar(entreOnde.ate),
-                })}
+                {t("elicitacao.curva.qualMetade")}
               </p>
 
-              <div className="mt-3 flex items-center gap-2">
-                <Entrada
-                  value={resposta}
-                  onChange={(e) => setResposta(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && registrar()}
-                  inputMode="decimal"
-                  placeholder={formatar((entreOnde.de + entreOnde.ate) / 2)}
-                  aria-label={t("elicitacao.curva.entrada.rotulo", {
-                    nome: criterio.nome,
-                  })}
-                  className="num !w-28 text-right"
-                  invalido={!!erro}
+              {/* As duas metades desenhadas, e não só escritas: a proporção
+                  entre elas é a própria pergunta, e uma barra mostra isso mais
+                  rápido do que dois números. */}
+              <div
+                className="mt-3 flex h-2 overflow-hidden rounded-full"
+                aria-hidden
+                style={{ background: "var(--painel-fundo)" }}
+              >
+                <span
+                  style={{
+                    width: `${meioS * 100}%`,
+                    background: "var(--dado-b)",
+                  }}
                 />
-                <span className="text-[13px]" style={{ color: "var(--tinta-3)" }}>
-                  {criterio.unidade}
-                </span>
-                <Botao onClick={registrar} variante="contorno">
-                  {t("elicitacao.registrar")}
-                </Botao>
+                <span className="flex-1" style={{ background: "var(--serie-1)" }} />
               </div>
-              {erro && (
-                <p className="mt-2 text-[12px]" style={{ color: "var(--erro)" }}>
-                  {erro}
+
+              <div
+                role="radiogroup"
+                aria-label={t("elicitacao.curva.qualMetade")}
+                className="mt-3 grid gap-1.5"
+              >
+                {(
+                  [
+                    ["baixo", faixaTexto(pontas.de, meio), "var(--dado-b)"],
+                    ["alto", faixaTexto(meio, pontas.ate), "var(--serie-1)"],
+                    ["indiferente", t("elicitacao.curva.opcao.indiferente"), null],
+                  ] as const
+                ).map(([chave, rotulo, cor]) => (
+                  <button
+                    key={chave}
+                    type="button"
+                    role="radio"
+                    aria-checked={false}
+                    onClick={() => responder(chave)}
+                    className="opcao-curva tatil flex items-center gap-2.5 rounded-[var(--raio-controle)] border px-3 py-2 text-left text-[13px]"
+                  >
+                    <span
+                      aria-hidden
+                      className="h-2.5 w-2.5 shrink-0 rounded-[3px]"
+                      style={{ background: cor ?? "var(--borda-forte)" }}
+                    />
+                    {rotulo}
+                  </button>
+                ))}
+              </div>
+
+              {/* O que já foi respondido neste critério. Sem isto, quem chega no
+                  quarto ciclo não sabe mais o que disse nos três anteriores, e
+                  a resposta seguinte fica no escuro. */}
+              {ciclos.length > 0 && (
+                <table className="mt-4 w-full text-left">
+                  <caption
+                    className="pb-1.5 text-left text-[11px] font-semibold uppercase tracking-[0.1em]"
+                    style={{ color: "var(--tinta-fraca)" }}
+                  >
+                    {t("elicitacao.curva.tabela.titulo")}
+                  </caption>
+                  <thead>
+                    <tr>
+                      {["ciclo", "comparadas", "resposta"].map((c) => (
+                        <th
+                          key={c}
+                          className="pb-1 pr-3 text-[11px] font-medium"
+                          style={{ color: "var(--tinta-fraca)" }}
+                        >
+                          {t(`elicitacao.curva.tabela.${c}`)}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ciclos.map((c, i) => (
+                      <tr key={i} style={{ borderTop: "1px solid var(--borda)" }}>
+                        <td
+                          className="num py-1 pr-3 text-[12px]"
+                          style={{ color: "var(--tinta-fraca)" }}
+                        >
+                          {i + 1}
+                        </td>
+                        <td
+                          className="num py-1 pr-3 text-[12px]"
+                          style={{ color: "var(--tinta-2)" }}
+                        >
+                          {formatar(c.baixo)} · {formatar(c.meio)} · {formatar(c.alto)}
+                        </td>
+                        <td className="py-1 text-[12px]" style={{ color: "var(--tinta-2)" }}>
+                          {t(`elicitacao.curva.opcao.${c.resposta}.curto`)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+
+              {apertado && (
+                <p className="mt-2 text-[12px]" style={{ color: "var(--tinta-fraca)" }}>
+                  {t("elicitacao.curva.apertado")}
                 </p>
               )}
             </>
@@ -262,11 +366,16 @@ export function CurvaDeValor({
                   )
                 : t("elicitacao.curva.usarReta")}
             </Botao>
-            {elicitados > 0 && (
+            {(elicitados > 0 || ciclos.length > 0) && (
               <button
-                onClick={() =>
-                  setPontos([[criterio.pior, 0], [criterio.melhor, 1]])
-                }
+                onClick={() => {
+                  setPontos([
+                    [criterio.pior, 0],
+                    [criterio.melhor, 1],
+                  ]);
+                  setBusca(null);
+                  setCiclos([]);
+                }}
                 className="tatil flex items-center gap-1.5 text-[13px]"
                 style={{ color: "var(--tinta-3)" }}
               >

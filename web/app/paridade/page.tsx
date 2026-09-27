@@ -248,6 +248,18 @@ export default function ParidadePage() {
           oficial="/paridade/oficial-tradeoff.png"
           nosso="/paridade/nosso-tradeoff.png"
         />
+        <ParDeTelas
+          titulo={t("paridade.telas.curva")}
+          nota={t("paridade.telas.curva.nota")}
+          oficial="/paridade/oficial-curva.png"
+          nosso="/paridade/nosso-curva.png"
+        />
+        <ParDeTelas
+          titulo={t("paridade.telas.hasse")}
+          nota={t("paridade.telas.hasse.nota")}
+          oficial="/paridade/oficial-hasse.png"
+          nosso="/paridade/nosso-hasse.png"
+        />
       </Secao>
 
       <Secao id="achados" titulo={t("paridade.achados.titulo")}>

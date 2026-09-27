@@ -216,6 +216,26 @@ export const PARIDADE_TEXTOS = registrar({
     es: "Comparación por pares, con la franja de cada criterio dibujada. Es el mismo par, en el mismo punto, en los dos sistemas.",
   },
   "paridade.telas.tradeoff": { pt: "Pergunta de tradeoff", en: "Tradeoff question", es: "Pregunta de tradeoff" },
+  "paridade.telas.curva": {
+    pt: "Avaliação intra-critério",
+    en: "Intra-criteria evaluation",
+    es: "Evaluación intra-criterio",
+  },
+  "paridade.telas.curva.nota": {
+    pt: "A função de valor marginal — o método não supõe que valor cresça em linha reta com o desempenho. A pergunta é a mesma nos dois: qual das duas metades traz mais ganho de valor, com as três respostas (a primeira, a segunda, ou tanto faz) e a tabela dos ciclos já respondidos. Antes nós pedíamos o número do ponto médio; trocamos pela escolha, que é o que o método faz em toda outra tela. Resta uma diferença de procedimento: nós mantemos fixas as duas pontas do intervalo e só movemos o ponto testado, enquanto a tabela deles mostra a ponta de baixo subindo a cada ciclo — a regra exata disso não dá para deduzir de uma captura, e não a inventamos. O atalho para declarar tudo linear existe dos dois lados.",
+    en: "The marginal value function — the method does not assume value grows linearly with performance. The question is now the same on both: which of the two halves brings the greater increase in value, with the three answers (the first, the second, or either) and the table of answered cycles. We used to ask for the midpoint as a number; we swapped it for the choice, which is what the method does on every other screen. One procedural difference remains: we hold both ends of the interval fixed and move only the tested point, while their table shows the lower bound rising each cycle — the exact rule for that cannot be deduced from a screenshot, and we did not invent one. The shortcut to declare everything linear exists on both sides.",
+    es: "La función de valor marginal — el método no supone que el valor crezca en línea recta con el desempeño. La pregunta ahora es la misma en ambos: cuál de las dos mitades trae mayor ganancia de valor, con las tres respuestas (la primera, la segunda o da igual) y la tabla de los ciclos ya respondidos. Antes pedíamos el número del punto medio; lo cambiamos por la elección, que es lo que el método hace en todas las demás pantallas. Queda una diferencia de procedimiento: nosotros mantenemos fijos los dos extremos del intervalo y solo movemos el punto probado, mientras que su tabla muestra el extremo inferior subiendo en cada ciclo — la regla exacta de eso no se puede deducir de una captura, y no la inventamos. El atajo para declarar todo lineal existe en los dos lados.",
+  },
+  "paridade.telas.hasse": {
+    pt: "Diagrama de Hasse",
+    en: "Hasse diagram",
+    es: "Diagrama de Hasse",
+  },
+  "paridade.telas.hasse.nota": {
+    pt: "Como fica a ordem quando ela ainda não fechou: uma seta de X para Y significa que X nunca fica atrás de Y, sob qualquer peso ainda admissível, e o que aparece lado a lado continua incomparável. Os dois desenham só as arestas de cobertura — sem essa redução o grafo vira um emaranhado e esconde justamente o que ele existe para mostrar. Ao lado do deles há um painel de diferenças máximas por posição, que nós não temos.",
+    en: "What the order looks like before it closes: an arrow from X to Y means X never falls behind Y, under any still-admissible weights, and whatever sits side by side remains incomparable. Both draw only the covering edges — without that reduction the graph turns into a tangle and hides exactly what it exists to show. Next to theirs sits a panel of maximum differences per position, which we do not have.",
+    es: "Cómo queda el orden cuando aún no cerró: una flecha de X a Y significa que X nunca queda detrás de Y, bajo cualquier peso todavía admisible, y lo que aparece lado a lado sigue siendo incomparable. Ambos dibujan solo las aristas de cobertura — sin esa reducción el grafo se vuelve una maraña y esconde justo lo que existe para mostrar. Junto al de ellos hay un panel de diferencias máximas por posición, que nosotros no tenemos.",
+  },
   "paridade.telas.tradeoff.nota": {
     pt: "Duas consequências hipotéticas, ambas ruins em quase tudo. Marcamos o que é idêntico nas duas situações, para que a comparação seja só sobre o que muda.",
     en: "Two hypothetical consequences, both bad at almost everything. We mark what is identical in both, so the comparison is only about what changes.",

@@ -620,3 +620,40 @@ body {
     transition: none;
   }
 }
+
+/* --- cartões dos cinco módulos, na área de paridade -------------------------
+   Cada cartão é um link para a página de um módulo. Cor e fundo moram aqui, e
+   não em `style` inline no componente, pelo motivo de sempre neste projeto:
+   estilo inline vence regra de classe, e um `:hover` anulado assim não dá erro
+   nenhum — simplesmente não acontece, e ninguém percebe até alguém reclamar
+   que "o cartão não responde ao mouse".
+
+   O realce é o mesmo dos cartões de escolha: quem já entendeu que aquele
+   responde ao ponteiro reconhece o comportamento aqui e conclui a mesma coisa.
+   Só a seta se move, e pouco — um deslocamento maior faria o cartão inteiro
+   parecer instável num grid de cinco. */
+
+.cartao-modulo {
+  background: var(--painel);
+  border-color: var(--borda);
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+.cartao-modulo:hover {
+  background: var(--painel-fundo);
+  border-color: var(--accent);
+  box-shadow: var(--sombra-alta);
+}
+
+.seta-modulo {
+  color: var(--tinta-fraca);
+  transition:
+    color 160ms ease,
+    transform 160ms ease;
+}
+.cartao-modulo:hover .seta-modulo {
+  color: var(--accent);
+  transform: translateX(2px);
+}

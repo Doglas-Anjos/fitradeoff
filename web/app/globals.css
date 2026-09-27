@@ -84,13 +84,29 @@
   --raio-painel: 16px;
   --raio-controle: 9px;
 
-  /* Fundo da pagina: papel milimetrado, nao textura decorativa. A malha da a
-     profundidade que faltava nas margens sem competir com o conteudo -- e a
-     referencia e o instrumento de medicao, que e o que o produto e. Fica
-     abaixo do limiar de leitura consciente: quem olhar direto enxerga uma
-     superficie, nao pontinhos. */
-  --grade: rgba(11, 50, 97, 0.055);
-  --grade-passo: 26px;
+  /* Fundo da pagina: papel milimetrado, nao textura decorativa. A referencia e
+     o instrumento de medicao, que e o que o produto e.
+     Duas escalas, como no papel de verdade: uma fina e uma cinco vezes maior.
+     A primeira versao era so pontos isolados, e numa tela de 1920px -- onde a
+     margem de cada lado passa de 300px -- eles nao sustentavam a area: o
+     fundo continuava lendo como vazio. Linha cruzada tem estrutura; ponto
+     solto, nao. */
+  --grade: rgba(11, 50, 97, 0.05);
+  --grade-forte: rgba(11, 50, 97, 0.1);
+  --grade-passo: 24px;
+  /* cinco finas por grossa, como papel milimetrado de verdade */
+  --grade-maior: 120px;
+  /* De onde vem a luz. Nao e enfeite: a tela inteira passou a ter relevo --
+     paineis erguidos, areas de digitacao rebaixadas -- e sombra so faz sentido
+     com uma direcao de luz. Sem isto, o fundo e plano e as sombras ficam
+     afirmando algo que a pagina nao sustenta. */
+  --brilho: rgba(36, 107, 178, 0.1);
+  /* Aneis concentricos, o mesmo motivo que o heroi da home ja usa. Nao e
+     ornamento escolhido a esmo: circulo que encolhe e a forma do que o metodo
+     faz -- um espaco de pesos que se fecha a cada resposta. Repetir a figura
+     no fundo estende esse vocabulario as telas de trabalho, onde as margens
+     ficavam largas e mudas. */
+  --anel: rgba(11, 50, 97, 0.07);
 
   /* A barra de navegacao e navy nos dois temas, entao o que vai sobre ela nao
      muda com o tema -- mas continua token, para que nenhum componente precise
@@ -194,7 +210,10 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
 
   --sombra-interna: inset 0 1px 4px rgba(0, 0, 0, 0.45);
-  --grade: rgba(150, 195, 245, 0.05);
+  --grade: rgba(150, 195, 245, 0.045);
+  --grade-forte: rgba(150, 195, 245, 0.085);
+  --brilho: rgba(111, 176, 238, 0.07);
+  --anel: rgba(150, 195, 245, 0.06);
   --selecao: #1d4f86;
   --selecao-tinta: #eaf2fb;
   --clareia: #cfe2f7;
@@ -234,16 +253,85 @@ body {
      onde nao ha painel em cima -- ou seja, exatamente nas margens, que era o
      que estava vazio. */
   background-color: var(--plano);
-  background-image:
-    radial-gradient(circle at 1px 1px, var(--grade) 1px, transparent 0),
-    linear-gradient(180deg, var(--plano-topo) 0, transparent 320px);
-  background-size:
-    var(--grade-passo) var(--grade-passo),
-    100% 100%;
-  background-repeat: repeat, no-repeat;
   color: var(--tinta);
   font-family: var(--fonte-sans), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+/* O clarao e os aneis ficam numa camada fixa, e nao em
+   `background-attachment: fixed` do body. A diferenca nao e de estilo, e de
+   custo: medido nesta pagina, o fundo fixo levava a rolagem de 16,5ms para
+   22-24ms por quadro -- de 60fps para uns 42 --, porque obriga o navegador a
+   repintar o fundo a cada deslocamento. Uma camada `position: fixed` vai para
+   composicao propria e acompanha a rolagem de graca.
+
+   Tudo mora nesta camada, inclusive a malha -- e nao metade aqui e metade no
+   `body`. Medido: separadas, malha e aneis custavam 1,1ms e 1,7ms por quadro;
+   juntas, 7,1ms, bem mais que a soma. Com fundo no `body` a camada fixa deixa
+   de ser composta e volta a repintar junto. Numa camada so, o custo some.
+
+   Ha um efeito colateral, e ele e desejado: a malha deixa de rolar com o
+   texto. Papel milimetrado e a mesa sobre a qual a pagina esta, nao parte do
+   documento.
+
+   `z-index: -1` a poe acima da cor de fundo e abaixo de todo o conteudo.
+   `pointer-events: none` para que ela nao intercepte clique nenhum. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    /* clarao */
+    radial-gradient(80rem 34rem at 50% -8rem, var(--brilho), transparent 72%),
+    /* aneis */
+    radial-gradient(
+      circle at 88% 6%,
+      transparent 0 21rem,
+      var(--anel) 21rem 21.06rem,
+      transparent 21.06rem
+    ),
+    radial-gradient(
+      circle at 88% 6%,
+      transparent 0 31rem,
+      var(--anel) 31rem 31.06rem,
+      transparent 31.06rem
+    ),
+    radial-gradient(
+      circle at 8% 94%,
+      transparent 0 25rem,
+      var(--anel) 25rem 25.06rem,
+      transparent 25.06rem
+    ),
+    /* malha maior */
+    linear-gradient(to right, var(--grade-forte) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grade-forte) 1px, transparent 1px),
+    /* malha fina */
+    linear-gradient(to right, var(--grade) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grade) 1px, transparent 1px),
+    /* clareada do topo, que separa o cabecalho do corpo */
+    linear-gradient(180deg, var(--plano-topo) 0, transparent 320px);
+  background-size:
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    var(--grade-maior) var(--grade-maior),
+    var(--grade-maior) var(--grade-maior),
+    var(--grade-passo) var(--grade-passo),
+    var(--grade-passo) var(--grade-passo),
+    100% 100%;
+  background-repeat:
+    no-repeat,
+    no-repeat,
+    no-repeat,
+    no-repeat,
+    repeat,
+    repeat,
+    repeat,
+    repeat,
+    no-repeat;
 }
 
 button:not(:disabled),

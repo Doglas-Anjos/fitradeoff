@@ -17,6 +17,21 @@ necessariamente em todo o espaco de pesos. Aumentar ``samples`` aumenta a
 confianca e o custo. A leitura beneficio-custo (``benefit_cost.py``) parte
 dos mesmos dados com outro criterio -- eficiencia por unidade de recurso --
 e ali as faixas de razao sao exatas; so a carteira e amostrada.
+
+E a unica das cinco problematicas SEM medicao de paridade contra o sistema
+oficial, e isso pesa numa auditoria: as outras quatro tem caso rodado nos dois
+lados em ``paridade/casos.py``, esta nao tem nenhum. Nao foi esquecimento. O
+modulo Portfolio Combinatorial de la roda num deploy separado
+(`fitradeoffportcombinatorio.dll`) que, depois de salvar a matriz, **nao
+elicita**: entra em processamento assincrono e avisa por e-mail quando termina.
+Nao ha sessao para percorrer lado a lado -- ele enumera as carteiras viaveis
+offline, nos aproximamos por amostragem e respondemos na hora. A tentativa e o
+que se sabe dela estao em ``paridade/EQUIVALENCIA.md``, secao "Portfolio
+combinatorial: nao comparavel em sessao".
+
+Logo: aqui a ressalva de amostragem e a unica garantia que acompanha o numero.
+Nas outras quatro ha, alem dela, a conferencia de que o resultado bate com o do
+sistema de referencia.
 """
 
 from __future__ import annotations

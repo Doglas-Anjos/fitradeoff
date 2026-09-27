@@ -175,7 +175,9 @@ abandonada e só depois a que resolve.
 
 Parece seleção com lookahead, mas não é: trocar o seletor por
 `InformationGainSelector` dá 10 perguntas nesse caso — muito abaixo das 21 — e
-quebra dois casos que hoje batem. A causa continua desconhecida.
+afasta do oficial **cinco** casos que hoje batem: `ranking-06` (14 → 10),
+`ranking-12` (14 → 13), `ranking-15` (12 → 7), `sorting-06` (18 → 11) e
+`sorting-20` (17 → 8). A causa continua desconhecida.
 
 O **desfecho** é o mesmo: pré-ordem completa dos dois lados.
 

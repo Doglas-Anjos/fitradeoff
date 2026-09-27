@@ -119,6 +119,14 @@ class Evaluator:
         desvantagem que alguem sinta, e persegui-la custa perguntas que nao
         mudam a conclusao.
 
+        Aquele 0,009 nao e exemplo: e a medida que obrigou a folga a existir.
+        Num caso de 12 alternativas rodado nos dois sistemas, depois de 14
+        respostas, `max(V[Alt 07] - V[Alt 01]) = 0.009222` contra
+        `max(V[Alt 01] - V[Alt 07]) = 0.057143`. O sistema oficial declarava a
+        dominancia; nos exigiamos vantagem ate a ultima casa e gastavamos mais
+        quatro perguntas atras de uma diferenca abaixo do limiar. A medicao esta
+        em ``paridade/EQUIVALENCIA.md``.
+
         A soma dos pesos e 1, entao a folga em valor global e comparavel a folga
         por criterio -- e por isso o atalho de Pareto abaixo pode usar a mesma.
         """

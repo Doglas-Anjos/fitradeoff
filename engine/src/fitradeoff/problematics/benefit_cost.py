@@ -23,6 +23,22 @@ quem ainda cabe). Entao repetimos o procedimento do combinatorial: ordenar e
 selecionar em cada vertice amostrado, e reportar quem entra sempre, quem nunca
 entra e quem oscila -- nas amostras avaliadas. A ressalva vai junto do
 resultado, e diz qual metade e qual.
+
+Divergencia medida, e o que ela nao e. Contra o sistema oficial, `bc-20` chega a
+**mesma carteira** -- conferida projeto a projeto entre 2^20 subconjuntos, e
+travada em ``paridade/test_paridade.py`` -- gastando 11 perguntas contra as 17
+dele. A diferenca esta em onde cada um para: a nossa parada dispara quando a
+carteira ja esta definida, e ele continua perguntando. Cinco hipoteses foram
+levantadas e **todas refutadas** (separacao das faixas de razao, largura das
+faixas de razao, largura das faixas de valor, esgotamento da bissecao, resolucao
+mais grossa de bracket); o criterio dele segue desconhecido, e o registro dessa
+busca esta em ``paridade/EQUIVALENCIA.md``.
+
+O que sustenta seguir assim: forcar mais perguntas deste lado **nao muda a
+carteira**. Perguntar mais sem que a resposta mude custa o esforco cognitivo que
+o metodo existe para poupar. Por isso a divergencia esta declarada, e nao
+"corrigida" com perguntas de enfeite ate os numeros baterem -- que faria a
+paridade parecer melhor e a elicitacao ficar pior.
 """
 
 from __future__ import annotations

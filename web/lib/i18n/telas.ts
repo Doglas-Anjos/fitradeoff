@@ -314,29 +314,49 @@ export const TELAS = registrar({
 
   // --- chat -----------------------------------------------------------------
   "tela.chat.titulo": { pt: "Chat de decisões", en: "Decision chat" },
+  "tela.chat.editorial": { pt: "Assistente guiado", en: "Guided assistant" },
   "tela.chat.descricao": {
     pt: "Descreva o que precisa decidir. O agente monta o modelo e conduz a elicitação pelo método - as respostas continuam sendo suas.",
     en: "Describe what you need to decide. The agent builds the model and runs the elicitation by the method - the answers are still yours.",
   },
 
-  /* O aviso de chave ausente tem um <code> e um link no meio, então vai em
-     pedaços: cada um é uma oração inteira, não uma palavra solta. */
+  /* A instrução de configuração envolve o nome da variável em <code>, por isso
+     só o trecho anterior e o posterior ficam no catálogo. */
   "tela.chat.semChave.aviso": {
     pt: "O chat precisa de uma chave da API da Anthropic para funcionar.",
     en: "The chat needs an Anthropic API key to work.",
   },
-  "tela.chat.semChave.antes": { pt: "Defina", en: "Set" },
-  "tela.chat.semChave.meio": {
-    pt: "no ambiente onde a API roda e reinicie o servidor. A",
-    en: "in the environment where the API runs and restart the server. The",
+  "tela.chat.semChave.titulo": {
+    pt: "O assistente está indisponível neste ambiente",
+    en: "The assistant is unavailable in this environment",
   },
-  "tela.chat.semChave.link": {
-    pt: "tela de decisão estruturada",
-    en: "structured decision screen",
+  "tela.chat.semChave.configuracao.antes": {
+    pt: "Defina",
+    en: "Set",
   },
-  "tela.chat.semChave.depois": {
-    pt: "funciona sem ela.",
-    en: "works without it.",
+  "tela.chat.semChave.configuracao.depois": {
+    pt: "no ambiente da API e reinicie o servidor.",
+    en: "in the API environment and restart the server.",
+  },
+  "tela.chat.semChave.acao": {
+    pt: "Abrir decisão estruturada",
+    en: "Open structured decision",
+  },
+  "tela.chat.alternativa.titulo": {
+    pt: "Continue pelo fluxo estruturado",
+    en: "Continue with the structured flow",
+  },
+  "tela.chat.alternativa.item1": {
+    pt: "As mesmas problemáticas e etapas do método.",
+    en: "The same problem types and method steps.",
+  },
+  "tela.chat.alternativa.item2": {
+    pt: "Controle direto sobre alternativas, critérios e desempenhos.",
+    en: "Direct control over alternatives, criteria and performances.",
+  },
+  "tela.chat.alternativa.item3": {
+    pt: "Resultados, sensibilidade e trilha de auditoria completos.",
+    en: "Complete results, sensitivity analysis and audit trail.",
   },
 
   /* Sugestões de primeira mensagem. Em inglês são reescritas, não traduzidas:
@@ -352,6 +372,10 @@ export const TELAS = registrar({
   "tela.chat.sugestao3": {
     pt: "Quero ordenar seis projetos por prioridade, não só escolher um.",
     en: "I want to rank six projects by priority, not just pick one.",
+  },
+  "tela.chat.sugestoes.titulo": {
+    pt: "Comece descrevendo uma decisão",
+    en: "Start by describing a decision",
   },
 
   /* Prefixo do rastro de ferramentas; a lista e as setas são montadas no

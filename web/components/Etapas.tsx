@@ -60,7 +60,7 @@ export function Etapas({
   return (
     <div>
       <nav aria-label={t("estrutura.etapas.rotulo")}>
-        <ol className="flex flex-wrap items-center gap-1">
+        <ol className="grid grid-cols-4 items-start gap-1 sm:flex sm:flex-wrap sm:items-center">
           {SEQUENCIA.map((etapa, i) => {
             const alcancada = alcancadas.includes(etapa.id);
             const ativa = etapa.id === atual;
@@ -68,11 +68,11 @@ export function Etapas({
             const clicavel = alcancada && !ativa;
 
             return (
-              <li key={etapa.id} className="flex items-center">
+              <li key={etapa.id} className="flex min-w-0 items-center">
                 {i > 0 && (
                   <span
                     aria-hidden
-                    className="mx-1 h-px w-5"
+                    className="mx-1 hidden h-px w-5 sm:block"
                     style={{ background: "var(--borda-forte)" }}
                   />
                 )}
@@ -81,7 +81,7 @@ export function Etapas({
                   onClick={() => clicavel && tentar(etapa.id)}
                   disabled={!clicavel}
                   aria-current={ativa ? "step" : undefined}
-                  className="tatil flex items-center gap-1.5 rounded-[var(--raio-controle)] px-2.5 py-1.5 text-[13px] disabled:cursor-default"
+                  className="tatil flex w-full min-w-0 flex-col items-center gap-1 rounded-[var(--raio-controle)] px-1 py-1.5 text-[11px] disabled:cursor-default sm:w-auto sm:flex-row sm:gap-1.5 sm:px-2.5 sm:text-[13px]"
                   style={{
                     background: ativa ? "var(--accent-suave)" : "transparent",
                     color: ativa

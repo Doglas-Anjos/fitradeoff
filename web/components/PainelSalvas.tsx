@@ -22,8 +22,8 @@
  *
  * Ele não é modal de propósito. Um `dialog` com foco preso obrigaria a fechar o
  * painel para voltar ao trabalho, e o ponto dele é justamente ficar aberto ao
- * lado do trabalho. É um `aside` nomeado: fecha por Esc, pelo X e pelo próprio
- * botão, e o fundo continua clicável.
+ * lado do trabalho. É um `aside` nomeado: fecha por Esc e pelo X, e o fundo
+ * continua clicável. Fechado, só uma pasta discreta permanece na tela.
  *
  * Os rótulos por problemática, o resumo curto e a regra de ordem das favoritas
  * vêm de `lib/resumoDecisao`, os mesmos que `DecisoesSalvas` usa. Eram duas
@@ -32,7 +32,6 @@
  */
 
 import {
-  CaretLeft,
   CaretRight,
   Check,
   FolderOpen,
@@ -183,6 +182,7 @@ export function PainelSalvas({
 
   const botao = useRef<HTMLButtonElement>(null);
   const caixa = useRef<HTMLElement>(null);
+  const abertaAnterior = useRef(false);
   const idPainel = useId();
   const locale = LOCALE[idioma] ?? LOCALE.pt;
 
@@ -225,7 +225,6 @@ export function PainelSalvas({
 
   const fechar = useCallback(() => {
     setAberta(false);
-    botao.current?.focus();
   }, []);
 
   useEffect(() => {
@@ -241,7 +240,10 @@ export function PainelSalvas({
      quem navega por teclado abriria o painel e continuaria tabulando na página
      atrás dele. */
   useEffect(() => {
+    const estavaAberta = abertaAnterior.current;
+    abertaAnterior.current = aberta;
     if (aberta) caixa.current?.focus();
+    else if (estavaAberta) botao.current?.focus();
   }, [aberta]);
 
   const ajustar = useCallback((px: number) => {
@@ -358,9 +360,7 @@ export function PainelSalvas({
 
   const quantidade = itens?.length ?? null;
   const agora = Date.now();
-  /* A largura efetiva é a escolhida presa ao teto de 90vw. Entra no `width` do
-     painel e no deslocamento do botão pela mesma expressão, para os dois nunca
-     discordarem de quanto o painel ocupa. */
+  /* A largura efetiva é a escolhida presa ao teto de 90vw. */
   const larguraCss = `min(${largura}px, 90vw)`;
   /* Uma propriedade só, e é `transform`: animar `width` ou `left` mandaria o
      navegador refazer layout a cada quadro, e é justamente o reflow que não
@@ -376,38 +376,27 @@ export function PainelSalvas({
       <button
         ref={botao}
         type="button"
-        onClick={() => (aberta ? fechar() : setAberta(true))}
+        onClick={() => setAberta(true)}
         aria-expanded={aberta}
         aria-controls={idPainel}
-        className="tatil fixed bottom-4 right-4 z-50 inline-flex items-center gap-2 rounded-[var(--raio-controle)] border px-3.5 py-2.5 text-[13px] font-medium shadow-lg"
+        inert={aberta}
+        className="tatil fixed bottom-4 right-4 z-50 inline-flex h-11 w-11 items-center justify-center rounded-[var(--raio-controle)] border shadow-lg"
         style={{
           borderColor: "var(--borda-forte)",
           background: "var(--painel)",
           color: "var(--tinta)",
-          /* O botão anda junto com o painel, na mesma propriedade e na mesma
-             duração: aberto ele encosta na borda esquerda do painel em vez de
-             ficar escondido embaixo dele. Assim continua sempre alcançável. */
-          transform: aberta ? `translateX(calc(${larguraCss} * -1))` : "none",
-          transition: deslizar,
+          opacity: aberta ? 0 : 1,
+          transform: aberta
+            ? "translateY(6px) scale(0.9)"
+            : "translateY(0) scale(1)",
+          pointerEvents: aberta ? "none" : "auto",
+          transition: semMovimento
+            ? "none"
+            : "opacity 140ms ease, transform 180ms var(--saida)",
         }}
       >
-        <span className="inline-flex items-center gap-2">
-          <FolderOpen size={16} aria-hidden />
-          {t("paineis.salvas.titulo")}
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          {quantidade !== null && quantidade > 0 && <Selo>{quantidade}</Selo>}
-          <CaretLeft
-            size={12}
-            weight="bold"
-            aria-hidden
-            className="transition-transform"
-            style={{
-              color: "var(--tinta-fraca)",
-              transform: aberta ? "rotate(180deg)" : "none",
-            }}
-          />
-        </span>
+        <FolderOpen size={20} weight="regular" aria-hidden />
+        <span className="sr-only">{t("paineis.salvas.titulo")}</span>
       </button>
 
       <aside
@@ -456,12 +445,15 @@ export function PainelSalvas({
         />
 
         <div className="flex items-baseline justify-between gap-3 pb-3 pl-5 pr-4 pt-4">
-          <h2
-            className="text-[13px] font-semibold"
-            style={{ color: "var(--tinta)" }}
-          >
-            {t("paineis.salvas.titulo")}
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2
+              className="text-[13px] font-semibold"
+              style={{ color: "var(--tinta)" }}
+            >
+              {t("paineis.salvas.titulo")}
+            </h2>
+            {quantidade !== null && quantidade > 0 && <Selo>{quantidade}</Selo>}
+          </div>
           <button
             type="button"
             onClick={fechar}
@@ -498,6 +490,9 @@ export function PainelSalvas({
           {/* Duas opções curtas, então o Segmentado cabe e já traz o contraste
               certo: o escolhido leva o preenchimento cheio do accent. */}
           <div className="mt-2.5">
+            <p className="mb-1.5 text-[11px] font-medium" style={{ color: "var(--tinta-3)" }}>
+              {t("paineis.salvas.ordem.rotulo")}
+            </p>
             <Segmentado<Ordem>
               etiqueta={t("paineis.salvas.ordem.rotulo")}
               valor={ordem}
@@ -519,10 +514,13 @@ export function PainelSalvas({
 
           {/* Chips que quebram em linha, em vez do Segmentado: cinco opções
               lado a lado não caberiam no painel na largura mínima. */}
+          <p className="mt-3 text-[11px] font-medium" style={{ color: "var(--tinta-3)" }}>
+            {t("paineis.salvas.filtro.rotulo")}
+          </p>
           <div
             role="radiogroup"
             aria-label={t("paineis.salvas.filtro.rotulo")}
-            className="mt-2.5 flex flex-wrap gap-1.5"
+            className="mt-1.5 flex flex-wrap gap-1.5"
           >
             {FILTROS.map(({ valor, chave }) => {
               const ativo = valor === tipo;

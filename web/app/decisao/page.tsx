@@ -282,7 +282,7 @@ function Decisao() {
   /* --- antes de existir um problema: so a entrada de dados --- */
   if (!problema) {
     return (
-      <main className="mx-auto max-w-6xl px-5 pb-24 pt-12">
+      <main className="mx-auto max-w-7xl px-5 pb-24 pt-12">
         {/* As salvas continuam a um toque desde a primeira tela - antes elas
             eram um passo da trilha, o que obrigava a sair do cadastro para ver o
             que já existia -, mas não ocupam mais uma coluna da grade: o painel
@@ -311,28 +311,40 @@ function Decisao() {
   }
 
   return (
-    <main className="mx-auto max-w-6xl px-5 pb-24 pt-10">
-      <div className="mb-5 flex flex-wrap items-baseline justify-between gap-3">
-        <h1 className="display text-3xl font-semibold" style={{ color: "var(--tinta)" }}>
-          {problema.nome}
-        </h1>
-        <button
-          onClick={recomecar}
-          className="text-sm underline underline-offset-2"
-          style={{ color: "var(--tinta-3)" }}
-        >
-          {t("tela.decisao.outra")}
-        </button>
-      </div>
+    <main className="mx-auto max-w-7xl px-5 pb-24 pt-10">
+      <header className="mb-9 border-b pb-6" style={{ borderColor: "var(--borda)" }}>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--accent)" }}>
+              {t(`problematica.${problema.problematica}`)}
+            </p>
+            <h1 className="display mt-2 text-3xl font-semibold sm:text-4xl" style={{ color: "var(--tinta)" }}>
+              {problema.nome}
+            </h1>
+            <p className="mt-2 text-[13px]" style={{ color: "var(--tinta-3)" }}>
+              {t("estrutura.alternativas.contagem", { n: Object.keys(problema.consequencias).length })}
+              {" · "}
+              {t("estrutura.criterios.contagem", { n: problema.criterios.length })}
+            </p>
+          </div>
+          <button
+            onClick={recomecar}
+            className="tatil rounded-[var(--raio-controle)] border px-3 py-2 text-[13px] font-medium"
+            style={{ borderColor: "var(--borda-forte)", background: "var(--painel)", color: "var(--tinta-2)" }}
+          >
+            {t("tela.decisao.outra")}
+          </button>
+        </div>
 
-      <div className="mb-8">
-        <Etapas
-          atual={etapa}
-          alcancadas={alcancadas}
-          respostasEmRisco={Math.max((estado?.declaracoes ?? 0) - 1, 0)}
-          onIr={irPara}
-        />
-      </div>
+        <div className="mt-6">
+          <Etapas
+            atual={etapa}
+            alcancadas={alcancadas}
+            respostasEmRisco={Math.max((estado?.declaracoes ?? 0) - 1, 0)}
+            onIr={irPara}
+          />
+        </div>
+      </header>
 
       {erro && (
         <div
@@ -348,7 +360,7 @@ function Decisao() {
         </div>
       )}
 
-      <div className="grid gap-10 lg:grid-cols-[1fr_260px] lg:gap-12">
+      <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_280px] lg:gap-14">
         <div className="min-w-0 space-y-10">
           {etapa === "problema" && (
             <Secao

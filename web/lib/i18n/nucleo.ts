@@ -22,6 +22,9 @@ export const NUCLEO = registrar({
     en: "(opens in a new tab)",
   },
   "nav.idioma": { pt: "Idioma", en: "Language" },
+  "nav.menu.abrir": { pt: "Abrir menu", en: "Open menu" },
+  "nav.menu.fechar": { pt: "Fechar menu", en: "Close menu" },
+  "nav.menu.rotulo": { pt: "Navegação", en: "Navigation" },
 
   // --- as problemáticas, nos termos da literatura ---------------------------
   /* Os nomes seguem o sistema de referencia, nao a traducao mais natural.

@@ -1279,3 +1279,23 @@ textarea:hover {
   background: var(--painel);
   color: var(--accent);
 }
+
+/* Os blocos de assunto dentro dos artigos da paridade.
+   Um traço de entrada à esquerda, do mesmo vocabulário da sobrelinha dos
+   cabeçalhos. Numa sequência de quatro ou cinco blocos seguidos, sem ele a
+   página lia como um texto corrido comprido em vez de quatro assuntos. */
+.ponto-artigo {
+  position: relative;
+  padding-left: 1.1rem;
+}
+.ponto-artigo::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.55rem;
+  width: 3px;
+  height: 1.05rem;
+  border-radius: 2px;
+  background: var(--accent);
+  opacity: 0.55;
+}

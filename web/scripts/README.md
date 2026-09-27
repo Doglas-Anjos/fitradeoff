@@ -18,13 +18,20 @@ porque os dois defeitos que eles pegam são invisíveis na leitura do fonte:
   coordenada nas duas. Este último é o ponto do componente — se as duas saírem
   em lugares diferentes, comparar volta a exigir memória.
 
-Os três pedem o front no ar (`npm run dev`) e saem com código 1 quando acham
+- **`verificar_sumario.py`** — leva cada seção da paridade ao topo e confere
+  que o sumário lateral marca a linha certa, inclusive a última. A regra
+  anterior escolhia a primeira seção visível, e com isso o último item **nunca**
+  acendia: no fim da página as duas últimas estão na tela ao mesmo tempo e a de
+  cima sempre ganhava.
+
+Os quatro pedem o front no ar (`npm run dev`) e saem com código 1 quando acham
 algo, para servirem em automação.
 
 ```
 python web/scripts/verificar_hover.py
 python web/scripts/verificar_contraste.py
 python web/scripts/verificar_comparador.py
+python web/scripts/verificar_sumario.py
 ```
 
 Precisam de Playwright, que já está no ambiente Python do motor:

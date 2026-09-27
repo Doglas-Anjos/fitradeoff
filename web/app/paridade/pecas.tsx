@@ -84,45 +84,61 @@ export function Secao({
  *
  * Um sumário que só lista não faz metade do trabalho: numa página longa, a
  * pergunta de quem olha para o lado é "onde eu estou", e não "o que existe".
- * Sem isso ele é um menu de âncoras, e a pessoa perde o lugar assim que rola.
  *
- * `IntersectionObserver` com a margem recortando os 45% de baixo: a seção ativa
- * passa a ser a que está mais alta na tela, e não a maior. Sem esse recorte,
- * uma seção comprida continuaria marcada enquanto a próxima já ocupa metade da
- * janela.
+ * A regra é: a última seção cujo topo já passou de uma linha a 30% da altura da
+ * janela. Não é a mais visível, nem a primeira visível -- e a diferença
+ * importa. A primeira versão disto usava `IntersectionObserver` e escolhia a
+ * primeira seção visível, e com isso o **último item nunca acendia**: no fim da
+ * página as duas últimas seções estão na tela ao mesmo tempo, e a de cima
+ * sempre ganhava. Rolar até o fim deixava o sumário marcando a penúltima.
+ *
+ * O fim da página é caso à parte, e por isso tem regra própria: uma seção curta
+ * no rodapé pode nunca alcançar a linha de leitura, porque a rolagem acaba
+ * antes. Chegando ao fim, a última vence por definição -- é o que a pessoa está
+ * vendo.
  */
 function useSecaoAtiva(ids: readonly string[]): string | null {
   const [ativa, setAtiva] = useState<string | null>(ids[0] ?? null);
 
   useEffect(() => {
-    /* Nem todo ambiente tem `IntersectionObserver` -- jsdom não tem, e foi
-       assim que isto derrubou a página inteira em teste. Sem ele o sumário
-       continua sendo um índice de âncoras funcional; só não acompanha a
-       rolagem. Degradar é melhor do que quebrar. */
-    if (typeof IntersectionObserver === "undefined") return;
+    if (!ids.length) return;
 
-    const alvos = ids
-      .map((id) => document.getElementById(id))
-      .filter((el): el is HTMLElement => el !== null);
-    if (!alvos.length) return;
+    let pendente = false;
+    const medir = () => {
+      pendente = false;
+      const linha = window.innerHeight * 0.3;
 
-    const visiveis = new Set<string>();
-    const observador = new IntersectionObserver(
-      (entradas) => {
-        for (const entrada of entradas) {
-          if (entrada.isIntersecting) visiveis.add(entrada.target.id);
-          else visiveis.delete(entrada.target.id);
-        }
-        /* A primeira da ordem do documento entre as visíveis. Usar a última
-           faria o destaque pular para a frente quando duas seções curtas
-           coubessem juntas na tela. */
-        const primeira = ids.find((id) => visiveis.has(id));
-        if (primeira) setAtiva(primeira);
-      },
-      { rootMargin: "-88px 0px -45% 0px", threshold: 0 },
-    );
-    for (const alvo of alvos) observador.observe(alvo);
-    return () => observador.disconnect();
+      /* Encostou no fim: a última manda, tenha ela alcançado a linha ou não. */
+      const fim =
+        window.innerHeight + window.scrollY >=
+        document.documentElement.scrollHeight - 24;
+      if (fim) {
+        setAtiva(ids[ids.length - 1]);
+        return;
+      }
+
+      let escolhida = ids[0];
+      for (const id of ids) {
+        const el = document.getElementById(id);
+        if (!el) continue;
+        if (el.getBoundingClientRect().top <= linha) escolhida = id;
+      }
+      setAtiva(escolhida);
+    };
+
+    const aoRolar = () => {
+      if (pendente) return;
+      pendente = true;
+      requestAnimationFrame(medir);
+    };
+
+    medir();
+    window.addEventListener("scroll", aoRolar, { passive: true });
+    window.addEventListener("resize", aoRolar);
+    return () => {
+      window.removeEventListener("scroll", aoRolar);
+      window.removeEventListener("resize", aoRolar);
+    };
   }, [ids]);
 
   return ativa;
@@ -200,14 +216,22 @@ export function Sumario({
   );
 }
 
-/** Um bloco com título e corpo, do jeito que as listas de achados usam. */
+/**
+ * Um bloco com título e corpo, do jeito que as listas de achados usam.
+ *
+ * O subtítulo ganhou peso e um traço de entrada. Antes era meio ponto maior que
+ * o corpo e colado nele: numa sequência de quatro ou cinco blocos seguidos a
+ * página lia como um texto corrido comprido, e não como quatro assuntos. O
+ * traço à esquerda é o que separa sem gastar uma linha em branco grande — e é o
+ * mesmo gesto da sobrelinha dos cabeçalhos, que já é o vocabulário daqui.
+ */
 export function Ponto({ titulo, corpo }: { titulo: string; corpo: string }) {
   return (
-    <div>
-      <h3 className="text-base font-semibold" style={{ color: "var(--tinta)" }}>
+    <div className="ponto-artigo">
+      <h3 className="text-[17px] font-semibold tracking-tight" style={{ color: "var(--tinta)" }}>
         {titulo}
       </h3>
-      <p className="prosa-editorial mt-1.5 text-sm" style={{ color: "var(--tinta-2)" }}>
+      <p className="prosa-editorial mt-2 text-[15px]" style={{ color: "var(--tinta-2)" }}>
         {corpo}
       </p>
     </div>

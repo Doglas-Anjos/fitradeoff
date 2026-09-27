@@ -41,7 +41,7 @@ uma suíte que está no repositório.
 | Paridade medida contra o sistema oficial | **17 casos**, versionados — ver abaixo |
 | Decisão em grupo | a fazer |
 
-**918 testes**: 512 de motor e API, 30 do servidor MCP, 50 de paridade e 326 de interface.
+**970 testes**: 530 de motor e API, 30 do servidor MCP, 50 de paridade e 360 de interface.
 Entre eles, um decisor-oráculo que verifica a invariante central do método (a alternativa
 verdadeiramente ótima nunca sai do conjunto de POAs), testes que auditam a própria
 arquitetura e testes de entrada não confiável.

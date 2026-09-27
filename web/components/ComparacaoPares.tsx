@@ -104,10 +104,13 @@ export function ComparacaoPares({
   criterios,
   ocupado,
   onConfirmar,
+  onTrocarModo,
 }: {
   criterios: CriterioOut[];
   ocupado: boolean;
   onConfirmar: (ordem: string[]) => void;
+  /** Leva a pessoa ao modo de arrastar, que é a saída desta fase. */
+  onTrocarModo?: () => void;
 }) {
   const { t } = useIdioma();
   const [respostas, setRespostas] = useState<RespostaComparacao[]>([]);
@@ -229,6 +232,31 @@ export function ComparacaoPares({
               como "responder" — mas cobrava caro: duas formas de dar a mesma
               resposta na mesma tela fazem procurar a diferença entre elas. Ficou
               o do meio, que é onde o olho está, agora com dica ao lado. */}
+          {/* A saída, na mesma posição em que a tela de tradeoff põe a dela:
+              logo abaixo do botão do meio, que é onde o olho está quando a
+              pessoa trava. Faltava aqui -- e travar numa comparação sem ver
+              nenhuma alternativa é pior do que nas perguntas de tradeoff,
+              porque ali dá para pular e aqui não. */}
+          {onTrocarModo && escolhida === null && (
+            <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2">
+              <span className="text-[12px]" style={{ color: "var(--tinta-fraca)" }}>
+                {t("elicitacao.par.travou")}
+              </span>
+              <button
+                onClick={onTrocarModo}
+                disabled={ocupado}
+                className="tatil rounded-[var(--raio-controle)] px-1.5 py-1 text-sm underline underline-offset-2 disabled:opacity-40"
+                style={{ color: "var(--accent)" }}
+              >
+                {t("elicitacao.par.travou.acao")}
+              </button>
+              <Dica titulo={t("elicitacao.par.travou.dica.titulo")}>
+                <p>{t("elicitacao.par.travou.dica.corpo1")}</p>
+                <p>{t("elicitacao.par.travou.dica.corpo2")}</p>
+              </Dica>
+            </div>
+          )}
+
           <div className="mt-4 flex flex-wrap items-center gap-4">
             {respostas.length > 0 && (
               <button

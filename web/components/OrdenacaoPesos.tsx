@@ -130,6 +130,7 @@ export function OrdenacaoPesos({
             criterios={criterios}
             ocupado={ocupado}
             onConfirmar={onConfirmar}
+            onTrocarModo={() => setModo("lista")}
           />
         </div>
       )}

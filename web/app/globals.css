@@ -1141,3 +1141,96 @@ textarea:hover {
   color: var(--accent);
   font-weight: 600;
 }
+
+/* --- sumário lateral da paridade -------------------------------------------
+   Índice, e não lista de links: numerado, com régua contínua à esquerda e o
+   item corrente marcado. A pergunta de quem olha para o lado numa página longa
+   é "onde eu estou", e um sumário que só enumera não responde isso. */
+
+.trilho-sumario {
+  border-left: 2px solid var(--borda);
+}
+
+.item-sumario {
+  color: var(--tinta-3);
+  /* Compensa a régua: o texto alinha com o rótulo acima dela. */
+  margin-left: -2px;
+  border-left: 2px solid transparent;
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+.item-sumario:hover {
+  color: var(--tinta);
+  border-left-color: var(--borda-forte);
+}
+.item-sumario[data-ativa="true"],
+.item-sumario[data-ativa="true"]:hover {
+  color: var(--accent);
+  border-left-color: var(--accent);
+  font-weight: 600;
+}
+
+.num-sumario {
+  color: var(--tinta-fraca);
+  padding-top: 1px;
+}
+.item-sumario[data-ativa="true"] .num-sumario {
+  color: var(--accent);
+}
+
+/* --- prosa editorial, da paridade ------------------------------------------
+   Texto justificado ocupando a largura do cartão.
+
+   Justificar sem hifenizar produz rios: o navegador estica os espaços até a
+   linha fechar, e num parágrafo longo os vãos se alinham verticalmente e o olho
+   os segue em vez de seguir o texto. `hyphens: auto` resolve, e funciona porque
+   o `<html>` declara o idioma -- sem `lang`, o navegador não sabe onde partir a
+   palavra e a hifenização simplesmente não acontece.
+
+   A entrelinha sobe para 1,75. A medida aqui passa dos 60 caracteres
+   confortáveis, e o que mais falha numa linha longa é o retorno -- o olho volta
+   e pega a linha errada. Espaço entre linhas é o que compensa isso.
+
+   `text-wrap: pretty` sai: ele reequilibra as últimas linhas, e num texto
+   justificado isso briga com o próprio alinhamento. */
+
+.prosa-editorial {
+  max-width: none;
+  line-height: 1.75;
+  text-align: justify;
+  text-justify: inter-word;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+  text-wrap: auto;
+}
+
+/* A última linha de um parágrafo justificado fica alinhada à esquerda por
+   padrão, e é o certo -- esticá-la deixaria uma linha de duas palavras
+   atravessando o cartão inteiro. */
+.prosa-editorial > p + p {
+  margin-top: 0.9rem;
+}
+
+/* O rótulo de ação do cartão de módulo. Acompanha o hover do cartão inteiro,
+   porque é o cartão que é o alvo — sublinhar só o texto sugeriria um segundo
+   destino dentro dele. */
+.rotulo-abrir {
+  color: var(--tinta-3);
+  transition: color 160ms ease;
+}
+.cartao-modulo:hover .rotulo-abrir {
+  color: var(--accent);
+}
+
+/* O rótulo de ação do cartão de módulo. Acompanha o hover do cartão inteiro,
+   porque é o cartão que é o alvo — sublinhar só o texto sugeriria um segundo
+   destino dentro dele. */
+.rotulo-abrir {
+  color: var(--tinta-3);
+  transition: color 160ms ease;
+}
+.cartao-modulo:hover .rotulo-abrir {
+  color: var(--accent);
+}

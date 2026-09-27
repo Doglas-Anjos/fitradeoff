@@ -143,7 +143,26 @@ export const PARIDADE_TEXTOS = registrar({
     es: "{bate} de {total} casos coinciden",
   },
   "paridade.modulos.semCaso": { pt: "Sem caso comparado", en: "No case compared", es: "Sin caso comparado" },
-  "paridade.modulos.verMais": { pt: "Ver o módulo", en: "Open the module", es: "Ver el módulo" },
+  "paridade.modulos.verMais": {
+    pt: "Abrir a tela deste módulo",
+    en: "Open this module's page",
+    es: "Abrir la pantalla de este módulo",
+  },
+  "paridade.modulos.cadaUmTela": {
+    pt: "Cada um tem a sua própria tela, com as capturas dos dois sistemas e o que foi conferido ali.",
+    en: "Each has its own page, with the captures from both systems and what was checked there.",
+    es: "Cada uno tiene su propia pantalla, con las capturas de los dos sistemas y lo que se comprobó allí.",
+  },
+  "paridade.modulo.telas.titulo": {
+    pt: "As telas, lado a lado",
+    en: "The screens, side by side",
+    es: "Las pantallas, lado a lado",
+  },
+  "paridade.modulo.telas.corpo": {
+    pt: "Estas três telas são as mesmas para os cinco módulos — o caminho até a resposta não muda, só a leitura que o motor faz no fim. Role para comparar: a captura em foco é a que está sendo olhada, e a outra recua.",
+    en: "These three screens are the same for all five modules — the path to the answer does not change, only the reading the engine makes at the end. Scroll to compare: the capture in focus is the one being looked at, and the other recedes.",
+    es: "Estas tres pantallas son las mismas para los cinco módulos — el camino hasta la respuesta no cambia, solo la lectura que el motor hace al final. Desplácese para comparar: la captura en foco es la que se está mirando, y la otra retrocede.",
+  },
   "paridade.modulos.exato": { pt: "Resultado exato", en: "Exact result", es: "Resultado exacto" },
   "paridade.modulos.aproximado": {
     pt: "Carteira aproximada",

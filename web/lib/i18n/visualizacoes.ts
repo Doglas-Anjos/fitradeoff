@@ -359,6 +359,37 @@ export const VISUALIZACOES = registrar({
     es: "Comparar de dos en dos",
   },
   "elicitacao.modo.lista": { pt: "Ordenar a lista", en: "Sort the list", es: "Ordenar la lista" },
+
+  /* A saída da comparação par a par. Não é "não sei": ali a resposta pode ser
+     pulada porque o par vira uma restrição a menos, e o método segue. Aqui a
+     ordenação precisa ficar completa -- a inserção binária não tem onde
+     encaixar um critério cuja posição ninguém disse. O que existe de verdade é
+     trocar de modo, e é isso que se oferece. */
+  "elicitacao.par.travou": {
+    pt: "Não consegue comparar estes dois?",
+    en: "Cannot compare these two?",
+    es: "¿No consigue comparar estos dos?",
+  },
+  "elicitacao.par.travou.acao": {
+    pt: "ordenar arrastando",
+    en: "order by dragging",
+    es: "ordenar arrastrando",
+  },
+  "elicitacao.par.travou.dica.titulo": {
+    pt: "Por que não há “não sei” aqui",
+    en: "Why there is no “I don't know” here",
+    es: "Por qué no hay “no sé” aquí",
+  },
+  "elicitacao.par.travou.dica.corpo1": {
+    pt: "Nas perguntas de tradeoff dá para pular: o par vira uma restrição a menos e o método segue com o que sobrou.",
+    en: "In the tradeoff questions you can skip: the pair becomes one less constraint and the method carries on with what is left.",
+    es: "En las preguntas de tradeoff se puede saltar: el par se convierte en una restricción menos y el método sigue con lo que queda.",
+  },
+  "elicitacao.par.travou.dica.corpo2": {
+    pt: "A ordem dos critérios, não: ela precisa ficar completa, e um critério sem posição não tem onde entrar. Vendo todos de uma vez costuma ser mais fácil do que dois a dois.",
+    en: "The ranking of criteria cannot: it has to be complete, and a criterion with no position has nowhere to go. Seeing them all at once is usually easier than two by two.",
+    es: "El orden de los criterios no: tiene que quedar completo, y un criterio sin posición no tiene dónde entrar. Verlos todos a la vez suele ser más fácil que de dos en dos.",
+  },
   "elicitacao.modo.global": {
     pt: "Escolher um a um",
     en: "Pick one at a time",

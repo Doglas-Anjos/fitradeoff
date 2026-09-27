@@ -19,7 +19,7 @@ import { ArrowLeft } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
-import { Ponto, Secao, TabelaCasos } from "@/app/paridade/pecas";
+import { ParDeTelas, Ponto, Secao, TabelaCasos } from "@/app/paridade/pecas";
 import { TintaCabecalho } from "@/components/TintaCabecalho";
 import { casosDe, moduloPorRota, placarDe } from "@/app/paridade/modulos";
 import { useIdioma } from "@/lib/i18n";
@@ -139,19 +139,19 @@ export default function ModuloPage() {
 
       <div className="mt-10 space-y-12">
       <Secao id="responde" titulo={t("paridade.modulo.responde")}>
-        <p className="prosa text-[15px]" style={{ color: "var(--tinta-2)" }}>
+        <p className="prosa-editorial text-[15px]" style={{ color: "var(--tinta-2)" }}>
           {t(`${base}.responde`)}
         </p>
       </Secao>
 
       <Secao id="como" titulo={t("paridade.modulo.comoLe")}>
-        <p className="prosa text-[15px]" style={{ color: "var(--tinta-2)" }}>
+        <p className="prosa-editorial text-[15px]" style={{ color: "var(--tinta-2)" }}>
           {t(`${base}.comoLe`)}
         </p>
       </Secao>
 
       <Secao id="exatidao" titulo={t("paridade.modulo.exatidao")}>
-        <p className="prosa text-[15px]" style={{ color: "var(--tinta-2)" }}>
+        <p className="prosa-editorial text-[15px]" style={{ color: "var(--tinta-2)" }}>
           {t(`${base}.exatidao`)}
         </p>
       </Secao>
@@ -162,11 +162,11 @@ export default function ModuloPage() {
           semCaso ? t("paridade.modulo.semCasos.titulo") : t("paridade.modulo.testado")
         }
       >
-        <p className="prosa text-[15px]" style={{ color: "var(--tinta-2)" }}>
+        <p className="prosa-editorial text-[15px]" style={{ color: "var(--tinta-2)" }}>
           {semCaso ? t(`${base}.semCasos`) : t(`${base}.testado`)}
         </p>
         {semCaso && (
-          <p className="prosa mt-3 text-[15px]" style={{ color: "var(--tinta-2)" }}>
+          <p className="prosa-editorial mt-3 text-[15px]" style={{ color: "var(--tinta-2)" }}>
             {t(`${base}.testado`)}
           </p>
         )}
@@ -191,7 +191,7 @@ export default function ModuloPage() {
                 >
                   {caso.chave}
                 </dt>
-                <dd className="prosa mt-0.5 text-[13px]" style={{ color: "var(--tinta-2)" }}>
+                <dd className="prosa-editorial mt-0.5 text-[13px]" style={{ color: "var(--tinta-2)" }}>
                   {caso.resumo}
                 </dd>
               </div>
@@ -199,6 +199,34 @@ export default function ModuloPage() {
           </dl>
         </Secao>
       )}
+
+      {/* As capturas vivem aqui também, e não só na visão geral. Quem abre a
+          página de um módulo veio conferir aquele módulo: mandá-lo de volta
+          para outra tela, procurar a seção das telas e voltar é exatamente o
+          tipo de ida e volta que faz a pessoa desistir de conferir. */}
+      <Secao id="telas" titulo={t("paridade.modulo.telas.titulo")}>
+        <p className="prosa-editorial text-[15px]" style={{ color: "var(--tinta-2)" }}>
+          {t("paridade.modulo.telas.corpo")}
+        </p>
+        <ParDeTelas
+          titulo={t("paridade.telas.matriz")}
+          nota={t("paridade.telas.matriz.nota")}
+          oficial="/paridade/oficial-matriz.png"
+          nosso="/paridade/nosso-matriz.png"
+        />
+        <ParDeTelas
+          titulo={t("paridade.telas.ordenacao")}
+          nota={t("paridade.telas.ordenacao.nota")}
+          oficial="/paridade/oficial-ordenacao.png"
+          nosso="/paridade/nosso-ordenacao.png"
+        />
+        <ParDeTelas
+          titulo={t("paridade.telas.tradeoff")}
+          nota={t("paridade.telas.tradeoff.nota")}
+          oficial="/paridade/oficial-tradeoff.png"
+          nosso="/paridade/nosso-tradeoff.png"
+        />
+      </Secao>
 
       {modulo.divergencia && (
         <Secao id="diferencas" titulo={t("paridade.modulo.divergencia")}>
@@ -210,7 +238,7 @@ export default function ModuloPage() {
       )}
 
       <Secao id="reproduzir" titulo={t("paridade.reproduzir.titulo")}>
-        <p className="prosa text-[15px]" style={{ color: "var(--tinta-2)" }}>
+        <p className="prosa-editorial text-[15px]" style={{ color: "var(--tinta-2)" }}>
           {t("paridade.reproduzir.corpo")}
         </p>
       </Secao>

@@ -40,7 +40,7 @@ import "@/lib/i18n/paridade";
 import { MEDIDO_EM, PARIDADE, RESUMO } from "@/lib/paridade";
 
 /** Um dos cinco, com o placar do próprio módulo em vez do agregado. */
-function CartaoModulo({ modulo }: { modulo: Modulo }) {
+function CartaoModulo({ modulo, indice }: { modulo: Modulo; indice: number }) {
   const { t } = useIdioma();
   const placar = placarDe(modulo);
   const semCaso = placar.comparaveis === 0;
@@ -51,8 +51,19 @@ function CartaoModulo({ modulo }: { modulo: Modulo }) {
       className="cartao-modulo tatil group flex flex-col rounded-[var(--raio-painel)] border p-5"
     >
       <span className="flex items-start justify-between gap-3">
-        <span className="text-[15px] font-medium" style={{ color: "var(--tinta)" }}>
-          {t(`paridade.mod.${modulo.rota}.nome`)}
+        <span className="flex items-baseline gap-2.5">
+          {/* O número diz que são cinco, e quantos faltam ver. Sem ele os
+              cartões leem como grade de atalhos, e não como índice. */}
+          <span
+            aria-hidden
+            className="num text-[12px] font-semibold"
+            style={{ color: "var(--tinta-fraca)" }}
+          >
+            {String(indice + 1).padStart(2, "0")}
+          </span>
+          <span className="text-[16px] font-semibold" style={{ color: "var(--tinta)" }}>
+            {t(`paridade.mod.${modulo.rota}.nome`)}
+          </span>
         </span>
         <ArrowRight
           size={15}
@@ -88,6 +99,14 @@ function CartaoModulo({ modulo }: { modulo: Modulo }) {
               : "paridade.modulos.aproximado",
           )}
         </span>
+      </span>
+      {/* A ação escrita, e não só a seta. Cartão com seta lê como "tem mais
+          coisa"; escrito, diz que do outro lado há uma tela inteira. */}
+      <span
+        className="rotulo-abrir mt-3 border-t pt-3 text-[12px] font-medium"
+        style={{ borderColor: "var(--borda)" }}
+      >
+        {t("paridade.modulos.verMais")}
       </span>
     </Link>
   );
@@ -166,13 +185,13 @@ export default function ParidadePage() {
 
       <Sumario secoes={SECOES} variante="compacto" />
 
-      <div className="mt-10 grid items-start gap-10 lg:grid-cols-[190px_minmax(0,1fr)] lg:gap-14">
+      <div className="mt-10 grid items-start gap-10 lg:grid-cols-[232px_minmax(0,1fr)] lg:gap-12">
         <Sumario secoes={SECOES} variante="lateral" />
 
         <article className="min-w-0 space-y-12">
 
       <Secao id="significa" titulo={t("paridade.significa.titulo")}>
-        <div className="prosa space-y-3 text-[15px]" style={{ color: "var(--tinta-2)" }}>
+        <div className="prosa-editorial space-y-3 text-[15px]" style={{ color: "var(--tinta-2)" }}>
           <p>{t("paridade.significa.corpo1")}</p>
           <p>{t("paridade.significa.corpo2")}</p>
           <p>
@@ -182,7 +201,7 @@ export default function ParidadePage() {
       </Secao>
 
       <Secao id="metodo" titulo={t("paridade.metodo.titulo")}>
-        <div className="prosa space-y-3 text-[15px]" style={{ color: "var(--tinta-2)" }}>
+        <div className="prosa-editorial space-y-3 text-[15px]" style={{ color: "var(--tinta-2)" }}>
           <p>{t("paridade.metodo.corpo1")}</p>
           <p>{t("paridade.metodo.corpo2")}</p>
           <p>{t("paridade.metodo.corpo3")}</p>
@@ -190,12 +209,15 @@ export default function ParidadePage() {
       </Secao>
 
       <Secao id="modulos" titulo={t("paridade.modulos.titulo")}>
-        <p className="prosa text-[15px]" style={{ color: "var(--tinta-2)" }}>
+        <p className="prosa-editorial text-[15px]" style={{ color: "var(--tinta-2)" }}>
           {t("paridade.modulos.corpo")}
         </p>
+        <p className="mt-3 text-[14px] font-medium" style={{ color: "var(--accent)" }}>
+          {t("paridade.modulos.cadaUmTela")}
+        </p>
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
-          {MODULOS.map((m) => (
-            <CartaoModulo key={m.rota} modulo={m} />
+          {MODULOS.map((m, i) => (
+            <CartaoModulo key={m.rota} modulo={m} indice={i} />
           ))}
         </div>
       </Secao>
@@ -205,7 +227,7 @@ export default function ParidadePage() {
       </Secao>
 
       <Secao id="telas" titulo={t("paridade.telas.titulo")}>
-        <p className="prosa text-[15px]" style={{ color: "var(--tinta-2)" }}>
+        <p className="prosa-editorial text-[15px]" style={{ color: "var(--tinta-2)" }}>
           {t("paridade.telas.corpo")}
         </p>
         <ParDeTelas
@@ -229,7 +251,7 @@ export default function ParidadePage() {
       </Secao>
 
       <Secao id="achados" titulo={t("paridade.achados.titulo")}>
-        <p className="prosa text-[15px]" style={{ color: "var(--tinta-2)" }}>
+        <p className="prosa-editorial text-[15px]" style={{ color: "var(--tinta-2)" }}>
           {t("paridade.achados.intro")}
         </p>
         <div className="mt-5 space-y-5">
@@ -247,7 +269,7 @@ export default function ParidadePage() {
           mesma página que o placar. Um leitor que só aceite a conclusão depois
           de saber onde ela não vale precisa achar isso sem procurar. */}
       <Secao id="nao-testado" titulo={t("paridade.naoTestamos.titulo")}>
-        <p className="prosa text-[15px]" style={{ color: "var(--tinta-2)" }}>
+        <p className="prosa-editorial text-[15px]" style={{ color: "var(--tinta-2)" }}>
           {t("paridade.naoTestamos.intro")}
         </p>
         <div className="mt-5 space-y-5">

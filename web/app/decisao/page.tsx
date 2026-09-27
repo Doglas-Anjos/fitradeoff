@@ -162,8 +162,19 @@ function Decisao() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idNaUrl]);
 
-  const sincronizar = useCallback(async (id: string) => {
-    const novo = await api.estado(id);
+  /* `recebido` e o estado que a propria mutacao acabou de devolver.
+     Toda rota que altera a decisao responde com o estado resultante --
+     identico, campo a campo, ao que um GET /estado devolveria em seguida. Ir
+     buscar de novo repetia a analise inteira do zero: sao O(n^2) programas
+     lineares, e a 20 alternativas isso media 98 ms por clique gastos para
+     obter o que ja estava na mao.
+
+     Alem de mais barato, e mais coerente: o estado exibido passa a ser o que
+     aquela resposta produziu, e nao o que o servidor tiver quando a segunda
+     chamada chegar -- que, com duas abas abertas na mesma decisao, pode ser
+     outro. */
+  const sincronizar = useCallback(async (id: string, recebido?: Estado) => {
+    const novo = recebido ?? (await api.estado(id));
     setEstado(novo);
 
     // o diagnóstico só faz sentido quando há contradição; buscá-lo sempre
@@ -199,22 +210,19 @@ function Decisao() {
   const ordenar = (ordem: string[]) =>
     executar(async () => {
       if (!problema) return;
-      await api.ordenar(problema.id, ordem);
-      await sincronizar(problema.id);
+      await sincronizar(problema.id, await api.ordenar(problema.id, ordem));
     });
 
   const responder = (escolha: "A" | "B" | "indiferente" | "não sei") =>
     executar(async () => {
       if (!problema) return;
-      await api.responder(problema.id, escolha);
-      await sincronizar(problema.id);
+      await sincronizar(problema.id, await api.responder(problema.id, escolha));
     });
 
   const julgar = (preferida: string, sobre: string) =>
     executar(async () => {
       if (!problema) return;
-      await api.julgar(problema.id, preferida, sobre);
-      await sincronizar(problema.id);
+      await sincronizar(problema.id, await api.julgar(problema.id, preferida, sobre));
     });
 
   const salvarCurva = (criterio: string, pontos: Ponto[] | null) =>
@@ -230,15 +238,13 @@ function Decisao() {
         setRevisando("ordem");
         return;
       }
-      await api.resolver(problema.id, acao, sequencia);
-      await sincronizar(problema.id);
+      await sincronizar(problema.id, await api.resolver(problema.id, acao, sequencia));
     });
 
   const desfazer = () =>
     executar(async () => {
       if (!problema) return;
-      await api.desfazer(problema.id);
-      await sincronizar(problema.id);
+      await sincronizar(problema.id, await api.desfazer(problema.id));
     });
 
   const recomecar = () => {

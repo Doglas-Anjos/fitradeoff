@@ -129,13 +129,18 @@ def _ranges(record: DecisionRecord, session: DecisionSession):
                 problem.criteria, evaluator.weight_bounds(problem, session.weight_space)
             )
         }
+        # quais faixas serao publicadas se decide *antes* de calcula-las: cada
+        # uma custa dois LPs, e a tela mostra so as que seguem em disputa. A
+        # analise ja esta memoizada na sessao, entao perguntar aqui e de graca.
+        interesse = tuple(
+            session.analyse().undecided or range(problem.n_alternatives)
+        )
         # sob veto isto devolve o envelope penalizado, que e a faixa que
         # corresponde a recomendacao; sem veto, e a faixa de valor de sempre
-        faixas = evaluator.penalized_bounds(problem, session.weight_space)
+        faixas = evaluator.bounds_by_index(problem, session.weight_space, interesse)
     except InfeasibleWeightSpace:
         return {}, {}
 
-    interesse = session.analyse().undecided or range(problem.n_alternatives)
     valores = {
         problem.alternatives[i]: [round(faixas[i].lower, 4), round(faixas[i].upper, 4)]
         for i in interesse

@@ -245,18 +245,39 @@ class Evaluator:
         E o mesmo criterio que a carteira por razao ja usa para declarar
         dominancia so entre faixas disjuntas.
         """
-        if not problem.has_veto:
-            return self.value_bounds(problem, space)
+        faixas = self.bounds_by_index(problem, space, range(problem.n_alternatives))
+        return tuple(faixas[i] for i in range(problem.n_alternatives))
 
-        valores = self.value_bounds(problem, space)
-        fatores = self.veto_bounds(problem, space)
-        return tuple(
-            Bounds(
-                lower=max(0.0, f.lower) * max(0.0, v.lower),
-                upper=max(0.0, f.upper) * max(0.0, v.upper),
+    def bounds_by_index(
+        self, problem: Problem, space: WeightSpace, indices
+    ) -> dict[int, Bounds]:
+        """O mesmo envelope, so das alternativas pedidas, indexado por elas.
+
+        Existe por economia, e a economia nao e marginal. Cada faixa custa dois
+        LPs, e quem publica a faixa quase nunca publica todas: a tela mostra as
+        que ainda estao em disputa. Numa escolha com 30 alternativas em que 3
+        seguem indecisas, ``penalized_bounds`` resolvia 60 LPs para que 54
+        fossem descartados no filtro seguinte -- a cada resposta do decisor.
+
+        Devolve dicionario, e nao tupla, de proposito: uma tupla alinhada com
+        ``indices`` convida a indexa-la pelo indice da alternativa, que e o
+        mesmo numero com outro significado. O dicionario nao permite o engano.
+        """
+        indices = tuple(dict.fromkeys(indices))
+        valores = {i: self._solver.bounds_of(space, problem.values[i]) for i in indices}
+        if not problem.has_veto:
+            return valores
+
+        fatores = {
+            i: self._solver.bounds_of(space, problem.veto_factors[i]) for i in indices
+        }
+        return {
+            i: Bounds(
+                lower=max(0.0, fatores[i].lower) * max(0.0, valores[i].lower),
+                upper=max(0.0, fatores[i].upper) * max(0.0, valores[i].upper),
             )
-            for v, f in zip(valores, fatores)
-        )
+            for i in indices
+        }
 
     @staticmethod
     def _envelopes_separate(

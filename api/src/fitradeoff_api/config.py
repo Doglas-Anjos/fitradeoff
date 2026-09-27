@@ -15,6 +15,20 @@ def _origins() -> list[str]:
     return ["http://localhost:3000", "http://127.0.0.1:3000"]
 
 
+def _mcp_hosts() -> list[str]:
+    """Dominios por onde o MCP remoto e alcancado de fora desta maquina.
+
+    Declarar isto e o que diz "este servidor esta publicado". Duas coisas
+    dependem da declaracao: a protecao contra DNS rebinding do SDK, que sem o
+    dominio na lista recusa todo pedido vindo por ele com 421, e a exigencia de
+    um token de administracao para emitir chaves.
+    """
+    bruto = os.environ.get("FITRADEOFF_MCP_HOSTS")
+    if not bruto:
+        return []
+    return [h.strip() for h in bruto.split(",") if h.strip()]
+
+
 @dataclass(frozen=True)
 class Settings:
     """Ajustes da API.
@@ -37,10 +51,29 @@ class Settings:
     chat_model: str = field(
         default_factory=lambda: os.environ.get("FITRADEOFF_CHAT_MODEL", "claude-sonnet-5")
     )
+    mcp_url: str = field(
+        default_factory=lambda: os.environ.get(
+            "FITRADEOFF_MCP_URL", "http://127.0.0.1:8000/mcp"
+        ).rstrip("/")
+    )
+    mcp_hosts: list[str] = field(default_factory=_mcp_hosts)
+    admin_token: str | None = field(
+        default_factory=lambda: os.environ.get("FITRADEOFF_ADMIN_TOKEN") or None
+    )
 
     @property
     def chat_enabled(self) -> bool:
         return bool(self.anthropic_api_key)
+
+    @property
+    def mcp_publicado(self) -> bool:
+        """Se o MCP remoto e alcancavel de fora desta maquina.
+
+        Nao e deteccao, e declaracao: ninguem descobre de dentro do processo se
+        um tunel foi aberto na frente dele. Quem publica declara, e a declaracao
+        e o que fecha a emissao de chaves atras de um token.
+        """
+        return bool(self.mcp_hosts)
 
 
 def load_settings() -> Settings:

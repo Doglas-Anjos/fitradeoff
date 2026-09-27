@@ -5,6 +5,7 @@ description = "API HTTP do metodo FITradeoff"
 requires-python = ">=3.11"
 dependencies = [
     "fitradeoff",
+    "fitradeoff-mcp",
     "fastapi>=0.115",
     "uvicorn[standard]>=0.30",
     "pydantic>=2.7",

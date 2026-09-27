@@ -1,0 +1,307 @@
+"""As chaves do MCP remoto: o cofre, a porta das rotas, e a volta inteira.
+
+Tres coisas aqui nao podem passar sem teste, porque errar qualquer uma delas
+nao aparece na tela -- aparece depois, em quem nao devia ter entrado:
+
+1. o texto da chave nao pode sobrar em lugar nenhum depois da resposta que o criou;
+2. revogar precisa fechar a porta de fato, e nao so apagar a linha da lista;
+3. a emissao precisa estar fechada quando o servidor esta publicado.
+"""
+
+import json
+
+import pytest
+from fastapi.testclient import TestClient
+
+from fitradeoff_api import chaves as cofre
+from fitradeoff_api import create_app
+from fitradeoff_api.config import Settings
+
+LOCAL = "http://127.0.0.1:8000"
+# O `TestClient` se apresenta como "testclient", que nao e loopback e por isso
+# seria recusado pela porta das rotas de chave. Em uso real quem chega aqui e o
+# rewrite do Next, que conecta de 127.0.0.1 -- e e isso que este par representa.
+DAQUI = ("127.0.0.1", 50000)
+DE_FORA = ("203.0.113.9", 41234)
+
+CABECALHOS_MCP = {
+    "Accept": "application/json, text/event-stream",
+    "Content-Type": "application/json",
+}
+
+
+def ajustes(tmp_path, **mudancas) -> Settings:
+    return Settings(storage=tmp_path / "decisoes", **mudancas)
+
+
+@pytest.fixture
+def local(tmp_path, monkeypatch):
+    """A situacao normal: plataforma rodando no computador do decisor."""
+    return ajustes(tmp_path)
+
+
+def cliente_de(settings, **kwargs) -> TestClient:
+    from fitradeoff_api import deps
+
+    deps.get_settings.cache_clear()
+    app = create_app(settings)
+    app.dependency_overrides[deps.get_settings] = lambda: settings
+    kwargs.setdefault("client", DAQUI)
+    return TestClient(app, base_url=LOCAL, **kwargs)
+
+
+@pytest.fixture
+def cliente(local):
+    with cliente_de(local) as c:
+        yield c
+
+
+# --- o cofre ------------------------------------------------------------------
+
+
+def test_o_texto_da_chave_nao_fica_gravado(local):
+    """O que o arquivo guarda nao serve para entrar."""
+    chave, texto = cofre.criar(local, "Claude na web")
+
+    gravado = cofre.caminho(local).read_text(encoding="utf-8")
+    assert texto not in gravado
+    assert chave.resumo in gravado
+    # O prefixo fica, porque e o que distingue duas chaves na tela -- e ele
+    # sozinho nao reconstitui o resto.
+    assert chave.prefixo in gravado
+
+
+def test_a_chave_criada_abre_o_acervo_e_a_invalida_nao(local):
+    _, texto = cofre.criar(local, "Cursor")
+    resolve = cofre.resolver(local)
+
+    assert resolve(texto) == local.storage
+    assert resolve("fit_inventada") is None
+    assert resolve("") is None
+
+
+def test_revogar_fecha_a_porta(local):
+    chave, texto = cofre.criar(local, "Notebook velho")
+    assert cofre.resolver(local)(texto) == local.storage
+
+    assert cofre.revogar(local, chave.id) is True
+    assert cofre.resolver(local)(texto) is None
+    assert cofre.revogar(local, chave.id) is False
+
+
+def test_uma_chave_revogada_nao_derruba_as_outras(local):
+    primeira, texto_primeira = cofre.criar(local, "Primeira")
+    _, texto_segunda = cofre.criar(local, "Segunda")
+
+    cofre.revogar(local, primeira.id)
+
+    resolve = cofre.resolver(local)
+    assert resolve(texto_primeira) is None
+    assert resolve(texto_segunda) == local.storage
+
+
+def test_rotulo_vazio_e_limite_recusados(local):
+    with pytest.raises(ValueError):
+        cofre.criar(local, "   ")
+    with pytest.raises(ValueError):
+        cofre.criar(local, "x" * (cofre.LIMITE_ROTULO + 1))
+
+
+def test_teto_de_chaves(local):
+    for i in range(cofre.LIMITE):
+        cofre.criar(local, f"Chave {i}")
+    with pytest.raises(ValueError):
+        cofre.criar(local, "A que passa do teto")
+
+
+def test_arquivo_corrompido_nao_derruba_a_tela(local):
+    cofre.criar(local, "Antes da queda de energia")
+    cofre.caminho(local).write_text('{"chaves": [{"id"', encoding="utf-8")
+
+    # Perde chaves, que se regeram; nao perde acesso a decisao alguma, e a tela
+    # abre.
+    assert cofre.listar(local) == []
+    assert cofre.resolver(local)("qualquer") is None
+
+
+def test_ultimo_uso_e_registrado_uma_vez_por_minuto(local, monkeypatch):
+    """Sem a granularidade, uma conversa de vinte perguntas seriam vinte escritas."""
+    _, texto = cofre.criar(local, "Claude na web")
+    resolve = cofre.resolver(local)
+
+    gravacoes = 0
+    original = cofre._gravar
+
+    def contando(settings, chaves):
+        nonlocal gravacoes
+        gravacoes += 1
+        original(settings, chaves)
+
+    monkeypatch.setattr(cofre, "_gravar", contando)
+
+    resolve(texto)
+    assert gravacoes == 1
+    assert cofre.listar(local)[0].ultimo_uso is not None
+
+    resolve(texto)
+    resolve(texto)
+    assert gravacoes == 1, "o mesmo minuto nao se registra de novo"
+
+
+# --- as rotas -----------------------------------------------------------------
+
+
+def test_emitir_devolve_o_texto_uma_vez_e_a_lista_nunca(cliente):
+    criada = cliente.post("/api/chaves", json={"rotulo": "Claude na web"})
+    assert criada.status_code == 201
+    texto = criada.json()["texto"]
+    assert texto.startswith(cofre.PREFIXO)
+
+    listagem = cliente.get("/api/chaves").json()
+    assert [c["rotulo"] for c in listagem["chaves"]] == ["Claude na web"]
+    assert texto not in json.dumps(listagem)
+    assert "resumo" not in listagem["chaves"][0]
+
+
+def test_a_listagem_diz_para_onde_apontar_o_cliente(cliente, local):
+    listagem = cliente.get("/api/chaves").json()
+    assert listagem["url"] == local.mcp_url
+    assert listagem["publicado"] is False
+    assert listagem["aviso"] is None
+
+
+def test_revogar_pela_rota(cliente):
+    id = cliente.post("/api/chaves", json={"rotulo": "Temporaria"}).json()["chave"]["id"]
+
+    assert cliente.delete(f"/api/chaves/{id}").status_code == 200
+    assert cliente.get("/api/chaves").json()["chaves"] == []
+    assert cliente.delete(f"/api/chaves/{id}").status_code == 404
+
+
+def test_rotulo_invalido_recusado_pela_rota(cliente):
+    assert cliente.post("/api/chaves", json={"rotulo": ""}).status_code == 422
+    assert cliente.post("/api/chaves", json={"rotulo": "x" * 61}).status_code == 422
+
+
+# --- a porta ------------------------------------------------------------------
+
+
+def test_de_fora_nao_emite_sem_token_configurado(local):
+    """Administrar de longe e uma decisao: precisa ser configurada antes."""
+    with cliente_de(local, client=DE_FORA) as c:
+        resposta = c.get("/api/chaves")
+        assert resposta.status_code == 503
+        assert "FITRADEOFF_ADMIN_TOKEN" in resposta.json()["detail"]
+        assert c.post("/api/chaves", json={"rotulo": "Alheia"}).status_code == 503
+
+
+def test_publicar_nao_atrapalha_quem_emite_do_proprio_computador(tmp_path):
+    """O caminho do tunel: o MCP sai para o mundo, a emissao fica aqui.
+
+    A regra ja foi mais apertada -- publicado exigia token ate no loopback -- e
+    isso quebrava exatamente este caso, que e o primeiro que alguem tenta.
+    """
+    publicado = ajustes(
+        tmp_path,
+        mcp_hosts=["fit.exemplo.org"],
+        mcp_url="https://fit.exemplo.org/mcp",
+    )
+    with cliente_de(publicado) as c:
+        listagem = c.get("/api/chaves")
+        assert listagem.status_code == 200
+        assert listagem.json()["publicado"] is True
+        assert c.post("/api/chaves", json={"rotulo": "Claude na web"}).status_code == 201
+
+
+def test_de_fora_exige_o_token_de_administracao(tmp_path):
+    configurado = ajustes(tmp_path, admin_token="segredo-do-dono")
+    with cliente_de(configurado, client=DE_FORA) as c:
+        assert c.get("/api/chaves").status_code == 401
+        assert (
+            c.get("/api/chaves", headers={"X-Fitradeoff-Admin": "chute"}).status_code
+            == 401
+        )
+        assert (
+            c.get(
+                "/api/chaves", headers={"X-Fitradeoff-Admin": "segredo-do-dono"}
+            ).status_code
+            == 200
+        )
+
+
+def test_avisa_quando_a_url_publica_nao_foi_declarada(tmp_path):
+    """O 421 do SDK nao menciona MCP, nem chave, nem variavel de ambiente."""
+    incoerente = ajustes(tmp_path, mcp_url="https://fit.exemplo.org/mcp")
+    with cliente_de(incoerente) as c:
+        aviso = c.get("/api/chaves").json()["aviso"]
+    assert aviso is not None
+    assert "FITRADEOFF_MCP_HOSTS" in aviso
+
+
+# --- a volta inteira ----------------------------------------------------------
+
+
+def test_a_chave_emitida_na_tela_abre_o_mcp(cliente):
+    """O que a tela promete: gere aqui, cole no cliente, e as ferramentas aparecem."""
+    texto = cliente.post("/api/chaves", json={"rotulo": "Claude na web"}).json()["texto"]
+
+    pedido = {"jsonrpc": "2.0", "id": 1, "method": "tools/list"}
+    recusado = cliente.post("/mcp", json=pedido, headers=CABECALHOS_MCP)
+    assert recusado.status_code == 401
+
+    aberto = cliente.post(
+        "/mcp",
+        json=pedido,
+        headers={**CABECALHOS_MCP, "Authorization": f"Bearer {texto}"},
+    )
+    assert aberto.status_code == 200
+    assert "criar_problema" in aberto.text
+
+    # E revogar fecha, sem reiniciar nada.
+    id = cliente.get("/api/chaves").json()["chaves"][0]["id"]
+    cliente.delete(f"/api/chaves/{id}")
+    depois = cliente.post(
+        "/mcp",
+        json=pedido,
+        headers={**CABECALHOS_MCP, "Authorization": f"Bearer {texto}"},
+    )
+    assert depois.status_code == 401
+
+
+# --- sem navegador ------------------------------------------------------------
+
+
+def test_o_cli_emite_lista_e_revoga(tmp_path, monkeypatch, capsys):
+    """O caminho de quem administra um servidor publicado: um comando, por SSH."""
+    monkeypatch.setenv("FITRADEOFF_DATA", str(tmp_path / "decisoes"))
+
+    assert cofre._cli(["criar", "Claude na web"]) == 0
+    texto = capsys.readouterr().out.splitlines()[0].strip()
+    assert texto.startswith(cofre.PREFIXO)
+
+    # A chave emitida pelo comando vale no servidor, como qualquer outra.
+    settings = Settings(storage=tmp_path / "decisoes")
+    assert cofre.resolver(settings)(texto) == settings.storage
+
+    assert cofre._cli(["listar"]) == 0
+    listagem = capsys.readouterr().out
+    assert "Claude na web" in listagem
+    assert texto not in listagem, "a listagem nunca mostra a chave inteira"
+
+    id = cofre.listar(settings)[0].id
+    assert cofre._cli(["revogar", id]) == 0
+    assert cofre.resolver(settings)(texto) is None
+
+
+def test_o_cli_recusa_rotulo_vazio_sem_estourar(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("FITRADEOFF_DATA", str(tmp_path / "decisoes"))
+
+    assert cofre._cli(["criar", "   "]) == 1
+    assert "Erro" in capsys.readouterr().out
+
+
+def test_o_cli_avisa_quando_a_chave_nao_existe(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("FITRADEOFF_DATA", str(tmp_path / "decisoes"))
+
+    assert cofre._cli(["revogar", "nao-existe"]) == 1
+    assert "nao encontrada" in capsys.readouterr().out

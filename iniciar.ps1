@@ -3,8 +3,8 @@
 #   .\iniciar.ps1
 #
 # A API fica em http://127.0.0.1:8000 (docs em /docs) e o front em
-# http://localhost:3000. Para habilitar a tela de chat, defina
-# ANTHROPIC_API_KEY antes de rodar.
+# http://localhost:3000. O servidor MCP por HTTP sobe junto, em /mcp: gere uma
+# chave em http://localhost:3000/chaves e cole no seu cliente.
 
 $raiz = $PSScriptRoot
 $python = Join-Path $raiz "engine\.venv\Scripts\python.exe"
@@ -16,8 +16,12 @@ if (-not (Test-Path $python)) {
 
 Write-Host "API   -> http://127.0.0.1:8000/docs"
 Write-Host "Front -> http://localhost:3000"
-if (-not $env:ANTHROPIC_API_KEY) {
-    Write-Host "Aviso: ANTHROPIC_API_KEY nao definida; a tela de chat ficara indisponivel." -ForegroundColor Yellow
+Write-Host "MCP   -> http://127.0.0.1:8000/mcp (chaves em /chaves)"
+if ($env:FITRADEOFF_MCP_HOSTS) {
+    Write-Host "MCP publicado em: $env:FITRADEOFF_MCP_HOSTS" -ForegroundColor Yellow
+    if (-not $env:FITRADEOFF_ADMIN_TOKEN) {
+        Write-Host "Aviso: publicado sem FITRADEOFF_ADMIN_TOKEN; emitir chaves ficara bloqueado." -ForegroundColor Yellow
+    }
 }
 
 Start-Process powershell -ArgumentList @(

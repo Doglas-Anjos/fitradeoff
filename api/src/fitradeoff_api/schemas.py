@@ -157,3 +157,13 @@ class ChatMessage(BaseModel):
 class ChatIn(BaseModel):
     mensagens: list[ChatMessage] = Field(min_length=1)
     decisao_id: str | None = None
+
+
+class ChaveIn(BaseModel):
+    """O rotulo com que a chave sera reconhecida na tela.
+
+    O teto vem do cofre, e o minimo existe porque uma chave sem nome, entre
+    outras tres, e uma chave que ninguem revoga com confianca.
+    """
+
+    rotulo: str = Field(min_length=1, max_length=60)

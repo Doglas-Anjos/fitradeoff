@@ -9,6 +9,7 @@ alteracao.
 
 from __future__ import annotations
 
+import contextvars
 import functools
 import os
 from pathlib import Path
@@ -79,6 +80,24 @@ server = MCPServer(name="fitradeoff", instructions=INSTRUCTIONS)
 DEFAULT_STORAGE = Path.home() / ".fitradeoff" / "decisoes"
 
 
+escopo_da_chamada: contextvars.ContextVar[Path | None] = contextvars.ContextVar(
+    "escopo_da_chamada", default=None
+)
+"""Diretorio de dados desta chamada, quando o transporte souber de quem ela e.
+
+Em stdio nao ha pergunta a fazer: o processo e do proprio usuario, e o
+diretorio vem do ambiente. Por HTTP o processo atende varios clientes, e cada
+chamada chega com uma chave -- entao quem responde "de quem sao estes dados" e
+o transporte, nao o ambiente. A variavel de contexto e o unico lugar onde essa
+resposta caberia sem mexer na assinatura das catorze ferramentas.
+
+Quem a preenche e ``remoto.EscopoDaChave``, no mesmo task que executa a
+ferramenta. Preenche-la de um middleware ASGI nao funcionaria: o transporte
+streamable-HTTP executa a chamada num task group proprio, que nao herda o
+contexto da requisicao.
+"""
+
+
 def storage_directory() -> Path:
     """Diretorio de dados, sempre absoluto.
 
@@ -87,6 +106,12 @@ def storage_directory() -> Path:
     gravar em lugar imprevisto e deixa o erro visivel na partida, nao na
     primeira escrita.
     """
+    # O escopo da chamada manda sobre o ambiente: por HTTP, quem apresentou a
+    # chave decide onde grava, e a variavel de ambiente do servidor nao pode
+    # sobrepor isso.
+    do_transporte = escopo_da_chamada.get()
+    if do_transporte is not None:
+        return do_transporte
     configured = os.environ.get("FITRADEOFF_DATA")
     if not configured:
         return DEFAULT_STORAGE

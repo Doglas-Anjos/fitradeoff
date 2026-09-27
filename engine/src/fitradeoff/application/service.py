@@ -286,6 +286,30 @@ class DecisionService:
         self._container.repository.save(record)
         return state_dto(record, self._container.session_for(record)).to_dict()
 
+    def set_favorite(self, record_id: str, favorita: bool) -> dict:
+        """Marca ou desmarca a decisao como favorita.
+
+        O favorito e do registro, e nao do navegador, pelo motivo escrito no
+        cabecalho de ``web/components/DecisoesSalvas.tsx``: aquela tela existe
+        porque a lista local nao sobrevivia a troca de maquina nem a limpeza do
+        navegador -- "quem trocasse de maquina, limpasse o navegador ou
+        simplesmente voltasse depois nao via nada, embora o trabalho estivesse
+        la". Um favorito em ``localStorage`` traria de volta esse problema.
+
+        Unico caso de uso de escrita que nao passa por ``_load``: o favorito nao
+        entra no replay nem impoe restricao nenhuma, entao remontar a sessao --
+        que resolve o espaco de pesos -- seria pagar a analise inteira para
+        gravar um booleano. ``repository.get`` ja levanta ``RecordNotFound``,
+        que e a unica falha possivel aqui.
+
+        Devolve o resumo, e nao o estado, porque o que mudou e exatamente uma
+        linha da listagem.
+        """
+        record = self._container.repository.get(record_id)
+        record.favorite = bool(favorita)
+        self._container.repository.save(record)
+        return summary_dto(record).to_dict()
+
     def sensitivity(self, record_id: str, limiares: Sequence[float]) -> dict:
         """Reprocessa o mesmo log com outras folgas de preferencia estrita.
 

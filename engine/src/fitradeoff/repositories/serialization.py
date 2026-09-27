@@ -71,6 +71,7 @@ def record_to_dict(record: DecisionRecord) -> dict:
         "custos": list(problem.costs) if problem.costs else None,
         "configuracao": record.settings,
         "limiar_de_equivalencia": record.equivalence,
+        "favorita": record.favorite,
         "auditoria": record.log.to_list(),
     }
 
@@ -93,5 +94,9 @@ def record_from_dict(data: dict) -> DecisionRecord:
         # ausente nos registros gravados antes do campo existir: None ali
         # significa "usa o padrao", que e exatamente como eles se comportavam
         equivalence=_optional_float(data, "limiar_de_equivalencia"),
+        # mesma historia do limiar: ausente nos registros gravados antes do
+        # campo existir, e a ausencia so pode significar "nao favorita" -- e o
+        # que eles eram. `bool()` porque JSON de outra origem pode trazer 0/1.
+        favorite=bool(data.get("favorita", False)),
         created_at=datetime.fromisoformat(created) if created else None,
     )

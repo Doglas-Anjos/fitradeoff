@@ -14,6 +14,7 @@ from ..schemas import (
     AnswerIn,
     ConsequenceSensitivityIn,
     DecisionIn,
+    FavoritaIn,
     JudgementIn,
     LimiarDeEquivalenciaIn,
     ProblematicIn,
@@ -131,6 +132,20 @@ def limiar_de_equivalencia(
     return _run(
         lambda: service.set_equivalence(decisao_id, dados.limiar_de_equivalencia)
     )
+
+
+@router.post(
+    "/decisoes/{decisao_id}/favorita",
+    summary="Marca ou desmarca a decisao como favorita",
+)
+def favorita(
+    decisao_id: str,
+    dados: FavoritaIn,
+    service: DecisionService = Depends(get_service),
+):
+    # Devolve o resumo da decisao, e nao o estado: e a linha da listagem que
+    # muda, e e ela que quem chamou precisa repintar.
+    return _run(lambda: service.set_favorite(decisao_id, dados.favorita))
 
 
 @router.post("/decisoes/{decisao_id}/sensibilidade", summary="Analise de sensibilidade")

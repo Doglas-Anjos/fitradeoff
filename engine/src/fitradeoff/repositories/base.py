@@ -44,6 +44,23 @@ class DecisionRecord:
     #: container. E o que mantem identico o comportamento de quem nunca
     #: configurou nada -- inclusive dos registros gravados antes deste campo.
     equivalence: float | None = None
+    #: Decisao marcada pelo decisor para aparecer em destaque na listagem.
+    #:
+    #: Mora no registro, e nao no navegador, pelo motivo que esta escrito no
+    #: cabecalho de ``web/components/DecisoesSalvas.tsx``: aquela tela nasceu
+    #: porque a lista local nao sobrevivia a troca de maquina nem a limpeza do
+    #: navegador -- "quem trocasse de maquina, limpasse o navegador ou
+    #: simplesmente voltasse depois nao via nada, embora o trabalho estivesse
+    #: la". Guardar o favorito no armazenamento local reintroduziria exatamente
+    #: esse problema: o destaque sumiria junto com o cache.
+    #:
+    #: Nao entra em ``settings`` pelo mesmo motivo de ``equivalence``:
+    #: ``settings`` e a configuracao da problematica e e substituida inteira ao
+    #: trocar de leitura, enquanto o favorito acompanha a decisao.
+    #:
+    #: Nao toca em resultado nenhum -- nao entra no replay, nao muda o espaco de
+    #: pesos -- e por isso e o unico campo aqui que e so preferencia de quem le.
+    favorite: bool = False
 
 
 class DecisionRepository(ABC):

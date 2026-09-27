@@ -72,13 +72,15 @@ class WidestBracketSelector(QuestionSelector):
     Barata -- nenhum LP extra -- e ja supera o rodizio fixo de pares, porque
     ataca sempre o ponto de maior ignorancia sobre os pesos.
 
-    E o seletor padrao (ver ``fitradeoff.container``), e e aqui que mora a unica
-    divergencia de percurso que resta contra o sistema oficial: em `ranking-20`
-    ele faz 22 perguntas contra 21 dele, porque no passo 21 o oficial abandona um
-    par que ainda tem faixa e vai direto ao que fecha a ordem. A causa continua
-    desconhecida; o desfecho e o mesmo dos dois lados. Medida, caso e vao estao
-    em ``paridade/EQUIVALENCIA.md``, e a divergencia esta travada por nome em
-    ``paridade/test_paridade.py`` -- fecha-la quebra o teste de proposito.
+    E o seletor padrao (ver ``fitradeoff.container``), e responde por uma das duas
+    divergencias de percurso que restam contra o sistema oficial -- a outra e o
+    criterio de parada da carteira por razao, em ``problematics/benefit_cost.py``.
+    Esta: em `ranking-20` fazemos 22 perguntas contra 21 dele, porque no passo 21
+    o oficial abandona um par que ainda tem faixa e vai direto ao que fecha a
+    ordem. A causa continua desconhecida; o desfecho e o mesmo dos dois lados.
+    Medida, caso e vao estao em ``paridade/EQUIVALENCIA.md``, e a divergencia esta
+    travada por nome em ``paridade/test_paridade.py`` -- fecha-la quebra o teste
+    de proposito.
 
     Trocar por ``InformationGainSelector`` nao e a correcao, e o numero engana:
     ele resolve `ranking-20` em 10 perguntas, menos da metade das 21 do oficial,

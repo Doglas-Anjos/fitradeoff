@@ -24,6 +24,7 @@ import { BotaoSalvarGrafico } from "@/components/BotaoSalvarGrafico";
 import { AvaliacaoIntraCriterio } from "@/components/AvaliacaoIntraCriterio";
 import { type Ponto } from "@/components/CurvaDeValor";
 import { Etapas, Voltar, type Etapa } from "@/components/Etapas";
+import { TintaCabecalho } from "@/components/TintaCabecalho";
 import { Inconsistencia, type Diagnostico, type Saida } from "@/components/Inconsistencia";
 import { PainelSalvas } from "@/components/PainelSalvas";
 import { Recentes } from "@/components/Recentes";
@@ -292,6 +293,7 @@ function Decisao() {
         {/* "Nova decisão" é contexto, não o assunto da tela: o título de cada
             passo é a pergunta daquele passo, e vem de EntradaProblema. */}
         <div className="cabecalho-escuro mb-7 overflow-hidden px-6 py-7 sm:px-8">
+          <TintaCabecalho />
           <p className="sobrelinha text-[#8fc5ff]">FITradeoff</p>
           <p className="display mt-2.5 text-[26px] font-semibold text-white sm:text-[30px]">
             {t("tela.decisao.nova")}
@@ -313,6 +315,7 @@ function Decisao() {
   return (
     <main className="mx-auto max-w-7xl px-5 pb-24 pt-8">
       <header className="cabecalho-escuro mb-8 overflow-hidden p-5 sm:p-7">
+        <TintaCabecalho />
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="sobrelinha text-[#8fc5ff]">

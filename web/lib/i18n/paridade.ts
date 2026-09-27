@@ -414,6 +414,21 @@ export const PARIDADE_TEXTOS = registrar({
     en: "That module runs on a separate system and, after the matrix, enters an asynchronous job that notifies by e-mail. It enumerates portfolios offline; we approximate by sampling and answer immediately. That is an architectural difference, not a configuration one.",
     es: "Ese módulo corre en un sistema separado y, después de la matriz, entra en un procesamiento asíncrono que avisa por correo. Enumera carteras offline; nosotros aproximamos por muestreo y respondemos al instante. Es una diferencia de arquitectura, no de configuración.",
   },
+  /* Observação de um dia, e escrita como tal: o que se afirma é o que foi
+     medido em 27/09/2026, não uma propriedade geral da disponibilidade deles.
+     Entra porque muda o que alguém pode esperar ao tentar refazer esta
+     comparação — e porque a consequência prática, perder uma elicitação em
+     andamento, é do tipo que faz desistir. */
+  "paridade.restam.indisponivel.titulo": {
+    pt: "O oficial pode parar no meio, e aí não dá para continuar",
+    en: "The official system can stop mid-way, and then you cannot continue",
+    es: "El oficial puede detenerse a mitad, y entonces no se puede continuar",
+  },
+  "paridade.restam.indisponivel.corpo": {
+    pt: "Em 27/09/2026 a aplicação deixou de abrir sessão: responde “Device not supported”, um erro interno do IntraWeb que sai com HTTP 200 e por isso passa por resposta válida em qualquer verificação automática, ou então um 500 seco. Dez amostras em dois minutos e meio, cinco navegadores diferentes e quatro endereços de entrada deram o mesmo — não é o cliente. Enquanto dura, não há o que fazer: o estado da elicitação vive na sessão do servidor, então uma decisão em andamento se perde e recomeça do zero. Aqui cada resposta é gravada no registro no momento em que é dada, e reabrir a decisão retoma de onde parou.",
+    en: "On 27/09/2026 the application stopped opening sessions: it answers “Device not supported”, an internal IntraWeb error served with HTTP 200 — which therefore passes for a valid response in any automated check — or else a bare 500. Ten samples over two and a half minutes, five different browsers and four entry addresses gave the same result, so it is not the client. While it lasts there is nothing to do: the elicitation state lives in the server session, so a decision in progress is lost and starts over. Here each answer is written to the record the moment it is given, and reopening the decision resumes where it stopped.",
+    es: "El 27/09/2026 la aplicación dejó de abrir sesión: responde “Device not supported”, un error interno de IntraWeb que sale con HTTP 200 y por eso pasa por respuesta válida en cualquier verificación automática, o bien un 500 seco. Diez muestras en dos minutos y medio, cinco navegadores distintos y cuatro direcciones de entrada dieron lo mismo — no es el cliente. Mientras dura no hay qué hacer: el estado de la elicitación vive en la sesión del servidor, así que una decisión en curso se pierde y empieza de cero. Aquí cada respuesta se graba en el registro en el momento en que se da, y reabrir la decisión retoma donde paró.",
+  },
   "paridade.restam.degenerado.titulo": {
     pt: "Onde o oficial não completa",
     en: "Where the official does not complete",

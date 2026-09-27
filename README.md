@@ -13,27 +13,37 @@ comparações entre situações concretas, em reais e dias, e recebe uma recomen
 justificar.
 
 O método é público e está descrito na literatura; esta é uma implementação independente,
-sem vínculo com o sistema oficial do CDSID-UFPE.
+sem vínculo com o sistema oficial do CDSID-UFPE — e **comparada com ele, caso a caso**, por
+uma suíte que está no repositório.
+
+> **Veio auditar?** [`AUDITORIA.md`](AUDITORIA.md) é a porta de entrada: em que arquivo mora
+> cada etapa do método, quais parâmetros mudam a conclusão, o que é exato e o que é
+> aproximado, e como reproduzir tudo — inclusive a comparação com o sistema oficial.
 
 ## Estado
 
 | Módulo | Situação |
 |---|---|
 | Escolha, ranking, sorting | **pronto** — exatos |
-| Portfólio benefício-custo | **pronto** — aproximado, ver ressalva abaixo |
+| Portfólio combinatorial | **pronto** — aproximado, ver ressalva abaixo |
+| Portfólio benefício-custo | **pronto** — faixas de razão exatas, carteira aproximada |
 | Avaliação holística + tradeoff no mesmo espaço | **pronto** |
-| Auditoria, desfazer, sensibilidade | **pronto** |
-| Servidor MCP (13 ferramentas) | **pronto** — validado por stdio |
-| API HTTP (FastAPI) | **pronto** — 18 rotas |
+| Curva de valor intra-critério elicitada | **pronto** — por bisseção, antes da ordenação |
+| Modelo de veto | **pronto** — escolha e ordenação, por envelope conservador |
+| Auditoria, desfazer, sensibilidade | **pronto** — sobre o limiar e sobre as consequências |
+| Servidor MCP (14 ferramentas) | **pronto** — validado por stdio |
+| API HTTP (FastAPI) | **pronto** — 27 rotas |
 | Tela de decisão estruturada | **pronto** — com os gráficos |
 | Tela de chat com agente | **pronto** — exige `ANTHROPIC_API_KEY` |
 | Entrada manual + import de planilha | **pronto** — `.xlsx` e `.csv` |
 | Export (entrada + resultado + trilha) | **pronto** |
 | Ordenação de pesos nos dois modos | **pronto** — lista e avaliação global |
+| Paridade medida contra o sistema oficial | **17 casos**, versionados — ver abaixo |
 | Decisão em grupo | a fazer |
 
-**433 testes**, incluindo um decisor-oráculo que verifica a invariante central do método (a
-alternativa verdadeiramente ótima nunca sai do conjunto de POAs), testes que auditam a própria
+**918 testes**: 512 de motor e API, 30 do servidor MCP, 50 de paridade e 326 de interface.
+Entre eles, um decisor-oráculo que verifica a invariante central do método (a alternativa
+verdadeiramente ótima nunca sai do conjunto de POAs), testes que auditam a própria
 arquitetura e testes de entrada não confiável.
 
 ## Arquitetura
@@ -61,7 +71,7 @@ da suíte, porque arquitetura em camadas que ninguém checa vira, com o tempo, u
 
 | Padrão | Onde | Problema que resolve |
 |---|---|---|
-| **Strategy** | [`Problematic`](engine/src/fitradeoff/problematics/base.py), [`QuestionSelector`](engine/src/fitradeoff/elicitation/selectors.py) | 4 leituras do mesmo espaço de pesos; trocar a heurística de perguntas sem tocar na sessão |
+| **Strategy** | [`Problematic`](engine/src/fitradeoff/problematics/base.py), [`QuestionSelector`](engine/src/fitradeoff/elicitation/selectors.py) | 5 leituras do mesmo espaço de pesos; trocar a heurística de perguntas sem tocar na sessão |
 | **Port/Adapter** | [`LinearSolver`](engine/src/fitradeoff/solvers/base.py) | scipy hoje, highspy/OR-Tools amanhã, sem mexer em regra |
 | **Repository** | [`DecisionRepository`](engine/src/fitradeoff/repositories/base.py) | arquivo hoje, Postgres depois; memória nos testes |
 | **Value Object + polimorfismo** | [`Scale`](engine/src/fitradeoff/domain/scales.py) | elimina os `if is_discrete` espalhados |
@@ -95,21 +105,61 @@ mentir.
 
 Um servidor reiniciado retoma exatamente de onde parou, porque não havia nada na memória.
 
-## As quatro problemáticas
+## As cinco problemáticas
+
+São as mesmas cinco do sistema oficial, com os nomes de lá — quem chega de um artigo ou usa
+os dois sistemas lado a lado procura por eles.
 
 | Chave | O que responde | Exatidão |
 |---|---|---|
 | `escolha` | qual alternativa recomendar | exata |
 | `ranking` | ordem completa; com informação parcial, faixas de posição | exata |
 | `sorting` | alocação em classes, por perfis de referência | exata |
-| `portfolio` | carteira dentro de um orçamento | **aproximada** |
+| `portfolio` | a carteira de maior benefício agregado dentro do orçamento | **aproximada** |
+| `beneficio_custo` | a carteira montada pela ordem da razão benefício/custo | **mista** |
 
-**A ressalva do portfólio, que precisa chegar ao decisor:** com os pesos ainda incertos, decidir se
-um projeto pertence a algum portfólio ótimo é um problema **bilevel** — a escolha binária depende
-dos pesos, que por sua vez são variáveis. Não se resolve com um LP. O que fazemos é amostrar
-vértices do espaço de pesos e resolver a mochila em cada um. Por isso "sempre selecionado" e "nunca
-selecionado" valem **para as amostras avaliadas**, e o servidor MCP instrui o agente a dizer isso.
-As outras três problemáticas não têm essa ressalva.
+O decisor responde **uma vez**: as cinco leituras saem do mesmo log de auditoria, e trocar de
+problemática não reelicita nada.
+
+**A ressalva das carteiras, que precisa chegar ao decisor:** com os pesos ainda incertos, decidir
+se um projeto pertence a algum portfólio ótimo é um problema **bilevel** — a escolha binária
+depende dos pesos, que por sua vez são variáveis. Não se resolve com um LP. O que fazemos é
+amostrar vértices do espaço de pesos e resolver a carteira em cada um. Por isso "sempre
+selecionado" e "nunca selecionado" valem **para as amostras avaliadas**, e a ressalva acompanha o
+resultado na API, no MCP, na tela e na planilha exportada.
+
+Em `beneficio_custo` a divisão é mais fina, e a distinção importa: as **faixas de razão** e a
+dominância entre faixas que não se sobrepõem são **exatas** — o custo é constante, logo a razão é
+linear nos pesos e seus extremos saem de LPs. Só a **carteira** é amostrada. As outras três
+problemáticas não têm ressalva nenhuma.
+
+Sob **veto** declarado, qualquer resultado passa a ser um envelope conservador: o valor penalizado
+é quadrático nos pesos e a dominância deixa de ser um LP. As faixas publicadas contêm a verdadeira
+e são mais largas que ela — o método pode deixar de apontar uma superioridade que existe, nunca
+aponta uma que não existe. Detalhe em [`AUDITORIA.md`](AUDITORIA.md) e em
+[`problematics/veto.py`](engine/src/fitradeoff/problematics/veto.py).
+
+## Validação contra o sistema oficial
+
+Os mesmos problemas rodados aqui e no FITradeoff oficial (CDSID/UFPE), pergunta a pergunta e
+resultado a resultado. **14 dos 16 casos** que ele completa batem em número de perguntas nas duas
+fases, e o resultado bate em **todos os 16** — inclusive nos dois em que a contagem diverge, o que
+é o que dá a essas divergências o caráter de diferença de percurso, e não de conclusão.
+
+A medição do lado oficial está versionada, então a suíte roda sem rede e sem conta:
+
+```bash
+python -m pytest paridade/
+```
+
+- [`paridade/README.md`](paridade/README.md) — como rodar cada modo e o que a suíte trava
+- [`PARIDADE.md`](PARIDADE.md) — comparação de **recursos**, levantada do guia do usuário oficial
+- [`paridade/EQUIVALENCIA.md`](paridade/EQUIVALENCIA.md) — comparação de **comportamento**, com as
+  três divergências de método que a comparação encontrou e corrigiu, e as duas que permanecem
+
+Rodar lado a lado é o que revelou essas três: nas três, as perguntas iniciais eram idênticas e a
+diferença estava em **quando cada sistema para**. É o tipo de coisa que nenhuma leitura do artigo
+entrega.
 
 ## A parte difícil: perguntar em texto
 
@@ -217,7 +267,7 @@ print(service.state(criada["id"])["analise"]["resumo"])
 
 `listar_problematicas` · `criar_problema` · `listar_problemas` · `ver_problema` ·
 `ordenar_criterios` · `proxima_pergunta` · `responder` · `julgar` · `desfazer` · `situacao` ·
-`explicar` · `mudar_problematica` · `analise_sensibilidade`
+`explicar` · `mudar_problematica` · `definir_limiar_de_equivalencia` · `analise_sensibilidade`
 
 As `instructions` do servidor instruem o agente a **não responder pelo decisor**, a reproduzir as
 duas opções por inteiro, e a declarar a ressalva do portfólio. A ordenação dos critérios é uma
@@ -346,12 +396,13 @@ em [`solvers/`](engine/src/fitradeoff/solvers/), nada mais.
 1. **Decisão em grupo** — uma sessão por decisor, e o agente localiza onde eles divergem.
 2. **Montagem do problema a partir de documento** — o agente lê um edital ou planilha e propõe
    alternativas, critérios e matriz para o decisor validar.
-3. **Curvas de valor elicitadas** — hoje a avaliação intra-critério é linear (ou por níveis, nas
-   escalas construídas). Substituir é trocar a implementação de [`Scale`](engine/src/fitradeoff/domain/scales.py);
-   o resto do motor não muda.
-4. **Refinar o seletor por ganho de informação** — [`InformationGainSelector`](engine/src/fitradeoff/elicitation/selectors.py)
-   já escolhe a pergunta que mais reduz o conjunto de alternativas indefinidas, por critério
-   minimax. Falta medir, em escala, quantas perguntas ele economiza contra o `WidestBracketSelector`.
+3. **Portfólio combinatorial comparado com o oficial** — é a única das cinco leituras sem medição
+   de paridade, porque o módulo de lá não elicita em sessão: enumera as carteiras offline e avisa
+   por e-mail. Comparar exige o modelo de voltar depois.
+4. **Entender por que o oficial para onde para** — restam duas divergências de percurso,
+   `ranking-20` e `bc-20`, com o mesmo resultado dos dois lados e o critério dele desconhecido.
+   [`InformationGainSelector`](engine/src/fitradeoff/elicitation/selectors.py) **não** é a resposta:
+   resolve `ranking-20` em 10 perguntas, mas afasta do oficial cinco casos que hoje batem.
 
 ## Estrutura
 
@@ -365,17 +416,24 @@ engine/src/fitradeoff/
     audit.py          log imutável, com autor e instante
     formatting.py     formatação de números, num lugar só
   solvers/          porta de otimização + adaptador HiGHS
-  problematics/     evaluator + as 4 estratégias + registry
+  problematics/     evaluator + as 5 estratégias + veto + registry
   elicitation/      perguntas, seletores, sessão
   repositories/     porta de persistência + memória/JSON
   application/      casos de uso, DTOs, views e limites de entrada
   container.py      composição explícita das dependências
+api/                FastAPI sobre o mesmo serviço
 mcp_server/         casca fina de protocolo sobre o serviço
+web/                Next.js: as duas telas e os gráficos
+paridade/           suíte que compara com o sistema oficial, e as medições
 ```
+
+Em que arquivo mora cada etapa do método: [`AUDITORIA.md`](AUDITORIA.md).
 
 ## Referências
 
 - De Almeida, A.T. et al. (2016). *A new method for elicitation of criteria weights in additive
   models: Flexible and interactive tradeoff.* European Journal of Operational Research, 250(1), 179-191.
 - Frej, E.A. et al. (2019) — ranking. Kang, T.H.A. et al. (2020) — sorting. Frej, E.A. et al. (2021) — portfólio.
+- de Almeida, A.T. (2013) — modelo aditivo com veto, na formulação reproduzida por Palha,
+  de Almeida, Morais & Hipel (2019), *J. Civil Eng. Manag.* 25(4).
 - [fitradeoff.org](https://fitradeoff.org/) — método e sistema oficial do CDSID-UFPE.

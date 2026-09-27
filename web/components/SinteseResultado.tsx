@@ -51,11 +51,17 @@ export function SinteseResultado({
 
   return (
     <div>
-      {/* Faixa de estado: o selo diz em que ponto a decisão está, e o número de
-          declarações diz sobre o que o resultado se apoia. */}
-      <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+      {/* Tratamento editorial, e não de painel de controle.
+          Antes a recomendação — que é a resposta do produto inteiro — saía em
+          20px, menor que vários rótulos ao redor, e as leituras vinham em 13px
+          coladas umas nas outras. A hierarquia dizia que tudo ali tinha o mesmo
+          peso, e nada tinha peso nenhum.
+
+          Agora é a estrutura de uma página impressa: sobrelinha, manchete,
+          linha de apoio, e o corpo numa medida de leitura. */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
         <span
-          className="inline-flex items-center gap-1.5 rounded-[var(--raio-controle)] px-2 py-1 text-[11px] font-medium uppercase tracking-wide"
+          className="inline-flex items-center gap-1.5 rounded-[var(--raio-controle)] px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.1em]"
           style={
             encerrado
               ? { color: "var(--accent-tinta)", background: "var(--accent)" }
@@ -75,18 +81,18 @@ export function SinteseResultado({
         </span>
       </div>
 
+      {/* A manchete. `display` traz o tracking negativo e a entrelinha curta
+          que a família já usa nos títulos grandes -- a mesma voz do resto do
+          produto, e não um tamanho avulso inventado aqui. */}
       <p
-        className="prosa text-[20px] leading-snug"
-        style={{
-          color: analise.resolvido ? "var(--sucesso)" : "var(--tinta)",
-          fontWeight: 500,
-        }}
+        className="display mt-3 max-w-[22ch] text-[30px] font-semibold sm:text-[38px]"
+        style={{ color: analise.resolvido ? "var(--sucesso)" : "var(--tinta)" }}
       >
         {analise.resumo}
       </p>
 
       {encerrado && !analise.resolvido && (
-        <p className="prosa mt-1.5 text-[12px]" style={{ color: "var(--tinta-3)" }}>
+        <p className="prosa mt-3 text-[15px]" style={{ color: "var(--tinta-3)" }}>
           {t("resultado.final.aindaAberto")}
         </p>
       )}
@@ -102,7 +108,7 @@ export function SinteseResultado({
       {analise.veto_ativo && analise.ressalva && (
         <div
           role="note"
-          className="mt-4 flex items-start gap-2.5 rounded-[var(--raio-controle)] border px-3 py-2.5"
+          className="mt-6 flex items-start gap-3 rounded-[var(--raio-controle)] border px-4 py-3.5"
           style={{ borderColor: "var(--borda)", background: "var(--painel-fundo)" }}
         >
           <Prohibit
@@ -111,13 +117,13 @@ export function SinteseResultado({
             style={{ color: "var(--aviso)", flexShrink: 0, marginTop: 2 }}
           />
           <div>
-            <p className="text-[12px] font-medium" style={{ color: "var(--tinta-2)" }}>
-              {t("resultado.veto.titulo")}
-            </p>
             <p
-              className="prosa mt-0.5 text-[12.5px]"
+              className="text-[11px] font-semibold uppercase tracking-[0.1em]"
               style={{ color: "var(--tinta-3)" }}
             >
+              {t("resultado.veto.titulo")}
+            </p>
+            <p className="prosa mt-1 text-[14px]" style={{ color: "var(--tinta-2)" }}>
               {analise.ressalva}
             </p>
           </div>
@@ -125,25 +131,30 @@ export function SinteseResultado({
       )}
 
       {achados.length > 0 && (
-        <div className="mt-6">
+        <div className="mt-9">
+          {/* Sobrelinha com fio, como divisão de seção em página impressa: diz
+              "começa outra coisa aqui" sem gastar um título grande. */}
           <h4
-            className="mb-2.5 text-[13px] font-medium"
-            style={{ color: "var(--tinta-2)" }}
+            className="mb-4 border-t pt-4 text-[11px] font-semibold uppercase tracking-[0.12em]"
+            style={{ color: "var(--tinta-3)", borderColor: "var(--borda)" }}
           >
             {t("resultado.insight.titulo")}
           </h4>
-          <ul className="space-y-2.5">
+          {/* O ícone fica fora da coluna de texto, e não no meio dela: assim
+              todas as linhas alinham no mesmo eixo, que era o desalinho mais
+              visível da versão anterior. */}
+          <ul className="space-y-4">
             {achados.map((achado) => {
               const Icone = ICONE[achado.tom];
               return (
-                <li key={achado.chave} className="flex items-start gap-2">
+                <li key={achado.chave} className="grid grid-cols-[1.25rem_1fr] gap-x-3">
                   <Icone
-                    size={15}
+                    size={17}
                     weight={achado.tom === "neutro" ? "regular" : "fill"}
-                    style={{ color: TINTA[achado.tom], flexShrink: 0, marginTop: 2 }}
+                    style={{ color: TINTA[achado.tom], marginTop: 3 }}
                   />
                   <p
-                    className="prosa text-[13px]"
+                    className="prosa text-[15px]"
                     style={{
                       color:
                         achado.tom === "forte" ? "var(--tinta)" : "var(--tinta-2)",

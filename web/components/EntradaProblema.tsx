@@ -518,14 +518,8 @@ function CatalogoExemplos({
             key={exemplo.chave}
             type="button"
             onClick={() => escolher(exemplo)}
-            className="tatil entra-em-lista flex flex-col items-start gap-1.5 rounded-[var(--raio-controle)] border p-3 text-left"
-            style={
-              {
-                borderColor: "var(--borda-forte)",
-                background: "var(--painel)",
-                "--ordem": i,
-              } as React.CSSProperties
-            }
+            className="cartao-exemplo tatil entra-em-lista flex flex-col items-start gap-1.5 rounded-[var(--raio-controle)] border p-3 text-left"
+            style={{ "--ordem": i } as React.CSSProperties}
           >
             <span
               className="text-[13px] font-medium"
@@ -689,6 +683,20 @@ export function EntradaProblema({
   };
 
   const [falha, setFalha] = useState<Falha | null>(null);
+
+  /* A falha vira aviso flutuante, e não um parágrafo no fim da tela.
+     A mensagem saía embaixo de um formulário longo, muitas vezes fora do campo
+     de visão de quem tinha acabado de clicar em "continuar" lá no rodapé -- o
+     botão não avançava e nada parecia ter acontecido. O restante do cadastro já
+     avisava por toast; só estas ficavam de fora, e era a incoerência mais
+     visível da tela.
+
+     O estado continua: é dele que sai o realce do campo culpado, que é a outra
+     metade do recado. O toast diz o quê; o realce diz onde. */
+  const reportar = (nova: Falha) => {
+    setFalha(nova);
+    avisar.erro(traduzir(nova, t));
+  };
   const [ocupado, setOcupado] = useState(false);
   const [arquivoLido, setArquivoLido] = useState<string | null>(null);
   const [lida, setLida] = useState<PlanilhaLida | null>(null);
@@ -732,7 +740,7 @@ export function EntradaProblema({
     } catch (e) {
       /* A mensagem do servidor já vem escrita, sem chave: entra pela chave que
          só repassa o texto, para a tela ter um caminho de erro, não dois. */
-      setFalha({
+      reportar({
         chave: "dominio.erro.api",
         valores: { detalhe: e instanceof ApiError ? e.message : String(e) },
       });
@@ -750,7 +758,7 @@ export function EntradaProblema({
 
   const salvarEstrutura = () => {
     const erro = validarEstrutura(rascunho);
-    if (erro) return setFalha(erro);
+    if (erro) return reportar(erro);
     irPara("matriz");
   };
 
@@ -810,10 +818,10 @@ export function EntradaProblema({
 
   const continuarDaMatriz = () => {
     const erro = validarMatriz(rascunho);
-    if (erro) return setFalha(erro);
+    if (erro) return reportar(erro);
     if (ehCarteira(rascunho.problematica)) {
       const custos = custosDe(rascunho);
-      if (ehFalha(custos)) return setFalha(custos);
+      if (ehFalha(custos)) return reportar(custos);
     }
     if (exigeAjustes(rascunho.problematica)) return irPara("ajustes");
     criarDoRascunho();
@@ -821,7 +829,7 @@ export function EntradaProblema({
 
   const criarDoRascunho = () => {
     const corpo = paraCriacao(rascunho, t("entrada.conferencia.semNome"));
-    if (ehFalha(corpo)) return setFalha(corpo);
+    if (ehFalha(corpo)) return reportar(corpo);
     void criar(corpo);
   };
 
@@ -843,7 +851,7 @@ export function EntradaProblema({
     } catch (e) {
       /* A mensagem do servidor já vem escrita, sem chave: entra pela chave que
          só repassa o texto, para a tela ter um caminho de erro, não dois. */
-      setFalha({
+      reportar({
         chave: "dominio.erro.api",
         valores: { detalhe: e instanceof ApiError ? e.message : String(e) },
       });
@@ -865,7 +873,7 @@ export function EntradaProblema({
 
   const criarImportada = (dados: Conferido) => {
     const extra = configuracaoDe(rascunho, dados.custos ?? null);
-    if (ehFalha(extra)) return setFalha(extra);
+    if (ehFalha(extra)) return reportar(extra);
     void criar({
       nome: dados.nome,
       alternativas: dados.alternativas,
@@ -926,7 +934,7 @@ export function EntradaProblema({
     }, 0);
   })();
 
-  /* A falha vem descrita por chave; o texto nasce aqui, e é este texto que os
+  /* A falha vem descrita por chave; o texto nasce aqui, e é este texto que o
      passos recebem como `erro`. */
   const erro = falha ? traduzir(falha, t) : null;
 
@@ -976,7 +984,6 @@ export function EntradaProblema({
             onAlterar={alterar}
             onVoltar={() => irPara("problematica")}
             onSalvar={salvarEstrutura}
-            erro={erro}
             campoComErro={falha?.campo ?? null}
           />
         </div>
@@ -990,7 +997,6 @@ export function EntradaProblema({
           onContinuar={continuarDaMatriz}
           rotuloAcao={acaoDaMatriz(rascunho.problematica, t)}
           ocupado={ocupado}
-          erro={erro}
           campoComErro={falha?.campo ?? null}
         />
       )}

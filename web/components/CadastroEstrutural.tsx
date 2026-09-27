@@ -990,7 +990,6 @@ export function CadastroEstrutural({
   onVoltar,
   onSalvar,
   onExemplo,
-  erro,
   campoComErro,
 }: {
   rascunho: Rascunho;
@@ -998,7 +997,6 @@ export function CadastroEstrutural({
   onVoltar: () => void;
   onSalvar: () => void;
   onExemplo?: () => void;
-  erro?: string | null;
   campoComErro?: string | null;
 }) {
   const { t } = useIdioma();
@@ -1012,7 +1010,9 @@ export function CadastroEstrutural({
     const alvo = document.querySelector<HTMLElement>(`[data-campo="${campoComErro}"]`);
     alvo?.scrollIntoView?.({ behavior: "smooth", block: "center" });
     alvo?.focus({ preventScroll: true });
-  }, [campoComErro, erro]);
+    /* Só `campoComErro`: o texto do erro saiu daqui e virou toast, então a
+       dependência antiga não existe mais. */
+  }, [campoComErro]);
 
   return (
     <div>
@@ -1087,11 +1087,6 @@ export function CadastroEstrutural({
       </div>
 
       {/* a mensagem fica colada ao botão que a disparou, não no fim da página */}
-      {erro && (
-        <p role="alert" className="mt-6 text-sm" style={{ color: "var(--erro)" }}>
-          {erro}
-        </p>
-      )}
 
       <Rodape>
         {onExemplo && (

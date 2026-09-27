@@ -221,37 +221,24 @@ export function Botao({
   variante?: "principal" | "contorno" | "texto";
   icone?: React.ReactNode;
 }) {
-  const estilos = {
-    principal: {
-      background: "var(--accent)",
-      color: "var(--accent-tinta)",
-      border: "1px solid transparent",
-      boxShadow: "0 6px 16px rgba(7, 29, 56, 0.14)",
-    },
-    contorno: {
-      background: "var(--painel)",
-      color: "var(--accent)",
-      border: "1px solid var(--borda-forte)",
-    },
-    texto: {
-      background: "transparent",
-      color: "var(--accent)",
-      border: "1px solid transparent",
-    },
-  }[variante];
-
+  /* As cores moram em `globals.css`, sob `.botao[data-variante]`, e nao aqui.
+     Antes vinham de um objeto de estilo inline, e isso impedia justamente o que
+     um botao mais precisa: estilo inline vence regra de classe, entao nenhum
+     `:hover` de fundo pegava. O botao mexia (subia meio pixel, ganhava sombra)
+     mas nao mudava de cor, e em tela de toque -- onde nao ha hover -- nao
+     acontecia nada. */
   return (
     <button
       {...props}
-      className={`tatil min-h-11 inline-flex items-center justify-center gap-2 rounded-[var(--raio-controle)] px-5 py-2.5 text-sm font-semibold hover:-translate-y-0.5 hover:shadow-[var(--sombra)] active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0 ${props.className ?? ""}`}
-      style={{ ...estilos, ...props.style }}
+      data-variante={variante}
+      className={`botao tatil min-h-11 inline-flex items-center justify-center gap-2 rounded-[var(--raio-controle)] px-5 py-2.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-45 ${props.className ?? ""}`}
+      style={props.style}
     >
       {icone}
       {children}
     </button>
   );
 }
-
 
 /* --- controle segmentado ------------------------------------------------------
 
@@ -310,13 +297,11 @@ export function Segmentado<T extends string>({
             disabled={desabilitado}
             onClick={() => onEscolher(v)}
             title={descricao}
-            className="tatil flex min-h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded-[7px] px-3 py-1.5 text-[12px] disabled:opacity-45"
-            style={{
-              background: ativa ? "var(--accent)" : "transparent",
-              color: ativa ? "var(--accent-tinta)" : "var(--tinta-3)",
-              fontWeight: ativa ? 500 : 400,
-              boxShadow: ativa ? "0 2px 7px rgba(7, 29, 56, 0.18)" : "none",
-            }}
+            data-ativa={ativa}
+            /* Cor por classe: com `style` inline as opções não escolhidas não
+               reagiam ao ponteiro, e são justamente elas que a pessoa precisa
+               perceber como clicáveis. */
+            className="opcao-segmentada tatil flex min-h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded-[7px] px-3 py-1.5 text-[12px] disabled:opacity-45"
           >
             {icone}
             {rotulo}

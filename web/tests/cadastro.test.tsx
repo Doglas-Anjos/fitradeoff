@@ -48,7 +48,6 @@ function Tela({
       }}
       onVoltar={onVoltar}
       onSalvar={onSalvar}
-      erro={erro}
       campoComErro={campoComErro}
     />
   );
@@ -386,16 +385,13 @@ describe("a tela inteira", () => {
   });
 
   it("o erro leva o foco ao campo a que se refere", async () => {
-    render(
-      <Tela
-        erro="Cadastre ao menos duas alternativas — não há o que comparar com uma."
-        campoComErro="nova-alternativa"
-      />,
-    );
+    render(<Tela campoComErro="nova-alternativa" />);
 
-    /* Este erro não é aviso de ação: ele bloqueia o avanço e precisa continuar
-       na tela enquanto bloquear. Some só quando for resolvido. */
-    expect(screen.getByRole("alert")).toHaveTextContent(/duas alternativas/);
+    /* O texto do erro virou aviso flutuante e saiu daqui; o que este
+       componente ainda faz é a outra metade do recado, que é dizer *onde*.
+       O toast diz o quê, o foco diz onde -- e sem o foco a mensagem obrigaria
+       a pessoa a procurar sozinha, num formulário que pode ter oito critérios
+       cadastrados. */
     expect(
       within(blocoAlternativas()).getByLabelText("Nome da nova alternativa"),
     ).toHaveFocus();

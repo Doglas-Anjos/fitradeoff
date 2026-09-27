@@ -40,7 +40,6 @@ export function MatrizConsequencias({
   onContinuar,
   rotuloAcao,
   ocupado = false,
-  erro,
   campoComErro,
 }: {
   rascunho: Rascunho;
@@ -49,7 +48,6 @@ export function MatrizConsequencias({
   onContinuar: () => void;
   rotuloAcao: string;
   ocupado?: boolean;
-  erro?: string | null;
   campoComErro?: string | null;
 }) {
   const { t } = useIdioma();
@@ -265,11 +263,6 @@ export function MatrizConsequencias({
         </table>
       </div>
 
-      {erro && (
-        <p role="alert" className="mt-5 text-sm" style={{ color: "var(--erro)" }}>
-          {erro}
-        </p>
-      )}
 
       <Rodape>
         <Botao onClick={onContinuar} disabled={ocupado}>

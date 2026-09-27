@@ -157,8 +157,8 @@ export default function ChatPage() {
             </ul>
             <Link
               href="/decisao"
-              className="tatil mt-6 inline-flex items-center gap-2 rounded-[var(--raio-controle)] px-4 py-2 text-sm font-medium"
-              style={{ background: "var(--accent)", color: "var(--accent-tinta)" }}
+              data-variante="principal"
+              className="botao tatil mt-6 inline-flex items-center gap-2 rounded-[var(--raio-controle)] px-4 py-2 text-sm font-medium"
             >
               {t("tela.chat.semChave.acao")}
               <ArrowRight size={15} weight="bold" aria-hidden />

@@ -380,11 +380,12 @@ export function PainelSalvas({
         aria-expanded={aberta}
         aria-controls={idPainel}
         inert={aberta}
-        className="tatil fixed bottom-5 right-5 z-50 inline-flex h-12 w-12 items-center justify-center rounded-[var(--raio-controle)] border shadow-lg hover:-translate-y-1 hover:shadow-[var(--sombra-alta)]"
+        className="botao tatil fixed bottom-5 right-5 z-50 inline-flex h-12 w-12 items-center justify-center rounded-[var(--raio-controle)] border shadow-lg"
+        /* Fundo e borda vem da classe `.botao[data-variante]`, para que o
+           hover mude a cor. Aqui ficam so as propriedades que dependem do
+           estado de abertura, que classe nenhuma conhece. */
+        data-variante="principal"
         style={{
-          borderColor: "var(--accent)",
-          background: "var(--accent)",
-          color: "var(--accent-tinta)",
           opacity: aberta ? 0 : 1,
           transform: aberta
             ? "translateY(6px) scale(0.9)"

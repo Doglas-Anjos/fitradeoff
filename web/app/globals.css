@@ -84,29 +84,6 @@
   --raio-painel: 16px;
   --raio-controle: 9px;
 
-  /* Fundo da pagina: papel milimetrado, nao textura decorativa. A referencia e
-     o instrumento de medicao, que e o que o produto e.
-     Duas escalas, como no papel de verdade: uma fina e uma cinco vezes maior.
-     A primeira versao era so pontos isolados, e numa tela de 1920px -- onde a
-     margem de cada lado passa de 300px -- eles nao sustentavam a area: o
-     fundo continuava lendo como vazio. Linha cruzada tem estrutura; ponto
-     solto, nao. */
-  --grade: rgba(11, 50, 97, 0.05);
-  --grade-forte: rgba(11, 50, 97, 0.1);
-  --grade-passo: 24px;
-  /* cinco finas por grossa, como papel milimetrado de verdade */
-  --grade-maior: 120px;
-  /* De onde vem a luz. Nao e enfeite: a tela inteira passou a ter relevo --
-     paineis erguidos, areas de digitacao rebaixadas -- e sombra so faz sentido
-     com uma direcao de luz. Sem isto, o fundo e plano e as sombras ficam
-     afirmando algo que a pagina nao sustenta. */
-  --brilho: rgba(36, 107, 178, 0.1);
-  /* Aneis concentricos, o mesmo motivo que o heroi da home ja usa. Nao e
-     ornamento escolhido a esmo: circulo que encolhe e a forma do que o metodo
-     faz -- um espaco de pesos que se fecha a cada resposta. Repetir a figura
-     no fundo estende esse vocabulario as telas de trabalho, onde as margens
-     ficavam largas e mudas. */
-  --anel: rgba(11, 50, 97, 0.07);
 
   /* A barra de navegacao e navy nos dois temas, entao o que vai sobre ela nao
      muda com o tema -- mas continua token, para que nenhum componente precise
@@ -210,10 +187,6 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
 
   --sombra-interna: inset 0 1px 4px rgba(0, 0, 0, 0.45);
-  --grade: rgba(150, 195, 245, 0.045);
-  --grade-forte: rgba(150, 195, 245, 0.085);
-  --brilho: rgba(111, 176, 238, 0.07);
-  --anel: rgba(150, 195, 245, 0.06);
   --selecao: #1d4f86;
   --selecao-tinta: #eaf2fb;
   --clareia: #cfe2f7;
@@ -258,81 +231,8 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* O clarao e os aneis ficam numa camada fixa, e nao em
-   `background-attachment: fixed` do body. A diferenca nao e de estilo, e de
-   custo: medido nesta pagina, o fundo fixo levava a rolagem de 16,5ms para
-   22-24ms por quadro -- de 60fps para uns 42 --, porque obriga o navegador a
-   repintar o fundo a cada deslocamento. Uma camada `position: fixed` vai para
-   composicao propria e acompanha a rolagem de graca.
 
-   Tudo mora nesta camada, inclusive a malha -- e nao metade aqui e metade no
-   `body`. Medido: separadas, malha e aneis custavam 1,1ms e 1,7ms por quadro;
-   juntas, 7,1ms, bem mais que a soma. Com fundo no `body` a camada fixa deixa
-   de ser composta e volta a repintar junto. Numa camada so, o custo some.
 
-   Ha um efeito colateral, e ele e desejado: a malha deixa de rolar com o
-   texto. Papel milimetrado e a mesa sobre a qual a pagina esta, nao parte do
-   documento.
-
-   `z-index: -1` a poe acima da cor de fundo e abaixo de todo o conteudo.
-   `pointer-events: none` para que ela nao intercepte clique nenhum. */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-image:
-    /* clarao */
-    radial-gradient(80rem 34rem at 50% -8rem, var(--brilho), transparent 72%),
-    /* aneis */
-    radial-gradient(
-      circle at 88% 6%,
-      transparent 0 21rem,
-      var(--anel) 21rem 21.06rem,
-      transparent 21.06rem
-    ),
-    radial-gradient(
-      circle at 88% 6%,
-      transparent 0 31rem,
-      var(--anel) 31rem 31.06rem,
-      transparent 31.06rem
-    ),
-    radial-gradient(
-      circle at 8% 94%,
-      transparent 0 25rem,
-      var(--anel) 25rem 25.06rem,
-      transparent 25.06rem
-    ),
-    /* malha maior */
-    linear-gradient(to right, var(--grade-forte) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--grade-forte) 1px, transparent 1px),
-    /* malha fina */
-    linear-gradient(to right, var(--grade) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--grade) 1px, transparent 1px),
-    /* clareada do topo, que separa o cabecalho do corpo */
-    linear-gradient(180deg, var(--plano-topo) 0, transparent 320px);
-  background-size:
-    100% 100%,
-    100% 100%,
-    100% 100%,
-    100% 100%,
-    var(--grade-maior) var(--grade-maior),
-    var(--grade-maior) var(--grade-maior),
-    var(--grade-passo) var(--grade-passo),
-    var(--grade-passo) var(--grade-passo),
-    100% 100%;
-  background-repeat:
-    no-repeat,
-    no-repeat,
-    no-repeat,
-    no-repeat,
-    repeat,
-    repeat,
-    repeat,
-    repeat,
-    no-repeat;
-}
 
 button:not(:disabled),
 [role="button"]:not([aria-disabled="true"]) {
@@ -370,11 +270,121 @@ textarea:hover {
   box-shadow: var(--sombra-alta);
 }
 
+/* O cabeçalho de cada tela. Era um retângulo navy chapado com texto dentro:
+   correto e sem vida nenhuma, que foi a reclamação. Ganhou três coisas, todas
+   discretas o bastante para não competir com o título.
+
+   Primeiro, tinta: o mesmo guache do fundo aparece aqui por dentro, em tom
+   mais claro que o navy. É o que costura o cabeçalho ao resto da página em vez
+   de deixá-lo como um bloco colado por cima.
+
+   Segundo, uma luz vinda de cima à esquerda, que é de onde a luz vem no resto
+   do produto -- os painéis todos têm sombra para baixo.
+
+   Terceiro, um fio de luz na borda superior. Numa superfície escura é o que
+   diz "isto está erguido"; sombra não serve, porque não há para onde escurecer. */
 .cabecalho-escuro {
+  position: relative;
+  overflow: hidden;
   border-radius: var(--raio-painel);
   background: var(--navy);
   color: var(--tinta-sobre-navy);
-  box-shadow: var(--sombra-alta);
+  box-shadow:
+    var(--sombra-alta),
+    inset 0 1px 0 rgba(255, 255, 255, 0.09);
+}
+.cabecalho-escuro::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    url("data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%27600%27%20height=%27300%27%3E%3Cfilter%20id=%27w%27%3E%3CfeTurbulence%20type=%27fractalNoise%27%20baseFrequency=%270.006%200.03%27%20numOctaves=%274%27%20seed=%279%27%20stitchTiles=%27stitch%27/%3E%3CfeColorMatrix%20type=%27saturate%27%20values=%270%27/%3E%3C/filter%3E%3Crect%20width=%27600%27%20height=%27300%27%20filter=%27url(%23w)%27%20opacity=%270.55%27/%3E%3C/svg%3E"),
+    radial-gradient(
+      44rem 22rem at 12% -30%,
+      rgba(143, 197, 255, 0.16),
+      transparent 68%
+    ),
+    radial-gradient(
+      30rem 18rem at 96% 130%,
+      rgba(13, 148, 136, 0.14),
+      transparent 70%
+    );
+  /* Uma instância esticada, e não ladrilho. `stitchTiles` deveria costurar as
+     bordas do `feTurbulence`, e na prática a emenda aparecia a cada 600px como
+     um risco vertical no cabeçalho. Esticar uma única instância não tem emenda
+     nenhuma, e distorcer uma textura de ruído é invisível. */
+  background-size: 100% 100%, 100% 100%, 100% 100%;
+  background-repeat: no-repeat, no-repeat, no-repeat;
+  background-blend-mode: soft-light, normal, normal;
+  /* Veladura, não fotografia. Em 0,85 a textura virava nuvem e competia com o
+     título, que é exatamente o que o cabeçalho não pode fazer. */
+  opacity: 0.32;
+}
+/* As pinceladas coloridas, no canto inferior direito.
+   A veladura sozinha dava textura e nenhuma cor -- o cabeçalho continuava
+   monocromático, que era metade da queixa de "sem vida". Aqui entram três
+   traços em cores da paleta, no canto que o conteúdo não usa: o título abre à
+   esquerda e o botão fica no topo à direita, então a diagonal de baixo está
+   livre em todas as telas.
+
+   As cores ficam escritas no SVG, e desta vez isso está certo: a barra é navy
+   nos dois temas, então não há o que acompanhar. Máscara aqui só acrescentaria
+   uma peça sem ganho nenhum.
+
+   O traçado sai do mesmo `feDisplacementMap` do fundo -- retângulos deformados
+   por ruído --, para que a borda tenha a mesma irregularidade de pincel. Dois
+   vocabulários de tinta na mesma tela leriam como dois autores. */
+.cabecalho-escuro::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  /* Ocupa a altura toda do lado direito, e não só a faixa de baixo. No
+     cabeçalho da decisão a trilha de etapas mora no rodapé e cobriria uma
+     pincelada rasteira -- o que sobra livre é a diagonal à direita, entre o
+     botão do topo e a trilha. */
+  width: min(30rem, 58%);
+  height: 100%;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%27420%27%20height=%27200%27%20viewBox=%270%200%20420%20200%27%3E%3Cdefs%3E%3Cfilter%20id=%27b%27%20x=%27-20%%27%20y=%27-45%%27%20width=%27140%%27%20height=%27190%%27%3E%3CfeTurbulence%20type=%27fractalNoise%27%20baseFrequency=%270.016%200.07%27%20numOctaves=%274%27%20seed=%2713%27%20result=%27t%27/%3E%3CfeDisplacementMap%20in=%27SourceGraphic%27%20in2=%27t%27%20scale=%2724%27%20xChannelSelector=%27R%27%20yChannelSelector=%27G%27/%3E%3CfeGaussianBlur%20stdDeviation=%271%27/%3E%3C/filter%3E%3C/defs%3E%3Cg%20filter=%27url(%23b)%27%3E%3Crect%20x=%2710%27%20y=%2778%27%20width=%27360%27%20height=%2730%27%20rx=%2715%27%20fill=%27%232fd39a%27%20opacity=%270.52%27%20transform=%27rotate(-11%20190%2093)%27/%3E%3Crect%20x=%2746%27%20y=%27116%27%20width=%27344%27%20height=%2723%27%20rx=%2712%27%20fill=%27%236fb0ee%27%20opacity=%270.6%27%20transform=%27rotate(-8%20218%20127)%27/%3E%3Crect%20x=%27104%27%20y=%2744%27%20width=%27290%27%20height=%2718%27%20rx=%279%27%20fill=%27%23f7bd3a%27%20opacity=%270.5%27%20transform=%27rotate(-14%20249%2053)%27/%3E%3Crect%20x=%27128%27%20y=%27150%27%20width=%27268%27%20height=%2714%27%20rx=%277%27%20fill=%27%232fd39a%27%20opacity=%270.34%27%20transform=%27rotate(-5%20262%20157)%27/%3E%3Crect%20x=%27186%27%20y=%2720%27%20width=%27214%27%20height=%2711%27%20rx=%276%27%20fill=%27%236fb0ee%27%20opacity=%270.32%27%20transform=%27rotate(-17%20293%2025)%27/%3E%3C/g%3E%3C/svg%3E");
+  background-position: right bottom;
+  background-repeat: no-repeat;
+  /* Esticado para o quadro, e não recortado: `cover` cortava as pinceladas
+     pela metade num cabeçalho largo e baixo, e traço cortado lê como erro de
+     imagem. Esticar uma forma orgânica não se percebe. */
+  background-size: 100% 100%;
+  opacity: 0.62;
+  /* Desaparece antes de chegar ao texto: a pincelada é canto, não faixa. */
+  -webkit-mask-image: linear-gradient(272deg, #000 0 52%, transparent 92%);
+  mask-image: linear-gradient(272deg, #000 0 52%, transparent 92%);
+}
+
+/* O conteúdo sobe acima da tinta. Sem isto ela cobriria o texto, porque vem
+   depois dele na ordem de pintura. */
+.cabecalho-escuro > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* A sobrelinha do cabeçalho ganha um traço antes do texto: marca de entrada,
+   do jeito que uma página impressa abre uma seção. */
+.sobrelinha {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.sobrelinha::before {
+  content: "";
+  width: 1.6rem;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  opacity: 0.55;
 }
 
 .cartao-secao {
@@ -452,6 +462,24 @@ textarea:hover {
 }
 .tatil:active:not(:disabled) {
   transform: translateY(1px);
+}
+
+/* Todo controle tatil reage ao ponteiro, mesmo sem regra propria. Uma
+   varredura de 164 controles nas cinco rotas achou 60 que nao mudavam nada no
+   hover -- links da navegacao, itens do sumario, botoes de ajuda, o seletor de
+   idioma. Movimento nao supre isso: some em `prefers-reduced-motion` e nao
+   existe em tela de toque.
+
+   O realce sai de `currentColor`, e nao de um token fixo, porque estes
+   controles vivem em fundos opostos: sobre a barra navy o texto e claro e o
+   realce sai claro; sobre painel branco o texto e escuro e o realce sai
+   escuro. Um token unico acertaria um caso e sumiria no outro.
+
+   Especificidade de uma classe so, de proposito: qualquer regra mais
+   especifica -- `.botao[data-variante]`, `.botao-tema`, utilitario `hover:` do
+   Tailwind -- vence esta sem precisar de `!important`. Ela e piso, nao teto. */
+.tatil:hover:not(:disabled):not([aria-disabled="true"]) {
+  background-color: color-mix(in srgb, currentColor 9%, transparent);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1016,4 +1044,166 @@ textarea:hover {
   font-weight: 500;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+
+/* --- botao ------------------------------------------------------------------
+   Tres variantes, e todas reagem ao ponteiro mudando de fundo -- nao so
+   subindo meio pixel. O movimento sozinho e um sinal fraco: some em
+   `prefers-reduced-motion`, nao existe em tela de toque, e nao diz "isto aqui
+   e clicavel" para quem so passa o olho.
+
+   Estas regras substituem um objeto de estilo inline. Enquanto a cor vinha de
+   `style`, nenhum `:hover` de fundo funcionava: inline vence classe, e um
+   hover anulado assim nao da erro -- simplesmente nao acontece. */
+
+.botao {
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+.botao:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+.botao:not(:disabled):active {
+  transform: translateY(0);
+}
+
+.botao[data-variante="principal"] {
+  background: var(--accent);
+  color: var(--accent-tinta);
+  border: 1px solid transparent;
+  box-shadow: 0 6px 16px rgba(7, 29, 56, 0.14);
+}
+.botao[data-variante="principal"]:not(:disabled):hover {
+  background: var(--accent-hover);
+  box-shadow: var(--sombra-alta);
+}
+
+.botao[data-variante="contorno"] {
+  background: var(--painel);
+  color: var(--accent);
+  border: 1px solid var(--borda-forte);
+}
+.botao[data-variante="contorno"]:not(:disabled):hover {
+  background: var(--accent-suave);
+  border-color: var(--accent);
+}
+
+.botao[data-variante="texto"] {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid transparent;
+}
+.botao[data-variante="texto"]:not(:disabled):hover {
+  background: var(--accent-suave);
+}
+
+/* O foco por teclado precisa ser tao visivel quanto o hover, e nao mais
+   discreto: quem navega por Tab depende dele para saber onde esta. */
+.botao:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Destinos da navegação, sobre a barra navy. O escolhido é preenchimento
+   cheio, para se ler como "você está aqui" e não como "passe o mouse". */
+.link-nav {
+  color: var(--navy-tinta-2);
+  font-weight: 450;
+}
+.link-nav:hover {
+  color: var(--navy-tinta);
+}
+.link-nav[data-ativo="true"],
+.link-nav[data-ativo="true"]:hover {
+  color: var(--navy);
+  background: var(--navy-tinta);
+  font-weight: 650;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* --- controles que tinham cor em `style` inline -----------------------------
+   Os três blocos abaixo existem pelo mesmo motivo: a cor vinha de `style`, e
+   por isso nenhum deles reagia ao ponteiro. Uma varredura que mede o fundo
+   calculado antes e depois do hover, em todos os controles visíveis das cinco
+   rotas, foi o que os encontrou — procurar `:hover` no código não acharia,
+   porque a regra existia e simplesmente não valia.
+
+   Em todos, o estado escolhido vence o hover: depois de clicar, o que importa
+   é a confirmação, e trocá-la porque o ponteiro parou ali apagaria a resposta. */
+
+.opcao-segmentada {
+  background: transparent;
+  color: var(--tinta-3);
+  font-weight: 400;
+}
+.opcao-segmentada:not(:disabled):hover {
+  background: var(--accent-suave);
+  color: var(--accent);
+}
+.opcao-segmentada[data-ativa="true"],
+.opcao-segmentada[data-ativa="true"]:hover {
+  background: var(--accent);
+  color: var(--accent-tinta);
+  font-weight: 500;
+  box-shadow: 0 2px 7px rgba(7, 29, 56, 0.18);
+}
+
+.cartao-exemplo {
+  border-color: var(--borda-forte);
+  background: var(--painel);
+}
+.cartao-exemplo:hover {
+  border-color: var(--accent);
+  background: var(--accent-suave);
+  box-shadow: var(--sombra);
+}
+
+.passo-etapa {
+  background: transparent;
+  color: var(--tinta-fraca);
+  font-weight: 500;
+}
+.passo-etapa[data-etapa="alcancada"],
+.passo-etapa[data-etapa="concluida"] {
+  color: var(--tinta-2);
+}
+.passo-etapa[data-etapa="concluida"] {
+  background: var(--painel);
+}
+.passo-etapa:not(:disabled):hover {
+  background: var(--accent-suave);
+  color: var(--accent);
+}
+.passo-etapa[data-etapa="atual"],
+.passo-etapa[data-etapa="atual"]:hover {
+  background: var(--accent);
+  color: var(--accent-tinta);
+  font-weight: 650;
+  box-shadow: 0 4px 12px rgba(7, 29, 56, 0.16);
+}
+
+/* A trilha do cadastro, irmã de `.passo-etapa` e com o mesmo defeito de
+   origem: cor em `style` inline, logo sem hover. */
+.passo-trilha {
+  background: transparent;
+  color: var(--tinta-fraca);
+  font-weight: 400;
+}
+.passo-trilha[data-passo="concluido"] {
+  color: var(--tinta-2);
+}
+.passo-trilha:not(:disabled):hover {
+  background: var(--accent-suave);
+  color: var(--accent);
+}
+.passo-trilha[data-passo="atual"],
+.passo-trilha[data-passo="atual"]:hover {
+  background: var(--accent-suave);
+  color: var(--accent);
+  font-weight: 600;
 }

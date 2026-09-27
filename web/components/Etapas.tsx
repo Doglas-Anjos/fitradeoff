@@ -81,17 +81,16 @@ export function Etapas({
                   onClick={() => clicavel && tentar(etapa.id)}
                   disabled={!clicavel}
                   aria-current={ativa ? "step" : undefined}
-                  className="tatil flex min-h-10 w-full min-w-0 flex-col items-center justify-center gap-1 rounded-[var(--raio-controle)] px-1 py-1.5 text-[11px] disabled:cursor-default sm:w-auto sm:flex-row sm:gap-2 sm:px-3.5 sm:text-[13px]"
-                  style={{
-                    background: ativa ? "var(--accent)" : concluida ? "#ffffff" : "transparent",
-                    color: ativa
-                      ? "var(--accent-tinta)"
-                      : alcancada
-                        ? "var(--tinta-2)"
-                        : "var(--tinta-fraca)",
-                    fontWeight: ativa ? 650 : 500,
-                    boxShadow: ativa ? "0 4px 12px rgba(7,29,56,.16)" : "none",
-                  }}
+                  className="passo-etapa tatil flex min-h-10 w-full min-w-0 flex-col items-center justify-center gap-1 rounded-[var(--raio-controle)] px-1 py-1.5 text-[11px] disabled:cursor-default sm:w-auto sm:flex-row sm:gap-2 sm:px-3.5 sm:text-[13px]"
+                  data-etapa={
+                    ativa
+                      ? "atual"
+                      : concluida
+                        ? "concluida"
+                        : alcancada
+                          ? "alcancada"
+                          : "adiante"
+                  }
                 >
                   {concluida ? (
                     <Check size={13} weight="bold" />
@@ -248,16 +247,8 @@ export function Passos({
                 onClick={() => clicavel && onIr!(passo.id)}
                 disabled={!clicavel}
                 aria-current={ativo ? "step" : undefined}
-                className="tatil flex items-center gap-1.5 rounded-[var(--raio-controle)] px-2.5 py-1.5 text-[13px] disabled:cursor-default"
-                style={{
-                  background: ativo ? "var(--accent-suave)" : "transparent",
-                  color: ativo
-                    ? "var(--accent)"
-                    : concluido
-                      ? "var(--tinta-2)"
-                      : "var(--tinta-fraca)",
-                  fontWeight: ativo ? 600 : 400,
-                }}
+                className="passo-trilha tatil flex items-center gap-1.5 rounded-[var(--raio-controle)] px-2.5 py-1.5 text-[13px] disabled:cursor-default"
+                data-passo={ativo ? "atual" : concluido ? "concluido" : "adiante"}
               >
                 {concluido ? (
                   <Check size={13} weight="bold" />

@@ -292,8 +292,10 @@ function Decisao() {
         {/* "Nova decisão" é contexto, não o assunto da tela: o título de cada
             passo é a pergunta daquele passo, e vem de EntradaProblema. */}
         <div className="cabecalho-escuro mb-7 overflow-hidden px-6 py-7 sm:px-8">
-          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#8fc5ff]">FITradeoff</p>
-          <p className="mt-2 text-xl font-semibold text-white">{t("tela.decisao.nova")}</p>
+          <p className="sobrelinha text-[#8fc5ff]">FITradeoff</p>
+          <p className="display mt-2.5 text-[26px] font-semibold text-white sm:text-[30px]">
+            {t("tela.decisao.nova")}
+          </p>
         </div>
         <div className="superficie-alta p-5 sm:p-8">
           <EntradaProblema onPronto={receber} />
@@ -313,16 +315,33 @@ function Decisao() {
       <header className="cabecalho-escuro mb-8 overflow-hidden p-5 sm:p-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#8fc5ff]">
+            <p className="sobrelinha text-[#8fc5ff]">
               {t(`problematica.${problema.problematica}`)}
             </p>
-            <h1 className="display mt-2 text-3xl font-semibold text-white sm:text-4xl">
+            <h1 className="display mt-3 text-[34px] font-semibold text-white sm:text-[42px]">
               {problema.nome}
             </h1>
-            <p className="mt-2 text-[13px] text-[#c6d7ea]">
-              {t("estrutura.alternativas.contagem", { n: Object.keys(problema.consequencias).length })}
-              {" · "}
-              {t("estrutura.criterios.contagem", { n: problema.criterios.length })}
+            {/* Os dois números em selos separados, e não numa frase corrida com
+                ponto do meio: são duas medidas distintas, e o olho as encontra
+                mais rápido separadas do que lendo a linha inteira. */}
+            <p className="mt-3.5 flex flex-wrap items-center gap-2">
+              {[
+                t("estrutura.alternativas.contagem", {
+                  n: Object.keys(problema.consequencias).length,
+                }),
+                t("estrutura.criterios.contagem", { n: problema.criterios.length }),
+              ].map((texto) => (
+                <span
+                  key={texto}
+                  className="rounded-[var(--raio-controle)] border px-2.5 py-1 text-[12px] font-medium"
+                  style={{
+                    borderColor: "var(--navy-borda)",
+                    color: "var(--navy-tinta-2)",
+                  }}
+                >
+                  {texto}
+                </span>
+              ))}
             </p>
           </div>
           <button

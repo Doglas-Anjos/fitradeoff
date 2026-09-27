@@ -30,8 +30,7 @@ export function SeletorIdioma() {
       <div
         role="radiogroup"
         aria-label={t("nav.idioma")}
-        className="flex overflow-hidden rounded-[var(--raio-controle)] border"
-        style={{ borderColor: "var(--borda-forte)" }}
+        className="grupo-tema flex overflow-hidden rounded-[var(--raio-controle)] border"
       >
         {IDIOMAS.map(({ chave, rotulo, bandeira }) => {
           const ativo = idioma === chave;
@@ -43,13 +42,12 @@ export function SeletorIdioma() {
               aria-checked={ativo}
               onClick={() => definir(chave)}
               title={rotulo}
-              className="tatil px-2 py-1 text-[11px] font-medium"
-              style={{
-                /* Preenchimento cheio no escolhido: fundo levemente tingido
-                   não chegava a 3:1 e o estado sumia. */
-                background: ativo ? "var(--accent)" : "transparent",
-                color: ativo ? "var(--accent-tinta)" : "var(--tinta-3)",
-              }}
+              data-ativo={ativo}
+              /* Mesma correção do seletor de tema: a cor saiu de `style` para
+                 classe, senão o `:hover` dos idiomas não escolhidos não pegava.
+                 O escolhido leva preenchimento cheio -- fundo levemente tingido
+                 não chegava a 3:1 e o estado sumia. */
+              className="botao-tema tatil px-2 py-1 text-[11px] font-medium"
             >
               {bandeira}
               <span className="sr-only"> {rotulo}</span>

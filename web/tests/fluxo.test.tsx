@@ -2,13 +2,20 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { avisar } from "@/components/Avisos";
 import { EntradaProblema } from "@/components/EntradaProblema";
 import { api } from "@/lib/api";
 import type { Problematica } from "@/lib/types";
 
+/** O que a tela avisou. Os erros de validação são toasts, e um toast não vive
+    na árvore do componente sob teste — o espião é o jeito de afirmar sobre
+    ele sem montar o provedor inteiro. */
+let aviso: ReturnType<typeof vi.spyOn>;
+
 beforeEach(() => {
   window.localStorage.clear();
   vi.restoreAllMocks();
+  aviso = vi.spyOn(avisar, "erro").mockImplementation(() => "");
 });
 
 const trilha = () => screen.getByRole("navigation", { name: "Progresso do cadastro" });
@@ -132,7 +139,12 @@ describe("a sequência do cadastro", () => {
       screen.getByRole("button", { name: "Continuar para os desempenhos" }),
     );
 
-    expect(screen.getByRole("alert")).toHaveTextContent(/duas alternativas/);
+    /* O recado sai por aviso flutuante, e não mais num parágrafo no fim da
+       tela: quem clica em "continuar" no rodapé de um formulário longo não via
+       a mensagem, e o botão parecia não fazer nada. */
+    expect(aviso).toHaveBeenCalledWith(
+      expect.stringMatching(/duas alternativas/),
+    );
     expect(passoAtual()).toHaveTextContent("Estrutura");
     // o erro leva ao campo a que se refere, e nao so ao fim da pagina
     expect(screen.getByLabelText("Nome da nova alternativa")).toHaveFocus();
@@ -172,7 +184,9 @@ describe("a sequência do cadastro", () => {
     await cadastrarEstrutura();
     await userEvent.click(screen.getByRole("button", { name: "Criar decisão" }));
 
-    expect(screen.getByRole("alert")).toHaveTextContent(/precisa ser um número/);
+    expect(aviso).toHaveBeenCalledWith(
+      expect.stringMatching(/precisa ser um número/),
+    );
     expect(criar).not.toHaveBeenCalled();
   });
 

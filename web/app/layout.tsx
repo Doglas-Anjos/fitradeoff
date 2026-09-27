@@ -4,6 +4,7 @@ import { GeistSans } from "geist/font/sans";
 
 import { ProvedorIdioma } from "@/lib/i18n";
 import { Avisos } from "@/components/Avisos";
+import { FundoGuache } from "@/components/FundoGuache";
 import { Navegacao } from "@/components/Navegacao";
 import { SCRIPT_TEMA } from "@/lib/tema";
 import "./globals.css";
@@ -50,6 +51,8 @@ export default function RootLayout({
       </head>
       <body className="min-h-dvh">
         <ProvedorIdioma>
+          {/* Antes da navegação e fora dela: é fundo de tudo, e fica fixo. */}
+          <FundoGuache />
           <Navegacao />
           {children}
           {/* uma só, na raiz: duas montadas duplicam todo aviso */}

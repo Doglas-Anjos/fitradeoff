@@ -75,11 +75,14 @@ export function Navegacao() {
       }}
     >
       <nav className="relative mx-auto flex h-16 max-w-7xl items-center gap-8 px-5">
-        <Link href="/" className="flex items-center gap-2.5">
+        <Link
+          href="/"
+          className="tatil -mx-2 flex items-center gap-2.5 rounded-[var(--raio-controle)] px-2 py-1"
+        >
           <Marca />
           <span
             className="text-[15px] font-semibold tracking-tight"
-            style={{ color: "#ffffff" }}
+            style={{ color: "var(--navy-tinta)" }}
           >
             FITradeoff
           </span>
@@ -93,13 +96,10 @@ export function Navegacao() {
                 key={d.href}
                 href={d.href}
                 aria-current={ativo ? "page" : undefined}
-                className="tatil rounded-[var(--raio-controle)] px-3.5 py-2 text-sm"
-                style={{
-                  color: ativo ? "var(--navy)" : "#c6d7ea",
-                  background: ativo ? "#ffffff" : "transparent",
-                  fontWeight: ativo ? 650 : 450,
-                  boxShadow: ativo ? "0 4px 12px rgba(0,0,0,.15)" : "none",
-                }}
+                data-ativo={ativo}
+                /* Cor por classe, nao por `style`: inline vencia o `:hover` e
+                   os tres destinos nao reagiam ao ponteiro. */
+                className="link-nav tatil rounded-[var(--raio-controle)] px-3.5 py-2 text-sm"
               >
                 {t(d.chave)}
               </Link>
@@ -123,7 +123,7 @@ export function Navegacao() {
             target="_blank"
             rel="noopener noreferrer"
             className="tatil hidden items-center gap-1.5 rounded-[var(--raio-controle)] px-2.5 py-1.5 text-[13px] sm:flex"
-            style={{ color: "#c6d7ea" }}
+            style={{ color: "var(--navy-tinta-2)" }}
             title={t("nav.sobre.titulo")}
           >
             <span>{t("nav.sobre")}</span>

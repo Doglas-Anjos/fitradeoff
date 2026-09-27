@@ -166,3 +166,26 @@ export interface Resumo {
      precisa tratar a falta como "nao favorita" em vez de quebrar. */
   favorita?: boolean;
 }
+
+/** Variacao pedida para um criterio na analise de sensibilidade. */
+export interface VariacaoDeConsequencia {
+  criterio: string;
+  para_baixo: number;
+  para_cima: number;
+}
+
+/** Resposta de `/decisoes/{id}/sensibilidade-consequencias`.
+ *
+ * Declarada aqui, e nao no componente que a desenha nem inline na chamada: sao
+ * dois lugares que precisam concordar sobre a mesma resposta do servidor, e
+ * duas copias derivam sem o compilador reclamar. */
+export interface SensibilidadeDeConsequencias {
+  cenarios: number;
+  solucao_original: string[];
+  estabilidade: number;
+  frequencia: Record<string, number>;
+  entraram: Record<string, number>;
+  sairam: Record<string, number>;
+  criterios_variados: VariacaoDeConsequencia[];
+  leitura: string;
+}

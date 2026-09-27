@@ -36,23 +36,15 @@ import { useCallback, useEffect, useState } from "react";
 import { avisar } from "@/components/Avisos";
 import { TintaCabecalho } from "@/components/TintaCabecalho";
 import { Botao, Campo, Entrada, Segmentado, Selo } from "@/components/ui";
-import { api, ApiError, type Chave, type Conexao } from "@/lib/api";
+import { api, type Chave, type Conexao, mensagemDeErro } from "@/lib/api";
 import { useIdioma } from "@/lib/i18n";
 import "@/lib/i18n/chaves";
+import { dataHoraLocal } from "@/lib/datas";
 
 type Cliente = "claude" | "code" | "editor";
 
 const CLIENTES: Cliente[] = ["claude", "code", "editor"];
 
-/** `2026-09-26T03:36:08+00:00` -> `26/09/2026 03:36` no fuso de quem lê. */
-function instante(iso: string, idioma: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString(idioma === "en" ? "en-US" : "pt-BR", {
-    dateStyle: "short",
-    timeStyle: "short",
-  });
-}
 
 function BotaoCopiar({ texto, rotuloAcessivel }: { texto: string; rotuloAcessivel: string }) {
   const { t } = useIdioma();
@@ -127,7 +119,7 @@ export default function ChavesPage() {
       setConexao(await api.chaves());
       setErro(null);
     } catch (e) {
-      setErro(e instanceof ApiError ? e.message : String(e));
+      setErro(mensagemDeErro(e));
     } finally {
       setCarregando(false);
     }
@@ -146,7 +138,7 @@ export default function ChavesPage() {
       setRotulo("");
       await carregar();
     } catch (e) {
-      avisar.erro(e instanceof ApiError ? e.message : String(e));
+      avisar.erro(mensagemDeErro(e));
     } finally {
       setEmitindo(false);
     }
@@ -164,7 +156,7 @@ export default function ChavesPage() {
       avisar.feito(t("tela.chaves.revogada"));
       await carregar();
     } catch (e) {
-      avisar.erro(e instanceof ApiError ? e.message : String(e));
+      avisar.erro(mensagemDeErro(e));
     }
   };
 
@@ -396,12 +388,12 @@ export default function ChavesPage() {
                   </p>
                   <p className="mt-1 text-[12px]" style={{ color: "var(--tinta-3)" }}>
                     {t("tela.chaves.emitidas.criada", {
-                      data: instante(chave.criada_em, idioma),
+                      data: dataHoraLocal(chave.criada_em, idioma),
                     })}
                     {" · "}
                     {chave.ultimo_uso
                       ? t("tela.chaves.emitidas.uso", {
-                          data: instante(chave.ultimo_uso, idioma),
+                          data: dataHoraLocal(chave.ultimo_uso, idioma),
                         })
                       : t("tela.chaves.emitidas.semUso")}
                   </p>

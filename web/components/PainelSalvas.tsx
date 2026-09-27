@@ -42,7 +42,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 
 import { BotaoFavorita } from "@/components/BotaoFavorita";
 import { Entrada, Segmentado, Selo } from "@/components/ui";
-import { api, ApiError } from "@/lib/api";
+import { api, mensagemDeErro } from "@/lib/api";
 import { useIdioma, type Idioma } from "@/lib/i18n";
 import "@/lib/i18n/paineis";
 import {
@@ -215,7 +215,7 @@ export function PainelSalvas({
            é da rede, e o resto da tela continua utilizável. */
         setItens([]);
         setErro(
-          e instanceof ApiError ? e.message : t("paineis.erro.servidor"),
+          mensagemDeErro(e, t("paineis.erro.servidor")),
         );
       });
     return () => {
@@ -337,7 +337,7 @@ export function PainelSalvas({
       await api.favoritar(id, favorita);
     } catch (e) {
       marcar(!favorita);
-      setErro(e instanceof ApiError ? e.message : t("paineis.erro.favoritar"));
+      setErro(mensagemDeErro(e, t("paineis.erro.favoritar")));
     }
   };
 
@@ -352,7 +352,7 @@ export function PainelSalvas({
          sempre sobrepõe. */
       fechar();
     } catch (e) {
-      setErro(e instanceof ApiError ? e.message : t("paineis.erro.abrir"));
+      setErro(mensagemDeErro(e, t("paineis.erro.abrir")));
     } finally {
       setAbrindo(null);
     }

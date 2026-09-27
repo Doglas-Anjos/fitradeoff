@@ -41,6 +41,19 @@ export function PainelProgresso({
   const resolvido = analise?.resolvido ?? false;
   const deTotal = t("progresso.deTotal", { total });
   const selecionados = analise?.sempre_selecionados?.length ?? 0;
+  /* Ranking e sorting contam a mesma coisa: todas as alternativas seguem até o
+     fim, e o que encolhe é quantas ainda não têm lugar definido. O que muda
+     entre as duas é o nome desse lugar -- posição numa, classe na outra --, e
+     isso é a chave de tradução, não a conta. */
+  const porLugarDefinido = (qual: "ranking" | "sorting") => ({
+    rotulo: t(
+      resolvido ? `progresso.${qual}.definidas` : `progresso.${qual}.indefinidas`,
+    ),
+    numero: resolvido ? total : indefinidas,
+    sufixo: deTotal,
+    fracao: resolvido ? 1 : total > 0 ? (total - indefinidas) / total : 0,
+  });
+
   const contagem = {
     escolha: {
       rotulo: t("progresso.escolha.emDisputa"),
@@ -51,26 +64,8 @@ export function PainelProgresso({
         ? (total - Math.max(indefinidas, 1)) / (total - 1)
         : 1,
     },
-    ranking: {
-      rotulo: t(
-        resolvido ? "progresso.ranking.definidas" : "progresso.ranking.indefinidas",
-      ),
-      numero: resolvido ? total : indefinidas,
-      sufixo: deTotal,
-      /* Aqui todas as alternativas seguem até o fim; o que encolhe é quantas
-         ainda não têm lugar definido. */
-      fracao: resolvido ? 1 : total > 0 ? (total - indefinidas) / total : 0,
-    },
-    sorting: {
-      rotulo: t(
-        resolvido ? "progresso.sorting.definidas" : "progresso.sorting.indefinidas",
-      ),
-      numero: resolvido ? total : indefinidas,
-      sufixo: deTotal,
-      /* Aqui todas as alternativas seguem até o fim; o que encolhe é quantas
-         ainda não têm lugar definido. */
-      fracao: resolvido ? 1 : total > 0 ? (total - indefinidas) / total : 0,
-    },
+    ranking: porLugarDefinido("ranking"),
+    sorting: porLugarDefinido("sorting"),
     portfolio: {
       rotulo: t(
         resolvido ? "progresso.portfolio.definida" : "progresso.portfolio.indefinida",

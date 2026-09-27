@@ -12,6 +12,8 @@ import type {
   Problema,
   Problematica,
   Resumo,
+  SensibilidadeDeConsequencias,
+  VariacaoDeConsequencia,
 } from "./types";
 
 /** O que a planilha disse, antes de virar decisão. */
@@ -50,6 +52,20 @@ export class ApiError extends Error {
   ) {
     super(message);
   }
+}
+
+/** O texto de uma falha: o do servidor quando ele explicou, a reserva quando nao.
+ *
+ * A API responde com a frase pronta, e nesse caso e ela que deve aparecer -- diz
+ * o que aconteceu naquela decisao, nao no geral. Fora disso a tela precisa de uma
+ * frase sua, porque `String(e)` de um erro de rede nao serve para ninguem ler; e
+ * por isso a reserva e por operacao, e nao uma so para tudo.
+ *
+ * Sem reserva, cai em `String(e)`, que serve para onde o texto vai para um canal
+ * que ja tem a sua propria moldura de erro. */
+export function mensagemDeErro(e: unknown, reserva?: string): string {
+  if (e instanceof ApiError) return e.message;
+  return reserva ?? String(e);
 }
 
 async function request<T>(caminho: string, init?: RequestInit): Promise<T> {
@@ -172,19 +188,13 @@ export const api = {
 
   sensibilidadeConsequencias: (
     id: string,
-    variacoes: { criterio: string; para_baixo: number; para_cima: number }[],
+    variacoes: VariacaoDeConsequencia[],
     cenarios = 200,
   ) =>
-    post<{
-      cenarios: number;
-      solucao_original: string[];
-      estabilidade: number;
-      frequencia: Record<string, number>;
-      entraram: Record<string, number>;
-      sairam: Record<string, number>;
-      criterios_variados: { criterio: string; para_baixo: number; para_cima: number }[];
-      leitura: string;
-    }>(`/api/decisoes/${id}/sensibilidade-consequencias`, { variacoes, cenarios }),
+    post<SensibilidadeDeConsequencias>(
+      `/api/decisoes/${id}/sensibilidade-consequencias`,
+      { variacoes, cenarios },
+    ),
 
   /* O problema que ainda está sendo montado. Opaco para a API de propósito: a
      forma do formulário é assunto da interface, e muda com ela. */

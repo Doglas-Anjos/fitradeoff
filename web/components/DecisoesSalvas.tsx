@@ -28,7 +28,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { BotaoFavorita } from "@/components/BotaoFavorita";
 import { Entrada } from "@/components/ui";
-import { api, ApiError } from "@/lib/api";
+import { api, mensagemDeErro } from "@/lib/api";
 import { useIdioma } from "@/lib/i18n";
 import "@/lib/i18n/paineis";
 import { favoritasPrimeiro, PROBLEMATICA, resumir } from "@/lib/resumoDecisao";
@@ -56,7 +56,7 @@ export function DecisoesSalvas({
         if (!vivo) return;
         setItens([]);
         setErro(
-          e instanceof ApiError ? e.message : t("paineis.erro.servidor"),
+          mensagemDeErro(e, t("paineis.erro.servidor")),
         );
       });
     return () => {
@@ -94,7 +94,7 @@ export function DecisoesSalvas({
       await api.favoritar(id, favorita);
     } catch (e) {
       marcar(!favorita);
-      setErro(e instanceof ApiError ? e.message : t("paineis.erro.favoritar"));
+      setErro(mensagemDeErro(e, t("paineis.erro.favoritar")));
     }
   };
 
@@ -104,7 +104,7 @@ export function DecisoesSalvas({
     try {
       onAbrir(await api.ver(id));
     } catch (e) {
-      setErro(e instanceof ApiError ? e.message : t("paineis.erro.abrir"));
+      setErro(mensagemDeErro(e, t("paineis.erro.abrir")));
     } finally {
       setAbrindo(null);
     }

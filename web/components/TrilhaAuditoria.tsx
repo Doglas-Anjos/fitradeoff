@@ -26,20 +26,12 @@ import { CaretDown, CaretRight, Scales } from "@phosphor-icons/react";
 import { useState } from "react";
 
 import { Botao, Dica } from "@/components/ui";
-import { api, ApiError } from "@/lib/api";
+import { api, mensagemDeErro } from "@/lib/api";
 import { useIdioma } from "@/lib/i18n";
 import "@/lib/i18n/auditoria";
 import type { Auditoria } from "@/lib/types";
+import { dataHoraLocal } from "@/lib/datas";
 
-/** `2026-09-26T03:36:08+00:00` -> `26/09/2026 03:36` no fuso de quem lê. */
-function instante(iso: string, idioma: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString(idioma === "en" ? "en-US" : "pt-BR", {
-    dateStyle: "short",
-    timeStyle: "short",
-  });
-}
 
 /** Restrições distintas, com quantas vezes cada origem aparece.
  *
@@ -67,7 +59,7 @@ export function TrilhaAuditoria({ decisaoId }: { decisaoId: string }) {
     try {
       setTrilha(await api.auditoria(decisaoId));
     } catch (e) {
-      setErro(e instanceof ApiError ? e.message : t("auditoria.erro"));
+      setErro(mensagemDeErro(e, t("auditoria.erro")));
     } finally {
       setCarregando(false);
     }
@@ -189,7 +181,7 @@ export function TrilhaAuditoria({ decisaoId }: { decisaoId: string }) {
                             className="ml-2 text-[12px]"
                             style={{ color: "var(--tinta-3)" }}
                           >
-                            — {d.autor} · {instante(d.registrado_em, idioma)}
+                            — {d.autor} · {dataHoraLocal(d.registrado_em, idioma)}
                           </span>
                         </span>
                       </li>

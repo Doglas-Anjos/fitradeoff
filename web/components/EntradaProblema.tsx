@@ -62,7 +62,7 @@ import {
   Selo,
 } from "@/components/ui";
 import { avisar } from "@/components/Avisos";
-import { api, ApiError, type PlanilhaLida } from "@/lib/api";
+import { api, type PlanilhaLida, mensagemDeErro } from "@/lib/api";
 import { EXEMPLOS, type Exemplo } from "@/lib/exemplos";
 import { useIdioma } from "@/lib/i18n";
 /* O catálogo dos módulos de domínio: os casos prontos e as recusas da validação
@@ -742,7 +742,7 @@ export function EntradaProblema({
          só repassa o texto, para a tela ter um caminho de erro, não dois. */
       reportar({
         chave: "dominio.erro.api",
-        valores: { detalhe: e instanceof ApiError ? e.message : String(e) },
+        valores: { detalhe: mensagemDeErro(e) },
       });
     } finally {
       setOcupado(false);
@@ -853,7 +853,7 @@ export function EntradaProblema({
          só repassa o texto, para a tela ter um caminho de erro, não dois. */
       reportar({
         chave: "dominio.erro.api",
-        valores: { detalhe: e instanceof ApiError ? e.message : String(e) },
+        valores: { detalhe: mensagemDeErro(e) },
       });
       setArquivoLido(null);
     } finally {

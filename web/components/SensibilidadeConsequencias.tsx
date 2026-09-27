@@ -16,21 +16,14 @@ import { Play } from "@phosphor-icons/react";
 import { useState } from "react";
 
 import { Botao, Dica, Entrada } from "@/components/ui";
-import { api, ApiError } from "@/lib/api";
+import { api, mensagemDeErro } from "@/lib/api";
 import { useIdioma } from "@/lib/i18n";
 import "@/lib/i18n/visualizacoes";
-import type { CriterioOut } from "@/lib/types";
+import type {
+  CriterioOut,
+  SensibilidadeDeConsequencias,
+} from "@/lib/types";
 
-interface Resultado {
-  cenarios: number;
-  solucao_original: string[];
-  estabilidade: number;
-  frequencia: Record<string, number>;
-  entraram: Record<string, number>;
-  sairam: Record<string, number>;
-  criterios_variados: { criterio: string; para_baixo: number; para_cima: number }[];
-  leitura: string;
-}
 
 const pct = (v: number) => `${(v * 100).toFixed(0)}%`;
 
@@ -56,7 +49,7 @@ export function SensibilidadeConsequencias({
     Object.fromEntries(criterios.map((c) => [c.chave, true])),
   );
   const [variacao, setVariacao] = useState("10");
-  const [resultado, setResultado] = useState<Resultado | null>(null);
+  const [resultado, setResultado] = useState<SensibilidadeDeConsequencias | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [rodando, setRodando] = useState(false);
 
@@ -81,7 +74,7 @@ export function SensibilidadeConsequencias({
         ),
       );
     } catch (e) {
-      setErro(e instanceof ApiError ? e.message : String(e));
+      setErro(mensagemDeErro(e));
     } finally {
       setRodando(false);
     }

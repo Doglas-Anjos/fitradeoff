@@ -39,7 +39,7 @@ import { SinteseResultado } from "@/components/SinteseResultado";
 import { SensibilidadeConsequencias } from "@/components/SensibilidadeConsequencias";
 import { Visualizacoes } from "@/components/Visualizacoes";
 import { TradeoffChart } from "@/components/TradeoffChart";
-import { api, ApiError } from "@/lib/api";
+import { api, ApiError, mensagemDeErro } from "@/lib/api";
 import { useIdioma } from "@/lib/i18n";
 import "@/lib/i18n/telas";
 import "@/lib/i18n/estrutura";
@@ -148,9 +148,13 @@ function Decisao() {
       } catch (e) {
         if (!cancelado) {
           setErro(
+            /* O 404 tem frase propria porque o servidor nao explica o que
+               significa: "nao encontrada" e o fato, e "essa decisao nao existe
+               mais" e o que a pessoa precisa ler. Qualquer outra falha o
+               servidor ja explicou, e e a explicacao dele que aparece. */
             e instanceof ApiError && e.status === 404
               ? t("tela.decisao.erro.naoExiste")
-              : String(e),
+              : mensagemDeErro(e),
           );
           router.replace("/decisao");
         }
@@ -197,7 +201,7 @@ function Decisao() {
     try {
       await acao();
     } catch (e) {
-      setErro(e instanceof ApiError ? e.message : String(e));
+      setErro(mensagemDeErro(e));
     } finally {
       setOcupado(false);
     }

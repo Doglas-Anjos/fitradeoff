@@ -222,6 +222,21 @@ export const PARIDADE_TEXTOS = registrar({
     es: "Dos consecuencias hipotéticas, ambas malas en casi todo. Marcamos lo que es idéntico en las dos situaciones, para que la comparación sea solo sobre lo que cambia.",
   },
   "paridade.telas.oficialLegenda": { pt: "Oficial", en: "Official", es: "Oficial" },
+  "paridade.telas.pausar": {
+    pt: "Pausar a alternância",
+    en: "Pause the alternation",
+    es: "Pausar la alternancia",
+  },
+  "paridade.telas.retomar": {
+    pt: "Retomar a alternância",
+    en: "Resume the alternation",
+    es: "Reanudar la alternancia",
+  },
+  "paridade.telas.alternar": {
+    pt: "Alternar entre os dois sistemas",
+    en: "Switch between the two systems",
+    es: "Alternar entre los dos sistemas",
+  },
   "paridade.telas.nossoLegenda": { pt: "Nossa", en: "Ours", es: "Nuestra" },
 
   /* --- o que a comparação encontrou ----------------------------------------- */

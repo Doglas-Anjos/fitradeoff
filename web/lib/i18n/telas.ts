@@ -1,5 +1,5 @@
 /**
- * Catálogo das páginas: a home, a tela de decisão estruturada e o chat.
+ * Catálogo das páginas: a home e a tela de decisão estruturada.
  *
  * Só o que a página escreve por conta própria mora aqui. Título de seção,
  * rótulo de botão, conteúdo de dica e atributo `title` são texto de interface e
@@ -22,10 +22,10 @@
  * os nomes próprios das problemáticas, e a paráfrase soaria como se fossem
  * quatro funcionalidades inventadas aqui.
  *
- * **Frases quebradas por um elemento no meio têm chave por pedaço.** O aviso
- * do chat tem um `<code>` e um link dentro; o texto é dividido nos pontos onde
- * o elemento entra, e não numa tradução por palavra. Cada pedaço ainda é uma
- * oração inteira em todo idioma.
+ * **Frases quebradas por um elemento no meio têm chave por pedaço.** Quando um
+ * `<code>` ou um link entra no meio de uma frase, o texto é dividido nos pontos
+ * onde o elemento entra, e não numa tradução por palavra. Cada pedaço ainda é
+ * uma oração inteira em todo idioma.
  *
  * **Sem travessão em nenhum idioma.** Onde o português usava "—", o catálogo
  * usa hífen: o travessão é raro em inglês de produto e a mistura dos dois
@@ -76,15 +76,15 @@ export const TELAS = registrar({
     en: "Start a decision",
     es: "Comenzar una decisión",
   },
-  "tela.home.acao.chat": {
-    pt: "Descrever em conversa",
-    en: "Describe it in a conversation",
-    es: "Describir en una conversación",
+  "tela.home.acao.chaves": {
+    pt: "Conectar seu assistente",
+    en: "Connect your assistant",
+    es: "Conectar su asistente",
   },
   "tela.home.acao.ajuda": {
-    pt: "As duas entradas levam ao mesmo método. A conversa ajuda quando o problema ainda não está organizado.",
-    en: "Both ways in lead to the same method. The conversation helps when the problem is not organized yet.",
-    es: "Las dos entradas llevan al mismo método. La conversación ayuda cuando el problema todavía no está organizado.",
+    pt: "As duas entradas levam ao mesmo método. Conectar serve a quem prefere conduzir a decisão conversando com o assistente que já usa.",
+    en: "Both ways in lead to the same method. Connecting suits whoever would rather run the decision by talking to the assistant they already use.",
+    es: "Las dos entradas llevan al mismo método. Conectar sirve a quien prefiere conducir la decisión conversando con el asistente que ya usa.",
   },
 
   "tela.home.pratica.titulo": {
@@ -369,105 +369,5 @@ export const TELAS = registrar({
     pt: "Por que este resultado",
     en: "Why this result",
     es: "Por qué este resultado",
-  },
-
-  // --- chat -----------------------------------------------------------------
-  "tela.chat.titulo": { pt: "Chat de decisões", en: "Decision chat", es: "Chat de decisiones" },
-  "tela.chat.editorial": { pt: "Assistente guiado", en: "Guided assistant", es: "Asistente guiado" },
-  "tela.chat.descricao": {
-    pt: "Descreva o que precisa decidir. O agente monta o modelo e conduz a elicitação pelo método - as respostas continuam sendo suas.",
-    en: "Describe what you need to decide. The agent builds the model and runs the elicitation by the method - the answers are still yours.",
-    es: "Describa lo que necesita decidir. El agente arma el modelo y conduce la elicitación por el método - las respuestas siguen siendo suyas.",
-  },
-
-  /* A instrução de configuração envolve o nome da variável em <code>, por isso
-     só o trecho anterior e o posterior ficam no catálogo. */
-  "tela.chat.semChave.aviso": {
-    pt: "O chat precisa de uma chave da API da Anthropic para funcionar.",
-    en: "The chat needs an Anthropic API key to work.",
-    es: "El chat necesita una clave de la API de Anthropic para funcionar.",
-  },
-  "tela.chat.semChave.titulo": {
-    pt: "O assistente está indisponível neste ambiente",
-    en: "The assistant is unavailable in this environment",
-    es: "El asistente no está disponible en este entorno",
-  },
-  "tela.chat.semChave.configuracao.antes": {
-    pt: "Defina",
-    en: "Set",
-    es: "Defina",
-  },
-  "tela.chat.semChave.configuracao.depois": {
-    pt: "no ambiente da API e reinicie o servidor.",
-    en: "in the API environment and restart the server.",
-    es: "en el entorno de la API y reinicie el servidor.",
-  },
-  "tela.chat.semChave.acao": {
-    pt: "Abrir decisão estruturada",
-    en: "Open structured decision",
-    es: "Abrir decisión estructurada",
-  },
-  "tela.chat.alternativa.titulo": {
-    pt: "Continue pelo fluxo estruturado",
-    en: "Continue with the structured flow",
-    es: "Continúe por el flujo estructurado",
-  },
-  "tela.chat.alternativa.item1": {
-    pt: "As mesmas problemáticas e etapas do método.",
-    en: "The same problem types and method steps.",
-    es: "Las mismas problemáticas y etapas del método.",
-  },
-  "tela.chat.alternativa.item2": {
-    pt: "Controle direto sobre alternativas, critérios e desempenhos.",
-    en: "Direct control over alternatives, criteria and performances.",
-    es: "Control directo sobre alternativas, criterios y desempeños.",
-  },
-  "tela.chat.alternativa.item3": {
-    pt: "Resultados, sensibilidade e trilha de auditoria completos.",
-    en: "Complete results, sensitivity analysis and audit trail.",
-    es: "Resultados, sensibilidad y trazabilidad de auditoría completos.",
-  },
-
-  /* Sugestões de primeira mensagem. Em inglês são reescritas, não traduzidas:
-     precisam soar como alguém digitando. */
-  "tela.chat.sugestao1": {
-    pt: "Preciso escolher entre quatro fornecedores olhando custo, prazo e qualidade.",
-    en: "I need to choose among four suppliers looking at cost, lead time and quality.",
-    es: "Necesito elegir entre cuatro proveedores mirando costo, plazo y calidad.",
-  },
-  "tela.chat.sugestao2": {
-    pt: "Tenho três propostas de software para comparar. Me ajuda a decidir?",
-    en: "I have three software proposals to compare. Can you help me decide?",
-    es: "Tengo tres propuestas de software para comparar. ¿Me ayudas a decidir?",
-  },
-  "tela.chat.sugestao3": {
-    pt: "Quero ordenar seis projetos por prioridade, não só escolher um.",
-    en: "I want to rank six projects by priority, not just pick one.",
-    es: "Quiero ordenar seis proyectos por prioridad, no solo elegir uno.",
-  },
-  "tela.chat.sugestoes.titulo": {
-    pt: "Comece descrevendo uma decisão",
-    en: "Start by describing a decision",
-    es: "Comience describiendo una decisión",
-  },
-
-  /* Prefixo do rastro de ferramentas; a lista e as setas são montadas no
-     componente, porque são pontuação e não texto. */
-  "tela.chat.metodoAplicado": {
-    pt: "método aplicado:",
-    en: "method applied:",
-    es: "método aplicado:",
-  },
-  "tela.chat.pensando": { pt: "pensando…", en: "thinking…", es: "pensando…" },
-  "tela.chat.entrada": {
-    pt: "O que você precisa decidir?",
-    en: "What do you need to decide?",
-    es: "¿Qué necesita decidir?",
-  },
-  "tela.chat.enviar": { pt: "Enviar", en: "Send", es: "Enviar" },
-  "tela.chat.emAndamento": {
-    pt: "decisão em andamento:",
-    en: "decision in progress:",
-    es: "decisión en curso:",
   },
 });

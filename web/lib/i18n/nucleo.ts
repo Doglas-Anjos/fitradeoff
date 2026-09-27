@@ -11,7 +11,10 @@ import { registrar } from "./index";
 
 export const NUCLEO = registrar({
   "nav.decisao": { pt: "Decisão", en: "Decision", es: "Decisión" },
-  "nav.chat": { pt: "Chat", en: "Chat", es: "Chat" },
+  /* "Conectar", e não "Chaves": neste produto "chave" já é a chave de um
+     critério, e o mesmo rótulo para as duas coisas manda a pessoa ao lugar
+     errado. O título da tela diz que chaves são o meio. */
+  "nav.chaves": { pt: "Conectar", en: "Connect", es: "Conectar" },
   "nav.sobre": { pt: "Sobre o método", en: "About the method", es: "Acerca del método" },
   "nav.sobre.titulo": {
     pt: "Site oficial do método, no CDSID/UFPE",

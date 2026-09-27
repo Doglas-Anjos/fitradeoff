@@ -12,12 +12,19 @@ porque os dois defeitos que eles pegam são invisíveis na leitura do fonte:
   fato tem, nos dois temas. Foi assim que apareceram três superfícies com
   `bg-white` fixo, que só quebravam no escuro.
 
-Os dois pedem o front no ar (`npm run dev`) e saem com código 1 quando acham
+- **`verificar_comparador.py`** — confere o comparador de telas da paridade:
+  que ele alterna sozinho, que para com o ponteiro dentro, que o botão de pausa
+  para de verdade, que as abas trocam, e que a captura em foco cai na mesma
+  coordenada nas duas. Este último é o ponto do componente — se as duas saírem
+  em lugares diferentes, comparar volta a exigir memória.
+
+Os três pedem o front no ar (`npm run dev`) e saem com código 1 quando acham
 algo, para servirem em automação.
 
 ```
 python web/scripts/verificar_hover.py
 python web/scripts/verificar_contraste.py
+python web/scripts/verificar_comparador.py
 ```
 
 Precisam de Playwright, que já está no ambiente Python do motor:

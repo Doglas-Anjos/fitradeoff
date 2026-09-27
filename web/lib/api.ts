@@ -24,6 +24,25 @@ export interface PlanilhaLida {
   origem: string;
 }
 
+/** Uma chave do MCP remoto, como a API a devolve: sem o texto, que não volta. */
+export interface Chave {
+  id: string;
+  rotulo: string;
+  /** Começo e fim do texto, o que permite reconhecer qual revogar. */
+  prefixo: string;
+  criada_em: string;
+  ultimo_uso: string | null;
+}
+
+export interface Conexao {
+  chaves: Chave[];
+  /** Endereço do endpoint MCP, que entra na configuração do cliente. */
+  url: string;
+  publicado: boolean;
+  /** Incoerência de configuração que custaria caro descobrir sozinho. */
+  aviso: string | null;
+}
+
 export class ApiError extends Error {
   constructor(
     public readonly status: number,
@@ -186,4 +205,13 @@ export const api = {
       "/api/chat",
       { mensagens, decisao_id },
     ),
+
+  chaves: () => request<Conexao>("/api/chaves"),
+
+  /** A única resposta da API que traz o texto de uma chave. */
+  emitirChave: (rotulo: string) =>
+    post<{ chave: Chave; texto: string; url: string }>("/api/chaves", { rotulo }),
+
+  revogarChave: (id: string) =>
+    request<{ revogada: boolean }>(`/api/chaves/${id}`, { method: "DELETE" }),
 };

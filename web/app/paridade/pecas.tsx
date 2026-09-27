@@ -9,8 +9,9 @@
  * a outra tela, e a primeira pessoa que tentasse reusá-las descobriria que não.
  */
 
+import { Pause, Play } from "@phosphor-icons/react";
 import Image from "next/image";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Selo } from "@/components/ui";
 
@@ -214,67 +215,12 @@ export function Ponto({ titulo, corpo }: { titulo: string; corpo: string }) {
 }
 
 /** Um par de capturas, a nossa ao lado da dele. */
-/**
- * Quão perto do centro da janela este elemento está, de 0 a 1.
- *
- * 1 quando o centro dele coincide com o centro da tela; 0 quando está a meia
- * janela de distância ou mais. É o que permite "a figura que está sendo olhada
- * ganha destaque" sem inventar qual é: a que está no meio da tela é a que a
- * pessoa está olhando.
- *
- * Amarrado à rolagem, e não ao tempo: quem controla o ritmo é quem lê, e uma
- * animação por temporizador seguiria correndo enquanto a pessoa está parada.
- * Medido dentro de `requestAnimationFrame` para não recalcular geometria a cada
- * evento de rolagem, que é o jeito clássico de travar uma página.
- */
-function useProximidadeDoCentro(alvo: React.RefObject<HTMLElement | null>): number {
-  const [perto, setPerto] = useState(1);
-
-  useEffect(() => {
-    const el = alvo.current;
-    if (!el) return;
-
-    let pendente = false;
-    const medir = () => {
-      pendente = false;
-      const r = el.getBoundingClientRect();
-      const janela = window.innerHeight;
-      const linha = janela / 2;
-      /* Foco cheio quando a linha central da tela cai dentro da figura, e não
-         quando os dois centros coincidem. Estas capturas são mais altas que a
-         janela: pela distância entre centros, uma imagem que ocupa a tela
-         inteira ficaria marcada como "longe" só porque a metade dela está
-         fora. O que importa é se a pessoa está olhando para ela. */
-      const distancia =
-        linha < r.top ? r.top - linha : linha > r.bottom ? linha - r.bottom : 0;
-      setPerto(Math.max(0, 1 - distancia / (janela * 0.5)));
-    };
-    const aoRolar = () => {
-      if (pendente) return;
-      pendente = true;
-      requestAnimationFrame(medir);
-    };
-
-    medir();
-    window.addEventListener("scroll", aoRolar, { passive: true });
-    window.addEventListener("resize", aoRolar);
-    return () => {
-      window.removeEventListener("scroll", aoRolar);
-      window.removeEventListener("resize", aoRolar);
-    };
-  }, [alvo]);
-
-  return perto;
-}
-
 /** A pessoa pediu para o sistema não animar? */
 function usaMovimentoReduzido(): boolean {
   const [reduzido, setReduzido] = useState(false);
   useEffect(() => {
     /* Nem todo ambiente tem `matchMedia` -- jsdom não tem, e sem esta guarda o
-       componente derruba a página inteira em teste. Na dúvida assume que pode
-       animar, que é o caminho em que a informação aparece igual: o recuo é
-       ênfase, não conteúdo. */
+       componente derruba a página inteira em teste. */
     if (typeof window.matchMedia !== "function") return;
     const consulta = window.matchMedia("(prefers-reduced-motion: reduce)");
     setReduzido(consulta.matches);
@@ -285,86 +231,29 @@ function usaMovimentoReduzido(): boolean {
   return reduzido;
 }
 
-/** Uma captura, com ênfase conforme a rolagem a traz para o meio da tela. */
-function Captura({
-  src,
-  rotulo,
-  titulo,
-  reduzido,
-}: {
-  src: string;
-  rotulo: string;
-  titulo: string;
-  reduzido: boolean;
-}) {
-  const quadro = useRef<HTMLElement>(null);
-  const perto = useProximidadeDoCentro(quadro);
-  const foco = reduzido ? 1 : perto;
-  const emFoco = foco > 0.6;
-
-  return (
-    <figure ref={quadro} className="min-w-0">
-      <figcaption
-        className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em]"
-        style={{ color: emFoco ? "var(--accent)" : "var(--tinta-fraca)" }}
-      >
-        <span
-          aria-hidden
-          className="h-1.5 w-1.5 rounded-full"
-          style={{ background: emFoco ? "var(--accent)" : "var(--borda-forte)" }}
-        />
-        {rotulo}
-      </figcaption>
-      <div
-        className="overflow-hidden rounded-[var(--raio-painel)] border"
-        style={{
-          borderColor: emFoco ? "var(--accent)" : "var(--borda)",
-          background: "var(--painel)",
-          boxShadow: emFoco ? "var(--sombra-alta)" : "none",
-          opacity: 0.4 + 0.6 * foco,
-          filter: `saturate(${0.5 + 0.5 * foco})`,
-          transform: `scale(${0.985 + 0.015 * foco})`,
-          transition:
-            "border-color 260ms ease, box-shadow 260ms ease, opacity 90ms linear, filter 90ms linear, transform 90ms linear",
-        }}
-      >
-        {/* `unoptimized`: são capturas estáticas versionadas, não conteúdo
-            variável — passar pelo otimizador só adiciona uma peça. */}
-        <Image
-          src={src}
-          alt={`${titulo} — ${rotulo}`}
-          width={1280}
-          height={800}
-          unoptimized
-          className="h-auto w-full"
-        />
-      </div>
-    </figure>
-  );
-}
+const INTERVALO = 5200;
 
 /**
- * Duas capturas da mesma tela, uma de cada sistema, comparadas na rolagem.
+ * Duas capturas da mesma tela, uma de cada sistema, no mesmo lugar.
  *
- * Elas ficavam lado a lado, com o mesmo peso, e isso não funcionava por dois
- * motivos. Um: comparar exige olhar uma de cada vez, e duas imagens iguais em
- * destaque fazem o olho pular entre elas sem parar em nenhuma. Dois: metade da
- * largura numa captura de tela inteira deixa a letra pequena demais para se
- * ler o que está escrito — e ler o que está escrito é a única razão de elas
- * estarem aqui.
+ * Passaram por duas formas antes desta, e ambas falhavam pelo mesmo motivo de
+ * fundo: comparar é olhar uma, depois a outra, **no mesmo ponto da tela**.
  *
- * Agora são empilhadas, cada uma na largura toda, e a ênfase acompanha a
- * rolagem: a que está no meio da tela é a que está sendo olhada, e ganha cor,
- * borda e sombra; a outra recua. É o gesto de virar uma folha sobre a outra,
- * que é o que se faria com as duas impressas na mesa.
+ * Lado a lado, o olho pula entre as duas sem fixar em nenhuma, e cada uma fica
+ * com metade da largura -- a letra da captura some, que é a única coisa que
+ * interessa ali. Empilhadas, a largura se resolve e aparece outro problema:
+ * para confrontar um detalhe é preciso rolar de uma para a outra e guardar de
+ * memória o que estava na primeira.
  *
- * Empilhar também é o que faz a troca de ênfase ter sentido. Lado a lado, "role
- * e o destaque passa para a outra" não descreve movimento nenhum: as duas estão
- * na mesma altura, e a rolagem as trata igual.
+ * Aqui as duas ocupam a mesma célula da grade e uma troca pela outra, com abas
+ * numeradas por cima. O detalhe fica na mesma coordenada nas duas, então a
+ * diferença aparece sozinha -- é o gesto de pôr uma folha sobre a outra contra
+ * a luz.
  *
- * Com `prefers-reduced-motion` as duas ficam em foco o tempo todo. O recuo é
- * ênfase, não conteúdo: quem não vê o movimento continua vendo as duas imagens
- * inteiras, com as legendas.
+ * A alternância corre sozinha porque a maioria só passa o olho e não clicaria
+ * em nada. Mas movimento que começa sem ser pedido precisa ter parada à mão:
+ * há botão de pausa, ela para sozinha com o ponteiro ou o teclado dentro do
+ * quadro, e não começa quando o sistema pede menos movimento.
  */
 export function ParDeTelas({
   titulo,
@@ -379,6 +268,28 @@ export function ParDeTelas({
 }) {
   const { t } = useIdioma();
   const reduzido = usaMovimentoReduzido();
+  const [atual, setAtual] = useState(0);
+  const [pausado, setPausado] = useState(false);
+  const [dentro, setDentro] = useState(false);
+
+  const telas = useMemo(
+    () => [
+      { rotulo: t("paridade.telas.oficialLegenda"), src: oficial },
+      { rotulo: t("paridade.telas.nossoLegenda"), src: nosso },
+    ],
+    [t, oficial, nosso],
+  );
+
+  const correndo = !pausado && !dentro && !reduzido;
+
+  useEffect(() => {
+    if (!correndo) return;
+    const relogio = setInterval(
+      () => setAtual((i) => (i + 1) % telas.length),
+      INTERVALO,
+    );
+    return () => clearInterval(relogio);
+  }, [correndo, telas.length]);
 
   return (
     <div className="mt-10">
@@ -388,19 +299,95 @@ export function ParDeTelas({
       <p className="prosa-editorial mt-1.5 text-sm" style={{ color: "var(--tinta-3)" }}>
         {nota}
       </p>
-      <div className="mt-5 grid gap-7">
-        <Captura
-          src={oficial}
-          rotulo={t("paridade.telas.oficialLegenda")}
-          titulo={titulo}
-          reduzido={reduzido}
-        />
-        <Captura
-          src={nosso}
-          rotulo={t("paridade.telas.nossoLegenda")}
-          titulo={titulo}
-          reduzido={reduzido}
-        />
+
+      <div
+        className="comparador mt-4 overflow-hidden rounded-[var(--raio-painel)] border"
+        onMouseEnter={() => setDentro(true)}
+        onMouseLeave={() => setDentro(false)}
+        onFocusCapture={() => setDentro(true)}
+        onBlurCapture={() => setDentro(false)}
+      >
+        <div className="comparador-barra flex items-center gap-1 border-b px-2 py-2">
+          <div
+            role="tablist"
+            aria-label={t("paridade.telas.alternar")}
+            className="flex gap-1"
+          >
+            {telas.map((tela, i) => (
+              <button
+                key={tela.src}
+                role="tab"
+                aria-selected={i === atual}
+                onClick={() => setAtual(i)}
+                data-ativa={i === atual}
+                className="aba-comparador tatil flex items-center gap-2 rounded-[var(--raio-controle)] px-3 py-1.5 text-[12px] font-medium"
+              >
+                <span aria-hidden className="num text-[11px] opacity-70">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                {tela.rotulo}
+              </button>
+            ))}
+          </div>
+
+          {/* A parada fica à mão, e não escondida: movimento que ninguém pediu
+              precisa poder ser interrompido por quem não consegue ler junto com
+              ele. Some quando o sistema já pede menos movimento, porque aí não
+              há nada correndo para parar. */}
+          {!reduzido && (
+            <button
+              onClick={() => setPausado((x) => !x)}
+              aria-label={t(
+                pausado ? "paridade.telas.retomar" : "paridade.telas.pausar",
+              )}
+              className="botao-pausa tatil ml-auto inline-flex h-7 w-7 items-center justify-center rounded-[var(--raio-controle)]"
+            >
+              {pausado ? (
+                <Play size={12} weight="fill" aria-hidden />
+              ) : (
+                <Pause size={12} weight="fill" aria-hidden />
+              )}
+            </button>
+          )}
+        </div>
+
+        {/* Grade de uma célula só: as duas capturas ocupam o mesmo espaço e a
+            altura do quadro é a da maior. Posicionamento absoluto daria o mesmo
+            empilhamento e obrigaria a fixar a altura na mão. */}
+        <div className="grid">
+          {telas.map((tela, i) => {
+            const ativa = i === atual;
+            return (
+              <figure
+                key={tela.src}
+                role="tabpanel"
+                aria-hidden={!ativa}
+                style={{
+                  gridArea: "1 / 1",
+                  opacity: ativa ? 1 : 0,
+                  transform: reduzido
+                    ? "none"
+                    : `translateX(${ativa ? 0 : i < atual ? -2.5 : 2.5}%)`,
+                  visibility: ativa ? "visible" : "hidden",
+                  transition: reduzido
+                    ? "none"
+                    : "opacity 420ms ease, transform 420ms ease, visibility 420ms",
+                }}
+              >
+                {/* `unoptimized`: são capturas estáticas versionadas, não
+                    conteúdo variável — o otimizador só adicionaria uma peça. */}
+                <Image
+                  src={tela.src}
+                  alt={`${titulo} — ${tela.rotulo}`}
+                  width={1280}
+                  height={800}
+                  unoptimized
+                  className="h-auto w-full"
+                />
+              </figure>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

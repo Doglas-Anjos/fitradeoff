@@ -20,7 +20,7 @@ import { usePathname } from "next/navigation";
 
 const DESTINOS = [
   { href: "/decisao", chave: "nav.decisao" },
-  { href: "/chat", chave: "nav.chat" },
+  { href: "/chaves", chave: "nav.chaves" },
   /* A paridade fica na navegação, não escondida num rodapé: quem precisa
      defender uma decisão tomada aqui precisa achar a prova sem procurar. */
   { href: "/paridade", chave: "nav.paridade" },

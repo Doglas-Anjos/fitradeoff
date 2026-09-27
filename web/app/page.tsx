@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, CheckCircle, ChatCircleText } from "@phosphor-icons/react";
+import { ArrowRight, CheckCircle, Plugs } from "@phosphor-icons/react";
 import Link from "next/link";
 
 import { useIdioma } from "@/lib/i18n";
@@ -61,8 +61,8 @@ export default function Home() {
               <Link href="/decisao" className="tatil inline-flex min-h-12 items-center gap-2 rounded-[var(--raio-controle)] bg-white px-5 py-3 text-sm font-bold text-[var(--navy)] shadow-lg hover:-translate-y-0.5">
                 {t("tela.home.acao.decisao")} <ArrowRight size={16} weight="bold" aria-hidden />
               </Link>
-              <Link href="/chat" className="tatil inline-flex min-h-12 items-center gap-2 rounded-[var(--raio-controle)] border border-white/30 bg-white/5 px-5 py-3 text-sm font-semibold text-white hover:border-white/60 hover:bg-white/10">
-                <ChatCircleText size={17} weight="bold" aria-hidden /> {t("tela.home.acao.chat")}
+              <Link href="/chaves" className="tatil inline-flex min-h-12 items-center gap-2 rounded-[var(--raio-controle)] border border-white/30 bg-white/5 px-5 py-3 text-sm font-semibold text-white hover:border-white/60 hover:bg-white/10">
+                <Plugs size={17} weight="bold" aria-hidden /> {t("tela.home.acao.chaves")}
               </Link>
             </div>
             <p className="mt-5 text-sm text-[#9db5ce]">{t("tela.home.acao.ajuda")}</p>

@@ -1234,3 +1234,48 @@ textarea:hover {
 .cartao-modulo:hover .rotulo-abrir {
   color: var(--accent);
 }
+
+/* --- comparador de telas ----------------------------------------------------
+   As duas capturas no mesmo lugar, com abas numeradas por cima. Comparar é
+   olhar uma, depois a outra, no mesmo ponto da tela: o detalhe fica na mesma
+   coordenada nas duas, e a diferença aparece sozinha. */
+
+.comparador {
+  border-color: var(--borda);
+  background: var(--painel);
+  box-shadow: var(--sombra);
+}
+
+.comparador-barra {
+  border-color: var(--borda);
+  background: var(--painel-fundo);
+}
+
+.aba-comparador {
+  color: var(--tinta-3);
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+.aba-comparador:hover {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--accent);
+}
+/* A escolhida vence o hover: depois do clique o que importa é qual está sendo
+   mostrada, e o ponteiro parado ali não pode apagar esse sinal. */
+.aba-comparador[data-ativa="true"],
+.aba-comparador[data-ativa="true"]:hover {
+  background: var(--accent);
+  color: var(--accent-tinta);
+}
+
+.botao-pausa {
+  color: var(--tinta-3);
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+.botao-pausa:hover {
+  background: var(--painel);
+  color: var(--accent);
+}

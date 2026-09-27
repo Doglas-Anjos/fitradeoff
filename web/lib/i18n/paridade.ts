@@ -13,6 +13,10 @@ import "./nucleo";
 
 export const PARIDADE_TEXTOS = registrar({
   "nav.paridade": { pt: "Paridade", en: "Parity" },
+  "paridade.editorial": { pt: "Evidência e validação", en: "Evidence and validation" },
+  "paridade.sumario": { pt: "Nesta página", en: "On this page" },
+  "paridade.sumario.compacto": { pt: "Seções desta página", en: "Page sections" },
+  "paridade.sumario.lateral": { pt: "Sumário lateral", en: "Side contents" },
 
   "paridade.titulo": {
     pt: "Equivalência com o sistema oficial",
@@ -75,6 +79,7 @@ export const PARIDADE_TEXTOS = registrar({
   "paridade.tabela.bate": { pt: "bate", en: "match" },
   "paridade.tabela.difere": { pt: "difere", en: "differs" },
   "paridade.tabela.trava": { pt: "não completa", en: "does not complete" },
+  "paridade.tabela.naoComparavel": { pt: "não comparável", en: "not comparable" },
 
   "paridade.telas.titulo": { pt: "As mesmas telas", en: "The same screens" },
   "paridade.telas.corpo": {

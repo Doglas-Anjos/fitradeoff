@@ -295,7 +295,7 @@ function EscolhaInicial({
                quatro transbordavam por cima do texto seguinte - e o quarto,
                com uma linha de ajuda a menos, ficava visivelmente mais baixo.
                A grade já iguala as alturas da linha entre si. */
-            const envelope = "entra-em-lista grid min-h-[8.5rem] lg:min-h-[15rem]";
+            const envelope = "entra-em-lista grid min-h-[8.5rem] lg:min-h-[12.5rem]";
 
             const simples = PROBLEMATICAS.map(({ valor, chave, Icone }) => {
               const ativo = rascunho.problematica === valor;

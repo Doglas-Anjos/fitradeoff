@@ -7,8 +7,9 @@
  * sao a forma do que o metodo faz -- um intervalo que encolhe.
  */
 
-import { ArrowSquareOut } from "@phosphor-icons/react";
+import { ArrowSquareOut, List, X } from "@phosphor-icons/react";
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 
 import { SeletorIdioma } from "@/components/SeletorIdioma";
 import { useIdioma } from "@/lib/i18n";
@@ -38,6 +39,30 @@ function Marca() {
 export function Navegacao() {
   const caminho = usePathname();
   const { t } = useIdioma();
+  const [menuAberto, setMenuAberto] = useState(false);
+  const menu = useRef<HTMLDivElement>(null);
+  const botaoMenu = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => setMenuAberto(false), [caminho]);
+
+  useEffect(() => {
+    if (!menuAberto) return;
+    const aoTeclar = (evento: KeyboardEvent) => {
+      if (evento.key === "Escape") {
+        setMenuAberto(false);
+        botaoMenu.current?.focus();
+      }
+    };
+    const aoClicar = (evento: MouseEvent) => {
+      if (!menu.current?.contains(evento.target as Node)) setMenuAberto(false);
+    };
+    document.addEventListener("keydown", aoTeclar);
+    document.addEventListener("mousedown", aoClicar);
+    return () => {
+      document.removeEventListener("keydown", aoTeclar);
+      document.removeEventListener("mousedown", aoClicar);
+    };
+  }, [menuAberto]);
 
   return (
     <header
@@ -47,7 +72,7 @@ export function Navegacao() {
         background: "color-mix(in srgb, var(--plano) 88%, transparent)",
       }}
     >
-      <nav className="mx-auto flex h-14 max-w-6xl items-center gap-8 px-5">
+      <nav className="relative mx-auto flex h-14 max-w-7xl items-center gap-8 px-5">
         <Link href="/" className="flex items-center gap-2.5">
           <Marca />
           <span
@@ -58,7 +83,7 @@ export function Navegacao() {
           </span>
         </Link>
 
-        <div className="flex items-center gap-1">
+        <div className="hidden items-center gap-1 sm:flex">
           {DESTINOS.map((d) => {
             const ativo = caminho.startsWith(d.href);
             return (
@@ -85,16 +110,84 @@ export function Navegacao() {
           <SeletorIdioma />
           <a
             href="https://fitradeoff.org"
-          target="_blank"
-          rel="noopener noreferrer"
-            className="tatil flex items-center gap-1.5 rounded-[var(--raio-controle)] px-2.5 py-1.5 text-[13px]"
-          style={{ color: "var(--tinta-3)" }}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="tatil hidden items-center gap-1.5 rounded-[var(--raio-controle)] px-2.5 py-1.5 text-[13px] sm:flex"
+            style={{ color: "var(--tinta-3)" }}
             title={t("nav.sobre.titulo")}
-        >
-          <span className="max-sm:sr-only">{t("nav.sobre")}</span>
-          <ArrowSquareOut size={13} weight="bold" aria-hidden />
+          >
+            <span>{t("nav.sobre")}</span>
+            <ArrowSquareOut size={13} weight="bold" aria-hidden />
             <span className="sr-only">{t("nav.abreEmOutraAba")}</span>
           </a>
+
+          <div ref={menu} className="relative sm:hidden">
+            <button
+              ref={botaoMenu}
+              type="button"
+              aria-expanded={menuAberto}
+              aria-controls="menu-principal-movel"
+              aria-label={t(menuAberto ? "nav.menu.fechar" : "nav.menu.abrir")}
+              onClick={() => setMenuAberto((aberto) => !aberto)}
+              className="tatil inline-flex h-9 w-9 items-center justify-center rounded-[var(--raio-controle)] border"
+              style={{
+                borderColor: "var(--borda-forte)",
+                background: menuAberto ? "var(--painel-fundo)" : "var(--painel)",
+                color: "var(--tinta)",
+              }}
+            >
+              {menuAberto ? (
+                <X size={18} weight="bold" aria-hidden />
+              ) : (
+                <List size={19} weight="bold" aria-hidden />
+              )}
+            </button>
+
+            {menuAberto && (
+              <nav
+                id="menu-principal-movel"
+                aria-label={t("nav.menu.rotulo")}
+                className="entra-subindo absolute right-0 top-11 w-[min(19rem,calc(100vw-2.5rem))] overflow-hidden rounded-[var(--raio-painel)] border p-2 shadow-[var(--sombra-alta)]"
+                style={{ borderColor: "var(--borda)", background: "var(--painel)" }}
+              >
+                <p className="px-3 pb-1.5 pt-1 text-[11px] font-medium uppercase tracking-[0.12em]" style={{ color: "var(--tinta-fraca)" }}>
+                  {t("nav.menu.rotulo")}
+                </p>
+                {DESTINOS.map((destino) => {
+                  const ativo = caminho.startsWith(destino.href);
+                  return (
+                    <Link
+                      key={destino.href}
+                      href={destino.href}
+                      aria-label={`${t(destino.chave)} — ${t("nav.menu.rotulo")}`}
+                      aria-current={ativo ? "page" : undefined}
+                      className="tatil flex items-center justify-between rounded-[var(--raio-controle)] px-3 py-2.5 text-sm"
+                      style={{
+                        color: ativo ? "var(--accent)" : "var(--tinta-2)",
+                        background: ativo ? "var(--accent-suave)" : "transparent",
+                        fontWeight: ativo ? 600 : 400,
+                      }}
+                    >
+                      {t(destino.chave)}
+                      {ativo && <span aria-hidden className="h-1.5 w-1.5 rounded-full" style={{ background: "var(--accent)" }} />}
+                    </Link>
+                  );
+                })}
+                <div className="my-2 border-t" style={{ borderColor: "var(--borda)" }} />
+                <a
+                  href="https://fitradeoff.org"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="tatil flex items-center justify-between rounded-[var(--raio-controle)] px-3 py-2.5 text-sm"
+                  style={{ color: "var(--tinta-2)" }}
+                >
+                  {t("nav.sobre")}
+                  <ArrowSquareOut size={15} weight="bold" aria-hidden />
+                  <span className="sr-only">{t("nav.abreEmOutraAba")}</span>
+                </a>
+              </nav>
+            )}
+          </div>
         </div>
       </nav>
     </header>

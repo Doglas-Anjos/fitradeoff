@@ -17,21 +17,24 @@
 
 import Image from "next/image";
 
+import { Selo } from "@/components/ui";
 import { useIdioma } from "@/lib/i18n";
 import "@/lib/i18n/paridade";
 import { MEDIDO_EM, PARIDADE, RESUMO, type CasoParidade } from "@/lib/paridade";
 
 function Secao({
+  id,
   titulo,
   children,
 }: {
+  id: string;
   titulo: string;
   children: React.ReactNode;
 }) {
   return (
-    <section className="mt-14">
+    <section id={id} className="scroll-mt-24 border-t pt-10" style={{ borderColor: "var(--borda)" }}>
       <h2
-        className="mb-4 text-[17px] font-semibold tracking-tight"
+        className="mb-4 text-xl font-semibold tracking-tight"
         style={{ color: "var(--tinta)" }}
       >
         {titulo}
@@ -60,13 +63,13 @@ function ParDeTelas({
   };
   return (
     <div className="mt-8">
-      <h3 className="text-[14px] font-medium" style={{ color: "var(--tinta)" }}>
+      <h3 className="text-base font-semibold" style={{ color: "var(--tinta)" }}>
         {titulo}
       </h3>
-      <p className="prosa mt-1 text-[13px]" style={{ color: "var(--tinta-3)" }}>
+      <p className="prosa mt-1 text-sm" style={{ color: "var(--tinta-3)" }}>
         {nota}
       </p>
-      <div className="mt-3 grid gap-4 md:grid-cols-2">
+      <div className="mt-4 grid gap-5 xl:grid-cols-2">
         {[
           { rotulo: t("paridade.telas.oficialLegenda"), src: oficial },
           { rotulo: t("paridade.telas.nossoLegenda"), src: nosso },
@@ -119,11 +122,6 @@ function Passos({ par }: { par: { ordenacao: number; tradeoff: number } | null }
 function Linha({ caso }: { caso: CasoParidade }) {
   const { t } = useIdioma();
   const naoCompleta = caso.oficial === null;
-  const cor = naoCompleta
-    ? "var(--tinta-fraca)"
-    : caso.bate
-      ? "var(--sucesso)"
-      : "var(--aviso)";
   return (
     <tr style={{ borderTop: "1px solid var(--borda)" }}>
       <td className="py-2.5 pr-4">
@@ -143,13 +141,18 @@ function Linha({ caso }: { caso: CasoParidade }) {
         <Passos par={caso.nosso} />
       </td>
       <td className="py-2.5 text-right">
-        <span className="text-[12px] font-medium" style={{ color: cor }}>
+        <Selo tom={naoCompleta ? "neutro" : caso.bate ? "accent" : "aviso"}>
           {naoCompleta
-            ? "—"
+            ? (
+                <>
+                  <span aria-hidden>—</span>
+                  <span className="sr-only">{t("paridade.tabela.naoComparavel")}</span>
+                </>
+              )
             : caso.bate
               ? t("paridade.tabela.bate")
               : t("paridade.tabela.difere")}
-        </span>
+        </Selo>
       </td>
     </tr>
   );
@@ -157,35 +160,49 @@ function Linha({ caso }: { caso: CasoParidade }) {
 
 export default function ParidadePage() {
   const { t } = useIdioma();
+  const secoes = [
+    ["metodo", "paridade.metodo.titulo"],
+    ["casos", "paridade.tabela.titulo"],
+    ["telas", "paridade.telas.titulo"],
+    ["achados", "paridade.achados.titulo"],
+    ["diferencas", "paridade.restam.titulo"],
+    ["reproduzir", "paridade.reproduzir.titulo"],
+  ] as const;
 
   return (
-    <main className="mx-auto max-w-4xl px-5 py-10">
+    <main className="mx-auto max-w-7xl px-5 py-12 sm:py-16">
+      <header className="max-w-4xl">
+      <p className="text-[12px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--accent)" }}>
+        {t("paridade.editorial")}
+      </p>
       <h1
-        className="text-[26px] font-semibold tracking-tight"
+        className="display mt-3 text-3xl font-semibold sm:text-4xl"
         style={{ color: "var(--tinta)" }}
       >
         {t("paridade.titulo")}
       </h1>
-      <p className="prosa mt-2 text-[15px]" style={{ color: "var(--tinta-2)" }}>
+      <p className="prosa mt-3 text-base" style={{ color: "var(--tinta-2)" }}>
         {t("paridade.subtitulo")}
       </p>
       <p className="mt-2 text-[12px]" style={{ color: "var(--tinta-fraca)" }}>
         {t("paridade.versaoOficial")} · {t("paridade.medidoEm", { data: MEDIDO_EM })}
       </p>
+      </header>
 
       {/* O placar primeiro: é a única coisa que alguém de fora precisa ler para
           saber se vale continuar lendo. */}
       <div
-        className="mt-8 rounded-[var(--raio-painel)] border p-6"
+        className="mt-9 grid gap-5 rounded-[var(--raio-painel)] border p-6 sm:grid-cols-[auto_1fr] sm:items-center sm:p-7"
         style={{ borderColor: "var(--borda)", background: "var(--painel)" }}
       >
         <p
-          className="text-[24px] font-semibold tracking-tight"
+          className="display text-3xl font-semibold sm:border-r sm:pr-7"
           style={{ color: "var(--accent)" }}
         >
           {t("paridade.placar", { bate: RESUMO.bate, total: RESUMO.comparaveis })}
         </p>
-        <p className="prosa mt-2 text-[13px]" style={{ color: "var(--tinta-2)" }}>
+        <div>
+        <p className="prosa text-sm" style={{ color: "var(--tinta-2)" }}>
           {t("paridade.placar.detalhe")}
         </p>
         <p className="prosa mt-1 text-[13px]" style={{ color: "var(--tinta-3)" }}>
@@ -198,17 +215,44 @@ export default function ParidadePage() {
               { n: RESUMO.travados },
             )}
         </p>
+        </div>
       </div>
 
-      <Secao titulo={t("paridade.metodo.titulo")}>
-        <div className="prosa space-y-3 text-[14px]" style={{ color: "var(--tinta-2)" }}>
+      <details className="mt-6 rounded-[var(--raio-controle)] border p-4 lg:hidden" style={{ borderColor: "var(--borda)", background: "var(--painel)" }}>
+        <summary className="cursor-pointer text-sm font-semibold">{t("paridade.sumario")}</summary>
+        <nav className="mt-3 grid gap-1" aria-label={t("paridade.sumario.compacto")}>
+          {secoes.map(([id, chave]) => (
+            <a key={id} href={`#${id}`} className="tatil rounded-[var(--raio-controle)] px-2 py-1.5 text-[13px]" style={{ color: "var(--tinta-2)" }}>
+              {t(chave)}
+            </a>
+          ))}
+        </nav>
+      </details>
+
+      <div className="mt-10 grid items-start gap-10 lg:grid-cols-[190px_minmax(0,1fr)] lg:gap-14">
+        <aside className="sticky top-24 hidden lg:block">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: "var(--tinta-fraca)" }}>
+            {t("paridade.sumario")}
+          </p>
+          <nav className="mt-3 border-l pl-3" style={{ borderColor: "var(--borda-forte)" }} aria-label={t("paridade.sumario.lateral")}>
+            {secoes.map(([id, chave]) => (
+              <a key={id} href={`#${id}`} className="tatil block rounded-r-[var(--raio-controle)] px-3 py-2 text-[13px]" style={{ color: "var(--tinta-3)" }}>
+                {t(chave)}
+              </a>
+            ))}
+          </nav>
+        </aside>
+
+        <article className="min-w-0 space-y-12">
+      <Secao id="metodo" titulo={t("paridade.metodo.titulo")}>
+        <div className="prosa space-y-3 text-[15px]" style={{ color: "var(--tinta-2)" }}>
           <p>{t("paridade.metodo.corpo1")}</p>
           <p>{t("paridade.metodo.corpo2")}</p>
           <p>{t("paridade.metodo.corpo3")}</p>
         </div>
       </Secao>
 
-      <Secao titulo={t("paridade.tabela.titulo")}>
+      <Secao id="casos" titulo={t("paridade.tabela.titulo")}>
         <p className="mb-3 text-[12px]" style={{ color: "var(--tinta-fraca)" }}>
           {t("paridade.tabela.legenda")}
         </p>
@@ -216,7 +260,7 @@ export default function ParidadePage() {
           className="overflow-x-auto rounded-[var(--raio-painel)] border px-5"
           style={{ borderColor: "var(--borda)", background: "var(--painel)" }}
         >
-          <table className="w-full">
+          <table className="w-full min-w-[640px]">
             <thead>
               <tr>
                 {[
@@ -245,8 +289,8 @@ export default function ParidadePage() {
         </div>
       </Secao>
 
-      <Secao titulo={t("paridade.telas.titulo")}>
-        <p className="prosa text-[14px]" style={{ color: "var(--tinta-2)" }}>
+      <Secao id="telas" titulo={t("paridade.telas.titulo")}>
+        <p className="prosa text-[15px]" style={{ color: "var(--tinta-2)" }}>
           {t("paridade.telas.corpo")}
         </p>
         <ParDeTelas
@@ -269,8 +313,8 @@ export default function ParidadePage() {
         />
       </Secao>
 
-      <Secao titulo={t("paridade.achados.titulo")}>
-        <p className="prosa text-[14px]" style={{ color: "var(--tinta-2)" }}>
+      <Secao id="achados" titulo={t("paridade.achados.titulo")}>
+        <p className="prosa text-[15px]" style={{ color: "var(--tinta-2)" }}>
           {t("paridade.achados.intro")}
         </p>
         <div className="mt-5 space-y-5">
@@ -293,7 +337,7 @@ export default function ParidadePage() {
 
       {/* As divergências que restam ficam na mesma página, e não numa nota de
           rodapé: é o que distingue uma comparação de uma peça de venda. */}
-      <Secao titulo={t("paridade.restam.titulo")}>
+      <Secao id="diferencas" titulo={t("paridade.restam.titulo")}>
         <div className="space-y-5">
           {[
             ["paridade.restam.instancias.titulo", "paridade.restam.instancias.corpo"],
@@ -313,11 +357,13 @@ export default function ParidadePage() {
         </div>
       </Secao>
 
-      <Secao titulo={t("paridade.reproduzir.titulo")}>
-        <p className="prosa text-[14px]" style={{ color: "var(--tinta-2)" }}>
+      <Secao id="reproduzir" titulo={t("paridade.reproduzir.titulo")}>
+        <p className="prosa text-[15px]" style={{ color: "var(--tinta-2)" }}>
           {t("paridade.reproduzir.corpo")}
         </p>
       </Secao>
+        </article>
+      </div>
     </main>
   );
 }

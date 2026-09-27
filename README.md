@@ -5,8 +5,9 @@ para elicitação de constantes de escala em modelos aditivos no escopo da MAVT,
 **informação parcial** de preferência.
 
 Duas formas de conduzir a mesma decisão: a **tela estruturada**, com o fluxo clássico do método e
-apoio gráfico, e o **chat**, em que um agente conduz a elicitação conversando. As duas usam as
-mesmas operações — o agente não tem atalho por dentro.
+apoio gráfico, e o **servidor MCP**, que entrega o método como ferramentas ao assistente que o
+decisor já usa — Claude, Cursor, VS Code. As duas usam as mesmas operações: o assistente não tem
+atalho por dentro, e não calcula nada por conta própria.
 
 O decisor nunca vê um espaço de pesos nem um problema de programação linear: responde a
 comparações entre situações concretas, em reais e dias, e recebe uma recomendação que sabe
@@ -31,17 +32,18 @@ uma suíte que está no repositório.
 | Curva de valor intra-critério elicitada | **pronto** — por bisseção, antes da ordenação |
 | Modelo de veto | **pronto** — escolha e ordenação, por envelope conservador |
 | Auditoria, desfazer, sensibilidade | **pronto** — sobre o limiar e sobre as consequências |
-| Servidor MCP (14 ferramentas) | **pronto** — validado por stdio |
+| Servidor MCP (14 ferramentas) | **pronto** — stdio e HTTP remoto, com chave |
+| Superfície pública do MCP | **pronto** — imagem, composição e túnel |
 | API HTTP (FastAPI) | **pronto** — 27 rotas |
 | Tela de decisão estruturada | **pronto** — com os gráficos |
-| Tela de chat com agente | **pronto** — exige `ANTHROPIC_API_KEY` |
+| Tela de chaves do MCP | **pronto** — emitir, listar e revogar |
 | Entrada manual + import de planilha | **pronto** — `.xlsx` e `.csv` |
 | Export (entrada + resultado + trilha) | **pronto** |
 | Ordenação de pesos nos dois modos | **pronto** — lista e avaliação global |
 | Paridade medida contra o sistema oficial | **17 casos**, versionados — ver abaixo |
 | Decisão em grupo | a fazer |
 
-**970 testes**: 530 de motor e API, 30 do servidor MCP, 50 de paridade e 360 de interface.
+**1050 testes**: 558 de motor e API, 39 do servidor MCP, 50 de paridade e 403 de interface.
 Entre eles, um decisor-oráculo que verifica a invariante central do método (a alternativa
 verdadeiramente ótima nunca sai do conjunto de POAs), testes que auditam a própria
 arquitetura e testes de entrada não confiável.
@@ -49,9 +51,9 @@ arquitetura e testes de entrada não confiável.
 ## Arquitetura
 
 ```
-  web (Next.js)     MCP (chat/IDE)     chat com agente
-        │                  │                  │
-        └──── HTTP ────> FastAPI <────────────┘
+  web (Next.js)     MCP stdio (local)     MCP HTTP (remoto)
+        │                    │                     │
+        └──── HTTP ────> FastAPI <─────────────────┘
                             │
                       application  (casos de uso)
                             │
@@ -217,9 +219,15 @@ cd web && npm install && cd ..
 > escrevem no mesmo `.next` e o dev passa a servir 500 com `MODULE_NOT_FOUND`.
 > Se acontecer, pare o dev, apague `web/.next` e suba de novo.
 
-A tela de chat exige `ANTHROPIC_API_KEY` no ambiente da API; a tela de decisão
-estruturada funciona sem ela. Os dados ficam em `~/.fitradeoff/decisoes`
-(configurável por `FITRADEOFF_DATA`).
+Os dados ficam em `~/.fitradeoff/decisoes` (configurável por `FITRADEOFF_DATA`).
+
+| Variável | Para quê |
+|---|---|
+| `FITRADEOFF_DATA` | onde as decisões são gravadas |
+| `FITRADEOFF_MCP_URL` | endereço do MCP que a tela de chaves manda copiar |
+| `FITRADEOFF_MCP_HOSTS` | domínios públicos do MCP, separados por vírgula — **declarar é o que diz "publiquei"** |
+| `FITRADEOFF_ADMIN_TOKEN` | segredo que libera emitir chaves de fora deste computador |
+| `ANTHROPIC_API_KEY` | só para a rota `/api/chat`, que não tem mais tela |
 
 ### As duas telas
 
@@ -230,10 +238,14 @@ descrita: os dois lados aparecem completos, com barras por critério e o valor n
 unidade real. Isso importa — em texto mal formulado, o decisor responde a uma
 pergunta diferente da que o modelo registra.
 
-**Chat de decisões** — o agente conduz a mesma elicitação conversando. Ele usa
-exatamente as mesmas operações, sem caminho alternativo por dentro, e o rastro
-de ferramentas fica visível na resposta para que se veja que a recomendação saiu
-do método.
+**Chaves do MCP** — onde se gera a credencial que liga o assistente do decisor
+a este servidor, e se revoga a que não é mais usada. A tela monta o trecho de
+configuração pronto para cada cliente, com a chave dentro, porque trocar
+`SUA_CHAVE` à mão depois de colar é o passo em que se erra.
+
+Uma chave não é senha escolhida por gente: são 256 bits aleatórios, e o que fica
+gravado é o resumo SHA-256 dela. O texto existe uma vez, na resposta que o criou.
+Perder a chave não tem recuperação — revoga-se e emite-se outra.
 
 ## Uso por código
 
@@ -247,7 +259,7 @@ engine/.venv/Scripts/python engine/examples/quatro_problematicas.py
 O [`.mcp.json`](.mcp.json) na raiz conecta o servidor ao **Claude Code** neste projeto (reinicie a
 sessão para carregá-lo). Para o **Claude Desktop**, a mesma estrutura com caminho absoluto.
 
-Por código, sem chat:
+Por código, sem assistente:
 
 ```python
 from fitradeoff import DecisionService, build_container
@@ -272,6 +284,82 @@ print(service.state(criada["id"])["analise"]["resumo"])
 As `instructions` do servidor instruem o agente a **não responder pelo decisor**, a reproduzir as
 duas opções por inteiro, e a declarar a ressalva do portfólio. A ordenação dos critérios é uma
 declaração de preferência do decisor: o agente pode propor, mas precisa confirmar.
+
+### Os dois modos do MCP
+
+**stdio**, como no [`.mcp.json`](.mcp.json): o cliente lança o processo, que roda como o próprio
+usuário. Não há chave, porque não há fronteira — quem lançou o processo já podia ler os arquivos.
+Continua sendo o caminho certo para um cliente na mesma máquina.
+
+**HTTP**, em `/mcp`, montado na própria API: para clientes que não rodam aqui, e em especial para o
+Claude na web, que roda nos servidores da Anthropic. A fronteira existe, então há chave portadora,
+apresentada de duas formas:
+
+```bash
+# cabeçalho: Claude Code, Cursor, VS Code
+curl -X POST http://127.0.0.1:8000/mcp   -H "Authorization: Bearer $CHAVE"   -H "Content-Type: application/json"   -H "Accept: application/json, text/event-stream"   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+
+# chave na URL: o painel de conectores do claude.ai aceita só uma URL
+curl -X POST "http://127.0.0.1:8000/mcp/$CHAVE" ...
+```
+
+A forma com a chave na URL existe porque, sem ela, o caso de uso que motivou o modo remoto não
+existiria: o painel do claude.ai pede um endereço e nada mais, sem campo de cabeçalho. Em troca, a
+chave aparece em histórico de navegador e em log de servidor — daí uma chave por cliente, e revogar
+a que saiu de uso.
+
+O modo é sem sessão (`stateless_http`): cada requisição se explica por inteiro, então reiniciar a
+API não derruba a conversa em andamento do cliente.
+
+## Publicar o MCP
+
+Para o assistente chamar o método de fora desta máquina, o servidor precisa estar num endereço
+alcançável — e o que se publica **não** é a porta 8000.
+
+### A superfície pública
+
+`fitradeoff_api.mcp_remoto` serve `/mcp` e `/saude`, e mais nada. Não é uma regra de proxy: é um
+aplicativo que não tem as outras rotas. Uma regra de proxy está a um erro de digitação de publicar
+`/api` junto — que não tem autenticação nesta versão — e esse erro não aparece em teste nenhum,
+aparece quando alguém acha as decisões. [`test_mcp_remoto.py`](api/tests/test_mcp_remoto.py)
+afirma pela negativa o que este aplicativo não serve.
+
+```bash
+uvicorn fitradeoff_api.mcp_remoto:app --host 0.0.0.0 --port 8765
+```
+
+### Num hospedeiro
+
+```bash
+FITRADEOFF_MCP_HOSTS=fit.seu-dominio.org docker compose up -d
+docker compose run --rm mcp python -m fitradeoff_api.chaves criar "Claude na web"
+```
+
+O [`compose.yml`](compose.yml) sobe um serviço só, preso ao loopback do hospedeiro: quem termina o
+TLS e publica é o proxy na frente. O claude.ai só aceita `https`, então isso não é opcional.
+
+A tela de chaves fica de fora do hospedeiro de propósito — ela mora no aplicativo local. Num
+servidor, chave se emite por comando, no mesmo volume:
+`python -m fitradeoff_api.chaves criar|listar|revogar`.
+
+O volume `fitradeoff` guarda as decisões e o cofre. Recriá-lo revoga todas as chaves de uma vez.
+
+### Para experimentar hoje, sem hospedar nada
+
+```powershell
+.\publicar.ps1 -NovaChave "Claude na web"
+```
+
+Abre um túnel `https` temporário (precisa de `cloudflared`), declara o domínio sorteado em
+`FITRADEOFF_MCP_HOSTS` e imprime a URL pronta para colar no painel de conectores. O endereço muda
+a cada execução, então serve para provar que funciona, não para uso continuado.
+
+### A armadilha que custa uma tarde
+
+`FITRADEOFF_MCP_HOSTS` não é burocracia. Sem o domínio declarado, a proteção contra DNS rebinding
+do SDK recusa **todo** pedido que chegar por ele com `421 Invalid Host header` — mensagem que não
+menciona MCP, nem chave, nem variável de ambiente. A tela de chaves confere essa coerência e avisa
+antes; o `compose.yml` se recusa a subir sem ela.
 
 ## Entrada não confiável
 

@@ -1,0 +1,27 @@
+# O que nao tem o que fazer dentro da imagem do MCP.
+#
+# Sem esta lista o contexto de build leva o ambiente virtual e o node_modules
+# junto -- centenas de megabytes que a imagem nao usa, e que deixam cada build
+# lento o bastante para desencorajar reconstruir.
+
+.git/
+engine/.venv/
+**/__pycache__/
+**/*.egg-info/
+**/.pytest_cache/
+.coverage
+htmlcov/
+
+# O front nao entra: a superficie publica serve o MCP, e nada de interface.
+web/
+
+# Capturas, saidas de teste e dados locais.
+artifacts/
+paridade/
+decisoes/
+.env
+.env.local
+
+# Skills do agente, nao do projeto.
+.agents/
+.claude/

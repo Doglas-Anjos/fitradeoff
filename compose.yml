@@ -1,0 +1,39 @@
+# A superficie publica do MCP, num hospedeiro.
+#
+#   FITRADEOFF_MCP_HOSTS=fit.seu-dominio.org docker compose up -d
+#
+# Emitir uma chave, no mesmo volume, sem subir interface nenhuma:
+#
+#   docker compose run --rm mcp python -m fitradeoff_api.chaves criar "Claude na web"
+#   docker compose run --rm mcp python -m fitradeoff_api.chaves listar
+#   docker compose run --rm mcp python -m fitradeoff_api.chaves revogar <id>
+#
+# Um servico so, de proposito. O aplicativo completo -- com `/api` e a tela de
+# chaves -- nao vem para ca: ele nao tem autenticacao nesta versao, e subir um
+# segundo container com as decisoes atras de uma porta so aumentaria a chance de
+# alguem publica-lo por engano.
+
+services:
+  mcp:
+    build: .
+    image: fitradeoff-mcp
+    restart: unless-stopped
+    environment:
+      FITRADEOFF_DATA: /dados/decisoes
+      # Sem o dominio declarado, a protecao contra DNS rebinding recusa tudo o
+      # que chegar por ele com 421. O `:?` derruba o `up` aqui, com uma
+      # mensagem clara, em vez de deixar o erro aparecer so no primeiro pedido.
+      FITRADEOFF_MCP_HOSTS: ${FITRADEOFF_MCP_HOSTS:?declare o dominio publico, ex.: fit.seu-dominio.org}
+    volumes:
+      # As decisoes e o cofre de chaves vivem aqui. E o unico estado do servico:
+      # guarde-o no backup, e nao o recrie por engano -- recriar o volume revoga
+      # todas as chaves de uma vez.
+      - fitradeoff:/dados
+    # Preso ao loopback do hospedeiro: quem termina o TLS e publica e o proxy na
+    # frente (Caddy, nginx, Traefik). O claude.ai so aceita https, entao expor
+    # esta porta direto nao serviria de qualquer forma.
+    ports:
+      - "127.0.0.1:8765:8765"
+
+volumes:
+  fitradeoff:

@@ -1,0 +1,66 @@
+"""A superficie publica: o MCP, e nada mais.
+
+    uvicorn fitradeoff_api.mcp_remoto:app --host 0.0.0.0 --port 8765
+
+O aplicativo de ``app.py`` monta o MCP ao lado das rotas de ``/api``, o que e
+conveniente na maquina do decisor e inaceitavel fora dela: `/api` nao tem
+autenticacao nesta versao, entao publicar aquela porta publicaria todas as
+decisoes junto.
+
+Daria para resolver com uma regra de proxy que so deixe passar ``/mcp``. Nao
+resolve: uma regra dessas esta a um erro de digitacao de publicar o resto, e o
+erro nao aparece em teste nenhum -- aparece quando alguem acha as decisoes. Este
+aplicativo **nao tem** as outras rotas. Nao ha o que vazar por engano, e o teste
+que afirma isso falha se alguem montar aqui o que nao deve.
+
+Emitir chave continua sendo assunto do aplicativo local: quem publica isto
+expoe um servidor que valida chaves, nunca um que as cria.
+
+As duas metades conversam por um arquivo -- o cofre em ``chaves.json``. Quem
+roda as duas em maquinas diferentes precisa que esse arquivo (e o diretorio de
+decisoes) seja o mesmo volume; a composicao do ``compose.yml`` faz isso.
+"""
+
+from __future__ import annotations
+
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
+from fitradeoff_mcp import remoto
+from starlette.applications import Starlette
+from starlette.requests import Request
+from starlette.responses import JSONResponse
+from starlette.routing import Route
+
+from . import chaves as cofre
+from .config import Settings, load_settings
+
+
+async def saude(request: Request) -> JSONResponse:
+    """Prova de vida para o hospedeiro, e so isso.
+
+    Sem chave, porque um verificador de saude nao tem credencial; e sem contar
+    nada -- nem onde os dados ficam, nem quantas chaves existem -- porque esta
+    e a unica rota que responde a quem nao se identificou.
+    """
+    return JSONResponse({"ok": True, "servico": "fitradeoff-mcp"})
+
+
+def create_mcp_app(settings: Settings | None = None) -> Starlette:
+    settings = settings or load_settings()
+
+    @asynccontextmanager
+    async def ciclo(app: Starlette) -> AsyncIterator[None]:
+        async with remoto.ciclo_de_vida(app.state.mcp):
+            yield
+
+    app = Starlette(routes=[Route("/saude", saude)], lifespan=ciclo)
+    app.state.mcp = remoto.montar(
+        app,
+        cofre.resolver(settings),
+        hosts_publicos=settings.mcp_hosts,
+    )
+    return app
+
+
+app = create_mcp_app()

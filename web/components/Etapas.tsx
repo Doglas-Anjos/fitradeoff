@@ -59,8 +59,8 @@ export function Etapas({
 
   return (
     <div>
-      <nav aria-label={t("estrutura.etapas.rotulo")}>
-        <ol className="grid grid-cols-4 items-start gap-1 sm:flex sm:flex-wrap sm:items-center">
+      <nav aria-label={t("estrutura.etapas.rotulo")} className="rounded-[var(--raio-painel)] border border-[var(--borda)] bg-[var(--painel-fundo)] p-2">
+        <ol className="grid grid-cols-4 items-start gap-1 sm:flex sm:flex-nowrap sm:items-center">
           {SEQUENCIA.map((etapa, i) => {
             const alcancada = alcancadas.includes(etapa.id);
             const ativa = etapa.id === atual;
@@ -72,7 +72,7 @@ export function Etapas({
                 {i > 0 && (
                   <span
                     aria-hidden
-                    className="mx-1 hidden h-px w-5 sm:block"
+                    className="mx-1 hidden h-px flex-1 sm:block"
                     style={{ background: "var(--borda-forte)" }}
                   />
                 )}
@@ -81,15 +81,16 @@ export function Etapas({
                   onClick={() => clicavel && tentar(etapa.id)}
                   disabled={!clicavel}
                   aria-current={ativa ? "step" : undefined}
-                  className="tatil flex w-full min-w-0 flex-col items-center gap-1 rounded-[var(--raio-controle)] px-1 py-1.5 text-[11px] disabled:cursor-default sm:w-auto sm:flex-row sm:gap-1.5 sm:px-2.5 sm:text-[13px]"
+                  className="tatil flex min-h-10 w-full min-w-0 flex-col items-center justify-center gap-1 rounded-[var(--raio-controle)] px-1 py-1.5 text-[11px] disabled:cursor-default sm:w-auto sm:flex-row sm:gap-2 sm:px-3.5 sm:text-[13px]"
                   style={{
-                    background: ativa ? "var(--accent-suave)" : "transparent",
+                    background: ativa ? "var(--accent)" : concluida ? "#ffffff" : "transparent",
                     color: ativa
-                      ? "var(--accent)"
+                      ? "var(--accent-tinta)"
                       : alcancada
                         ? "var(--tinta-2)"
                         : "var(--tinta-fraca)",
-                    fontWeight: ativa ? 600 : 400,
+                    fontWeight: ativa ? 650 : 500,
+                    boxShadow: ativa ? "0 4px 12px rgba(7,29,56,.16)" : "none",
                   }}
                 >
                   {concluida ? (
@@ -99,8 +100,8 @@ export function Etapas({
                       aria-hidden
                       className="num inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px]"
                       style={{
-                        background: ativa ? "var(--accent)" : "transparent",
-                        color: ativa ? "var(--accent-tinta)" : "inherit",
+                        background: ativa ? "rgba(255,255,255,.18)" : "transparent",
+                        color: "inherit",
                         border: ativa ? "none" : "1px solid currentColor",
                       }}
                     >
@@ -302,8 +303,7 @@ export function Rodape({
 
   return (
     <div
-      className="mt-8 flex flex-wrap-reverse items-center justify-between gap-4 border-t pt-5"
-      style={{ borderColor: "var(--borda)" }}
+      className="barra-acoes mt-8 flex flex-wrap-reverse items-center justify-between gap-4 rounded-[var(--raio-controle)] px-4 py-4"
     >
       {onVoltar ? (
         <Voltar rotulo={rotuloVoltar ?? t("acao.voltar")} onClick={onVoltar} />

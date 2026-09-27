@@ -3,7 +3,7 @@
 /**
  * Idioma da interface.
  *
- * Duas escolhas de projeto, e as duas têm motivo:
+ * Algumas escolhas de projeto, e todas têm motivo:
  *
  * **Catálogos separados por área, não um arquivo só.** Um `textos.ts` gigante
  * vira ponto de conflito assim que duas pessoas mexem na tela ao mesmo tempo, e
@@ -24,6 +24,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 export const IDIOMAS = [
   { chave: "pt", rotulo: "Português", bandeira: "PT" },
   { chave: "en", rotulo: "English", bandeira: "EN" },
+  { chave: "es", rotulo: "Español", bandeira: "ES" },
 ] as const;
 
 export type Idioma = (typeof IDIOMAS)[number]["chave"];
@@ -99,7 +100,8 @@ export function ProvedorIdioma({ children }: { children: React.ReactNode }) {
   /* O atributo lang tem efeito real: guia a pronúncia do leitor de tela e a
      hifenização do navegador. */
   useEffect(() => {
-    document.documentElement.lang = idioma === "pt" ? "pt-BR" : "en";
+    document.documentElement.lang =
+      idioma === "pt" ? "pt-BR" : idioma === "es" ? "es" : "en";
   }, [idioma]);
 
   const definir = useCallback((novo: Idioma) => {

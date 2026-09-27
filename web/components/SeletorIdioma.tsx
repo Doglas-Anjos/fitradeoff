@@ -7,8 +7,8 @@
  * precisa na primeira, e procurar isso dentro de um menu de configurações é o
  * tipo de caça que faz a pessoa desistir antes de achar.
  *
- * São dois idiomas, então dois botões lado a lado bastam. Um `select` para duas
- * opções custa um clique a mais e esconde a segunda.
+ * São poucos idiomas, então botões lado a lado bastam. Um `select` custa um
+ * clique a mais e esconde as opções que não estão selecionadas.
  */
 
 import { Translate } from "@phosphor-icons/react";

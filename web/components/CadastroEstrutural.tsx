@@ -266,7 +266,12 @@ function BlocoAlternativas({
         }
       />
 
-      <div className="mb-3 flex flex-wrap items-end gap-2">
+      {/* Superfície rebaixada: é onde se digita, não mais um item da lista.
+          Antes este bloco não tinha moldura nenhuma e encostava direto nos
+          cartões brancos de baixo. */}
+      <div className="area-entrada mb-3 p-3">
+        <p className="rotulo-area mb-2">{t("estrutura.alternativas.regiao")}</p>
+        <div className="flex flex-wrap items-end gap-2">
         <div className="min-w-32 flex-1">
           <Entrada
             value={novo}
@@ -292,6 +297,7 @@ function BlocoAlternativas({
         >
           {t("acao.adicionar")}
         </Botao>
+        </div>
       </div>
 
       {rascunho.linhas.length === 0 ? (
@@ -742,27 +748,26 @@ function BlocoCriterios({
 
       {/* o formulário do critério: mesmo painel serve para cadastrar e editar,
           porque os campos são os mesmos e a pessoa já sabe onde eles ficam */}
-      {/* Peso menor que o da lista, de propósito: tracejado e sem fundo sólido
-          lê-se como "área de entrada", e não como mais um item cadastrado.
-          Em edição ele ganha a borda cheia do accent, porque aí ele é o
-          assunto. */}
+      {/* Era tracejado sobre fundo transparente, para ler como "área de
+          entrada". Contra o branco do painel o tracejado quase não aparecia, e
+          a região de digitação ficava indistinguível da lista de critérios já
+          cadastrados logo abaixo. Agora é superfície rebaixada, e a lista é
+          erguida: a diferença passa a ser de relevo, que não depende de
+          reparar num fio de 1px. */}
       <div
-        className="mt-3 space-y-3 rounded-[var(--raio-painel)] p-3.5"
-        style={{
-          border:
-            editando === null
-              ? "1px dashed var(--borda-forte)"
-              : "1px solid var(--accent)",
-          background: editando === null ? "transparent" : "var(--painel)",
-        }}
+        className="area-entrada mt-3 space-y-3 p-3.5"
+        data-editando={editando !== null}
       >
-        {editando !== null && (
-          <p className="text-[12px]" style={{ color: "var(--accent)" }}>
-            {t("estrutura.criterio.editando", {
-              nome: rascunho.colunas[editando]?.nome ?? "",
-            })}
-          </p>
-        )}
+        <p
+          className={editando === null ? "rotulo-area" : "text-[12px]"}
+          style={editando === null ? undefined : { color: "var(--accent)" }}
+        >
+          {editando === null
+            ? t("estrutura.criterios.regiao")
+            : t("estrutura.criterio.editando", {
+                nome: rascunho.colunas[editando]?.nome ?? "",
+              })}
+        </p>
 
         <div className="flex flex-wrap gap-3">
           <div className="min-w-48 flex-1">

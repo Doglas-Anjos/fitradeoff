@@ -202,7 +202,7 @@ export function Entrada({
   return (
     <input
       {...props}
-      className={`tatil w-full rounded-[var(--raio-controle)] border px-3 py-2 text-sm outline-none ${props.className ?? ""}`}
+      className={`tatil min-h-11 w-full rounded-[var(--raio-controle)] border px-3.5 py-2.5 text-sm outline-none placeholder:text-[var(--tinta-fraca)] hover:border-[var(--accent)] focus:border-[var(--accent)] focus:shadow-[0_0_0_3px_rgba(36,107,178,0.12)] disabled:cursor-not-allowed disabled:bg-[var(--painel-fundo)] ${props.className ?? ""}`}
       style={{
         ...estiloControle,
         borderColor: invalido ? "var(--erro)" : "var(--borda-forte)",
@@ -226,15 +226,16 @@ export function Botao({
       background: "var(--accent)",
       color: "var(--accent-tinta)",
       border: "1px solid transparent",
+      boxShadow: "0 6px 16px rgba(7, 29, 56, 0.14)",
     },
     contorno: {
       background: "var(--painel)",
-      color: "var(--tinta)",
+      color: "var(--accent)",
       border: "1px solid var(--borda-forte)",
     },
     texto: {
       background: "transparent",
-      color: "var(--tinta-2)",
+      color: "var(--accent)",
       border: "1px solid transparent",
     },
   }[variante];
@@ -242,7 +243,7 @@ export function Botao({
   return (
     <button
       {...props}
-      className={`tatil inline-flex items-center justify-center gap-2 rounded-[var(--raio-controle)] px-4 py-2 text-sm font-medium disabled:opacity-45 ${props.className ?? ""}`}
+      className={`tatil min-h-11 inline-flex items-center justify-center gap-2 rounded-[var(--raio-controle)] px-5 py-2.5 text-sm font-semibold hover:-translate-y-0.5 hover:shadow-[var(--sombra)] active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0 ${props.className ?? ""}`}
       style={{ ...estilos, ...props.style }}
     >
       {icone}
@@ -295,8 +296,8 @@ export function Segmentado<T extends string>({
     <div
       role="radiogroup"
       aria-label={etiqueta}
-      className={`inline-flex overflow-hidden rounded-[var(--raio-controle)] border ${className}`}
-      style={{ borderColor: "var(--borda-forte)" }}
+      className={`inline-flex gap-1 rounded-[var(--raio-controle)] border p-1 ${className}`}
+      style={{ borderColor: "var(--borda)", background: "var(--painel-fundo)" }}
     >
       {opcoes.map(({ valor: v, rotulo, icone, descricao }) => {
         const ativa = v === valor;
@@ -309,11 +310,12 @@ export function Segmentado<T extends string>({
             disabled={desabilitado}
             onClick={() => onEscolher(v)}
             title={descricao}
-            className="tatil flex items-center justify-center gap-1.5 whitespace-nowrap px-3 py-1.5 text-[12px] disabled:opacity-45"
+            className="tatil flex min-h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded-[7px] px-3 py-1.5 text-[12px] disabled:opacity-45"
             style={{
               background: ativa ? "var(--accent)" : "transparent",
               color: ativa ? "var(--accent-tinta)" : "var(--tinta-3)",
               fontWeight: ativa ? 500 : 400,
+              boxShadow: ativa ? "0 2px 7px rgba(7, 29, 56, 0.18)" : "none",
             }}
           >
             {icone}
@@ -352,7 +354,7 @@ export function Selo({
   return (
     <span
       title={titulo}
-      className="inline-flex items-center gap-1 rounded-[4px] px-1.5 py-0.5 text-[11px] font-medium"
+      className="inline-flex items-center gap-1 rounded-full border border-[var(--borda)] px-2 py-0.5 text-[11px] font-semibold"
       style={tons}
     >
       {icone}
@@ -501,11 +503,11 @@ export function CartaoOpcao({
     <label
       onMouseEnter={() => setApontado(true)}
       onMouseLeave={() => setApontado(false)}
-      className={`tatil group relative flex h-full cursor-pointer flex-col gap-2 rounded-[var(--raio-painel)] border p-4 ${className}`}
+      className={`tatil group relative flex h-full cursor-pointer flex-col gap-3 rounded-[var(--raio-painel)] border p-5 hover:-translate-y-1 hover:border-[var(--accent)] hover:shadow-[var(--sombra-alta)] ${className}`}
       style={{
         borderColor: ativo ? "var(--accent)" : "var(--borda)",
         background: "var(--painel)",
-        boxShadow: ativo ? "inset 0 0 0 1px var(--accent)" : "none",
+        boxShadow: ativo ? "inset 0 0 0 2px var(--accent), var(--sombra)" : "var(--sombra)",
       }}
     >
       <input

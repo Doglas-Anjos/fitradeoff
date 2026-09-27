@@ -31,8 +31,7 @@ export function Secao({
   return (
     <section
       id={id}
-      className="scroll-mt-24 border-t pt-10"
-      style={{ borderColor: "var(--borda)" }}
+      className="cartao-secao scroll-mt-24"
     >
       <h2
         className="mb-4 text-xl font-semibold tracking-tight"
@@ -92,7 +91,7 @@ export function Sumario({
   }
 
   return (
-    <aside className="sticky top-24 hidden lg:block">
+    <aside className="superficie sticky top-24 hidden p-4 lg:block">
       <p
         className="text-[11px] font-semibold uppercase tracking-[0.12em]"
         style={{ color: "var(--tinta-fraca)" }}
@@ -100,8 +99,7 @@ export function Sumario({
         {t("paridade.sumario")}
       </p>
       <nav
-        className="mt-3 border-l pl-3"
-        style={{ borderColor: "var(--borda-forte)" }}
+        className="mt-3 space-y-1"
         aria-label={t("paridade.sumario.lateral")}
       >
         {itens}

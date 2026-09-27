@@ -18,29 +18,37 @@
 :root {
   color-scheme: light;
 
-  /* superficies -- familia zinc, fria, uma so */
-  --plano: #fafafa;
+  /* superficies -- branco e azul, com hierarquia institucional */
+  --plano: #f3f7fc;
+  --plano-topo: #edf4fb;
   --painel: #ffffff;
-  --painel-fundo: #f4f4f5;
-  --borda: #e4e4e7;
-  --borda-forte: #d4d4d8;
+  --painel-fundo: #eaf1f8;
+  --borda: #d8e3ef;
+  --borda-forte: #b9cade;
 
   /* tinta */
-  --tinta: #18181b;
-  --tinta-2: #52525b;
-  --tinta-3: #6b6b73;
-  --tinta-fraca: #71717a; /* 4,63:1 sobre o plano */
+  --tinta: #0b1f38;
+  --tinta-2: #304965;
+  --tinta-3: #4f6782;
+  /* Escurecido de #637891. O valor antigo passava de 4,5:1 contra o painel
+     branco e falhava contra as outras duas superficies em que ele de fato
+     aparece: 4,22:1 sobre o fundo da pagina e 3,99:1 sobre a area rebaixada.
+     Este da 5,37 / 4,99 / 4,72 nas tres, e a diferenca a olho e quase nula. */
+  --tinta-fraca: #596c85;
 
   /* accent unica, travada */
-  --accent: #14524b;
-  --accent-hover: #0f403a;
-  --accent-suave: #ecf5f3;
+  --accent: #0b3261;
+  --accent-hover: #061f3e;
+  --accent-suave: #e3edf8;
   --accent-tinta: #ffffff;
+  --navy: #071d38;
+  --navy-2: #0b2d55;
+  --azul-vivo: #246bb2;
 
   /* dados: so dentro dos paineis de grafico */
   --dado-a: #0d9488;
   --dado-b: #c2410c;
-  --dado-trilho: #e4e4e7;
+  --dado-trilho: #dbe6f1;
 
   /* Serie categorica: a ordem e fixa e nunca reciclada -- a cor identifica a
      alternativa, e desmarcar uma nao pode repintar as que sobraram.
@@ -64,94 +72,132 @@
   --aviso: #a16207;
   --erro: #b91c1c;
   --erro-suave: #fef2f2;
-  --veu: rgba(24, 24, 27, 0.45);
+  --veu: rgba(7, 29, 56, 0.56);
 
   /* sombra tingida com o tom do fundo, nunca preto puro */
-  --sombra: 0 1px 2px rgba(24, 24, 27, 0.04), 0 4px 12px rgba(24, 24, 27, 0.04);
-  --sombra-alta: 0 2px 4px rgba(24, 24, 27, 0.05), 0 12px 28px rgba(24, 24, 27, 0.07);
+  --sombra: 0 1px 2px rgba(7, 29, 56, 0.04), 0 8px 22px rgba(7, 29, 56, 0.07);
+  /* Sombra para dentro: e o que faz uma area parecer rebaixada, e nao erguida.
+     Serve as regioes de digitacao, que sao buracos na superficie, nao cartoes. */
+  --sombra-interna: inset 0 1px 3px rgba(7, 29, 56, 0.09);
+  --sombra-alta: 0 3px 8px rgba(7, 29, 56, 0.08), 0 18px 42px rgba(7, 29, 56, 0.13);
 
-  --raio-painel: 10px;
-  --raio-controle: 6px;
+  --raio-painel: 16px;
+  --raio-controle: 9px;
+
+  /* Fundo da pagina: papel milimetrado, nao textura decorativa. A malha da a
+     profundidade que faltava nas margens sem competir com o conteudo -- e a
+     referencia e o instrumento de medicao, que e o que o produto e. Fica
+     abaixo do limiar de leitura consciente: quem olhar direto enxerga uma
+     superficie, nao pontinhos. */
+  --grade: rgba(11, 50, 97, 0.055);
+  --grade-passo: 26px;
+
+  /* A barra de navegacao e navy nos dois temas, entao o que vai sobre ela nao
+     muda com o tema -- mas continua token, para que nenhum componente precise
+     escrever cor. */
+  --navy-tinta: #ffffff;
+  --navy-tinta-2: #c6d7ea;
+  --navy-borda: rgba(255, 255, 255, 0.22);
+  --navy-realce: rgba(255, 255, 255, 0.1);
+
+  --selecao: #bdd6f0;
+  --selecao-tinta: var(--navy);
+  /* texto sobre o bloco navy, que e escuro nos dois temas */
+  --tinta-sobre-navy: #ffffff;
+  /* com o que clarear uma superficie; no escuro, clarear e misturar com claro,
+     nao com branco, senao a barra vira um risco luminoso */
+  --clareia: #ffffff;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    color-scheme: dark;
+/* ---------------------------------------------------------------------------
+   Modo escuro
+   ---------------------------------------------------------------------------
+   Um bloco so, ligado por `data-theme`, e nao tambem por
+   `@media (prefers-color-scheme)`. A media query exigiria repetir a paleta
+   inteira em dois seletores, e duas copias de trinta tokens divergem na
+   primeira vez que alguem ajusta so uma. Quem resolve "sistema" para claro ou
+   escuro e o script de `layout.tsx`, antes da primeira pintura, e ele reage a
+   troca de preferencia do sistema enquanto a pagina esta aberta.
 
-    --plano: #09090b;
-    --painel: #18181b;
-    --painel-fundo: #27272a;
-    --borda: #27272a;
-    --borda-forte: #3f3f46;
+   O preco e que sem JavaScript nao ha modo escuro. E aceitavel aqui: a
+   aplicacao inteira e React e nao renderiza nada sem JavaScript.
 
-    --tinta: #fafafa;
-    --tinta-2: #a1a1aa;
-    --tinta-3: #a1a1aa;
-    --tinta-fraca: #7e7e86; /* 4,94:1 sobre o plano */
-
-    --accent: #2da090;
-    --accent-hover: #3fb8a6;
-    --accent-suave: #14312d;
-    --accent-tinta: #06231f;
-
-    --dado-a: #19a594;
-    --dado-b: #ce7c18;
-    --dado-trilho: #3f3f46;
-
-    /* Passos proprios do modo escuro: mesma matiz, luminosidade dentro da
-       banda do fundo escuro. Os oito passam contraste de 3:1 contra o painel,
-       o que os originais nao faziam -- o violeta ficava em 2,07:1. */
-    --serie-1: #3791ff;
-    --serie-2: #f2590a;
-    --serie-3: #03ad77;
-    --serie-4: #c38400;
-    --serie-5: #dd6193;
-    --serie-6: #28af24;
-    --serie-7: #877dfe;
-    --serie-8: #fc4547;
-
-    --sucesso: #4ade80;
-    --aviso: #fbbf24;
-    --erro: #f87171;
-    --erro-suave: #2a1515;
-    --veu: rgba(0, 0, 0, 0.65);
-
-    --sombra: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.25);
-    --sombra-alta: 0 2px 4px rgba(0, 0, 0, 0.35), 0 12px 28px rgba(0, 0, 0, 0.4);
-  }
-}
+   Os tons sao da mesma familia azul do claro, nao um cinza neutro: preto puro
+   com texto branco vibra na borda das letras, e o azul-petroleo escuro mantem
+   a leitura de instrumento. Cada par texto/superficie foi medido (WCAG):
+   o menor contraste de texto e 5,18:1 (tinta-fraca sobre painel), e o maior,
+   16:1. Nenhum par de texto fica abaixo de 4,5:1.
+--------------------------------------------------------------------------- */
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --plano: #09090b;
-  --painel: #18181b;
-  --painel-fundo: #27272a;
-  --borda: #27272a;
-  --borda-forte: #3f3f46;
-  --tinta: #fafafa;
-  --tinta-2: #a1a1aa;
-  --tinta-3: #a1a1aa;
-  --tinta-fraca: #7e7e86;
-  --accent: #2da090;
-  --accent-hover: #3fb8a6;
-  --accent-suave: #14312d;
-  --accent-tinta: #06231f;
-  --dado-a: #19a594;
-  --dado-b: #ce7c18;
-  --dado-trilho: #3f3f46;
-  --serie-1: #3791ff;
-  --serie-2: #f2590a;
-  --serie-3: #03ad77;
-  --serie-4: #c38400;
-  --serie-5: #dd6193;
-  --serie-6: #28af24;
-  --serie-7: #877dfe;
-  --serie-8: #fc4547;
+
+  --plano: #0a1421;
+  --plano-topo: #0d1a2a;
+  --painel: #111f31;
+  --painel-fundo: #0d1827;
+  --borda: #22374f;
+  --borda-forte: #33506f;
+
+  --tinta: #e9eff7;
+  --tinta-2: #bacada;
+  --tinta-3: #94a8bf;
+  --tinta-fraca: #7c92aa;
+
+  /* No escuro a accent precisa ser clara para aparecer: o azul #0b3261 do modo
+     claro sobre painel escuro da 1,2:1, ou seja, some. O papel se inverte --
+     a tinta da accent passa a ser escura. */
+  --accent: #6fb0ee;
+  --accent-hover: #93c6f5;
+  --accent-suave: #152941;
+  --accent-tinta: #06121f;
+  --navy: #0c1c2e;
+  --navy-2: #123153;
+  --azul-vivo: #6fb0ee;
+
+  --dado-a: #2fd39a;
+  --dado-b: #f5834f;
+  --dado-trilho: #22344b;
+
+  /* A serie clareia, e a ordem e as familias de matiz sao as mesmas -- a cor
+     identifica a alternativa, e trocar o significado entre temas seria pior do
+     que qualquer ganho de contraste. Recalculado com a mesma metodologia
+     citada acima (OKLab, Machado 2009, severidade 1,0): separacao minima entre
+     vizinhas de 10,0 dE em protanopia e 9,0 em deuteranopia, contra 10,3 e 9,2
+     da serie clara -- equivalente, portanto.
+
+     Duas tentativas de melhorar isso foram medidas e descartadas: escurecer o
+     verde para afasta-lo do vermelho derrubou o pior par em protanopia de 6,2
+     para 2,0 dE. O criterio que vale e a separacao entre vizinhas, porque e
+     entre vizinhas que a comparacao acontece, e cada marca tem rotulo direto. */
+  --serie-1: #5c9df0;
+  --serie-2: #f5834f;
+  --serie-3: #2fd39a;
+  --serie-4: #f7bd3a;
+  --serie-5: #f59cbe;
+  --serie-6: #3fbd52;
+  --serie-7: #8f80e8;
+  --serie-8: #f47272;
+
   --sucesso: #4ade80;
   --aviso: #fbbf24;
   --erro: #f87171;
-  --erro-suave: #2a1515;
-  --veu: rgba(0, 0, 0, 0.65);
+  --erro-suave: #2a1618;
+  --veu: rgba(3, 9, 17, 0.68);
+
+  /* No escuro a sombra nao escurece: nao ha para onde. O que da relevo e um
+     halo interno claro na borda de cima, que e como a luz cai numa superficie
+     erguida -- e por isso o segundo valor e `inset`. */
+  --sombra: 0 1px 2px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --sombra-alta:
+    0 6px 16px rgba(0, 0, 0, 0.55), 0 18px 42px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
+  --sombra-interna: inset 0 1px 4px rgba(0, 0, 0, 0.45);
+  --grade: rgba(150, 195, 245, 0.05);
+  --selecao: #1d4f86;
+  --selecao-tinta: #eaf2fb;
+  --clareia: #cfe2f7;
 }
 
 @theme inline {
@@ -182,10 +228,101 @@ html {
 }
 
 body {
-  background: var(--plano);
+  /* Tres camadas, da frente para tras: a malha de papel milimetrado, a
+     clareada do topo que separa o cabecalho do corpo, e a cor de base.
+     A malha vem primeiro na pilha e, por ser quase transparente, so aparece
+     onde nao ha painel em cima -- ou seja, exatamente nas margens, que era o
+     que estava vazio. */
+  background-color: var(--plano);
+  background-image:
+    radial-gradient(circle at 1px 1px, var(--grade) 1px, transparent 0),
+    linear-gradient(180deg, var(--plano-topo) 0, transparent 320px);
+  background-size:
+    var(--grade-passo) var(--grade-passo),
+    100% 100%;
+  background-repeat: repeat, no-repeat;
   color: var(--tinta);
   font-family: var(--fonte-sans), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
+select,
+textarea {
+  border-color: var(--borda-forte);
+  background: var(--painel);
+  color: var(--tinta);
+}
+
+select:hover,
+textarea:hover {
+  border-color: var(--accent);
+}
+
+::selection {
+  background: var(--selecao);
+  color: var(--selecao-tinta);
+}
+
+.superficie {
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-painel);
+  background: var(--painel);
+  box-shadow: var(--sombra);
+}
+
+.superficie-alta {
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-painel);
+  background: var(--painel);
+  box-shadow: var(--sombra-alta);
+}
+
+.cabecalho-escuro {
+  border-radius: var(--raio-painel);
+  background: var(--navy);
+  color: var(--tinta-sobre-navy);
+  box-shadow: var(--sombra-alta);
+}
+
+.cartao-secao {
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-painel);
+  background: var(--painel);
+  padding: clamp(1.25rem, 3vw, 2rem);
+  box-shadow: var(--sombra);
+}
+
+.barra-acoes {
+  border-top: 1px solid var(--borda);
+  /* `white` fixo aqui clareava a barra no tema claro e a estourava no escuro,
+     onde clarear significa misturar com um azul claro, nao com branco. */
+  background: color-mix(in srgb, var(--painel-fundo) 55%, var(--clareia));
+}
+
+.cartao-modulo {
+  border-color: var(--borda);
+  background: var(--painel);
+  box-shadow: var(--sombra);
+}
+
+.cartao-modulo:hover {
+  border-color: var(--accent);
+  box-shadow: var(--sombra-alta);
+  transform: translateY(-3px);
+}
+
+.seta-modulo {
+  color: var(--accent);
+  transition: transform 160ms ease;
+}
+
+.cartao-modulo:hover .seta-modulo {
+  transform: translateX(3px);
 }
 
 /* Numeros sao o conteudo desta interface: alinham em coluna e nao dancam
@@ -696,4 +833,99 @@ body {
 .cartao-modulo:hover .seta-modulo {
   color: var(--accent);
   transform: translateX(2px);
+}
+
+
+/* --- seletor de tema -------------------------------------------------------
+   Dois trajes para o mesmo controle: segmentado sobre a barra navy, e linhas
+   nomeadas dentro do menu do celular, onde o fundo ja e o painel claro.
+
+   O escolhido leva preenchimento cheio, e nao um fundo levemente tingido: numa
+   barra escura o tingido nao chega a 3:1 e o estado simplesmente some. E a
+   mesma conclusao a que o seletor de idioma ja tinha chegado. */
+
+.grupo-tema {
+  border-color: var(--navy-borda);
+}
+
+.botao-tema {
+  color: var(--navy-tinta-2);
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
+}
+.botao-tema:hover {
+  background: var(--navy-realce);
+  color: var(--navy-tinta);
+}
+/* escolhido vence o hover: depois do clique o que importa e a confirmacao, e
+   apaga-la porque o ponteiro parou ali esconderia a resposta */
+.botao-tema[data-ativo="true"],
+.botao-tema[data-ativo="true"]:hover {
+  background: var(--navy-tinta);
+  color: var(--navy);
+}
+
+.item-tema {
+  color: var(--tinta-2);
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
+}
+.item-tema:hover {
+  background: var(--painel-fundo);
+  color: var(--tinta);
+}
+.item-tema[data-ativo="true"],
+.item-tema[data-ativo="true"]:hover {
+  background: var(--accent-suave);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+
+/* --- area de preenchimento -------------------------------------------------
+   O que se digita fica numa superficie rebaixada; o que ja foi cadastrado fica
+   em cartoes erguidos. Antes os dois eram brancos e a unica diferenca era um
+   tracejado fino, que contra branco quase nao se ve -- as duas regioes liam
+   como a mesma coisa, e nao havia sinal de onde acabava o formulario e comecava
+   a lista.
+
+   A metafora e fisica e nao precisa ser aprendida: buraco e onde se poe coisa,
+   cartao e coisa posta. E a mesma distincao que um formulario de papel faz com
+   o campo pautado. */
+
+.area-entrada {
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-painel);
+  background: var(--painel-fundo);
+  box-shadow: var(--sombra-interna);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+/* Em edicao a area deixa de ser "onde se acrescenta" e passa a ser o assunto
+   da tela: sobe para o nivel do painel e ganha a borda da accent. */
+.area-entrada[data-editando="true"] {
+  border-color: var(--accent);
+  background: var(--painel);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+/* Enquanto o foco esta dentro, a area se anuncia -- senao, num formulario com
+   varios campos, nao ha sinal de qual bloco esta recebendo o que se digita. */
+.area-entrada:focus-within {
+  border-color: var(--borda-forte);
+}
+
+.rotulo-area {
+  /* `tinta-fraca` daria 3,99:1 sobre a superficie rebaixada -- abaixo de 4,5 e
+     em corpo 11, que e onde menos se pode economizar contraste. `tinta-3` da
+     5,13:1 e continua lendo como rotulo, nao como conteudo. */
+  color: var(--tinta-3);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }

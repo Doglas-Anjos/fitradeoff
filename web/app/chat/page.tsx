@@ -85,24 +85,23 @@ export default function ChatPage() {
   if (disponivel === false) {
     return (
       <main className="mx-auto max-w-5xl px-5 py-12 sm:py-16">
-        <header className="max-w-3xl">
+        <header className="cabecalho-escuro max-w-4xl p-6 sm:p-8">
           <p
             className="text-[12px] font-semibold uppercase tracking-[0.14em]"
-            style={{ color: "var(--accent)" }}
+            style={{ color: "#8fc5ff" }}
           >
             {t("tela.chat.editorial")}
           </p>
-          <h1 className="display mt-3 text-3xl font-semibold sm:text-4xl">
+          <h1 className="display mt-3 text-3xl font-semibold text-white sm:text-4xl">
             {t("tela.chat.titulo")}
           </h1>
-          <p className="prosa mt-3 text-base" style={{ color: "var(--tinta-2)" }}>
+          <p className="prosa mt-3 text-base" style={{ color: "#c6d7ea" }}>
             {t("tela.chat.descricao")}
           </p>
         </header>
 
         <section
-          className="mt-9 grid overflow-hidden rounded-[var(--raio-painel)] border md:grid-cols-[1.15fr_0.85fr]"
-          style={{ borderColor: "var(--borda)", background: "var(--painel)" }}
+          className="superficie-alta mt-7 grid overflow-hidden md:grid-cols-[1.15fr_0.85fr]"
         >
           <div className="p-6 sm:p-8">
             <span
@@ -171,16 +170,16 @@ export default function ChatPage() {
   }
 
   return (
-    <main className="mx-auto flex h-[calc(100dvh-3.5rem)] max-w-5xl flex-col px-5 pb-5 pt-8 sm:pt-10">
-      <header className="mb-6 max-w-3xl">
+    <main className="mx-auto flex h-[calc(100dvh-4rem)] max-w-5xl flex-col px-5 pb-5 pt-6 sm:pt-8">
+      <header className="cabecalho-escuro mb-5 max-w-none px-6 py-5">
         <p
           className="text-[11px] font-semibold uppercase tracking-[0.14em]"
-          style={{ color: "var(--accent)" }}
+          style={{ color: "#8fc5ff" }}
         >
           {t("tela.chat.editorial")}
         </p>
-        <h1 className="display mt-2 text-3xl font-semibold">{t("tela.chat.titulo")}</h1>
-        <p className="prosa mt-2 text-sm" style={{ color: "var(--tinta-2)" }}>
+        <h1 className="display mt-2 text-3xl font-semibold text-white">{t("tela.chat.titulo")}</h1>
+        <p className="prosa mt-2 text-sm" style={{ color: "#c6d7ea" }}>
           {t("tela.chat.descricao")}
         </p>
       </header>
@@ -196,7 +195,7 @@ export default function ChatPage() {
                 <button
                   key={chave}
                   onClick={() => enviar(t(chave))}
-                  className="tatil group flex min-h-28 w-full flex-col justify-between rounded-[var(--raio-painel)] border p-4 text-left text-[13px] hover:shadow-[var(--sombra)]"
+                  className="tatil group flex min-h-32 w-full flex-col justify-between rounded-[var(--raio-painel)] border p-5 text-left text-[13px] hover:-translate-y-1 hover:shadow-[var(--sombra-alta)]"
                   style={{
                     borderColor: "var(--borda)",
                     background: "var(--painel)",

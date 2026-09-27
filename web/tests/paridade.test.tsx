@@ -82,11 +82,11 @@ describe("a varredura de chave vazada", () => {
 });
 
 describe("o catálogo da paridade", () => {
-  it("tem os dois idiomas em toda entrada", () => {
-    /* Faltando o inglês, `t()` cai no português sem avisar: a tela fica
-       bilíngue pela metade e nada denuncia. */
+  it("tem todo idioma em toda entrada", () => {
+    /* Faltando um idioma, `t()` cai no português sem avisar: a tela fica
+       traduzida pela metade e nada denuncia. */
     const incompletas = Object.entries(PARIDADE_TEXTOS)
-      .filter(([, v]) => !v.pt?.trim() || !v.en?.trim())
+      .filter(([, v]) => !v.pt?.trim() || !v.en?.trim() || !v.es?.trim())
       .map(([k]) => k);
     expect(incompletas).toEqual([]);
   });

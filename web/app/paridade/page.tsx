@@ -104,23 +104,23 @@ export default function ParidadePage() {
 
   return (
     <main className="mx-auto max-w-7xl px-5 py-12 sm:py-16">
-      <header className="max-w-4xl">
+      <header className="cabecalho-escuro max-w-5xl p-6 sm:p-9">
         <p
           className="text-[12px] font-semibold uppercase tracking-[0.14em]"
-          style={{ color: "var(--accent)" }}
+          style={{ color: "#8fc5ff" }}
         >
           {t("paridade.editorial")}
         </p>
         <h1
           className="display mt-3 text-3xl font-semibold sm:text-4xl"
-          style={{ color: "var(--tinta)" }}
+          style={{ color: "#ffffff" }}
         >
           {t("paridade.titulo")}
         </h1>
-        <p className="prosa mt-3 text-base" style={{ color: "var(--tinta-2)" }}>
+        <p className="prosa mt-3 text-base" style={{ color: "#c6d7ea" }}>
           {t("paridade.subtitulo")}
         </p>
-        <p className="mt-2 text-[12px]" style={{ color: "var(--tinta-fraca)" }}>
+        <p className="mt-2 text-[12px]" style={{ color: "#9db5ce" }}>
           {t("paridade.versaoOficial")} ·{" "}
           {t("paridade.medidoEm", { data: MEDIDO_EM })}
         </p>
@@ -129,7 +129,7 @@ export default function ParidadePage() {
       {/* O placar primeiro: é a única coisa que alguém de fora precisa ler para
           saber se vale continuar lendo. */}
       <div
-        className="mt-9 grid gap-5 rounded-[var(--raio-painel)] border p-6 sm:grid-cols-[auto_1fr] sm:items-center sm:p-7"
+        className="mt-7 grid gap-5 rounded-[var(--raio-painel)] border p-6 shadow-[var(--sombra)] sm:grid-cols-[auto_1fr] sm:items-center sm:p-7"
         style={{ borderColor: "var(--borda)", background: "var(--painel)" }}
       >
         <p

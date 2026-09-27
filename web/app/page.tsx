@@ -1,24 +1,11 @@
 "use client";
 
+import { ArrowRight, CheckCircle, ChatCircleText } from "@phosphor-icons/react";
 import Link from "next/link";
 
 import { useIdioma } from "@/lib/i18n";
 import "@/lib/i18n/telas";
 
-/**
- * A home abre com o que o metodo faz, nao com o que ele e.
- *
- * O elemento memoravel e a demonstracao a direita: quatro alternativas, e o
- * conjunto encolhendo a cada resposta ate sobrar uma. E o conceito inteiro do
- * FITradeoff numa figura, e e a unica coisa nesta pagina que chama atencao --
- * o resto fica quieto de proposito.
- *
- * Componente de cliente porque o idioma é escolha de quem está lendo, guardada
- * no navegador: a home não pode vir do servidor já resolvida num idioma só.
- */
-
-/* Cada passo guarda a chave, não a frase: assim a legenda troca de idioma sem
-   o módulo ter de ser reavaliado. */
 const PASSOS = [
   { restantes: 4, chave: "tela.home.demo.passo1" },
   { restantes: 3, chave: "tela.home.demo.passo2" },
@@ -28,126 +15,78 @@ const PASSOS = [
 
 function Demonstracao() {
   const { t } = useIdioma();
-
   return (
-    <figure className="m-0">
-      <div
-        className="rounded-[var(--raio-painel)] border p-6"
-        style={{
-          borderColor: "var(--borda)",
-          background: "var(--painel)",
-          boxShadow: "var(--sombra)",
-        }}
-      >
-        <div className="flex flex-col gap-5">
+    <figure className="superficie-alta m-0 overflow-hidden">
+      <div className="flex items-center justify-between border-b border-[var(--borda)] bg-[var(--painel-fundo)] px-5 py-3.5">
+        <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--accent)]">FITradeoff</span>
+        <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[var(--tinta-3)]">
+          <span className="h-2 w-2 rounded-full bg-[var(--sucesso)]" />
+          {t("tela.home.demo.legenda")}
+        </span>
+      </div>
+      <div className="p-5 sm:p-7">
+        <div className="flex flex-col gap-3">
           {PASSOS.map((passo, i) => (
-            <div key={i} className="flex items-center gap-4">
-              <div className="flex gap-1.5">
+            <div key={passo.chave} className="flex items-center gap-4 rounded-[var(--raio-controle)] border border-[var(--borda)] bg-[var(--painel)] px-4 py-3">
+              <span className="num flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--accent-suave)] text-[11px] font-bold text-[var(--accent)]">{i + 1}</span>
+              <div className="flex gap-1.5" aria-hidden>
                 {[0, 1, 2, 3].map((j) => (
-                  <span
-                    key={j}
-                    className="h-7 w-7 rounded-[3px]"
-                    style={{
-                      background:
-                        j < passo.restantes
-                          ? "var(--accent)"
-                          : "var(--dado-trilho)",
-                      opacity: j < passo.restantes ? 1 - i * 0.04 : 1,
-                    }}
-                  />
+                  <span key={j} className="h-6 w-3 rounded-sm transition-colors duration-300 sm:w-5" style={{ background: j < passo.restantes ? "var(--accent)" : "var(--dado-trilho)" }} />
                 ))}
               </div>
-              <span className="text-sm" style={{ color: "var(--tinta-2)" }}>
-                {t(passo.chave)}
-              </span>
+              <span className="min-w-0 text-sm font-medium text-[var(--tinta-2)]">{t(passo.chave)}</span>
+              {i === PASSOS.length - 1 && <CheckCircle className="ml-auto shrink-0 text-[var(--sucesso)]" size={18} weight="fill" aria-hidden />}
             </div>
           ))}
         </div>
       </div>
-      <figcaption className="mt-3 text-xs" style={{ color: "var(--tinta-fraca)" }}>
-        {t("tela.home.demo.legenda")}
-      </figcaption>
     </figure>
   );
 }
 
 export default function Home() {
   const { t } = useIdioma();
-
+  const itens = ["pesos", "registro", "objetivos", "parar"];
   return (
-    <main className="mx-auto max-w-6xl px-5 pb-24 pt-16">
-      <div className="grid gap-14 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:gap-20">
-        <div>
-          <h1
-            className="display text-[2.75rem] font-semibold sm:text-[3.5rem]"
-            style={{ color: "var(--tinta)" }}
-          >
-            {t("tela.home.titulo")}
-          </h1>
-
-          <p className="prosa mt-6 text-[17px]" style={{ color: "var(--tinta-2)" }}>
-            {t("tela.home.descricao")}
-          </p>
-
-          <div className="mt-9 flex flex-wrap items-center gap-3">
-            <Link
-              href="/decisao"
-              className="tatil rounded-[var(--raio-controle)] px-5 py-2.5 text-sm font-medium"
-              style={{
-                background: "var(--accent)",
-                color: "var(--accent-tinta)",
-                boxShadow: "var(--sombra)",
-              }}
-            >
-              {t("tela.home.acao.decisao")}
-            </Link>
-            <Link
-              href="/chat"
-              className="tatil rounded-[var(--raio-controle)] border px-5 py-2.5 text-sm font-medium"
-              style={{ borderColor: "var(--borda-forte)", color: "var(--tinta)" }}
-            >
-              {t("tela.home.acao.chat")}
-            </Link>
+    <main>
+      <section className="relative overflow-hidden bg-[var(--navy)]">
+        <div className="pointer-events-none absolute -right-40 -top-44 h-[32rem] w-[32rem] rounded-full border border-white/10" />
+        <div className="pointer-events-none absolute -right-16 -top-16 h-80 w-80 rounded-full border border-white/10" />
+        <div className="relative mx-auto grid max-w-7xl gap-12 px-5 py-16 sm:py-20 lg:grid-cols-[1.05fr_.95fr] lg:items-center lg:gap-20 lg:py-24">
+          <div>
+            <p className="mb-5 text-[12px] font-bold uppercase tracking-[0.18em] text-[#8fc5ff]">Flexible and Interactive Tradeoff</p>
+            <h1 className="display max-w-3xl text-[2.8rem] font-semibold text-white sm:text-[4rem]">{t("tela.home.titulo")}</h1>
+            <p className="prosa mt-6 text-[17px] leading-relaxed text-[#c6d7ea]">{t("tela.home.descricao")}</p>
+            <div className="mt-9 flex flex-wrap gap-3">
+              <Link href="/decisao" className="tatil inline-flex min-h-12 items-center gap-2 rounded-[var(--raio-controle)] bg-white px-5 py-3 text-sm font-bold text-[var(--navy)] shadow-lg hover:-translate-y-0.5">
+                {t("tela.home.acao.decisao")} <ArrowRight size={16} weight="bold" aria-hidden />
+              </Link>
+              <Link href="/chat" className="tatil inline-flex min-h-12 items-center gap-2 rounded-[var(--raio-controle)] border border-white/30 bg-white/5 px-5 py-3 text-sm font-semibold text-white hover:border-white/60 hover:bg-white/10">
+                <ChatCircleText size={17} weight="bold" aria-hidden /> {t("tela.home.acao.chat")}
+              </Link>
+            </div>
+            <p className="mt-5 text-sm text-[#9db5ce]">{t("tela.home.acao.ajuda")}</p>
           </div>
-
-          <p className="mt-6 text-sm" style={{ color: "var(--tinta-3)" }}>
-            {t("tela.home.acao.ajuda")}
-          </p>
+          <Demonstracao />
         </div>
+      </section>
 
-        <Demonstracao />
-      </div>
-
-      <div className="mt-28 grid items-start gap-10 lg:grid-cols-[1.05fr_1fr] lg:gap-20">
-        <h2
-          className="display text-2xl font-semibold lg:sticky lg:top-24"
-          style={{ color: "var(--tinta)" }}
-        >
-          {t("tela.home.pratica.titulo")}
-        </h2>
-
-        <dl className="divide-y" style={{ borderColor: "var(--borda)" }}>
-          {/* A lista guarda o nome de cada item, não o texto: a chave também
-              serve de `key` estável, que o título traduzido não seria. */}
-          {["pesos", "registro", "objetivos", "parar"].map((item) => (
-            <div key={item} className="py-5 first:pt-0 last:pb-0">
-              <dt className="text-[15px] font-medium" style={{ color: "var(--tinta)" }}>
-                {t(`tela.home.pratica.${item}.titulo`)}
-              </dt>
-              <dd
-                className="prosa mt-1.5 text-sm"
-                style={{ color: "var(--tinta-2)" }}
-              >
-                {t(`tela.home.pratica.${item}.texto`)}
-              </dd>
+      <section className="mx-auto max-w-7xl px-5 py-16 sm:py-20">
+        <div className="max-w-2xl">
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--azul-vivo)]">FITradeoff</p>
+          <h2 className="display mt-3 text-3xl font-semibold text-[var(--tinta)]">{t("tela.home.pratica.titulo")}</h2>
+        </div>
+        <dl className="mt-9 grid gap-4 md:grid-cols-2">
+          {itens.map((item, i) => (
+            <div key={item} className="superficie tatil group p-6 hover:-translate-y-1 hover:border-[var(--accent)] hover:shadow-[var(--sombra-alta)]">
+              <div className="num mb-5 flex h-9 w-9 items-center justify-center rounded-[var(--raio-controle)] bg-[var(--accent-suave)] text-xs font-bold text-[var(--accent)]">{String(i + 1).padStart(2, "0")}</div>
+              <dt className="text-base font-semibold text-[var(--tinta)]">{t(`tela.home.pratica.${item}.titulo`)}</dt>
+              <dd className="prosa mt-2 text-sm text-[var(--tinta-2)]">{t(`tela.home.pratica.${item}.texto`)}</dd>
             </div>
           ))}
         </dl>
-      </div>
-
-      <p className="mt-24 text-xs" style={{ color: "var(--tinta-fraca)" }}>
-        {t("tela.home.rodape")}
-      </p>
+        <p className="mt-14 border-t border-[var(--borda)] pt-6 text-xs text-[var(--tinta-fraca)]">{t("tela.home.rodape")}</p>
+      </section>
     </main>
   );
 }

@@ -20,7 +20,7 @@ import { EXEMPLOS } from "@/lib/exemplos";
 /** "0 a 5", "0 to 5", "1-10": faixa, não unidade. */
 const PARECE_FAIXA = /^\d+([.,]\d+)?\s*(a|to|-|–|até)\s*\d+([.,]\d+)?$/i;
 
-const traduzido = (chave: string, idioma: "pt" | "en") =>
+const traduzido = (chave: string, idioma: "pt" | "en" | "es") =>
   (DOMINIO[chave]?.[idioma] ?? chave).trim();
 
 describe("as unidades dos casos prontos", () => {
@@ -34,7 +34,7 @@ describe("as unidades dos casos prontos", () => {
 
   it("nenhuma unidade é a faixa da escala disfarçada", () => {
     for (const { caso, criterio, chave } of unidades) {
-      for (const idioma of ["pt", "en"] as const) {
+      for (const idioma of ["pt", "en", "es"] as const) {
         const texto = traduzido(chave, idioma);
         expect(
           PARECE_FAIXA.test(texto),
@@ -44,13 +44,14 @@ describe("as unidades dos casos prontos", () => {
     }
   });
 
-  it("toda chave de unidade existe no catálogo, nos dois idiomas", () => {
+  it("toda chave de unidade existe no catálogo, em todo idioma", () => {
     /* Uma chave sem tradução aparece na tela como a própria chave -- e ao lado
        de um número ela passa por unidade estranha em vez de erro. */
     for (const { caso, criterio, chave } of unidades) {
       expect(DOMINIO[chave], `${caso} · ${criterio}: chave ${chave} não existe`).toBeDefined();
       expect(typeof DOMINIO[chave]?.pt).toBe("string");
       expect(typeof DOMINIO[chave]?.en).toBe("string");
+      expect(typeof DOMINIO[chave]?.es).toBe("string");
     }
   });
 });

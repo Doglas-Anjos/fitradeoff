@@ -54,7 +54,7 @@ function Secao({
   children: React.ReactNode;
 }) {
   return (
-    <section className="border-t pt-8" style={{ borderColor: "var(--borda)" }}>
+    <section className="cartao-secao">
       <div className="mb-5 flex flex-wrap items-baseline justify-between gap-3">
         <h2
           className="text-lg font-semibold tracking-tight"
@@ -282,7 +282,7 @@ function Decisao() {
   /* --- antes de existir um problema: so a entrada de dados --- */
   if (!problema) {
     return (
-      <main className="mx-auto max-w-7xl px-5 pb-24 pt-12">
+      <main className="mx-auto max-w-7xl px-5 pb-24 pt-10 sm:pt-12">
         {/* As salvas continuam a um toque desde a primeira tela - antes elas
             eram um passo da trilha, o que obrigava a sair do cadastro para ver o
             que já existia -, mas não ocupam mais uma coluna da grade: o painel
@@ -291,13 +291,11 @@ function Decisao() {
             abre ou fecha a lista. */}
         {/* "Nova decisão" é contexto, não o assunto da tela: o título de cada
             passo é a pergunta daquele passo, e vem de EntradaProblema. */}
-        <p
-          className="text-[13px] font-medium tracking-wide"
-          style={{ color: "var(--tinta-3)" }}
-        >
-          {t("tela.decisao.nova")}
-        </p>
-        <div className="mt-5">
+        <div className="cabecalho-escuro mb-7 overflow-hidden px-6 py-7 sm:px-8">
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#8fc5ff]">FITradeoff</p>
+          <p className="mt-2 text-xl font-semibold text-white">{t("tela.decisao.nova")}</p>
+        </div>
+        <div className="superficie-alta p-5 sm:p-8">
           <EntradaProblema onPronto={receber} />
         </div>
         <PainelSalvas onAbrir={receber} ocupado={ocupado} />
@@ -311,17 +309,17 @@ function Decisao() {
   }
 
   return (
-    <main className="mx-auto max-w-7xl px-5 pb-24 pt-10">
-      <header className="mb-9 border-b pb-6" style={{ borderColor: "var(--borda)" }}>
+    <main className="mx-auto max-w-7xl px-5 pb-24 pt-8">
+      <header className="cabecalho-escuro mb-8 overflow-hidden p-5 sm:p-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--accent)" }}>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#8fc5ff]">
               {t(`problematica.${problema.problematica}`)}
             </p>
-            <h1 className="display mt-2 text-3xl font-semibold sm:text-4xl" style={{ color: "var(--tinta)" }}>
+            <h1 className="display mt-2 text-3xl font-semibold text-white sm:text-4xl">
               {problema.nome}
             </h1>
-            <p className="mt-2 text-[13px]" style={{ color: "var(--tinta-3)" }}>
+            <p className="mt-2 text-[13px] text-[#c6d7ea]">
               {t("estrutura.alternativas.contagem", { n: Object.keys(problema.consequencias).length })}
               {" · "}
               {t("estrutura.criterios.contagem", { n: problema.criterios.length })}
@@ -329,14 +327,13 @@ function Decisao() {
           </div>
           <button
             onClick={recomecar}
-            className="tatil rounded-[var(--raio-controle)] border px-3 py-2 text-[13px] font-medium"
-            style={{ borderColor: "var(--borda-forte)", background: "var(--painel)", color: "var(--tinta-2)" }}
+            className="tatil min-h-10 rounded-[var(--raio-controle)] border border-white/25 bg-white/10 px-4 py-2 text-[13px] font-semibold text-white hover:border-white/50 hover:bg-white/15"
           >
             {t("tela.decisao.outra")}
           </button>
         </div>
 
-        <div className="mt-6">
+        <div className="mt-6 rounded-[var(--raio-painel)] bg-[var(--painel)] p-1 text-[var(--tinta)]">
           <Etapas
             atual={etapa}
             alcancadas={alcancadas}
@@ -360,8 +357,8 @@ function Decisao() {
         </div>
       )}
 
-      <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_280px] lg:gap-14">
-        <div className="min-w-0 space-y-10">
+      <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-8">
+        <div className="min-w-0 space-y-7">
           {etapa === "problema" && (
             <Secao
               titulo={t("tela.decisao.dados.titulo")}

@@ -137,9 +137,12 @@ export function ListaArrastavel({
                   background: sendoArrastado ? "var(--painel-fundo)" : "var(--painel)",
                   opacity: sendoArrastado ? 0.5 : 1,
                   cursor: podeArrastar ? "grab" : "default",
+                  /* Relevo em todo item: e o que separa "ja cadastrado" da
+                     area de digitacao, que agora e rebaixada. Sem sombra os
+                     dois blocos voltam a parecer a mesma coisa. */
                   boxShadow: item.destacado
-                    ? "inset 0 0 0 1px var(--accent)"
-                    : "none",
+                    ? "inset 0 0 0 1px var(--accent), var(--sombra)"
+                    : "var(--sombra)",
                 } as React.CSSProperties
               }
             >

@@ -120,7 +120,7 @@ function gravarLargura(px: number): void {
 
    O locale importa duas vezes: na ordem alfabética (acento não é letra nova em
    português) e na data completa do `title`. */
-const LOCALE: Record<Idioma, string> = { pt: "pt-BR", en: "en-US" };
+const LOCALE: Record<Idioma, string> = { pt: "pt-BR", en: "en-US", es: "es-ES" };
 
 /** Milissegundos, ou `null` quando a data falta ou não é uma data. */
 function instante(iso?: string | null): number | null {
@@ -380,11 +380,11 @@ export function PainelSalvas({
         aria-expanded={aberta}
         aria-controls={idPainel}
         inert={aberta}
-        className="tatil fixed bottom-4 right-4 z-50 inline-flex h-11 w-11 items-center justify-center rounded-[var(--raio-controle)] border shadow-lg"
+        className="tatil fixed bottom-5 right-5 z-50 inline-flex h-12 w-12 items-center justify-center rounded-[var(--raio-controle)] border shadow-lg hover:-translate-y-1 hover:shadow-[var(--sombra-alta)]"
         style={{
-          borderColor: "var(--borda-forte)",
-          background: "var(--painel)",
-          color: "var(--tinta)",
+          borderColor: "var(--accent)",
+          background: "var(--accent)",
+          color: "var(--accent-tinta)",
           opacity: aberta ? 0 : 1,
           transform: aberta
             ? "translateY(6px) scale(0.9)"
@@ -444,11 +444,11 @@ export function PainelSalvas({
           style={{ touchAction: "none" }}
         />
 
-        <div className="flex items-baseline justify-between gap-3 pb-3 pl-5 pr-4 pt-4">
+        <div className="flex items-baseline justify-between gap-3 bg-[var(--navy)] pb-4 pl-6 pr-5 pt-5">
           <div className="flex items-center gap-2">
             <h2
               className="text-[13px] font-semibold"
-              style={{ color: "var(--tinta)" }}
+              style={{ color: "#ffffff" }}
             >
               {t("paineis.salvas.titulo")}
             </h2>
@@ -459,13 +459,13 @@ export function PainelSalvas({
             onClick={fechar}
             aria-label={t("paineis.salvas.fechar")}
             className="tatil -mr-1 rounded-[var(--raio-controle)] p-1"
-            style={{ color: "var(--tinta-3)" }}
+            style={{ color: "#c6d7ea" }}
           >
             <X size={16} weight="bold" aria-hidden />
           </button>
         </div>
 
-        <div className="pb-3 pl-5 pr-4">
+        <div className="border-b border-[var(--borda)] bg-[var(--painel-fundo)] pb-4 pl-6 pr-5 pt-4">
           <div className="relative">
             <MagnifyingGlass
               size={14}
@@ -554,7 +554,7 @@ export function PainelSalvas({
             ponta a ponta da janela, então não há mais altura máxima arbitrária
             para inventar. */}
         <div
-          className="min-h-0 flex-1 overflow-y-auto border-t py-3 pl-5 pr-4"
+          className="min-h-0 flex-1 overflow-y-auto py-4 pl-6 pr-5"
           style={{ borderColor: "var(--borda)" }}
         >
           {itens === null ? (

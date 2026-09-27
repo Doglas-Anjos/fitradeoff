@@ -116,8 +116,8 @@ export function PainelProgresso({
   return (
     <aside className="lg:sticky lg:top-20">
       <div
-        className="rounded-[var(--raio-painel)] border p-5"
-        style={{ borderColor: "var(--borda)", background: "var(--painel)" }}
+        className="overflow-hidden rounded-[var(--raio-painel)] border border-t-[6px] p-5 shadow-[var(--sombra)]"
+        style={{ borderColor: "var(--borda)", borderTopColor: "var(--accent)", background: "var(--painel)" }}
       >
         <div className="flex items-baseline justify-between">
           <span className="flex items-center gap-1.5">
@@ -149,8 +149,8 @@ export function PainelProgresso({
 
         <div className="mt-3 flex items-baseline gap-2">
           <span
-            className="num text-4xl font-semibold tabular-nums"
-            style={{ color: "var(--tinta)", letterSpacing: "-0.03em" }}
+            className="num text-5xl font-semibold tabular-nums"
+            style={{ color: "var(--accent)", letterSpacing: "-0.04em" }}
           >
             {contagem.numero}
           </span>
@@ -192,12 +192,12 @@ export function PainelProgresso({
         )}
 
         {/* as alternativas como marcas: as descartadas apagam, nao somem */}
-        <ul className="mt-5 space-y-2">
+        <ul className="mt-5 space-y-1.5 rounded-[var(--raio-controle)] bg-[var(--painel-fundo)] p-3">
           {nomes.map((nome) => {
             const viva = sobreviventes.includes(nome);
             const vencedora = nome === recomendada;
             return (
-              <li key={nome} className="flex items-center gap-2.5">
+              <li key={nome} className="flex items-center gap-2.5 rounded-md bg-[var(--painel)] px-2.5 py-2">
                 {vencedora ? (
                   <CheckCircle size={14} weight="fill" style={{ color: "var(--sucesso)" }} />
                 ) : viva ? (
@@ -224,8 +224,8 @@ export function PainelProgresso({
         {podeDesfazer && (
           <button
             onClick={onDesfazer}
-            className="tatil mt-5 flex w-full items-center justify-center gap-2 rounded-[var(--raio-controle)] border py-2 text-[13px]"
-            style={{ borderColor: "var(--borda)", color: "var(--tinta-2)" }}
+            className="tatil mt-5 flex min-h-10 w-full items-center justify-center gap-2 rounded-[var(--raio-controle)] border py-2 text-[13px] font-semibold hover:border-[var(--accent)] hover:bg-[var(--accent-suave)]"
+            style={{ borderColor: "var(--borda-forte)", color: "var(--accent)" }}
           >
             <ArrowCounterClockwise size={14} weight="bold" />
             {t("progresso.desfazer")}

@@ -44,7 +44,7 @@ uma suíte que está no repositório.
 | Paridade medida contra o sistema oficial | **17 casos**, versionados — ver abaixo |
 | Decisão em grupo | a fazer |
 
-**1066 testes**: 574 de motor e API, 39 do servidor MCP, 50 de paridade e 403 de interface.
+**1067 testes**: 574 de motor e API, 40 do servidor MCP, 50 de paridade e 403 de interface.
 Entre eles, um decisor-oráculo que verifica a invariante central do método (a alternativa
 verdadeiramente ótima nunca sai do conjunto de POAs), testes que auditam a própria
 arquitetura e testes de entrada não confiável.
@@ -358,6 +358,40 @@ O volume `fitradeoff` guarda as decisões e o cofre. Recriá-lo revoga todas as 
 Abre um túnel `https` temporário (precisa de `cloudflared`), declara o domínio sorteado em
 `FITRADEOFF_MCP_HOSTS` e imprime a URL pronta para colar no painel de conectores. O endereço muda
 a cada execução, então serve para provar que funciona, não para uso continuado.
+
+### O que protege a porta
+
+A proteção mais forte é não publicar esta porta. Com a aplicação principal na frente, o endereço
+público é o dela: o MCP fica no loopback do hospedeiro (é o que o `compose.yml` faz) ou numa
+interface privada, com o firewall recusando o resto. Não precisa de certificado nem de domínio
+próprio.
+
+O resto é o que vale **se** alguém alcançar a porta assim mesmo:
+
+| Camada | O que faz |
+|---|---|
+| Credencial obrigatória | toda chamada a `/mcp` precisa de chave do cofre ou token assinado; sem ela, `401` — e o `401` não diz por quê, para não virar oráculo |
+| Superfície mínima | só `/mcp` e `/saude` existem. Sem `/api`, sem `/docs`, sem emitir chave |
+| Escopo por identidade | uma credencial válida abre **o acervo dela**, não o dos outros |
+| Algoritmo fixado | o JWT é verificado com o algoritmo que nós configuramos, nunca o que ele declara; `exp` exigido, `iss` e `aud` conferidos |
+| Chaves do cofre | 256 bits, guardadas por resumo, comparadas em tempo constante; revogar vale na chamada seguinte, porque o cofre é lido a cada requisição |
+| `Host` declarado | quem chega por um nome fora de `FITRADEOFF_MCP_HOSTS` é recusado |
+| Corpo limitado | 4 MiB por requisição, teto do próprio SDK |
+| Custo limitado | 500 alternativas, 30 critérios, 200 amostras, 20 limiares — o preço de uma requisição é limitado por construção, não por sorte |
+| Log limpo | a chave que viaja na URL é apagada do escopo antes de a requisição seguir, então não chega ao registro de acesso |
+| Processo sem privilégio | o container roda como usuário comum, dono apenas do próprio volume |
+
+E o que **não** está coberto, para não haver ilusão:
+
+- **Limite de taxa não existe.** O lugar natural dele é a borda — a aplicação principal ou o proxy,
+  que veem o tráfego inteiro. Nada impede pôr um aqui também.
+- **A quantidade de decisões não tem teto.** Cada decisão é limitada em tamanho; o número delas,
+  não. Um portador de credencial válida e má intenção enche o disco, e `listar_problemas` fica mais
+  lento a cada arquivo, porque lê todos.
+- **Um JWT vale até o `exp`.** Não há lista de revogação: peça tokens de minutos à aplicação
+  principal, não de horas.
+- **O log da aplicação da frente é dela.** Se ela encaminhar `/mcp/<chave>`, a chave vai para o
+  registro *dela*. Do lado de fora ela pode usar o cabeçalho `Authorization`, que não é registrado.
 
 ### Atrás de outra aplicação
 

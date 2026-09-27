@@ -205,3 +205,36 @@ def test_uma_chave_nao_ve_o_que_a_outra_criou(cliente, acervos):
 
     assert [p["nome"] for p in listar_problemas(cliente, "chave-a")] == ["So da A"]
     assert listar_problemas(cliente, "chave-b") == []
+
+
+# --- o que sobra escrito ------------------------------------------------------
+
+
+def test_a_chave_da_url_nao_sobrevive_no_escopo(acervos, tmp_path):
+    """O registro de acesso do uvicorn e escrito depois, lendo este dicionario.
+
+    Enquanto a autenticacao trabalhava numa copia, o roteamento via `/mcp` e o
+    log gravava `/mcp/<chave>` -- ou seja, a chave de menor confianca, a que
+    viaja na URL, ficava escrita em disco a cada chamada.
+    """
+    import anyio
+
+    async def nada(scope, receive, send):
+        pass
+
+    guarda = remoto.Autenticacao(nada, acervos.get)
+    scope = {
+        "type": "http",
+        "method": "POST",
+        "path": "/mcp/chave-a",
+        "raw_path": b"/mcp/chave-a",
+        "headers": [],
+    }
+
+    anyio.run(guarda, scope, None, None)
+
+    assert scope["path"] == "/mcp"
+    assert b"chave-a" not in scope["raw_path"]
+    assert "chave-a" not in str(scope.get("path"))
+    # E o escopo resolvido chegou para quem executa a ferramenta.
+    assert scope[remoto.CAMPO_NO_ESCOPO] == acervos["chave-a"]

@@ -108,15 +108,21 @@ class Autenticacao:
             )
             return
 
-        # Copia, nao mutacao: o dicionario e do servidor ASGI, e um campo novo
-        # num escopo compartilhado vazaria para requisicoes vizinhas.
-        adiante = dict(scope)
-        adiante[CAMPO_NO_ESCOPO] = escopo
-        adiante["path"] = caminho
+        # No lugar, e nao numa copia. O escopo HTTP e criado pelo servidor a cada
+        # requisicao, entao nao ha vizinha para contaminar -- e ha um motivo
+        # forte para corrigi-lo aqui: o registro de acesso do uvicorn e escrito
+        # depois da resposta, lendo este mesmo dicionario. Numa copia, o
+        # roteamento via `/mcp` enquanto o log gravava `/mcp/<chave>`, e a chave
+        # que a URL carrega -- justamente a de menor confianca -- ficava escrita
+        # no log do servidor a cada chamada.
+        scope[CAMPO_NO_ESCOPO] = escopo
+        scope["path"] = caminho
         # `raw_path` e a versao em bytes que alguns roteadores preferem; deixa-la
-        # com a chave dentro faria o roteamento discordar do caminho reescrito.
-        adiante.pop("raw_path", None)
-        await self.seguinte(adiante, receive, send)
+        # com a chave dentro faria o roteamento discordar do caminho reescrito,
+        # e devolveria a chave ao log por outro caminho.
+        if scope.get("raw_path") is not None:
+            scope["raw_path"] = caminho.encode("latin-1")
+        await self.seguinte(scope, receive, send)
 
     def _apresentada(self, scope: Scope) -> tuple[str | None, str]:
         """A chave e o caminho sem ela.

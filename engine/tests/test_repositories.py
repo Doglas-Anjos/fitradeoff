@@ -136,7 +136,7 @@ def test_arquivo_gravado_e_json_legivel(tmp_path, record):
     assert set(dados) == {
         "id", "nome", "problematica", "criado_em", "alternativas",
         "criterios", "consequencias", "custos", "configuracao", "auditoria",
-        "limiar_de_equivalencia",
+        "limiar_de_equivalencia", "favorita",
     }
 
 
@@ -227,3 +227,40 @@ def test_registro_gravado_antes_do_campo_volta_sem_limiar(record):
     dados = record_to_dict(record)
     del dados["limiar_de_equivalencia"]
     assert record_from_dict(dados).equivalence is None
+
+
+def test_favorita_sobrevive_ao_ciclo(repository, record):
+    """Sem isto o destaque se perderia ao reabrir -- e o favorito voltaria a
+    valer so enquanto o processo estivesse de pe, que e o problema que guarda-lo
+    no servidor veio resolver."""
+    record.favorite = True
+    repository.save(record)
+    assert repository.get("abc123").favorite is True
+
+
+def test_registro_gravado_antes_do_campo_volta_sem_favorita(record):
+    """Arquivo gravado antes do campo existir nao tem a chave, e carregar
+    precisa dar "nao favorita" em vez de estourar: era assim que ele estava."""
+    from fitradeoff.repositories.serialization import record_from_dict, record_to_dict
+
+    dados = record_to_dict(record)
+    del dados["favorita"]
+    assert record_from_dict(dados).favorite is False
+
+
+def test_arquivo_em_disco_sem_o_campo_continua_carregando(tmp_path, record):
+    """O caso real: o JSON ja esta gravado na maquina de alguem, sem a chave.
+
+    O teste acima confere a conversao; este confere o caminho inteiro, porque e
+    o repositorio que le o arquivo -- e uma decisao antiga que deixasse de
+    abrir seria a pior forma possivel de estrear um campo novo.
+    """
+    repo = JsonFileDecisionRepository(tmp_path)
+    repo.save(record)
+    arquivo = tmp_path / "abc123.json"
+    dados = json.loads(arquivo.read_text(encoding="utf-8"))
+    del dados["favorita"]
+    arquivo.write_text(json.dumps(dados), encoding="utf-8")
+
+    assert repo.get("abc123").favorite is False
+    assert [r.favorite for r in repo.list()] == [False]

@@ -247,6 +247,40 @@ def test_listar_resume_as_decisoes(service, criada):
     assert resumo[0]["alternativas"] == 4
 
 
+def test_decisao_nasce_sem_favorito(criada, service):
+    assert service.list()[0]["favorita"] is False
+
+
+def test_favorito_vai_e_volta_pela_listagem(service, criada):
+    """A listagem e o unico lugar onde o favorito e lido, entao e ali que ele
+    precisa aparecer -- nao basta gravar."""
+    assert service.set_favorite("d1", True)["favorita"] is True
+    assert service.list()[0]["favorita"] is True
+
+    assert service.set_favorite("d1", False)["favorita"] is False
+    assert service.list()[0]["favorita"] is False
+
+
+def test_favoritar_nao_mexe_na_decisao(service, criada):
+    """Favorito e preferencia de quem le, nao declaracao de preferencia entre
+    alternativas: nenhuma resposta pode entrar ou sair da trilha por causa
+    dele."""
+    service.rank_criteria("d1", ["qualidade", "custo", "prazo"])
+    service.answer("d1", "A")
+    antes = service.state("d1")
+
+    service.set_favorite("d1", True)
+    depois = service.state("d1")
+
+    assert depois["declaracoes"] == antes["declaracoes"]
+    assert depois["analise"] == antes["analise"]
+
+
+def test_favoritar_decisao_inexistente_e_recusado(service):
+    with pytest.raises(RecordNotFound):
+        service.set_favorite("fantasma", True)
+
+
 def test_problematicas_expostas_com_a_ressalva(service):
     disponiveis = service.problematics()
     assert set(disponiveis["disponiveis"]) == {

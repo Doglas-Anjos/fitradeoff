@@ -75,3 +75,104 @@ describe("DecisoesSalvas", () => {
     expect(screen.getByText(/servidor/i)).toBeInTheDocument();
   });
 });
+
+describe("DecisoesSalvas: favoritas", () => {
+  /* Nomes escolhidos para a ordem do servidor ser o contrário da desejada: se
+     a favorita não subisse, o teste não teria como perceber. */
+  const COM_FAVORITA = [
+    { ...RESUMOS[0], favorita: false },
+    { ...RESUMOS[1], favorita: true },
+  ];
+
+  it("põe as favoritas antes das outras, e não na ordem do servidor", async () => {
+    vi.spyOn(api, "listar").mockResolvedValue({ decisoes: COM_FAVORITA });
+    render(<DecisoesSalvas onAbrir={() => {}} ocupado={false} />);
+    await screen.findByText("Carteira de projetos");
+
+    const nomes = screen.getAllByRole("listitem").map((li) => li.textContent ?? "");
+    expect(nomes[0]).toContain("Carteira de projetos");
+    expect(nomes[1]).toContain("Seleção de fornecedor");
+  });
+
+  it("o controle é um botão de alternância, e anuncia o estado", async () => {
+    vi.spyOn(api, "listar").mockResolvedValue({ decisoes: COM_FAVORITA });
+    render(<DecisoesSalvas onAbrir={() => {}} ocupado={false} />);
+
+    /* O rótulo traz o nome: numa lista, vinte botões "Favorita" não distinguem
+       nada para quem ouve a tela. */
+    const marcada = await screen.findByRole("button", {
+      name: "Favorita: Carteira de projetos",
+    });
+    expect(marcada).toHaveAttribute("aria-pressed", "true");
+    expect(
+      screen.getByRole("button", { name: "Favorita: Seleção de fornecedor" }),
+    ).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("deixa a cor para o CSS, dirigida por atributo", async () => {
+    /* A armadilha que já custou caro três vezes neste projeto: `style` inline
+       vence regra de classe, e um `:hover` anulado assim não dá erro nenhum --
+       simplesmente não acontece. Se alguém trocar o `data-favorita` por um
+       `style={{ color }}`, o realce some em silêncio e este teste cai. */
+    vi.spyOn(api, "listar").mockResolvedValue({ decisoes: COM_FAVORITA });
+    render(<DecisoesSalvas onAbrir={() => {}} ocupado={false} />);
+
+    const estrela = await screen.findByRole("button", {
+      name: "Favorita: Carteira de projetos",
+    });
+    expect(estrela).toHaveClass("botao-favorita");
+    expect(estrela).toHaveAttribute("data-favorita", "true");
+    expect(estrela.style.color).toBe("");
+    expect(estrela.style.background).toBe("");
+  });
+
+  it("alterna o estado e conta ao servidor qual estado quer", async () => {
+    vi.spyOn(api, "listar").mockResolvedValue({ decisoes: COM_FAVORITA });
+    const favoritar = vi
+      .spyOn(api, "favoritar")
+      .mockImplementation(async (id, favorita) => ({ id, favorita }) as never);
+    render(<DecisoesSalvas onAbrir={() => {}} ocupado={false} />);
+
+    const estrela = await screen.findByRole("button", {
+      name: "Favorita: Seleção de fornecedor",
+    });
+    await userEvent.click(estrela);
+
+    expect(favoritar).toHaveBeenCalledWith("aaa", true);
+    await waitFor(() => expect(estrela).toHaveAttribute("aria-pressed", "true"));
+    // e sobe na lista, que é para onde a marcação serve
+    expect(screen.getAllByRole("listitem")[0].textContent).toContain(
+      "Seleção de fornecedor",
+    );
+
+    await userEvent.click(estrela);
+    expect(favoritar).toHaveBeenLastCalledWith("aaa", false);
+    await waitFor(() => expect(estrela).toHaveAttribute("aria-pressed", "false"));
+  });
+
+  it("desfaz a marcação quando o servidor recusa, em vez de mentir", async () => {
+    vi.spyOn(api, "listar").mockResolvedValue({ decisoes: COM_FAVORITA });
+    vi.spyOn(api, "favoritar").mockRejectedValue(new Error("sem rede"));
+    render(<DecisoesSalvas onAbrir={() => {}} ocupado={false} />);
+
+    const estrela = await screen.findByRole("button", {
+      name: "Favorita: Seleção de fornecedor",
+    });
+    await userEvent.click(estrela);
+
+    await waitFor(() => expect(estrela).toHaveAttribute("aria-pressed", "false"));
+    expect(screen.getByText(/Não foi possível mudar a favorita/)).toBeInTheDocument();
+  });
+
+  it("decisão vinda de um servidor antigo, sem o campo, não é favorita", async () => {
+    /* `favorita` ausente é "não favorita", nunca `undefined` chegando ao
+       `aria-pressed` -- o botão perderia o estado e viraria botão comum. */
+    vi.spyOn(api, "listar").mockResolvedValue({ decisoes: RESUMOS });
+    render(<DecisoesSalvas onAbrir={() => {}} ocupado={false} />);
+
+    const estrela = await screen.findByRole("button", {
+      name: "Favorita: Seleção de fornecedor",
+    });
+    expect(estrela).toHaveAttribute("aria-pressed", "false");
+  });
+});

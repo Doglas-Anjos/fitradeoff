@@ -141,6 +141,9 @@ def test_resumo_da_listagem(service, iniciada):
     assert payload == {
         "id": iniciada, "nome": "Fornecedores", "problematica": "escolha",
         "alternativas": 4, "criterios": 3, "declaracoes": 1,
+        # sempre presente, inclusive falsa: a listagem nao deduz o destaque da
+        # ausencia da chave
+        "favorita": False,
     }
     assert set(datas) == {"criado_em", "atualizado_em"}
 

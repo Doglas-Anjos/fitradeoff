@@ -113,6 +113,13 @@ class LimiarDeEquivalenciaIn(BaseModel):
     )
 
 
+class FavoritaIn(BaseModel):
+    # Estado desejado, e nao "alterna": duas abas abertas na mesma lista
+    # alternariam uma contra a outra e o resultado dependeria da ordem de
+    # chegada. Com o valor explicito, reenviar o mesmo pedido nao muda nada.
+    favorita: bool = Field(description="Marca (true) ou desmarca (false).")
+
+
 class SensitivityIn(BaseModel):
     limiares: list[float] = Field(min_length=1)
 

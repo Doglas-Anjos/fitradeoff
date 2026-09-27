@@ -379,6 +379,40 @@ body {
 }
 
 
+/* --- a estrela de decisão favorita ---------------------------------------------
+
+   O estado entra por atributo e a cor sai daqui, pelo mesmo motivo dos cartões
+   de escolha e do botão entre eles: `style` inline vence regra de classe, e um
+   `:hover` anulado assim não dá erro nenhum -- simplesmente não acontece. Foi o
+   que já derrubou os dois controles acima, e não custa nada não repetir.
+
+   A estrela marcada é preenchida, não só tingida: cor sozinha não chega a quem
+   não a distingue, e a diferença entre marcada e não marcada é a informação
+   inteira deste controle. */
+
+.botao-favorita {
+  color: var(--tinta-fraca);
+  background: transparent;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease;
+}
+.botao-favorita[data-favorita="true"] {
+  color: var(--accent);
+}
+.botao-favorita:hover:not(:disabled) {
+  background: var(--painel-fundo);
+  color: var(--tinta);
+}
+.botao-favorita[data-favorita="true"]:hover:not(:disabled) {
+  color: var(--accent-hover);
+}
+.botao-favorita:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+
 /* --- ícones das respostas de empate e de dúvida --------------------------------
 
    Duas respostas que não são "A" nem "B" precisam se explicar sozinhas num
@@ -617,6 +651,12 @@ body {
     animation: none;
   }
   .transicao-cor {
+    transition: none;
+  }
+  /* A estrela troca de cor sem atravessar tom nenhum. A regra global com
+     `!important` já encurtaria a transição, mas a convenção daqui é listar cada
+     classe que se move, e transição de cor também é movimento. */
+  .botao-favorita {
     transition: none;
   }
 }

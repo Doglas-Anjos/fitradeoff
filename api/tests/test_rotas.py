@@ -58,6 +58,7 @@ def decisao(client):
             "/api/decisoes/fantasma/limiar-de-equivalencia",
             {"limiar_de_equivalencia": 0.02},
         ),
+        ("post", "/api/decisoes/fantasma/favorita", {"favorita": True}),
     ],
 )
 def test_decisao_inexistente_devolve_404(client, metodo, caminho, corpo):
@@ -570,3 +571,38 @@ def test_limiar_fora_da_faixa_e_recusado(client, decisao, absurdo):
     # a mensagem tem de separar os dois limiares, ou o próximo leitor repete a
     # confusão que já custou um diagnóstico errado neste projeto
     assert "sensibilidade" in detalhe
+
+
+# --- favorita -----------------------------------------------------------------
+
+
+def test_decisao_nasce_sem_favorito(client, decisao):
+    [resumo] = client.get("/api/decisoes").json()["decisoes"]
+    assert resumo["id"] == decisao
+    assert resumo["favorita"] is False
+
+
+def test_favoritar_aparece_na_listagem(client, decisao):
+    r = client.post(f"/api/decisoes/{decisao}/favorita", json={"favorita": True})
+    assert r.status_code == 200
+    assert r.json()["favorita"] is True
+
+    [resumo] = client.get("/api/decisoes").json()["decisoes"]
+    assert resumo["favorita"] is True
+
+
+def test_o_favorito_sobrevive_a_reabertura(client, decisao):
+    """Cada requisição monta um container novo e relê o arquivo. Se o favorito
+    vivesse no processo -- ou no navegador --, esta listagem voltaria limpa, que
+    é o problema que a lista no servidor veio resolver."""
+    client.post(f"/api/decisoes/{decisao}/favorita", json={"favorita": True})
+    client.post(f"/api/decisoes/{decisao}/favorita", json={"favorita": False})
+
+    [resumo] = client.get("/api/decisoes").json()["decisoes"]
+    assert resumo["favorita"] is False
+
+
+def test_favorita_pede_o_estado_desejado(client, decisao):
+    """Corpo sem `favorita` é recusado: a rota define, não alterna, e um pedido
+    repetido não pode significar coisas diferentes."""
+    assert client.post(f"/api/decisoes/{decisao}/favorita", json={}).status_code == 422

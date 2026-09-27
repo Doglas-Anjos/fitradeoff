@@ -105,6 +105,7 @@ def summary_dto(record: DecisionRecord) -> SummaryDTO:
         declaracoes=len(record.log),
         criado_em=criado,
         atualizado_em=atualizado,
+        favorita=record.favorite,
     )
 
 

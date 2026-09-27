@@ -70,6 +70,19 @@ export const PAINEIS = registrar({
   },
   "paineis.salvas.abertaAgora": { pt: "aberta agora", en: "open now" },
   "paineis.salvas.abrindo": { pt: "abrindo…", en: "opening…" },
+
+  /* A estrela de favorita. O rótulo acessível não muda com o estado - quem
+     anuncia isso é o `aria-pressed` -, mas traz o nome da decisão: numa lista
+     de vinte itens, vinte botões chamados "Favorita" não distinguem nada.
+     A dica explica a consequência, que é o que faz alguém querer clicar. */
+  "paineis.salvas.favorita.rotulo": {
+    pt: "Favorita: {nome}",
+    en: "Favorite: {nome}",
+  },
+  "paineis.salvas.favorita.dica": {
+    pt: "Favoritas aparecem no topo da lista",
+    en: "Favorites appear at the top of the list",
+  },
   /* A alça que redimensiona o painel. O rótulo vai no `aria-label` e no `title`:
      quem chega pelo teclado precisa saber o que as setas fazem ali. */
   "paineis.salvas.largura.rotulo": {
@@ -125,6 +138,12 @@ export const PAINEIS = registrar({
   "paineis.erro.abrir": {
     pt: "Não foi possível abrir a decisão.",
     en: "Could not open the decision.",
+  },
+  /* A estrela volta ao que era quando o pedido falha, e o motivo aparece: sem
+     isso a tela mostraria um favorito que o servidor não tem. */
+  "paineis.erro.favoritar": {
+    pt: "Não foi possível mudar a favorita.",
+    en: "Could not change the favorite.",
   },
 
   // --- painel de progresso: cada problemática conta uma coisa diferente -----

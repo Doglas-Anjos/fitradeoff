@@ -159,4 +159,10 @@ export interface Resumo {
   /* ISO 8601, ausentes numa decisao gravada antes destes campos existirem. */
   criado_em?: string | null;
   atualizado_em?: string | null;
+  /* Destaque na listagem, marcado pelo decisor. Vem do servidor junto da
+     decisao, e nao do armazenamento local, porque é preferencia sobre a
+     decisao e acompanha a decisao - ver o cabecalho de `DecisoesSalvas`.
+     Opcional porque um servidor anterior a este campo nao o manda, e a tela
+     precisa tratar a falta como "nao favorita" em vez de quebrar. */
+  favorita?: boolean;
 }

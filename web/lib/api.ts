@@ -126,6 +126,12 @@ export const api = {
       configuracao,
     }),
 
+  /* Define o estado, em vez de alternar: duas abas na mesma lista alternariam
+     uma contra a outra e o resultado dependeria de quem chegasse primeiro.
+     Devolve o resumo, que e a linha da listagem que acabou de mudar. */
+  favoritar: (id: string, favorita: boolean) =>
+    post<Resumo>(`/api/decisoes/${id}/favorita`, { favorita }),
+
   sensibilidade: (id: string, limiares: number[]) =>
     post<{ id: string; cenarios: unknown[] }>(
       `/api/decisoes/${id}/sensibilidade`,

@@ -12,18 +12,26 @@
  * Quem trocasse de máquina, limpasse o navegador ou simplesmente voltasse
  * depois não via nada, embora o trabalho estivesse lá.
  *
- * Os rótulos por problemática e o resumo de uma linha moram em
- * `lib/resumoDecisao`, compartilhados com `PainelSalvas`.
+ * É esse mesmo motivo que manda a decisão favorita para o servidor: favorito é
+ * preferência do decisor *sobre a decisão*, e acompanha a decisão. Guardá-lo no
+ * armazenamento local reintroduziria exatamente o problema acima — o destaque
+ * sumiria na troca de máquina ou na limpeza do navegador, embora a decisão
+ * continuasse lá.
+ *
+ * Os rótulos por problemática, o resumo de uma linha e a regra de ordem das
+ * favoritas moram em `lib/resumoDecisao`, compartilhados com `PainelSalvas`; a
+ * estrela é `components/BotaoFavorita`.
  */
 
 import { ArrowRight, MagnifyingGlass } from "@phosphor-icons/react";
 import { useEffect, useMemo, useState } from "react";
 
+import { BotaoFavorita } from "@/components/BotaoFavorita";
 import { Entrada } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useIdioma } from "@/lib/i18n";
 import "@/lib/i18n/paineis";
-import { PROBLEMATICA, resumir } from "@/lib/resumoDecisao";
+import { favoritasPrimeiro, PROBLEMATICA, resumir } from "@/lib/resumoDecisao";
 import type { Problema, Resumo } from "@/lib/types";
 
 export function DecisoesSalvas({
@@ -59,9 +67,36 @@ export function DecisoesSalvas({
   const filtradas = useMemo(() => {
     if (!itens) return null;
     const termo = busca.trim().toLowerCase();
-    if (!termo) return itens;
-    return itens.filter((r) => r.nome.toLowerCase().includes(termo));
+    const visiveis = termo
+      ? itens.filter((r) => r.nome.toLowerCase().includes(termo))
+      : itens;
+    /* Cópia antes de ordenar: `sort` ordena no lugar, e sem a cópia a lista do
+       estado seria reordenada por baixo do React. Entre iguais o `sort` estável
+       preserva a ordem que o servidor mandou, que é a única que esta tela tem. */
+    return [...visiveis].sort(favoritasPrimeiro);
   }, [itens, busca]);
+
+  const alternarFavorita = async (id: string, favorita: boolean) => {
+    /* A estrela troca antes da resposta do servidor. Marcar é um gesto barato e
+       repetido, e esperar o ida-e-volta para a estrela acender faria a lista
+       parecer travada. Falhando o pedido, ela volta ao que era e o motivo
+       aparece: o que não pode acontecer é a tela afirmar um favorito que o
+       servidor não tem. */
+    const marcar = (valor: boolean) =>
+      setItens(
+        (atual) =>
+          atual?.map((r) => (r.id === id ? { ...r, favorita: valor } : r)) ?? null,
+      );
+
+    setErro(null);
+    marcar(favorita);
+    try {
+      await api.favoritar(id, favorita);
+    } catch (e) {
+      marcar(!favorita);
+      setErro(e instanceof ApiError ? e.message : t("paineis.erro.favoritar"));
+    }
+  };
 
   const abrir = async (id: string) => {
     setAbrindo(id);
@@ -133,16 +168,23 @@ export function DecisoesSalvas({
               PROBLEMATICA[r.problematica] ?? PROBLEMATICA.escolha;
             const estaAbrindo = abrindo === r.id;
             return (
-              <li key={r.id}>
+              /* O cartão é o `li`, e não mais o botão de abrir: a estrela é um
+                 segundo controle e não cabe dentro do primeiro -- botão dentro
+                 de botão não é HTML válido, e todo clique nela viraria "abrir
+                 a decisão". */
+              <li
+                key={r.id}
+                className="flex items-center rounded-[var(--raio-painel)] border pr-2"
+                style={{
+                  borderColor: "var(--borda)",
+                  background: "var(--painel)",
+                }}
+              >
                 <button
                   type="button"
                   onClick={() => abrir(r.id)}
                   disabled={ocupado || abrindo !== null}
-                  className="tatil group flex w-full items-center gap-3 rounded-[var(--raio-painel)] border p-3.5 text-left disabled:opacity-50"
-                  style={{
-                    borderColor: "var(--borda)",
-                    background: "var(--painel)",
-                  }}
+                  className="tatil group flex min-w-0 flex-1 items-center gap-3 rounded-[var(--raio-painel)] p-3.5 text-left disabled:opacity-50"
                 >
                   <Icone
                     size={18}
@@ -180,6 +222,14 @@ export function DecisoesSalvas({
                     )}
                   </span>
                 </button>
+                {/* Fora do botão de abrir, e não desabilitada junto com ele:
+                    marcar uma decisão não depende de poder abri-la agora. */}
+                <BotaoFavorita
+                  nome={r.nome}
+                  favorita={r.favorita ?? false}
+                  onAlternar={(valor) => alternarFavorita(r.id, valor)}
+                  tamanho={16}
+                />
               </li>
             );
           })}

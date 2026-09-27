@@ -210,6 +210,10 @@ class SummaryDTO:
     # Quem consome precisa aguentar a falta em vez de supor uma data.
     criado_em: str | None = None
     atualizado_em: str | None = None
+    # Vem como `bool`, e nao como `None` quando falsa, porque `_clean` so poda
+    # nulos: assim a listagem sempre diz se a decisao esta marcada, em vez de
+    # deixar a tela deduzir isso da ausencia da chave.
+    favorita: bool = False
 
     def to_dict(self) -> dict:
         return _clean(asdict(self))

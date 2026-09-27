@@ -83,4 +83,18 @@ describe("chamadas", () => {
     const [, init] = espiao.mock.calls[0] as unknown as [string, RequestInit];
     expect(JSON.parse(init.body as string)).toEqual({ preferencia: "indiferente" });
   });
+
+  it("manda o estado desejado da favorita, e nao um 'inverta'", async () => {
+    const espiao = vi.fn(async () => respostaFalsa(200, { id: "d1", favorita: true }));
+    vi.stubGlobal("fetch", espiao);
+
+    await api.favoritar("d1", true);
+
+    const [caminho, init] = espiao.mock.calls[0] as unknown as [string, RequestInit];
+    expect(caminho).toBe("/api/decisoes/d1/favorita");
+    expect(init.method).toBe("POST");
+    /* Reenviar o mesmo pedido nao pode mudar o resultado: duas abas na mesma
+       lista alternariam uma contra a outra. */
+    expect(JSON.parse(init.body as string)).toEqual({ favorita: true });
+  });
 });

@@ -25,8 +25,10 @@
  * lado do trabalho. É um `aside` nomeado: fecha por Esc, pelo X e pelo próprio
  * botão, e o fundo continua clicável.
  *
- * Os rótulos por problemática e o resumo curto vêm de `lib/resumoDecisao`, os
- * mesmos que `DecisoesSalvas` usa. Eram duas cópias, e as cópias já divergiam.
+ * Os rótulos por problemática, o resumo curto e a regra de ordem das favoritas
+ * vêm de `lib/resumoDecisao`, os mesmos que `DecisoesSalvas` usa. Eram duas
+ * cópias, e as cópias já divergiam. A estrela, pelo mesmo motivo, é
+ * `components/BotaoFavorita`.
  */
 
 import {
@@ -39,11 +41,17 @@ import {
 } from "@phosphor-icons/react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
+import { BotaoFavorita } from "@/components/BotaoFavorita";
 import { Entrada, Segmentado, Selo } from "@/components/ui";
 import { api, ApiError } from "@/lib/api";
 import { useIdioma, type Idioma } from "@/lib/i18n";
 import "@/lib/i18n/paineis";
-import { PROBLEMATICA, resumir, type Traduz } from "@/lib/resumoDecisao";
+import {
+  favoritasPrimeiro,
+  PROBLEMATICA,
+  resumir,
+  type Traduz,
+} from "@/lib/resumoDecisao";
 import type { Problema, Problematica, Resumo } from "@/lib/types";
 
 type Filtro = Problematica | "todos";
@@ -292,6 +300,11 @@ export function PainelSalvas({
     );
     const alfabetica = new Intl.Collator(locale, { sensitivity: "base" });
     return visiveis.sort((a, b) => {
+      /* As favoritas sobem acima do critério escolhido, inclusive do alfabeto:
+         quem marcou quer aquelas decisões no topo, não espalhadas pela lista
+         conforme a inicial do nome. Empatadas, decide o critério de sempre. */
+      const destaque = favoritasPrimeiro(a, b);
+      if (destaque !== 0) return destaque;
       if (ordem === "nome") return alfabetica.compare(a.nome, b.nome);
       const ia = instante(a.atualizado_em);
       const ib = instante(b.atualizado_em);
@@ -303,6 +316,28 @@ export function PainelSalvas({
       return ib - ia;
     });
   }, [itens, busca, tipo, ordem, locale]);
+
+  const alternarFavorita = async (id: string, favorita: boolean) => {
+    /* A estrela troca antes da resposta do servidor: marcar é um gesto barato e
+       repetido, e esperar o ida-e-volta para ela acender faria a lista parecer
+       travada. Falhando o pedido, ela volta ao que era e o motivo aparece -- o
+       que não pode acontecer é o painel afirmar um favorito que o servidor não
+       tem. */
+    const marcar = (valor: boolean) =>
+      setItens(
+        (atual) =>
+          atual?.map((r) => (r.id === id ? { ...r, favorita: valor } : r)) ?? null,
+      );
+
+    setErro(null);
+    marcar(favorita);
+    try {
+      await api.favoritar(id, favorita);
+    } catch (e) {
+      marcar(!favorita);
+      setErro(e instanceof ApiError ? e.message : t("paineis.erro.favoritar"));
+    }
+  };
 
   const abrir = async (id: string) => {
     setAbrindo(id);
@@ -560,12 +595,13 @@ export function PainelSalvas({
                        segundo e a lista pareceria travada. */
                     style={{ "--ordem": Math.min(i, 8) } as React.CSSProperties}
                   >
-                    <button
-                      type="button"
-                      onClick={() => abrir(r.id)}
-                      disabled={estaAberta || ocupado || abrindo !== null}
-                      aria-current={estaAberta ? "true" : undefined}
-                      className="tatil group flex w-full items-start gap-2 rounded-[var(--raio-controle)] border p-2.5 text-left disabled:cursor-default"
+                    {/* O realce do item saiu do botão para esta caixa: a
+                        estrela é um segundo controle e não pode morar dentro do
+                        primeiro -- botão dentro de botão não é HTML válido, e
+                        todo clique nela viraria "abrir a decisão". Com o realce
+                        aqui, ele continua cobrindo a linha inteira. */}
+                    <div
+                      className="flex items-start rounded-[var(--raio-controle)] border"
                       style={{
                         /* A aberta agora não é um item clicável a menos: é o
                            lugar onde o decisor está. Borda accent e rótulo,
@@ -576,80 +612,99 @@ export function PainelSalvas({
                         background: estaAberta
                           ? "var(--accent-suave)"
                           : "transparent",
-                        cursor: estaAberta ? "default" : undefined,
-                        opacity: !estaAberta && abrindo !== null ? 0.5 : 1,
                       }}
                     >
-                      <Icone
-                        size={15}
-                        className="mt-0.5 shrink-0"
+                      <button
+                        type="button"
+                        onClick={() => abrir(r.id)}
+                        disabled={estaAberta || ocupado || abrindo !== null}
+                        aria-current={estaAberta ? "true" : undefined}
+                        className="tatil group flex min-w-0 flex-1 items-start gap-2 rounded-[var(--raio-controle)] p-2.5 text-left disabled:cursor-default"
                         style={{
-                          color: estaAberta
-                            ? "var(--accent)"
-                            : "var(--tinta-fraca)",
+                          cursor: estaAberta ? "default" : undefined,
+                          opacity: !estaAberta && abrindo !== null ? 0.5 : 1,
                         }}
-                        aria-hidden
-                      />
-                      <span className="min-w-0 flex-1">
-                        <span className="flex items-center gap-1.5">
-                          <span
-                            className="min-w-0 flex-1 truncate text-[13px] font-medium"
-                            style={{ color: "var(--tinta)" }}
-                          >
-                            {r.nome}
-                          </span>
-                          <Selo
-                            tom={estaAberta ? "accent" : "neutro"}
-                            titulo={t(chaveLonga)}
-                          >
-                            {t(chaveCurta)}
-                          </Selo>
-                        </span>
-                        <span className="mt-0.5 flex items-center gap-1.5">
-                          <span
-                            className="min-w-0 flex-1 text-[11px]"
-                            style={{ color: "var(--tinta-3)" }}
-                          >
-                            {resumir(r, t)}
-                          </span>
-                          {/* Sem `atualizado_em` o selo simplesmente não
-                              aparece: "data desconhecida" ocuparia espaço para
-                              dizer que não sabe. O `title` traz a data inteira
-                              no formato do idioma, porque "há 3 dias" não serve
-                              para anotar nem para comparar. */}
-                          {mudou !== null && (
-                            <Selo titulo={completa(mudou, locale)}>
-                              {relativo(mudou, agora, locale, t)}
+                      >
+                        <Icone
+                          size={15}
+                          className="mt-0.5 shrink-0"
+                          style={{
+                            color: estaAberta
+                              ? "var(--accent)"
+                              : "var(--tinta-fraca)",
+                          }}
+                          aria-hidden
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-center gap-1.5">
+                            <span
+                              className="min-w-0 flex-1 truncate text-[13px] font-medium"
+                              style={{ color: "var(--tinta)" }}
+                            >
+                              {r.nome}
+                            </span>
+                            <Selo
+                              tom={estaAberta ? "accent" : "neutro"}
+                              titulo={t(chaveLonga)}
+                            >
+                              {t(chaveCurta)}
                             </Selo>
+                          </span>
+                          <span className="mt-0.5 flex items-center gap-1.5">
+                            <span
+                              className="min-w-0 flex-1 text-[11px]"
+                              style={{ color: "var(--tinta-3)" }}
+                            >
+                              {resumir(r, t)}
+                            </span>
+                            {/* Sem `atualizado_em` o selo simplesmente não
+                                aparece: "data desconhecida" ocuparia espaço para
+                                dizer que não sabe. O `title` traz a data inteira
+                                no formato do idioma, porque "há 3 dias" não serve
+                                para anotar nem para comparar. */}
+                            {mudou !== null && (
+                              <Selo titulo={completa(mudou, locale)}>
+                                {relativo(mudou, agora, locale, t)}
+                              </Selo>
+                            )}
+                          </span>
+                          {estaAberta && (
+                            <span
+                              className="mt-0.5 block text-[11px] font-medium"
+                              style={{ color: "var(--accent)" }}
+                            >
+                              {t("paineis.salvas.abertaAgora")}
+                            </span>
                           )}
                         </span>
-                        {estaAberta && (
+                        {!estaAberta && (
                           <span
-                            className="mt-0.5 block text-[11px] font-medium"
-                            style={{ color: "var(--accent)" }}
+                            className="mt-0.5 shrink-0 text-[11px]"
+                            style={{ color: "var(--tinta-fraca)" }}
                           >
-                            {t("paineis.salvas.abertaAgora")}
+                            {estaAbrindo ? (
+                              t("paineis.salvas.abrindo")
+                            ) : (
+                              <CaretRight
+                                size={12}
+                                weight="bold"
+                                className="opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+                                aria-hidden
+                              />
+                            )}
                           </span>
                         )}
-                      </span>
-                      {!estaAberta && (
-                        <span
-                          className="mt-0.5 shrink-0 text-[11px]"
-                          style={{ color: "var(--tinta-fraca)" }}
-                        >
-                          {estaAbrindo ? (
-                            t("paineis.salvas.abrindo")
-                          ) : (
-                            <CaretRight
-                              size={12}
-                              weight="bold"
-                              className="opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
-                              aria-hidden
-                            />
-                          )}
-                        </span>
-                      )}
-                    </button>
+                      </button>
+                      {/* Fora do botão de abrir, e viva mesmo na decisão que já
+                          está na tela: marcar não depende de poder abrir. */}
+                      <BotaoFavorita
+                        nome={r.nome}
+                        favorita={r.favorita ?? false}
+                        onAlternar={(valor) => alternarFavorita(r.id, valor)}
+                        tamanho={14}
+                        className="mr-1 mt-1.5"
+                      />
+                    </div>
                   </li>
                 );
               })}

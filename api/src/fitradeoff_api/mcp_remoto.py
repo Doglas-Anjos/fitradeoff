@@ -32,7 +32,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 from starlette.routing import Route
 
-from . import chaves as cofre
+from . import identidade
 from .config import Settings, load_settings
 
 
@@ -57,7 +57,7 @@ def create_mcp_app(settings: Settings | None = None) -> Starlette:
     app = Starlette(routes=[Route("/saude", saude)], lifespan=ciclo)
     app.state.mcp = remoto.montar(
         app,
-        cofre.resolver(settings),
+        identidade.resolver(settings),
         hosts_publicos=settings.mcp_hosts,
     )
     return app

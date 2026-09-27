@@ -34,6 +34,7 @@ uma suíte que está no repositório.
 | Auditoria, desfazer, sensibilidade | **pronto** — sobre o limiar e sobre as consequências |
 | Servidor MCP (14 ferramentas) | **pronto** — stdio e HTTP remoto, com chave |
 | Superfície pública do MCP | **pronto** — imagem, composição e túnel |
+| Identidade vinda de outra aplicação | **pronto** — JWT assinado, um acervo por pessoa |
 | API HTTP (FastAPI) | **pronto** — 27 rotas |
 | Tela de decisão estruturada | **pronto** — com os gráficos |
 | Tela de chaves do MCP | **pronto** — emitir, listar e revogar |
@@ -43,7 +44,7 @@ uma suíte que está no repositório.
 | Paridade medida contra o sistema oficial | **17 casos**, versionados — ver abaixo |
 | Decisão em grupo | a fazer |
 
-**1050 testes**: 558 de motor e API, 39 do servidor MCP, 50 de paridade e 403 de interface.
+**1066 testes**: 574 de motor e API, 39 do servidor MCP, 50 de paridade e 403 de interface.
 Entre eles, um decisor-oráculo que verifica a invariante central do método (a alternativa
 verdadeiramente ótima nunca sai do conjunto de POAs), testes que auditam a própria
 arquitetura e testes de entrada não confiável.
@@ -227,6 +228,10 @@ Os dados ficam em `~/.fitradeoff/decisoes` (configurável por `FITRADEOFF_DATA`)
 | `FITRADEOFF_MCP_URL` | endereço do MCP que a tela de chaves manda copiar |
 | `FITRADEOFF_MCP_HOSTS` | domínios públicos do MCP, separados por vírgula — **declarar é o que diz "publiquei"** |
 | `FITRADEOFF_ADMIN_TOKEN` | segredo que libera emitir chaves de fora deste computador |
+| `FITRADEOFF_JWT_ISSUER` | o `iss` que a aplicação da frente assina |
+| `FITRADEOFF_JWT_AUDIENCE` | o `aud` que ela põe no token para este serviço |
+| `FITRADEOFF_JWT_JWKS_URL` | onde buscar a chave pública dela (RS256) |
+| `FITRADEOFF_JWT_SECRET` | o segredo compartilhado, se for HS256 |
 | `ANTHROPIC_API_KEY` | só para a rota `/api/chat`, que não tem mais tela |
 
 ### As duas telas
@@ -353,6 +358,53 @@ O volume `fitradeoff` guarda as decisões e o cofre. Recriá-lo revoga todas as 
 Abre um túnel `https` temporário (precisa de `cloudflared`), declara o domínio sorteado em
 `FITRADEOFF_MCP_HOSTS` e imprime a URL pronta para colar no painel de conectores. O endereço muda
 a cada execução, então serve para provar que funciona, não para uso continuado.
+
+### Atrás de outra aplicação
+
+Quando o MCP fica atrás da aplicação principal, quem sabe quem está logado é ela — nós não temos
+sessão, nem cookie, nem como perguntar. Então ela **afirma**, assinando, e nós verificamos a
+assinatura:
+
+```
+chat  ──►  aplicação principal  ──►  MCP
+                (autentica)        (verifica a assinatura,
+                                    abre o acervo daquela pessoa)
+```
+
+O que ela manda, em cada requisição encaminhada:
+
+```http
+Authorization: Bearer <JWT>
+```
+
+O que o token precisa trazer:
+
+| Claim | Papel |
+|---|---|
+| `sub` | quem é a pessoa. É o que separa um acervo do outro, então precisa ser estável |
+| `exp` | validade. Exigido sempre; a folga para relógio fora de hora é de 30s |
+| `iss` | quem assinou, conferido contra `FITRADEOFF_JWT_ISSUER` |
+| `aud` | para quem o token vale, conferido contra `FITRADEOFF_JWT_AUDIENCE` |
+
+Assinatura em **RS256** (ela publica a chave pública num JWKS, e roda a chave quando quiser) ou
+**HS256** (segredo compartilhado, mais simples, mas quem tem o segredo emite tokens). O algoritmo
+aceito é o que **nós** configuramos, nunca o que o token declara — aceitar o do cabeçalho é o
+defeito clássico desta família, e é o que transforma uma chave pública em chave de assinatura.
+Há teste para isso.
+
+Sem `FITRADEOFF_JWT_JWKS_URL` nem `FITRADEOFF_JWT_SECRET`, nenhum token é aceito: só as chaves do
+cofre entram. Um verificador que aceitasse qualquer assinatura seria pior do que não existir.
+
+**Cada `sub` abre o próprio acervo**, ao lado do acervo do dono da plataforma — e a identidade
+nunca vira componente de caminho: o diretório é o resumo de `iss` + `sub`. Um identificador cru
+traria junto o problema do `..` e deixaria a lista de quem usa a plataforma legível no disco.
+
+Duas coisas que costumam morder na integração:
+
+- O `Host` que a aplicação da frente encaminha precisa estar em `FITRADEOFF_MCP_HOSTS`. Se ela
+  reescreve para um nome interno, é esse nome que vai na lista — senão, `421`.
+- A chave do cofre (`fit_...`) continua valendo em paralelo, para o cliente do próprio dono que
+  fala direto com o servidor. O prefixo é o que distingue as duas formas.
 
 ### A armadilha que custa uma tarde
 

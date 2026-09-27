@@ -12,7 +12,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fitradeoff_mcp import remoto
 
-from . import chaves as cofre
+from . import identidade
 from .config import Settings, load_settings
 from .routers import chat, chaves, decisions, planilhas, rascunhos
 
@@ -68,7 +68,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # e middleware nao pode ser adicionado depois que o aplicativo comecou.
     app.state.mcp = remoto.montar(
         app,
-        cofre.resolver(settings),
+        identidade.resolver(settings),
         hosts_publicos=settings.mcp_hosts,
     )
 

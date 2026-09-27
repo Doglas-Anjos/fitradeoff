@@ -61,9 +61,34 @@ class Settings:
         default_factory=lambda: os.environ.get("FITRADEOFF_ADMIN_TOKEN") or None
     )
 
+    # --- asserção de identidade vinda da aplicacao da frente -------------------
+    #
+    # Quando o MCP fica atras de outra aplicacao, quem diz de quem e a chamada e
+    # ela, por um token assinado. Nada disso vale sem uma das duas chaves de
+    # verificacao: sem elas, nenhum token e aceito, e so as chaves do cofre
+    # entram. Fechar por falta de configuracao e proposital -- um verificador
+    # que aceitasse qualquer assinatura seria pior do que nao existir.
+    jwt_issuer: str | None = field(
+        default_factory=lambda: os.environ.get("FITRADEOFF_JWT_ISSUER") or None
+    )
+    jwt_audience: str | None = field(
+        default_factory=lambda: os.environ.get("FITRADEOFF_JWT_AUDIENCE") or None
+    )
+    jwt_jwks_url: str | None = field(
+        default_factory=lambda: os.environ.get("FITRADEOFF_JWT_JWKS_URL") or None
+    )
+    jwt_secret: str | None = field(
+        default_factory=lambda: os.environ.get("FITRADEOFF_JWT_SECRET") or None
+    )
+
     @property
     def chat_enabled(self) -> bool:
         return bool(self.anthropic_api_key)
+
+    @property
+    def jwt_configurado(self) -> bool:
+        """Se ha como verificar a assinatura de quem diz falar pelo usuario."""
+        return bool(self.jwt_jwks_url or self.jwt_secret)
 
     @property
     def mcp_publicado(self) -> bool:

@@ -24,6 +24,13 @@ services:
       # que chegar por ele com 421. O `:?` derruba o `up` aqui, com uma
       # mensagem clara, em vez de deixar o erro aparecer so no primeiro pedido.
       FITRADEOFF_MCP_HOSTS: ${FITRADEOFF_MCP_HOSTS:?declare o dominio publico, ex.: fit.seu-dominio.org}
+      # A asserção de identidade da aplicacao da frente. Vazias, nenhum token e
+      # aceito e so as chaves do cofre entram -- que e o certo enquanto a
+      # integracao nao existir.
+      FITRADEOFF_JWT_ISSUER: ${FITRADEOFF_JWT_ISSUER:-}
+      FITRADEOFF_JWT_AUDIENCE: ${FITRADEOFF_JWT_AUDIENCE:-}
+      FITRADEOFF_JWT_JWKS_URL: ${FITRADEOFF_JWT_JWKS_URL:-}
+      FITRADEOFF_JWT_SECRET: ${FITRADEOFF_JWT_SECRET:-}
     volumes:
       # As decisoes e o cofre de chaves vivem aqui. E o unico estado do servico:
       # guarde-o no backup, e nao o recrie por engano -- recriar o volume revoga

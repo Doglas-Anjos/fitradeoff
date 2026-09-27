@@ -9,6 +9,9 @@ dependencies = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.30",
     "pydantic>=2.7",
+    # Verificacao da assercao de identidade da aplicacao da frente. Chega por
+    # tabela via `mcp`, mas depender disso seria depender do acaso.
+    "pyjwt[crypto]>=2.8",
     "anthropic>=1.0",
     "openpyxl>=3.1",
     "python-multipart>=0.0.9",

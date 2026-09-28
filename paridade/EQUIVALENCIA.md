@@ -182,11 +182,16 @@ o peso máximo possível do critério rival em cada pergunta:
 | 20 | Prazo × Durabilidade | 5,91e-5 | perguntou |
 | 21 | Durabilidade × Suporte | 1,85e-6 | **pulou** |
 
-Pular a pergunta quando o rival não pode pesar mais que `1e-5` (no meio dessa
-janela) dá as mesmas 21 perguntas, uma a uma, e não muda a sequência de nenhum
-dos outros 16 casos. Qualquer limiar dentro da janela dá as mesmas contagens; o
-número exato dele não sabemos. Está em `PESO_DESPREZIVEL`,
+Pular a pergunta quando o rival não pode pesar mais que um limiar dentro dessa
+janela dá as mesmas 21 perguntas, uma a uma, e não muda a sequência de nenhum
+dos outros 16 casos. Está em `PESO_DESPREZIVEL`,
 `engine/src/fitradeoff/elicitation/selectors.py`.
+
+A janela estreitou depois (28/09/2026), com o `sorting-20` de qualidade
+reescalada e custo em milhares — um caso em que o par `Custo × Prazo` só acaba
+pelo peso. Ele perguntou com o prazo podendo pesar 7,40e-6 e parou com 3,70e-6:
+25 perguntas, uma a mais que o `1e-5` que usávamos, que caía fora da janela nova.
+O limiar agora é `5e-6`, dentro dos dois intervalos medidos.
 
 ### Benefício-custo: ele só para quando a ordem das razões fecha
 

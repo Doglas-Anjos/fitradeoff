@@ -55,12 +55,15 @@ LARGURA_MINIMA = 0.01
 # E o que fecha `ranking-20` contra o sistema oficial. As 20 primeiras perguntas
 # sao identicas; na 21a ele abandona `Durabilidade x Suporte tecnico`, que ainda
 # tinha faixa. Medido no nosso motor, com as mesmas respostas: onde ele PERGUNTOU
-# esse par, o suporte ainda podia pesar 2,86e-5 (passo 17), e o rival do par
-# seguinte 5,91e-5 (passo 20); onde ele PULOU, 1,85e-6. O limiar dele esta nessa
-# janela, e qualquer valor dentro dela da as mesmas contagens nos 14 casos de
-# ranking, escolha e sorting -- 1e-5 fica no meio. Nao sabemos o numero exato
-# dele, e o que se afirma e a janela.
-PESO_DESPREZIVEL = 1e-5
+# esse par, o suporte ainda podia pesar 2,86e-5; onde ele PULOU, 1,85e-6.
+#
+# A janela estreitou em 28/09/2026, com o `sorting-20` de qualidade reescalada e
+# custo em milhares (em que a faixa em consequencia nunca chega a 0,01 e o par
+# `Custo x Prazo` so acaba pelo peso): ele perguntou com o prazo podendo pesar
+# 7,40e-6 e parou com 3,70e-6 -- 25 perguntas. O 1e-5 que valia antes ficava
+# fora dessa janela e dava 24. O corte dele esta entre 3,70e-6 e 7,40e-6; 5e-6
+# fica dentro, e da as mesmas contagens em todos os casos medidos.
+PESO_DESPREZIVEL = 5e-6
 
 
 def _estreita_demais(problem: Problem, bracket: Bracket) -> bool:

@@ -456,3 +456,26 @@ def test_sorting_20_com_qualidade_reescalada_bate_com_o_oficial():
     resultado = roda_nosso(caso)
     assert resultado["steps_tradeoff"] == 22
     assert not resultado["analise"]["resolvido"]
+
+
+def test_custo_em_milhares_so_acaba_pelo_peso():
+    """O mesmo caso com o custo multiplicado por 1000 (28/09/2026).
+
+    Numa unidade grande a faixa em consequencia nunca chega a 0,01, e o par
+    `Custo x Prazo` so acaba pelo peso do rival. O oficial faz 25 perguntas -- uma
+    a mais que o `PESO_DESPREZIVEL` antigo (1e-5) dava, e foi essa medida que
+    estreitou a janela dele para 3,70e-6..7,40e-6.
+    """
+    import copy
+
+    from comparar import roda_nosso
+
+    caso = copy.deepcopy(next(c for c in CASOS if c["chave"] == "sorting-20"))
+    coluna = [linha[0] for linha in caso["consequencias"]]
+    lo, hi = min(coluna), max(coluna)
+    caso["consequencias"] = [
+        [round(0.6 + (linha[0] - lo) / (hi - lo) * 0.2, 4), round(linha[1] * 1000, 1)]
+        + list(linha[2:])
+        for linha in caso["consequencias"]
+    ]
+    assert roda_nosso(caso)["steps_tradeoff"] == 25

@@ -9,7 +9,7 @@
 # comando -- e e assim que o `compose.yml` levanta o lado que emite chaves,
 # preso ao loopback do hospedeiro.
 
-FROM python:3.11-slim
+FROM python:3.13-slim
 
 # O numpy e o scipy abrem um pool de threads do BLAS por nucleo visivel. Os LPs
 # do metodo tem meia dezena de variaveis: paralelizar algebra deste tamanho nao

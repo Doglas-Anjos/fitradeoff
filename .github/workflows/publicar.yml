@@ -1,0 +1,154 @@
+# ---------------------------------------------------------------------------
+# Publica o FITradeoff no servidor da FasorX, a cada push na main.
+# ---------------------------------------------------------------------------
+#
+# Independente do repositorio da FasorX, de proposito. Sao dois ciclos de vida:
+# uma correcao na tela do FITradeoff nao tem por que esperar uma publicacao do
+# site, nem o contrario. O que os dois compartilham e a maquina e a identidade
+# -- o FasorX assina, este servico verifica.
+#
+# Segredos necessarios em Settings > Secrets and variables > Actions:
+#
+#   VPS_HOST, VPS_PORT, VPS_USER, SSH_PRIVATE_KEY, SSH_KNOWN_HOSTS
+#       os mesmos do repositorio da FasorX -- mesma maquina, mesma chave.
+#
+#   FITRADEOFF_MCP_HOSTS
+#       fitradeoff.fasorx.com.br. O Caddy repassa o Host original, e o MCP
+#       recusa com 421 o que chegar por um nome que ele nao reconhece.
+#
+#   FITRADEOFF_JWT_ISSUER, FITRADEOFF_JWT_AUDIENCE, FITRADEOFF_JWT_JWKS_URL
+#       quem assina, para quem, e onde estao as chaves publicas. As tres sao
+#       obrigatorias no perfil `plataforma`: sem elas o `up` para, em vez de
+#       levantar a tela com o acervo aberto a quem chegar.
+
+name: publicar
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: publicar
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # --- conferir antes de publicar -------------------------------------
+      # A suite roda AQUI, e nao so em pedido de merge. Publicar direto de um
+      # push na main sem rodar os testes seria confiar que ninguem funde nada
+      # sem revisao -- e a main deste repositorio nao esta protegida.
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Instalar e conferir
+        run: |
+          python -m pip install --quiet ./engine ./mcp_server ./api pytest httpx
+          for d in engine api mcp_server; do
+            echo "::group::testes de $d"
+            (cd "$d" && python -m pytest -q --no-header) || exit 1
+            echo "::endgroup::"
+          done
+
+      # --- enviar ----------------------------------------------------------
+      - name: Preparar o SSH
+        env:
+          CHAVE: ${{ secrets.SSH_PRIVATE_KEY }}
+          CONHECIDOS: ${{ secrets.SSH_KNOWN_HOSTS }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$CHAVE" | tr -d '\r' > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          printf '%s\n' "$CONHECIDOS" | tr -d '\r' > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+          # Conferir a chave aqui, e nao descobrir no scp.
+          #
+          # Uma chave ilegivel e uma chave nao autorizada produzem quase a mesma
+          # saida -- "Permission denied (publickey)" --, e a primeira vem
+          # precedida de um "error in libcrypto" que se perde no meio. Custou
+          # cinco publicacoes no repositorio da FasorX.
+          if ! ssh-keygen -y -f ~/.ssh/id_deploy > /dev/null 2>&1; then
+            echo "::error::SSH_PRIVATE_KEY nao e uma chave privada valida."
+            exit 1
+          fi
+          echo "Chave: $(ssh-keygen -l -f ~/.ssh/id_deploy)"
+
+          if ! ssh-keygen -F "[$VPS_HOST]:$VPS_PORT" -f ~/.ssh/known_hosts > /dev/null 2>&1 \
+             && ! ssh-keygen -F "$VPS_HOST" -f ~/.ssh/known_hosts > /dev/null 2>&1; then
+            echo "::error::SSH_KNOWN_HOSTS nao tem entrada para este servidor."
+            exit 1
+          fi
+
+      - name: Empacotar
+        run: |
+          # O que entra na imagem, e mais nada. node_modules e .next sao da
+          # maquina de quem constroi -- binarios nativos de outro sistema
+          # operacional, que ainda por cima sobrescreveriam o que o Dockerfile
+          # instala.
+          tar -czf /tmp/fitradeoff.tgz \
+            --exclude='web/node_modules' --exclude='web/.next' \
+            --exclude='**/__pycache__' --exclude='*.pyc' \
+            --exclude='engine/.venv*' --exclude='artifacts' --exclude='paridade' \
+            engine api mcp_server web servidor Dockerfile compose.yml .dockerignore
+
+      - name: Enviar
+        env:
+          ALVO: ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}
+          PORTA: ${{ secrets.VPS_PORT }}
+        run: |
+          scp -P "$PORTA" -i ~/.ssh/id_deploy /tmp/fitradeoff.tgz "$ALVO:/tmp/fitradeoff.tgz"
+          scp -P "$PORTA" -i ~/.ssh/id_deploy servidor/publicar.sh "$ALVO:/tmp/publicar-fit.sh"
+
+      # --- os segredos, antes de subir -------------------------------------
+      - name: Aplicar os segredos e publicar
+        env:
+          ALVO: ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}
+          PORTA: ${{ secrets.VPS_PORT }}
+          FITRADEOFF_MCP_HOSTS: ${{ secrets.FITRADEOFF_MCP_HOSTS }}
+          FITRADEOFF_JWT_ISSUER: ${{ secrets.FITRADEOFF_JWT_ISSUER }}
+          FITRADEOFF_JWT_AUDIENCE: ${{ secrets.FITRADEOFF_JWT_AUDIENCE }}
+          FITRADEOFF_JWT_JWKS_URL: ${{ secrets.FITRADEOFF_JWT_JWKS_URL }}
+        run: |
+          for v in FITRADEOFF_MCP_HOSTS FITRADEOFF_JWT_ISSUER \
+                   FITRADEOFF_JWT_AUDIENCE FITRADEOFF_JWT_JWKS_URL; do
+            if [ -z "${!v}" ]; then
+              echo "::error::Falta o segredo $v."
+              exit 1
+            fi
+          done
+
+          # O .env vai por arquivo, e nao como argumento do comando remoto: ali
+          # ele apareceria no `ps` da maquina de destino enquanto o comando roda,
+          # legivel por qualquer processo dela.
+          umask 077
+          {
+            echo "FITRADEOFF_MCP_HOSTS=$FITRADEOFF_MCP_HOSTS"
+            echo "FITRADEOFF_JWT_ISSUER=$FITRADEOFF_JWT_ISSUER"
+            echo "FITRADEOFF_JWT_AUDIENCE=$FITRADEOFF_JWT_AUDIENCE"
+            echo "FITRADEOFF_JWT_JWKS_URL=$FITRADEOFF_JWT_JWKS_URL"
+          } > /tmp/fit.env
+
+          scp -P "$PORTA" -i ~/.ssh/id_deploy /tmp/fit.env "$ALVO:/tmp/fit.env"
+          shred -u /tmp/fit.env
+
+          ssh -p "$PORTA" -i ~/.ssh/id_deploy "$ALVO" bash -s <<'REMOTO'
+          set -e
+          mkdir -p /srv/fitradeoff
+          install -m 600 /tmp/fit.env /srv/fitradeoff/.env
+          shred -u /tmp/fit.env
+          bash /tmp/publicar-fit.sh
+          rm -f /tmp/publicar-fit.sh
+          REMOTO

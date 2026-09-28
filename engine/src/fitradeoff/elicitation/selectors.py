@@ -34,6 +34,19 @@ from .questions import Bracket, TradeoffQuestion
 # `paridade/EQUIVALENCIA.md`, junto com outras quatro.
 DEFAULT_RESOLUTION = 1e-2
 
+# Abaixo deste peso maximo possivel para o criterio rival, a pergunta sobre o par
+# e abandonada: nenhuma resposta muda coisa alguma que se enxergue.
+#
+# E o que fecha `ranking-20` contra o sistema oficial. As 20 primeiras perguntas
+# sao identicas; na 21a ele abandona `Durabilidade x Suporte tecnico`, que ainda
+# tinha faixa. Medido no nosso motor, com as mesmas respostas: onde ele PERGUNTOU
+# esse par, o suporte ainda podia pesar 2,86e-5 (passo 17), e o rival do par
+# seguinte 5,91e-5 (passo 20); onde ele PULOU, 1,85e-6. O limiar dele esta nessa
+# janela, e qualquer valor dentro dela da as mesmas contagens nos 14 casos de
+# ranking, escolha e sorting -- 1e-5 fica no meio. Nao sabemos o numero exato
+# dele, e o que se afirma e a janela.
+PESO_DESPREZIVEL = 1e-5
+
 
 class QuestionSelector(ABC):
     """Decide qual pergunta fazer em seguida."""
@@ -72,15 +85,10 @@ class WidestBracketSelector(QuestionSelector):
     Barata -- nenhum LP extra -- e ja supera o rodizio fixo de pares, porque
     ataca sempre o ponto de maior ignorancia sobre os pesos.
 
-    E o seletor padrao (ver ``fitradeoff.container``), e responde por uma das duas
-    divergencias de percurso que restam contra o sistema oficial -- a outra e o
-    criterio de parada da carteira por razao, em ``problematics/benefit_cost.py``.
-    Esta: em `ranking-20` fazemos 22 perguntas contra 21 dele, porque no passo 21
-    o oficial abandona um par que ainda tem faixa e vai direto ao que fecha a
-    ordem. A causa continua desconhecida; o desfecho e o mesmo dos dois lados.
-    Medida, caso e vao estao em ``paridade/EQUIVALENCIA.md``, e a divergencia esta
-    travada por nome em ``paridade/test_paridade.py`` -- fecha-la quebra o teste
-    de proposito.
+    E o seletor padrao (ver ``fitradeoff.container``). Abandona o par cujo
+    criterio rival ja nao pode pesar mais que ``PESO_DESPREZIVEL`` -- e o que o
+    sistema oficial faz, e foi o que fechou a ultima divergencia de percurso de
+    ranking (`ranking-20`, 21 perguntas dos dois lados).
 
     Trocar por ``InformationGainSelector`` nao e a correcao, e o numero engana:
     ele resolve `ranking-20` em 10 perguntas, menos da metade das 21 do oficial,
@@ -91,7 +99,13 @@ class WidestBracketSelector(QuestionSelector):
 
     def select(self, problem, log, brackets, space, problematic):
         candidates = self._candidates(problem, brackets)
-        return candidates[0] if candidates else None
+        if not candidates:
+            return None
+        teto = [b.upper for b in problematic.evaluator.weight_bounds(problem, space)]
+        for question in candidates:
+            if teto[question.rival] >= PESO_DESPREZIVEL:
+                return question
+        return None
 
 
 class InformationGainSelector(QuestionSelector):

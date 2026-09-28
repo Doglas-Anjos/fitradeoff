@@ -46,7 +46,6 @@ export const MODULOS: Modulo[] = [
     rota: "ordenacao",
     problematica: "ranking",
     exatidao: "exato",
-    divergencia: "instancias",
   },
   { rota: "classificacao", problematica: "sorting", exatidao: "exato" },
   {
@@ -59,7 +58,6 @@ export const MODULOS: Modulo[] = [
     rota: "beneficio-custo",
     problematica: "beneficio_custo",
     exatidao: "aproximado",
-    divergencia: "bc",
   },
 ];
 

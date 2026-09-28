@@ -67,14 +67,28 @@
    "dominancia_direta": [
     {
      "de": "Plano A",
-     "para": "Plano C"
+     "para": "Plano C",
+     "origem": "decomposicao"
     },
     {
      "de": "Plano C",
-     "para": "Plano B"
+     "para": "Plano B",
+     "origem": "decomposicao"
     }
    ],
    "niveis": [
+    [
+     "Plano A"
+    ],
+    [
+     "Plano C"
+    ],
+    [
+     "Plano B"
+    ]
+   ],
+   "indiferencas": [],
+   "posicoes": [
     [
      "Plano A"
     ],
@@ -153,26 +167,52 @@
    "dominancia_direta": [
     {
      "de": "Alt 01",
-     "para": "Alt 06"
+     "para": "Alt 06",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 02",
-     "para": "Alt 03"
+     "para": "Alt 03",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 03",
-     "para": "Alt 01"
+     "para": "Alt 01",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 04",
-     "para": "Alt 05"
+     "para": "Alt 05",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 06",
-     "para": "Alt 04"
+     "para": "Alt 04",
+     "origem": "decomposicao"
     }
    ],
    "niveis": [
+    [
+     "Alt 02"
+    ],
+    [
+     "Alt 03"
+    ],
+    [
+     "Alt 01"
+    ],
+    [
+     "Alt 06"
+    ],
+    [
+     "Alt 04"
+    ],
+    [
+     "Alt 05"
+    ]
+   ],
+   "indiferencas": [],
+   "posicoes": [
     [
      "Alt 02"
     ],
@@ -353,50 +393,100 @@
    "dominancia_direta": [
     {
      "de": "Alt 01",
-     "para": "Alt 07"
+     "para": "Alt 07",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 02",
-     "para": "Alt 06"
+     "para": "Alt 06",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 03",
-     "para": "Alt 05"
+     "para": "Alt 05",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 04",
-     "para": "Alt 03"
+     "para": "Alt 03",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 05",
-     "para": "Alt 02"
+     "para": "Alt 02",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 06",
-     "para": "Alt 01"
+     "para": "Alt 01",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 07",
-     "para": "Alt 12"
+     "para": "Alt 12",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 08",
-     "para": "Alt 11"
+     "para": "Alt 11",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 09",
-     "para": "Alt 10"
+     "para": "Alt 10",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 11",
-     "para": "Alt 09"
+     "para": "Alt 09",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 12",
-     "para": "Alt 08"
+     "para": "Alt 08",
+     "origem": "decomposicao"
     }
    ],
    "niveis": [
+    [
+     "Alt 04"
+    ],
+    [
+     "Alt 03"
+    ],
+    [
+     "Alt 05"
+    ],
+    [
+     "Alt 02"
+    ],
+    [
+     "Alt 06"
+    ],
+    [
+     "Alt 01"
+    ],
+    [
+     "Alt 07"
+    ],
+    [
+     "Alt 12"
+    ],
+    [
+     "Alt 08"
+    ],
+    [
+     "Alt 11"
+    ],
+    [
+     "Alt 09"
+    ],
+    [
+     "Alt 10"
+    ]
+   ],
+   "indiferencas": [],
+   "posicoes": [
     [
      "Alt 04"
     ],
@@ -547,55 +637,78 @@
    "dominancia_direta": [
     {
      "de": "Alt 01",
-     "para": "Alt 15"
+     "para": "Alt 15",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 02",
-     "para": "Alt 08"
+     "para": "Alt 08",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 03",
-     "para": "Alt 07"
+     "para": "Alt 07",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 04",
-     "para": "Alt 06"
+     "para": "Alt 06",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 05",
-     "para": "Alt 03"
+     "para": "Alt 03",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 06",
-     "para": "Alt 05"
+     "para": "Alt 05",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 07",
-     "para": "Alt 02"
+     "para": "Alt 02",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 08",
-     "para": "Alt 01"
+     "para": "Alt 01",
+     "origem": "decomposicao"
+    },
+    {
+     "de": "Alt 09",
+     "para": "Alt 10",
+     "origem": "decomposicao"
+    },
+    {
+     "de": "Alt 09",
+     "para": "Alt 14",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 10",
-     "para": "Alt 14"
+     "para": "Alt 13",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 11",
-     "para": "Alt 12"
+     "para": "Alt 12",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 13",
-     "para": "Alt 11"
+     "para": "Alt 11",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 14",
-     "para": "Alt 10"
+     "para": "Alt 13",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 15",
-     "para": "Alt 09"
+     "para": "Alt 09",
+     "origem": "decomposicao"
     }
    ],
    "niveis": [
@@ -631,10 +744,67 @@
     ],
     [
      "Alt 10",
-     "Alt 11",
-     "Alt 12",
-     "Alt 13",
      "Alt 14"
+    ],
+    [
+     "Alt 13"
+    ],
+    [
+     "Alt 11"
+    ],
+    [
+     "Alt 12"
+    ]
+   ],
+   "indiferencas": [
+    {
+     "a": "Alt 10",
+     "b": "Alt 14"
+    }
+   ],
+   "posicoes": [
+    [
+     "Alt 04"
+    ],
+    [
+     "Alt 06"
+    ],
+    [
+     "Alt 05"
+    ],
+    [
+     "Alt 03"
+    ],
+    [
+     "Alt 07"
+    ],
+    [
+     "Alt 02"
+    ],
+    [
+     "Alt 08"
+    ],
+    [
+     "Alt 01"
+    ],
+    [
+     "Alt 15"
+    ],
+    [
+     "Alt 09"
+    ],
+    [
+     "Alt 10",
+     "Alt 14"
+    ],
+    [
+     "Alt 13"
+    ],
+    [
+     "Alt 11"
+    ],
+    [
+     "Alt 12"
     ]
    ]
   }
@@ -902,6 +1072,7 @@
      "dominado": "Alt 07"
     }
    ],
+   "pares_sem_ordem_de_razao": [],
    "dominantes": [
     "Alt 01",
     "Alt 02",
@@ -968,7 +1139,7 @@
  "ranking-20": {
   "chave": "ranking-20",
   "steps_ordenacao": 8,
-  "steps_tradeoff": 22,
+  "steps_tradeoff": 21,
   "resumo": "Pré-ordem completa: Alt 05 > Alt 07 > Alt 06 > Alt 04 > Alt 08 > Alt 09 > Alt 03 > Alt 10 > Alt 02 > Alt 11 > Alt 01 > Alt 20 > Alt 12 > Alt 13 > Alt 19 > Alt 14 > Alt 18 > Alt 17 > Alt 15 > Alt 16. 3 par(es) empatam dentro do limiar de 0.01.",
   "analise": {
    "problematica": "ranking",
@@ -1084,71 +1255,108 @@
    "dominancia_direta": [
     {
      "de": "Alt 01",
-     "para": "Alt 20"
+     "para": "Alt 20",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 02",
-     "para": "Alt 11"
+     "para": "Alt 11",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 03",
-     "para": "Alt 10"
+     "para": "Alt 10",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 04",
-     "para": "Alt 08"
+     "para": "Alt 09",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 05",
-     "para": "Alt 07"
+     "para": "Alt 07",
+     "origem": "decomposicao"
+    },
+    {
+     "de": "Alt 06",
+     "para": "Alt 04",
+     "origem": "decomposicao"
+    },
+    {
+     "de": "Alt 06",
+     "para": "Alt 08",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 07",
-     "para": "Alt 06"
+     "para": "Alt 06",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 08",
-     "para": "Alt 04"
+     "para": "Alt 09",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 09",
-     "para": "Alt 03"
+     "para": "Alt 03",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 10",
-     "para": "Alt 02"
+     "para": "Alt 02",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 11",
-     "para": "Alt 01"
+     "para": "Alt 01",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 12",
-     "para": "Alt 13"
+     "para": "Alt 13",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 13",
-     "para": "Alt 19"
+     "para": "Alt 19",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 14",
-     "para": "Alt 18"
+     "para": "Alt 17",
+     "origem": "decomposicao"
     },
     {
-     "de": "Alt 15",
-     "para": "Alt 16"
+     "de": "Alt 17",
+     "para": "Alt 15",
+     "origem": "decomposicao"
     },
     {
-     "de": "Alt 16",
-     "para": "Alt 15"
+     "de": "Alt 17",
+     "para": "Alt 16",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 18",
-     "para": "Alt 14"
+     "para": "Alt 17",
+     "origem": "decomposicao"
+    },
+    {
+     "de": "Alt 19",
+     "para": "Alt 14",
+     "origem": "decomposicao"
+    },
+    {
+     "de": "Alt 19",
+     "para": "Alt 18",
+     "origem": "decomposicao"
     },
     {
      "de": "Alt 20",
-     "para": "Alt 12"
+     "para": "Alt 12",
+     "origem": "decomposicao"
     }
    ],
    "niveis": [
@@ -1162,23 +1370,119 @@
      "Alt 06"
     ],
     [
-     "Alt 01",
-     "Alt 02",
-     "Alt 03",
      "Alt 04",
-     "Alt 08",
-     "Alt 09",
-     "Alt 10",
-     "Alt 11",
-     "Alt 12",
-     "Alt 13",
-     "Alt 14",
-     "Alt 15",
-     "Alt 16",
-     "Alt 17",
-     "Alt 18",
-     "Alt 19",
+     "Alt 08"
+    ],
+    [
+     "Alt 09"
+    ],
+    [
+     "Alt 03"
+    ],
+    [
+     "Alt 10"
+    ],
+    [
+     "Alt 02"
+    ],
+    [
+     "Alt 11"
+    ],
+    [
+     "Alt 01"
+    ],
+    [
      "Alt 20"
+    ],
+    [
+     "Alt 12"
+    ],
+    [
+     "Alt 13"
+    ],
+    [
+     "Alt 19"
+    ],
+    [
+     "Alt 14",
+     "Alt 18"
+    ],
+    [
+     "Alt 17"
+    ],
+    [
+     "Alt 15",
+     "Alt 16"
+    ]
+   ],
+   "indiferencas": [
+    {
+     "a": "Alt 04",
+     "b": "Alt 08"
+    },
+    {
+     "a": "Alt 14",
+     "b": "Alt 18"
+    },
+    {
+     "a": "Alt 15",
+     "b": "Alt 16"
+    }
+   ],
+   "posicoes": [
+    [
+     "Alt 05"
+    ],
+    [
+     "Alt 07"
+    ],
+    [
+     "Alt 06"
+    ],
+    [
+     "Alt 04",
+     "Alt 08"
+    ],
+    [
+     "Alt 09"
+    ],
+    [
+     "Alt 03"
+    ],
+    [
+     "Alt 10"
+    ],
+    [
+     "Alt 02"
+    ],
+    [
+     "Alt 11"
+    ],
+    [
+     "Alt 01"
+    ],
+    [
+     "Alt 20"
+    ],
+    [
+     "Alt 12"
+    ],
+    [
+     "Alt 13"
+    ],
+    [
+     "Alt 19"
+    ],
+    [
+     "Alt 14",
+     "Alt 18"
+    ],
+    [
+     "Alt 17"
+    ],
+    [
+     "Alt 15",
+     "Alt 16"
     ]
    ]
   }
@@ -1409,7 +1713,7 @@
  "bc-20": {
   "chave": "bc-20",
   "steps_ordenacao": 5,
-  "steps_tradeoff": 11,
+  "steps_tradeoff": 17,
   "resumo": "Carteira única pela razão benefício-custo: Alt 02, Alt 04, Alt 05, Alt 07, Alt 08, Alt 10 (custo 143.00 de 160.00).",
   "analise": {
    "problematica": "beneficio_custo",
@@ -1421,142 +1725,142 @@
    "razoes": {
     "Alt 01": {
      "custo": 40.0,
-     "beneficio_minimo": 0.4501,
+     "beneficio_minimo": 0.4721,
      "beneficio_maximo": 0.4795,
-     "razao_minima": 0.011252,
+     "razao_minima": 0.011803,
      "razao_maxima": 0.011986
     },
     "Alt 02": {
      "custo": 25.0,
-     "beneficio_minimo": 0.5911,
+     "beneficio_minimo": 0.6203,
      "beneficio_maximo": 0.6301,
-     "razao_minima": 0.023645,
+     "razao_minima": 0.024813,
      "razao_maxima": 0.025205
     },
     "Alt 03": {
      "custo": 35.0,
-     "beneficio_minimo": 0.6911,
+     "beneficio_minimo": 0.7233,
      "beneficio_maximo": 0.7342,
-     "razao_minima": 0.019747,
+     "razao_minima": 0.020666,
      "razao_maxima": 0.020978
     },
     "Alt 04": {
      "custo": 20.0,
-     "beneficio_minimo": 0.8068,
+     "beneficio_minimo": 0.8426,
      "beneficio_maximo": 0.8548,
-     "razao_minima": 0.04034,
+     "razao_minima": 0.042129,
      "razao_maxima": 0.04274
     },
     "Alt 05": {
      "custo": 30.0,
-     "beneficio_minimo": 0.9528,
+     "beneficio_minimo": 0.988,
      "beneficio_maximo": 1.0,
-     "razao_minima": 0.031759,
+     "razao_minima": 0.032934,
      "razao_maxima": 0.033333
     },
     "Alt 06": {
      "custo": 45.0,
-     "beneficio_minimo": 0.897,
+     "beneficio_minimo": 0.9226,
      "beneficio_maximo": 0.9315,
-     "razao_minima": 0.019933,
+     "razao_minima": 0.020502,
      "razao_maxima": 0.0207
     },
     "Alt 07": {
      "custo": 18.0,
-     "beneficio_minimo": 0.9347,
+     "beneficio_minimo": 0.9547,
      "beneficio_maximo": 0.9616,
-     "razao_minima": 0.051927,
+     "razao_minima": 0.053037,
      "razao_maxima": 0.053425
     },
     "Alt 08": {
      "custo": 28.0,
-     "beneficio_minimo": 0.8374,
+     "beneficio_minimo": 0.8462,
      "beneficio_maximo": 0.8493,
-     "razao_minima": 0.029907,
+     "razao_minima": 0.030221,
      "razao_maxima": 0.030333
     },
     "Alt 09": {
      "custo": 33.0,
      "beneficio_minimo": 0.7644,
-     "beneficio_maximo": 0.7681,
+     "beneficio_maximo": 0.7651,
      "razao_minima": 0.023163,
-     "razao_maxima": 0.023277
+     "razao_maxima": 0.023185
     },
     "Alt 10": {
      "custo": 22.0,
      "beneficio_minimo": 0.6411,
-     "beneficio_maximo": 0.658,
+     "beneficio_maximo": 0.6452,
      "razao_minima": 0.029141,
-     "razao_maxima": 0.029908
+     "razao_maxima": 0.029327
     },
     "Alt 11": {
      "custo": 38.0,
      "beneficio_minimo": 0.526,
-     "beneficio_maximo": 0.5546,
+     "beneficio_maximo": 0.5331,
      "razao_minima": 0.013843,
-     "razao_maxima": 0.014595
+     "razao_maxima": 0.01403
     },
     "Alt 12": {
      "custo": 26.0,
      "beneficio_minimo": 0.337,
-     "beneficio_maximo": 0.3782,
+     "beneficio_maximo": 0.3473,
      "razao_minima": 0.012961,
-     "razao_maxima": 0.014546
+     "razao_maxima": 0.013358
     },
     "Alt 13": {
      "custo": 42.0,
      "beneficio_minimo": 0.2301,
-     "beneficio_maximo": 0.2747,
+     "beneficio_maximo": 0.2414,
      "razao_minima": 0.005479,
-     "razao_maxima": 0.00654
+     "razao_maxima": 0.005747
     },
     "Alt 14": {
      "custo": 19.0,
      "beneficio_minimo": 0.0959,
-     "beneficio_maximo": 0.1421,
+     "beneficio_maximo": 0.1076,
      "razao_minima": 0.005047,
-     "razao_maxima": 0.007477
+     "razao_maxima": 0.005662
     },
     "Alt 15": {
      "custo": 31.0,
      "beneficio_minimo": 0.0055,
-     "beneficio_maximo": 0.0501,
+     "beneficio_maximo": 0.0168,
      "razao_minima": 0.000177,
-     "razao_maxima": 0.001616
+     "razao_maxima": 0.000541
     },
     "Alt 16": {
      "custo": 24.0,
      "beneficio_minimo": 0.0,
-     "beneficio_maximo": 0.0365,
+     "beneficio_maximo": 0.0093,
      "razao_minima": 0.0,
-     "razao_maxima": 0.001519
+     "razao_maxima": 0.000389
     },
     "Alt 17": {
      "custo": 36.0,
      "beneficio_minimo": 0.0192,
-     "beneficio_maximo": 0.0458,
+     "beneficio_maximo": 0.026,
      "razao_minima": 0.000533,
-     "razao_maxima": 0.001273
+     "razao_maxima": 0.000722
     },
     "Alt 18": {
      "custo": 21.0,
      "beneficio_minimo": 0.0959,
-     "beneficio_maximo": 0.1072,
+     "beneficio_maximo": 0.0989,
      "razao_minima": 0.004566,
-     "razao_maxima": 0.005107
+     "razao_maxima": 0.004708
     },
     "Alt 19": {
      "custo": 29.0,
-     "beneficio_minimo": 0.2195,
+     "beneficio_minimo": 0.2256,
      "beneficio_maximo": 0.2274,
-     "razao_minima": 0.007571,
+     "razao_minima": 0.007779,
      "razao_maxima": 0.007841
     },
     "Alt 20": {
      "custo": 44.0,
-     "beneficio_minimo": 0.3341,
+     "beneficio_minimo": 0.3487,
      "beneficio_maximo": 0.3534,
-     "razao_minima": 0.007593,
+     "razao_minima": 0.007924,
      "razao_maxima": 0.008032
     }
    },
@@ -1975,6 +2279,10 @@
     },
     {
      "dominante": "Alt 08",
+     "dominado": "Alt 10"
+    },
+    {
+     "dominante": "Alt 08",
      "dominado": "Alt 11"
     },
     {
@@ -2131,6 +2439,10 @@
     },
     {
      "dominante": "Alt 11",
+     "dominado": "Alt 12"
+    },
+    {
+     "dominante": "Alt 11",
      "dominado": "Alt 13"
     },
     {
@@ -2226,6 +2538,14 @@
      "dominado": "Alt 17"
     },
     {
+     "dominante": "Alt 14",
+     "dominado": "Alt 18"
+    },
+    {
+     "dominante": "Alt 17",
+     "dominado": "Alt 16"
+    },
+    {
      "dominante": "Alt 18",
      "dominado": "Alt 15"
     },
@@ -2284,8 +2604,13 @@
     {
      "dominante": "Alt 20",
      "dominado": "Alt 18"
+    },
+    {
+     "dominante": "Alt 20",
+     "dominado": "Alt 19"
     }
    ],
+   "pares_sem_ordem_de_razao": [],
    "dominantes": [
     "Alt 01",
     "Alt 02",
@@ -2301,6 +2626,7 @@
     "Alt 12",
     "Alt 13",
     "Alt 14",
+    "Alt 17",
     "Alt 18",
     "Alt 19",
     "Alt 20"

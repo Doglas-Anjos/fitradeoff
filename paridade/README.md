@@ -75,9 +75,9 @@ e `extrair.py` tira dela o que ele concluiu, conforme a problemática:
 
 Isso fecha um buraco real: antes, uma mudança no motor podia manter a contagem
 de perguntas e trocar o vencedor sem que nada reclamasse. Nos 16 casos que o
-oficial completa o resultado bate em **todos** — inclusive em `ranking-20` e
-`bc-20`, onde o número de perguntas diverge. É o que sustenta a afirmação de que
-essas duas divergências são de percurso, não de conclusão.
+oficial completa o resultado bate em **todos**, e desde 28/09/2026 o número de
+perguntas também — `ranking-20` e `bc-20`, que divergiam, fecharam por medição
+(ver `EQUIVALENCIA.md`).
 
 O leitor falha alto quando não entende a tela, em vez de devolver vazio. Não é
 zelo: um extrator que devolvesse nada deixaria a comparação passar sem comparar

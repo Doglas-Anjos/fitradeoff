@@ -223,9 +223,17 @@ describe("as páginas de módulo", () => {
     /* Quem abre a página da ordenação para decidir se confia nela não deveria
        precisar voltar à visão geral para descobrir que há uma pergunta de
        diferença. */
-    renderModulo("ordenacao");
+    renderModulo("escolha");
     expect(screen.getByText("Onde ainda não bate")).toBeInTheDocument();
-    expect(screen.getByText(/22 perguntas contra 21/)).toBeInTheDocument();
+    expect(screen.getByText("Onde o oficial não completa")).toBeInTheDocument();
+  });
+
+  it("divergência fechada sai da página do módulo", () => {
+    /* A ordenação tinha uma pergunta de diferença (22 contra 21), fechada em
+       28/09/2026. A página não pode continuar anunciando o que já não é. */
+    renderModulo("ordenacao");
+    expect(screen.queryByText("Onde ainda não bate")).toBeNull();
+    expect(screen.queryByText(/22 perguntas contra 21/)).toBeNull();
   });
 
   it("rota inventada não quebra a tela", () => {

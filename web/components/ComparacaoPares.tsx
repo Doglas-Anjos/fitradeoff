@@ -10,6 +10,12 @@
  * As barras mostram a faixa real de cada critério, porque é ela que está em
  * jogo — "qualidade é mais importante que prazo" não quer dizer nada sem saber
  * que o prazo varia de 45 para 12 dias.
+ *
+ * Há uma segunda vista, a tabela, que é a vista padrão do sistema de
+ * referência ("Consequences"): as opções A e B como duas alternativas
+ * hipotéticas, uma linha por critério, a consequência melhor em azul e a pior
+ * em vermelho. Mesma pergunta, outra leitura -- há quem compare melhor números
+ * lado a lado do que barras.
  */
 
 import { ArrowCounterClockwise, Check } from "@phosphor-icons/react";
@@ -22,6 +28,7 @@ import {
   BotaoEntreCartoes,
   Dica,
   ESPERA_CONFIRMACAO,
+  Segmentado,
 } from "@/components/ui";
 import { useIdioma } from "@/lib/i18n";
 import "@/lib/i18n/visualizacoes";
@@ -100,6 +107,105 @@ function Cartao({
   );
 }
 
+function formatar(v: number): string {
+  return Number.isInteger(v) ? String(v) : v.toPrecision(4).replace(/\.?0+$/, "");
+}
+
+/**
+ * A pergunta como tabela de consequências, na vista padrão do oficial.
+ *
+ * A opção A é o critério da esquerda no melhor desempenho e o da direita no
+ * pior; a B, o contrário. Escolher A é dizer que levar o primeiro do pior ao
+ * melhor vale mais -- a mesma resposta do cartão da esquerda.
+ */
+/* O azul das séries dá 4,42:1 sobre o painel claro, abaixo dos 4,5:1 que texto
+   deste tamanho pede. Misturado à tinta ele escurece no tema claro e clareia no
+   escuro -- o contraste sobe nos dois, e continua sendo o mesmo azul. */
+const AZUL_TEXTO = "color-mix(in srgb, var(--serie-1) 78%, var(--tinta))";
+
+function TabelaConsequencias({
+  a,
+  b,
+  desabilitado,
+  escolhida,
+  onEscolher,
+}: {
+  a: CriterioOut;
+  b: CriterioOut;
+  desabilitado: boolean;
+  escolhida: RespostaComparacao | null;
+  onEscolher: (r: RespostaComparacao) => void;
+}) {
+  const { t } = useIdioma();
+  const valor = (c: CriterioOut, melhor: boolean) => {
+    const v = melhor ? c.melhor : c.pior;
+    return `${formatar(v)}${c.unidade ? ` ${c.unidade}` : ""}`;
+  };
+  const celula = (c: CriterioOut, melhor: boolean) => (
+    <td
+      className="px-4 py-2 text-center text-[15px] font-semibold tabular-nums"
+      style={{ color: melhor ? AZUL_TEXTO : "var(--erro)" }}
+      data-consequencia={melhor ? "melhor" : "pior"}
+    >
+      {valor(c, melhor)}
+    </td>
+  );
+  return (
+    <div
+      className="rounded-[var(--raio-painel)] border p-4"
+      style={{ borderColor: "var(--borda)", background: "var(--painel)" }}
+    >
+      <table className="mx-auto">
+        <caption
+          className="pb-3 text-[12px] font-semibold uppercase tracking-[0.1em]"
+          style={{ color: "var(--tinta-fraca)" }}
+        >
+          {t("elicitacao.par.tabela.consequencias")}
+        </caption>
+        <thead>
+          <tr>
+            <th />
+            {(["A", "B"] as const).map((lado) => (
+              <th key={lado} className="px-4 pb-3">
+                <Botao
+                  variante={escolhida === lado ? "principal" : "contorno"}
+                  disabled={desabilitado}
+                  onClick={() => onEscolher(lado)}
+                  aria-label={t("elicitacao.par.tabela.prefiro", { lado })}
+                  className="min-w-20 text-lg"
+                >
+                  {lado}
+                </Botao>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          <tr style={{ borderTop: "1px solid var(--borda)" }}>
+            <th scope="row" className="pr-4 text-left text-[13px] font-medium" style={{ color: "var(--tinta)" }}>
+              {a.nome}
+            </th>
+            {celula(a, true)}
+            {celula(a, false)}
+          </tr>
+          <tr style={{ borderTop: "1px solid var(--borda)" }}>
+            <th scope="row" className="pr-4 text-left text-[13px] font-medium" style={{ color: "var(--tinta)" }}>
+              {b.nome}
+            </th>
+            {celula(b, false)}
+            {celula(b, true)}
+          </tr>
+        </tbody>
+      </table>
+      <p className="mt-3 text-center text-[11px]" style={{ color: "var(--tinta-3)" }}>
+        <span style={{ color: AZUL_TEXTO }}>{t("elicitacao.par.tabela.nota.melhor")}</span>
+        {" · "}
+        <span style={{ color: "var(--erro)" }}>{t("elicitacao.par.tabela.nota.pior")}</span>
+      </p>
+    </div>
+  );
+}
+
 export function ComparacaoPares({
   criterios,
   ocupado,
@@ -128,6 +234,7 @@ export function ComparacaoPares({
      escolhido. */
   const [escolhida, setEscolhida] = useState<RespostaComparacao | null>(null);
   const relogio = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [vista, setVista] = useState<"cartoes" | "tabela">("cartoes");
 
   useEffect(
     () => () => {
@@ -191,6 +298,35 @@ export function ComparacaoPares({
 
       {comparacao && (
         <>
+          {/* As "View options" do oficial: a mesma pergunta em outra leitura. */}
+          <Segmentado
+            etiqueta={t("elicitacao.par.vista")}
+            valor={vista}
+            onEscolher={setVista}
+            className="mb-3"
+            opcoes={[
+              { valor: "cartoes", rotulo: t("elicitacao.par.vista.cartoes") },
+              { valor: "tabela", rotulo: t("elicitacao.par.vista.tabela") },
+            ]}
+          />
+          {vista === "tabela" ? (
+            <div className="flex flex-col items-center gap-3">
+              <TabelaConsequencias
+                a={porChave(comparacao.a)}
+                b={porChave(comparacao.b)}
+                desabilitado={ocupado || escolhida !== null}
+                escolhida={escolhida}
+                onEscolher={responder}
+              />
+              <Botao
+                variante="texto"
+                disabled={ocupado || escolhida !== null}
+                onClick={() => responder("indiferente")}
+              >
+                {t("elicitacao.par.indiferente")}
+              </Botao>
+            </div>
+          ) : (
           <div className="flex flex-col items-stretch gap-4 md:flex-row">
             <Cartao
               criterio={porChave(comparacao.a)}
@@ -226,6 +362,7 @@ export function ComparacaoPares({
               onEscolher={() => responder("B")}
             />
           </div>
+          )}
 
           {/* O empate tinha dois botões: o do meio e um de texto aqui embaixo.
               A redundância era intencional — nem todo mundo lê um ícone redondo

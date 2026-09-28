@@ -267,7 +267,7 @@ export default function ParidadePage() {
           {t("paridade.achados.intro")}
         </p>
         <div className="mt-5 space-y-5">
-          {["abertura", "limiar", "sorting"].map((chave) => (
+          {["abertura", "limiar", "sorting", "percurso", "razao"].map((chave) => (
             <Ponto
               key={chave}
               titulo={t(`paridade.achados.${chave}.titulo`)}
@@ -305,7 +305,7 @@ export default function ParidadePage() {
 
       <Secao id="diferencas" titulo={t("paridade.restam.titulo")}>
         <div className="space-y-5">
-          {["instancias", "bc", "carteira", "degenerado", "indisponivel"].map((chave) => (
+          {["carteira", "degenerado", "indisponivel"].map((chave) => (
             <Ponto
               key={chave}
               titulo={t(`paridade.restam.${chave}.titulo`)}

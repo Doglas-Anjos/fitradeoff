@@ -146,9 +146,10 @@ aponta uma que não existe. Detalhe em [`AUDITORIA.md`](AUDITORIA.md) e em
 ## Validação contra o sistema oficial
 
 Os mesmos problemas rodados aqui e no FITradeoff oficial (CDSID/UFPE), pergunta a pergunta e
-resultado a resultado. **14 dos 16 casos** que ele completa batem em número de perguntas nas duas
-fases, e o resultado bate em **todos os 16** — inclusive nos dois em que a contagem diverge, o que
-é o que dá a essas divergências o caráter de diferença de percurso, e não de conclusão.
+resultado a resultado. Nos **16 casos** que ele completa, o número de perguntas bate nas duas fases
+e o resultado bate em todos. As duas contagens que divergiam (`ranking-20` e `bc-20`) fecharam por
+medição, em 28/09/2026: o critério de parada de cada uma está em
+[`paridade/EQUIVALENCIA.md`](paridade/EQUIVALENCIA.md).
 
 A medição do lado oficial está versionada, então a suíte roda sem rede e sem conta:
 
@@ -677,10 +678,6 @@ em [`solvers/`](engine/src/fitradeoff/solvers/), nada mais.
 3. **Portfólio combinatorial comparado com o oficial** — é a única das cinco leituras sem medição
    de paridade, porque o módulo de lá não elicita em sessão: enumera as carteiras offline e avisa
    por e-mail. Comparar exige o modelo de voltar depois.
-4. **Entender por que o oficial para onde para** — restam duas divergências de percurso,
-   `ranking-20` e `bc-20`, com o mesmo resultado dos dois lados e o critério dele desconhecido.
-   [`InformationGainSelector`](engine/src/fitradeoff/elicitation/selectors.py) **não** é a resposta:
-   resolve `ranking-20` em 10 perguntas, mas afasta do oficial cinco casos que hoje batem.
 
 ## Estrutura
 

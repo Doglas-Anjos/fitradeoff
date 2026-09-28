@@ -527,11 +527,20 @@ def test_razao_clara_declara_dominancia(resultados):
 
 def test_razao_disputada_declara_menos_dominancia_que_a_clara(resultados):
     """Faixas que se sobrepoem nao autorizam declarar dominancia -- e o criterio
-    conservador e justamente o que torna a declaracao confiavel."""
+    conservador e justamente o que torna a declaracao confiavel.
+
+    Comparado no primeiro estado analisado, antes das perguntas. No fim ja nao
+    serve: desde 28/09/2026 a elicitacao por razao so encerra quando a ordem das
+    razoes fecha (como no sistema oficial), e ai os dois cenarios terminam com a
+    ordem completa. A diferenca que este teste defende aparece onde as faixas
+    ainda se sobrepoem -- no comeco.
+    """
 
     def quantas(chave):
-        analise = resultados[chave]["telas"][-1]["estado"]["analise"]
-        return len(analise.get("dominancia_por_razao") or [])
+        primeira = next(
+            t for t in resultados[chave]["telas"] if (t["estado"] or {}).get("analise")
+        )
+        return len(primeira["estado"]["analise"].get("dominancia_por_razao") or [])
 
     assert quantas("razao-disputada") < quantas("razao-clara")
 

@@ -6,6 +6,7 @@ mesmo, e esta declarado em ``dto.py``.
 
 from __future__ import annotations
 
+from ..domain.preferences import HolisticJudgement
 from ..elicitation.questions import QuestionBrief
 from ..elicitation.session import DecisionSession
 from ..problematics.base import Analysis
@@ -98,14 +99,44 @@ def summary_dto(resumo: DecisionSummary) -> SummaryDTO:
     )
 
 
-def analysis_dto(analysis: Analysis) -> AnalysisDTO:
+def analysis_dto(analysis: Analysis, record: DecisionRecord | None = None) -> AnalysisDTO:
     return AnalysisDTO(
         problematica=analysis.problematic,
         resolvido=analysis.resolved,
         indefinidas=list(analysis.undecided),
         resumo=analysis.headline,
-        detalhe=analysis.detail,
+        detalhe=_com_origem(analysis.detail, record),
     )
+
+
+def _com_origem(detalhe: dict, record: DecisionRecord | None) -> dict:
+    """Diz de onde veio cada seta do diagrama de Hasse.
+
+    O sistema de referencia desenha em vermelho a dominancia que o decisor
+    declarou numa avaliacao holistica, e em preto a que saiu da decomposicao.
+    A problematica so ve o espaco de pesos, e nao a trilha; aqui a trilha esta a
+    mao. Vermelha e a seta que uma avaliacao holistica afirma diretamente.
+    """
+    if record is None or "dominancia_direta" not in detalhe:
+        return detalhe
+    nomes = record.problem.alternatives
+    holisticas = {
+        (nomes[st.preferred], nomes[st.over]) for st in record.log.of_type(HolisticJudgement)
+    }
+    return {
+        **detalhe,
+        "dominancia_direta": [
+            {
+                **aresta,
+                "origem": (
+                    "holistica"
+                    if (aresta["de"], aresta["para"]) in holisticas
+                    else "decomposicao"
+                ),
+            }
+            for aresta in detalhe["dominancia_direta"]
+        ],
+    }
 
 
 def _ranges(record: DecisionRecord, session: DecisionSession):
@@ -171,7 +202,7 @@ def state_dto(record: DecisionRecord, session: DecisionSession) -> StateDTO:
         **base,
         consistente=True,
         encerrado=session.finished,
-        analise=analysis_dto(session.analyse()),
+        analise=analysis_dto(session.analyse(), record),
         faixas_de_peso=pesos,
         faixas_de_valor=valores,
     )
@@ -198,7 +229,7 @@ def question_dto(record_id: str, brief: QuestionBrief) -> QuestionDTO:
 def audit_dto(record: DecisionRecord, session: DecisionSession) -> AuditDTO:
     """Trilha completa: quem declarou o que, quando, e o que isso impos."""
     analise = (
-        analysis_dto(session.analyse())
+        analysis_dto(session.analyse(), record)
         if session.started and session.is_consistent
         else None
     )

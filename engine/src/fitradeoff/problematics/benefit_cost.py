@@ -24,21 +24,23 @@ selecionar em cada vertice amostrado, e reportar quem entra sempre, quem nunca
 entra e quem oscila -- nas amostras avaliadas. A ressalva vai junto do
 resultado, e diz qual metade e qual.
 
-Divergencia medida, e o que ela nao e. Contra o sistema oficial, `bc-20` chega a
-**mesma carteira** -- conferida projeto a projeto entre 2^20 subconjuntos, e
-travada em ``paridade/test_paridade.py`` -- gastando 11 perguntas contra as 17
-dele. A diferenca esta em onde cada um para: a nossa parada dispara quando a
-carteira ja esta definida, e ele continua perguntando. Cinco hipoteses foram
-levantadas e **todas refutadas** (separacao das faixas de razao, largura das
-faixas de razao, largura das faixas de valor, esgotamento da bissecao, resolucao
-mais grossa de bracket); o criterio dele segue desconhecido, e o registro dessa
-busca esta em ``paridade/EQUIVALENCIA.md``.
+Quando parar de perguntar. Pela ordem completa das razoes, e nao pela carteira:
+a elicitacao so termina quando, para cada par de projetos, a razao de um supera
+a do outro em todo vetor de pesos ainda admissivel. E o que o sistema oficial
+faz -- medido em 27/09/2026: com essa parada, `bc-08` e `bc-20` fazem as mesmas
+17 perguntas que ele, e na mesma ordem. A parada anterior (encerrar quando a
+carteira ficasse unica) coincidia com a dele em `bc-08` por acaso e parava seis
+perguntas antes em `bc-20`.
 
-O que sustenta seguir assim: forcar mais perguntas deste lado **nao muda a
-carteira**. Perguntar mais sem que a resposta mude custa o esforco cognitivo que
-o metodo existe para poupar. Por isso a divergencia esta declarada, e nao
-"corrigida" com perguntas de enfeite ate os numeros baterem -- que faria a
-paridade parecer melhor e a elicitacao ficar pior.
+Cinco hipoteses tinham sido refutadas antes desta (separacao das faixas de
+razao, largura das faixas de razao, largura das faixas de valor, esgotamento da
+bissecao, resolucao mais grossa de bracket; ver ``paridade/EQUIVALENCIA.md``).
+A que faltava testar era a mais natural para quem ordena por razao: ordem par a
+par por dominancia, com LP, e nao por faixas disjuntas -- duas faixas podem se
+sobrepor e ainda assim a ordem entre as razoes ser a mesma em todo peso.
+
+A carteira continua sendo o resultado, e continua a mesma; o que muda e que a
+tela diz quando ela ja esta definida mas a ordem ainda nao.
 """
 
 from __future__ import annotations
@@ -137,13 +139,25 @@ class BenefitCostProblematic(Problematic):
         )
         frequencia = contagem_de_carteiras[mais_frequente]
 
-        resolved = total == 1
+        sem_ordem = self._pares_sem_ordem(
+            problem, space, costs, razao_minima, razao_maxima
+        )
+        resolved = not sem_ordem
         if resolved:
             headline = (
                 f"Carteira única pela razão benefício-custo: "
                 f"{', '.join(problem.names_of(mais_frequente))} "
                 f"(custo {costs[list(mais_frequente)].sum():.2f} "
                 f"de {self._budget:.2f})."
+            )
+        elif total == 1:
+            headline = (
+                f"A carteira já está definida pela razão benefício-custo: "
+                f"{', '.join(problem.names_of(mais_frequente))} "
+                f"(custo {costs[list(mais_frequente)].sum():.2f} "
+                f"de {self._budget:.2f}). "
+                f"{concordar(len(sem_ordem), 'par de projetos ainda não tem', 'pares de projetos ainda não têm')} "
+                f"a ordem de razão fechada."
             )
         else:
             headline = (
@@ -178,6 +192,12 @@ class BenefitCostProblematic(Problematic):
                         "dominado": problem.alternatives[l],
                     }
                     for i, l in dominancia
+                ],
+                # os pares cuja ordem de razao ainda depende dos pesos: e o que
+                # mantem a elicitacao aberta
+                "pares_sem_ordem_de_razao": [
+                    f"{problem.alternatives[i]} vs {problem.alternatives[l]}"
+                    for i, l in sem_ordem
                 ],
                 "dominantes": problem.names_of(
                     sorted({i for i, _ in dominancia})
@@ -214,6 +234,37 @@ class BenefitCostProblematic(Problematic):
                 ),
             },
         )
+
+    def _pares_sem_ordem(
+        self,
+        problem: Problem,
+        space: WeightSpace,
+        costs: np.ndarray,
+        razao_minima: np.ndarray,
+        razao_maxima: np.ndarray,
+    ) -> list[tuple[int, int]]:
+        """Pares cuja ordem de razao ainda depende dos pesos.
+
+        A razao ``v_i(k) / c_i`` e linear em ``k``, entao "i supera l em todo
+        peso" e ``max_k (r_l - r_i) . k <= 0``: um LP por sentido. Pares de faixas
+        disjuntas ja estao ordenados e nao pagam LP nenhum -- em geral sao a
+        maioria.
+        """
+        razoes = problem.values / costs[:, None]
+        solver = self.evaluator.solver
+        pendentes = []
+        for i in range(problem.n_alternatives):
+            for l in range(i + 1, problem.n_alternatives):
+                if (razao_minima[i] > razao_maxima[l] + TOLERANCE
+                        or razao_minima[l] > razao_maxima[i] + TOLERANCE):
+                    continue
+                l_sobre_i = solver.maximize(space, razoes[l] - razoes[i])
+                i_sobre_l = solver.maximize(space, razoes[i] - razoes[l])
+                if l_sobre_i is None or i_sobre_l is None:
+                    continue
+                if l_sobre_i > TOLERANCE and i_sobre_l > TOLERANCE:
+                    pendentes.append((i, l))
+        return pendentes
 
     def _dominancia_por_razao(
         self, razao_minima: np.ndarray, razao_maxima: np.ndarray

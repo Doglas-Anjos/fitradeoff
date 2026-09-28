@@ -46,15 +46,18 @@ RESULTADOS = RAIZ / "resultados"
 #: Casos em que os dois sistemas ainda divergem, com o vão documentado.
 #: Não são falhas escondidas: estão no relatório e na tela. Ficam aqui para que
 #: **fechar** um deles também quebre o teste — e obrigue a atualizar os dois.
-DIVERGENCIAS = {
-    # o oficial abandona um par que ainda tem faixa; causa não identificada.
-    # O desfecho é o mesmo, e `test_mesmo_tipo_de_desfecho_no_ranking` o trava:
-    # a divergência é de percurso, não de conclusão.
-    "ranking-20": (21, 22),
-    # a nossa parada dispara quando a carteira está definida; ele continua.
-    # A carteira final é a mesma — agora por asserção, em
-    # `test_mesma_carteira_do_oficial`, e não mais por conferência à mão.
-    "bc-20": (17, 11),
+DIVERGENCIAS: dict[str, tuple[int, int]] = {
+    # Vazio desde 28/09/2026. As duas que havia fecharam por medição, não por
+    # ajuste de número:
+    #
+    # - `ranking-20` (21 contra 22): o oficial abandona o par cujo critério
+    #   rival já não pode pesar mais que um valor desprezível -- ver
+    #   `PESO_DESPREZIVEL` em `engine/.../elicitation/selectors.py`;
+    # - `bc-20` (17 contra 11): o oficial só encerra quando a ORDEM das razões
+    #   benefício/custo fecha, par a par, e não quando a carteira fica única --
+    #   ver o cabeçalho de `engine/.../problematics/benefit_cost.py`.
+    #
+    # Uma divergência nova entra aqui, nomeada e com o que se sabe dela.
 }
 
 #: O oficial não completa com matriz degenerada: faixa zero em todo critério.
@@ -250,3 +253,42 @@ def test_a_tela_mostra_o_que_foi_medido():
         assert '"chave": "%s"' % caso["chave"] in texto, (
             "%s não está na tela; rode `gerar_web.py`" % caso["chave"]
         )
+
+
+# --- uma decisão inteira com curva de valor não linear -------------------------
+#
+# Medido no oficial em 28/09/2026: o caso `ranking-cruzado` com a curva de cada
+# critério elicitada (Qualidade ILO-ILO-ILO-IUP-Ind, Custo IUP-IUP-IUP-ILO-Ind,
+# Prazo ILO-IUP-Ind-Ind-Ind), e depois ordenação e decomposição respondendo
+# sempre A. Os pontos abaixo são os que a nossa regra dá para essas respostas --
+# conferidos contra os gráficos finais dele (0,72 e 0,89; 14,59 e 10,38; 34, 29
+# e 19). Ele terminou com 3 perguntas de tradeoff e a ordem A > C > B ("Questions
+# Answered: 3" na visualização em tabela); linear, o mesmo caso faz 8.
+
+CURVAS_RANKING_CRUZADO = {
+    "c0": [[0.70, 0], [0.715625, 0.5], [0.89140625, 0.75], [0.95, 1]],
+    "c1": [[10, 1], [10.375, 0.5], [14.59375, 0.25], [16, 0]],
+    "c2": [[10, 1], [19.375, 0.75], [28.75, 0.5], [34.375, 0.25], [40, 0]],
+}
+
+
+def test_decisao_inteira_com_curva_nao_linear_bate_com_o_oficial():
+    from comparar import _criterios
+    from fitradeoff import DecisionService, build_container
+
+    caso = next(c for c in CASOS if c["chave"] == "ranking-cruzado")
+    crits = _criterios(caso)
+    servico = DecisionService(build_container(epsilon=0.0))
+    d = servico.create(caso["chave"], caso["alternativas"], crits,
+                       caso["consequencias"], problematica="ranking")["id"]
+    for chave, pontos in CURVAS_RANKING_CRUZADO.items():
+        servico.set_value_curve(d, chave, pontos)
+    servico.rank_criteria(d, [c["chave"] for c in crits])
+
+    perguntas = 0
+    while "enunciado" in servico.next_question(d):
+        servico.answer(d, "A")
+        perguntas += 1
+    analise = servico.state(d)["analise"]
+    assert perguntas == 3
+    assert analise["ordem_definida"] == ["Plano A", "Plano C", "Plano B"]

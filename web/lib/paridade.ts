@@ -20,7 +20,7 @@ export interface CasoParidade {
   bate: boolean;
 }
 
-export const MEDIDO_EM = "2026-09-26";
+export const MEDIDO_EM = "2026-09-28";
 
 export const PARIDADE: CasoParidade[] = [
   {
@@ -242,10 +242,10 @@ export const PARIDADE: CasoParidade[] = [
     },
     "nosso": {
       "ordenacao": 8,
-      "tradeoff": 22
+      "tradeoff": 21
     },
     "resumo": "Pré-ordem completa: Alt 05 > Alt 07 > Alt 06 > Alt 04 > Alt 08 > Alt 09 > Alt 03 > Alt 10 > Alt 02 > Alt 11 > Alt 01 > Alt 20 > Alt 12 > Alt 13 > Alt 19 > Alt 14 > Alt 18 > Alt 17 ",
-    "bate": false
+    "bate": true
   },
   {
     "chave": "sorting-20",
@@ -274,10 +274,10 @@ export const PARIDADE: CasoParidade[] = [
     },
     "nosso": {
       "ordenacao": 5,
-      "tradeoff": 11
+      "tradeoff": 17
     },
     "resumo": "Carteira única pela razão benefício-custo: Alt 02, Alt 04, Alt 05, Alt 07, Alt 08, Alt 10 (custo 143.00 de 160.00).",
-    "bate": false
+    "bate": true
   },
   {
     "chave": "escolha-empate",
@@ -295,7 +295,7 @@ export const PARIDADE: CasoParidade[] = [
 ];
 
 export const RESUMO = {
-  bate: 14,
+  bate: 16,
   comparaveis: 16,
   travados: 1,
   maiorProblema: 20,

@@ -143,14 +143,53 @@ export const VISUALIZACOES = registrar({
   /* Tooltip de aresta e de nó. Os nomes são dados do decisor e entram como
      valor, nunca traduzidos. */
   "viz.hasse.vence": { pt: "{de} vence {para}", en: "{de} beats {para}", es: "{de} vence a {para}" },
-  "viz.hasse.no": { pt: "{nome} - nível {n}", en: "{nome} - level {n}", es: "{nome} - nivel {n}" },
-  "viz.hasse.verLista": { pt: "Ver como lista", en: "View as a list", es: "Ver como lista" },
-  "viz.hasse.nivel": { pt: "nível {n}:", en: "level {n}:", es: "nivel {n}:" },
-  "viz.hasse.incomparaveis": {
-    pt: "(incomparáveis entre si)",
-    en: "(incomparable with each other)",
-    es: "(incomparables entre sí)",
+  "viz.hasse.no": { pt: "{nome} - posição {n}", en: "{nome} - position {n}", es: "{nome} - posición {n}" },
+  // As posições do ranking, como o oficial as rotula ("Position 1").
+  "viz.hasse.posicao": { pt: "Posição {n}", en: "Position {n}", es: "Posición {n}" },
+  "viz.hasse.indiferentes": {
+    pt: "{a} e {b} são indiferentes",
+    en: "{a} and {b} are indifferent",
+    es: "{a} y {b} son indiferentes",
   },
+  // A legenda do sistema de referência, item por item.
+  "viz.hasse.legenda.decomposicao": {
+    pt: "Dominância pela decomposição",
+    en: "Dominance from decomposition",
+    es: "Dominancia por descomposición",
+  },
+  "viz.hasse.legenda.holistica": {
+    pt: "Dominância por avaliação holística",
+    en: "Dominance from holistic evaluation",
+    es: "Dominancia por evaluación holística",
+  },
+  "viz.hasse.legenda.indiferenca": { pt: "Indiferença", en: "Indifference", es: "Indiferencia" },
+  "viz.hasse.legenda.posicoes": {
+    pt: "Separa as posições do ranking",
+    en: "Separates ranking positions",
+    es: "Separa las posiciones del ranking",
+  },
+  "viz.hasse.diferencas.mostrar": {
+    pt: "Mostrar diferenças máximas",
+    en: "Show maximum differences",
+    es: "Mostrar diferencias máximas",
+  },
+  "viz.hasse.diferencas.ocultar": {
+    pt: "Ocultar diferenças máximas",
+    en: "Hide maximum differences",
+    es: "Ocultar diferencias máximas",
+  },
+  "viz.hasse.diferencas.titulo": { pt: "Diferenças máximas", en: "Maximum differences", es: "Diferencias máximas" },
+  "viz.hasse.diferencas.ajuda": {
+    pt: "Cada célula diz o quanto a alternativa da linha pode, no máximo, superar a da coluna, com os pesos ainda possíveis. Só aparecem pares que ainda não se ordenam. A maior de cada posição fica destacada: é onde responder mais pode mudar mais.",
+    en: "Each cell says how far the row alternative can, at most, get ahead of the column one, with the weights still possible. Only pairs not yet ordered appear. The largest in each position is highlighted: that is where answering more can change the most.",
+    es: "Cada celda dice cuánto puede, como máximo, la alternativa de la fila superar a la de la columna, con los pesos todavía posibles. Solo aparecen pares aún sin orden. La mayor de cada posición queda destacada: es donde responder más puede cambiar más.",
+  },
+  "viz.hasse.diferencas.celula": {
+    pt: "{a} pode superar {b} em até {v}",
+    en: "{a} can beat {b} by up to {v}",
+    es: "{a} puede superar a {b} en hasta {v}",
+  },
+  "viz.hasse.verLista": { pt: "Ver como lista", en: "View as a list", es: "Ver como lista" },
 
   // --- gráfico de classificação (Gantt) -------------------------------------
   "viz.gantt.titulo": {
@@ -448,6 +487,22 @@ export const VISUALIZACOES = registrar({
   },
   "elicitacao.par.restantes.um": { pt: "~{n} restante", en: "~{n} to go", es: "~{n} restante" },
   "elicitacao.par.restantes.varios": { pt: "~{n} restantes", en: "~{n} to go", es: "~{n} restantes" },
+  // A vista em tabela, que é a padrão do sistema de referência ("Consequences").
+  "elicitacao.par.vista": { pt: "Como ver a pergunta", en: "How to view the question", es: "Cómo ver la pregunta" },
+  "elicitacao.par.vista.cartoes": { pt: "Cartões", en: "Cards", es: "Tarjetas" },
+  "elicitacao.par.vista.tabela": { pt: "Tabela", en: "Table", es: "Tabla" },
+  "elicitacao.par.tabela.consequencias": { pt: "Consequências", en: "Consequences", es: "Consecuencias" },
+  "elicitacao.par.tabela.prefiro": { pt: "Prefiro a opção {lado}", en: "I prefer option {lado}", es: "Prefiero la opción {lado}" },
+  "elicitacao.par.tabela.nota.melhor": {
+    pt: "em azul, a consequência mais preferível entre as duas opções",
+    en: "in blue, the more preferable consequence of the two options",
+    es: "en azul, la consecuencia más preferible entre las dos opciones",
+  },
+  "elicitacao.par.tabela.nota.pior": {
+    pt: "em vermelho, a menos preferível",
+    en: "in red, the less preferable one",
+    es: "en rojo, la menos preferible",
+  },
   "elicitacao.par.melhorarIsto": { pt: "melhorar isto", en: "improve this", es: "mejorar esto" },
   "elicitacao.par.ouMelhorarIsto": {
     pt: "ou melhorar isto",
@@ -591,42 +646,48 @@ export const VISUALIZACOES = registrar({
     en: "Skipping is legitimate: the straight line remains a reasonable choice.",
     es: "Saltar es legítimo: la recta sigue siendo una elección razonable.",
   },
-  "elicitacao.curva.pergunta.antes": { pt: "Entre ", en: "Between ", es: "Entre " },
-  "elicitacao.curva.pergunta.meio": { pt: " e ", en: " and ", es: " y " },
-  "elicitacao.curva.pergunta.depois": {
-    pt: ", qual desempenho fica ",
-    en: ", which performance sits ",
-    es: ", qué desempeño queda ",
+  /* A pergunta da bisseção, como o sistema de referência a escreve: "What
+     brings you greater increase in value: Increase from 0 to 50 or from 50 to
+     100?" -- e "Decrease" num critério de minimizar. Sempre do pior para o
+     melhor, então os dois trechos são sempre melhoras. */
+  "elicitacao.curva.pergunta.aumento": {
+    pt: "O que traz maior aumento de valor: aumentar de {de} para {meio}, ou de {meio} para {ate}?",
+    en: "What brings a greater increase in value: increasing from {de} to {meio}, or from {meio} to {ate}?",
+    es: "¿Qué aporta mayor aumento de valor: aumentar de {de} a {meio}, o de {meio} a {ate}?",
   },
-  "elicitacao.curva.pergunta.termo": {
-    pt: "no meio do caminho em valor",
-    en: "halfway in value",
-    es: "a mitad de camino en valor",
+  "elicitacao.curva.pergunta.reducao": {
+    pt: "O que traz maior aumento de valor: reduzir de {de} para {meio}, ou de {meio} para {ate}?",
+    en: "What brings a greater increase in value: decreasing from {de} to {meio}, or from {meio} to {ate}?",
+    es: "¿Qué aporta mayor aumento de valor: reducir de {de} a {meio}, o de {meio} a {ate}?",
   },
-  "elicitacao.curva.explicacao": {
-    pt: "Ou seja: sair de {de} até ali vale tanto quanto sair dali até {ate}.",
-    en: "In other words: going from {de} to there is worth as much as going from there to {ate}.",
-    es: "Es decir: ir de {de} hasta ahí vale tanto como ir de ahí hasta {ate}.",
+  // Inferior é o trecho que começa no pior desempenho; superior, o que termina
+  // no melhor. São os nomes do oficial (ILO e IUP).
+  "elicitacao.curva.opcao.inferior": {
+    pt: "Intervalo inferior: de {de} a {ate}",
+    en: "Lower interval: from {de} to {ate}",
+    es: "Intervalo inferior: de {de} a {ate}",
   },
-  "elicitacao.curva.entrada.rotulo": {
-    pt: "Desempenho intermediário em {nome}",
-    en: "Intermediate performance in {nome}",
-    es: "Desempeño intermedio en {nome}",
+  "elicitacao.curva.opcao.superior": {
+    pt: "Intervalo superior: de {de} a {ate}",
+    en: "Upper interval: from {de} to {ate}",
+    es: "Intervalo superior: de {de} a {ate}",
   },
-  "elicitacao.curva.erro.numero": {
-    pt: "Informe um número na unidade do critério.",
-    en: "Enter a number in the unit of the criterion.",
-    es: "Informe un número en la unidad del criterio.",
+  "elicitacao.curva.opcao.indiferente": { pt: "Indiferente", en: "Indifferent", es: "Indiferente" },
+  "elicitacao.curva.opcao.inferior.curto": { pt: "Inferior", en: "Lower", es: "Inferior" },
+  "elicitacao.curva.opcao.superior.curto": { pt: "Superior", en: "Upper", es: "Superior" },
+  "elicitacao.curva.opcao.indiferente.curto": { pt: "Indiferente", en: "Indifferent", es: "Indiferente" },
+  "elicitacao.curva.tabela.titulo": {
+    pt: "Informação elicitada",
+    en: "Information elicited",
+    es: "Información elicitada",
   },
-  "elicitacao.curva.erro.intervalo": {
-    pt: "O desempenho precisa ficar entre {de} e {ate}.",
-    en: "The performance has to fall between {de} and {ate}.",
-    es: "El desempeño tiene que quedar entre {de} y {ate}.",
-  },
-  "elicitacao.curva.detalhada": {
-    pt: "A curva já está detalhada o bastante. Salve para usá-la na decisão.",
-    en: "The curve is detailed enough. Save it to use in the decision.",
-    es: "La curva ya está lo bastante detallada. Guárdela para usarla en la decisión.",
+  "elicitacao.curva.tabela.inferior": { pt: "Intervalo inferior", en: "Lower interval", es: "Intervalo inferior" },
+  "elicitacao.curva.tabela.superior": { pt: "Intervalo superior", en: "Upper interval", es: "Intervalo superior" },
+  "elicitacao.curva.tabela.faixa": { pt: "{de} a {ate}", en: "{de} to {ate}", es: "{de} a {ate}" },
+  "elicitacao.curva.concluida": {
+    pt: "Os pontos necessários foram elicitados para este critério. Salve a curva para seguir para o próximo passo.",
+    en: "The required points were elicited for this criterion. Save the curve to move on to the next step.",
+    es: "Se elicitaron los puntos necesarios para este criterio. Guarde la curva para seguir al siguiente paso.",
   },
   "elicitacao.curva.usarCurva.um": {
     pt: "Usar esta curva ({n} ponto)",
@@ -643,51 +704,11 @@ export const VISUALIZACOES = registrar({
     en: "Use the straight line",
     es: "Usar la recta",
   },
-  "elicitacao.curva.qualMetade": {
-    pt: "Qual metade traz mais ganho de valor?",
-    en: "Which half brings the greater increase in value?",
-    es: "¿Qué mitad trae mayor ganancia de valor?",
-  },
-  "elicitacao.curva.opcao.indiferente": {
-    pt: "As duas valem o mesmo",
-    en: "Both are worth the same",
-    es: "Las dos valen lo mismo",
-  },
-  "elicitacao.curva.opcao.baixo.curto": {
-    pt: "a de baixo",
-    en: "the lower one",
-    es: "la de abajo",
-  },
-  "elicitacao.curva.opcao.alto.curto": {
-    pt: "a de cima",
-    en: "the upper one",
-    es: "la de arriba",
-  },
-  "elicitacao.curva.opcao.indiferente.curto": {
-    pt: "tanto faz",
-    en: "either",
-    es: "da igual",
-  },
-  "elicitacao.curva.tabela.titulo": {
-    pt: "O que você já respondeu",
-    en: "What you have answered",
-    es: "Lo que ya respondió",
-  },
   "elicitacao.curva.tabela.ciclo": { pt: "Ciclo", en: "Cycle", es: "Ciclo" },
-  "elicitacao.curva.tabela.comparadas": {
-    pt: "De · meio · até",
-    en: "From · mid · to",
-    es: "De · medio · hasta",
-  },
   "elicitacao.curva.tabela.resposta": {
     pt: "Resposta",
     en: "Answer",
     es: "Respuesta",
-  },
-  "elicitacao.curva.apertado": {
-    pt: "A faixa já está estreita: a próxima resposta fecha este ponto.",
-    en: "The range is already narrow: the next answer settles this point.",
-    es: "El rango ya está estrecho: la próxima respuesta cierra este punto.",
   },
   "elicitacao.curva.recomecar": { pt: "recomeçar", en: "start over", es: "reiniciar" },
   "elicitacao.curva.cancelar": { pt: "cancelar", en: "cancel", es: "cancelar" },

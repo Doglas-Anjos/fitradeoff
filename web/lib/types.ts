@@ -49,7 +49,14 @@ export interface Analise {
   posicoes_possiveis?: Record<string, [number, number]>;
   ordem_definida?: string[] | null;
   pares_indefinidos?: string[];
-  dominancia_direta?: { de: string; para: string }[];
+  /* `origem` diz de onde veio a seta: da decomposição ou de uma avaliação
+     holística -- esta o oficial desenha em vermelho. */
+  dominancia_direta?: { de: string; para: string; origem?: "decomposicao" | "holistica" }[];
+  /* Pares empatados dentro do limiar de equivalência: linha sem seta. */
+  indiferencas?: { a: string; b: string }[];
+  /* As posições do ranking: cada uma termina onde tudo acima supera tudo
+     abaixo. */
+  posicoes?: string[][];
   diferencas_maximas?: {
     a: string;
     b: string;

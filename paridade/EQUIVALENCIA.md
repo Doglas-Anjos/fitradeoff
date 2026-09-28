@@ -80,12 +80,12 @@ critério e marcamos o que é idêntico nas duas situações.
 | `sorting-06` | 6 × 5 | 8/18 | 8/18 | **bate** |
 | `bc-08` | 8 × 4 | 5/17 | 5/17 | **bate** |
 | `escolha-20` | 20 × 5 | 8/12 | 8/12 | **bate** |
-| `ranking-20` | 20 × 5 | 8/21 | 8/22 | difere |
+| `ranking-20` | 20 × 5 | 8/21 | 8/21 | **bate** |
 | `sorting-20` | 20 × 4 | 5/17 | 5/17 | **bate** |
-| `bc-20` | 20 × 4 | 5/17 | 5/11 | difere |
+| `bc-20` | 20 × 4 | 5/17 | 5/17 | **bate** |
 | `escolha-empate` | 3 × 3 | **trava** | 3/0 | oficial não completa |
 
-**14 de 16 casos** que o sistema oficial completa batem em número de perguntas, nas duas fases — ordenação das constantes de escala e elicitação por decomposição. Em 1 caso o oficial não completa.
+**16 de 16 casos** que o sistema oficial completa batem em número de perguntas, nas duas fases — ordenação das constantes de escala e elicitação por decomposição. Em 1 caso o oficial não completa.
 <!-- fim:tabela -->
 
 ## O que a comparação encontrou
@@ -103,7 +103,8 @@ limiar) só apareceu com os dois pontos de medida na mesa.
 
 O risco fica registrado porque é de método, não de código: regra inferida de uma
 instância passa nos testes escritos contra aquela instância. É por isso que a
-suíte roda os 17 casos, e não um. De 10 para **14 de 16**.
+suíte roda os 17 casos, e não um. De 10 para **14 de 16** — e, em 28/09/2026,
+para **16 de 16**, com as duas seções abaixo.
 
 ### A pergunta de abertura
 
@@ -164,43 +165,54 @@ em qualquer limiar de 0,01, e mesmo assim ele seguiu perguntando. É a **largura
 da faixa: se o valor global não pode mais ser fixado com precisão melhor que o
 limiar, nenhuma pergunta futura decide de que lado do corte a alternativa está.
 
-## O que permanece diferente
+### Ranking: o oficial abandona o par que já não pesa
 
-### Ranking: uma pergunta, numa instância
-
-`ranking-20` fica em 22 perguntas contra 21 dele. As 20 primeiras são idênticas;
+`ranking-20` fazia 22 perguntas contra 21 dele. As 20 primeiras eram idênticas;
 no passo 21 o oficial **abandona** o par `Durabilidade × Suporte técnico`, que
-ainda tinha faixa, e vai direto ao par que fecha a ordem. Nós fazemos a pergunta
-abandonada e só depois a que resolve.
+ainda tinha faixa, e vai direto ao par que fecha a ordem.
 
-Parece seleção com lookahead, mas não é: trocar o seletor por
-`InformationGainSelector` dá 10 perguntas nesse caso — muito abaixo das 21 — e
-afasta do oficial **cinco** casos que hoje batem: `ranking-06` (14 → 10),
-`ranking-12` (14 → 13), `ranking-15` (12 → 7), `sorting-06` (18 → 11) e
-`sorting-20` (17 → 8). A causa continua desconhecida.
+A causa ficou desconhecida enquanto se procurou no seletor — trocá-lo por
+`InformationGainSelector` dava 10 perguntas e afastava do oficial cinco casos
+que batiam. Estava no **peso**. Medido no nosso motor com as mesmas respostas,
+o peso máximo possível do critério rival em cada pergunta:
 
-O **desfecho** é o mesmo: pré-ordem completa dos dois lados.
+| passo | par | rival pode pesar até | o oficial |
+|---|---|---|---|
+| 17 | Durabilidade × Suporte | 2,86e-5 | perguntou |
+| 20 | Prazo × Durabilidade | 5,91e-5 | perguntou |
+| 21 | Durabilidade × Suporte | 1,85e-6 | **pulou** |
 
-### Benefício-custo: mesmo resultado, menos perguntas
+Pular a pergunta quando o rival não pode pesar mais que `1e-5` (no meio dessa
+janela) dá as mesmas 21 perguntas, uma a uma, e não muda a sequência de nenhum
+dos outros 16 casos. Qualquer limiar dentro da janela dá as mesmas contagens; o
+número exato dele não sabemos. Está em `PESO_DESPREZIVEL`,
+`engine/src/fitradeoff/elicitation/selectors.py`.
 
-Nos casos de carteira por razão benefício-custo os dois sistemas chegam à
-**mesma carteira** — conferido projeto a projeto, inclusive com 20 projetos e
-2²⁰ subconjuntos possíveis:
+### Benefício-custo: ele só para quando a ordem das razões fecha
 
-```
-oficial:  [Alt 07, Alt 04, Alt 05, Alt 08, Alt 10, Alt 02]   $143 de $160
-nosso:    [Alt 02, Alt 04, Alt 05, Alt 07, Alt 08, Alt 10]   $143 de $160
-```
+`bc-20` fazia 11 perguntas contra 17 dele, com a mesma carteira — conferida
+projeto a projeto entre 2²⁰ subconjuntos. A nossa parada disparava quando a
+carteira ficava única; a dele, depois.
 
-A diferença é o número de perguntas: a nossa parada dispara quando a carteira
-está definida; o oficial continua. Cinco hipóteses foram testadas para explicar
-o ponto exato em que ele para — separação das faixas de razão, largura das
+Cinco hipóteses tinham sido refutadas: separação das faixas de razão, largura das
 faixas de razão, largura das faixas de valor, esgotamento da bissecção,
-resolução mais grossa de bracket — e **todas foram refutadas**. Não sabemos o
-critério dele.
+resolução mais grossa de bracket. A que faltava era a mais natural para quem
+ordena por razão: **ordem par a par, por dominância** — para cada par de
+projetos, a razão benefício/custo de um supera a do outro em todo peso ainda
+admissível (dois LPs por par; faixas disjuntas dispensam o LP). Não é o mesmo
+que faixas disjuntas: duas faixas podem se sobrepor e a ordem entre as razões
+ainda assim ser a mesma em todo peso.
 
-O que se sabe: forçar mais perguntas do nosso lado **não muda a carteira**. A
-diferença é de processo, não de conclusão.
+O dado que apontou o caminho: rodando `bc-20` com a parada do *ranking*, saem as
+mesmas 17 perguntas dele, na mesma ordem. A parada do ranking não serve — em
+`bc-08` ela dá 11 contra 17 —, mas mostrou que ele continua até **ordenar**. Com
+a ordem das razões por dominância estrita, `bc-08` e `bc-20` param depois de
+exatamente 17 perguntas, como o oficial.
+
+A carteira continua a mesma. A tela diz quando ela já está definida e a ordem
+ainda não.
+
+## O que permanece diferente
 
 ### Portfólio combinatorial: não comparável em sessão
 

@@ -7,9 +7,11 @@
  * 30 dias pode valer muito mais do que ir de 30 para 15 — e é essa curva, não a
  * reta, que entra no modelo aditivo.
  *
- * A elicitação é por bisseção, e a pergunta é uma escolha entre duas metades:
- * "ganhar de 42 a 65 vale mais, ou de 65 a 88?". Três respostas -- a de baixo,
- * a de cima, ou tanto faz -- e cada uma estreita onde o ponto pode estar.
+ * A elicitação é por bisseção, e a pergunta é uma escolha entre dois trechos:
+ * "o que traz mais aumento de valor, ir de 42 a 65 ou de 65 a 88?". Três
+ * respostas -- o intervalo inferior, o superior, ou indiferente --, no máximo
+ * três pontos e três ciclos por ponto. A regra, medida no sistema de
+ * referência, está em `lib/curvaDeValor`; aqui fica só a tela.
  *
  * Antes se pedia o número: "qual desempenho fica no meio do caminho em valor?".
  * Está certo e é mais rápido para quem sabe responder, mas obriga o decisor a
@@ -27,6 +29,16 @@ import { useMemo, useState } from "react";
 import { Botao, Dica } from "@/components/ui";
 import { useIdioma } from "@/lib/i18n";
 import "@/lib/i18n/visualizacoes";
+import {
+  arredondarComoOficial,
+  excecaoDoMeioVale,
+  iniciar,
+  proximoPasso,
+  responder as aplicar,
+  testado,
+  type Busca,
+  type Resposta,
+} from "@/lib/curvaDeValor";
 import type { CriterioOut } from "@/lib/types";
 
 export type Ponto = [consequencia: number, valor: number];
@@ -37,6 +49,12 @@ const MARGEM = { topo: 12, dir: 12, baixo: 28, esq: 36 };
 
 function formatar(v: number): string {
   return Number.isInteger(v) ? String(v) : v.toPrecision(4).replace(/\.?0+$/, "");
+}
+
+/** O número como a tela o mostra: arredondado como o oficial arredonda (ver
+ *  `arredondarComoOficial`). Só exibição: os pontos salvos continuam exatos. */
+export function naTela(v: number, faixa: number): string {
+  return formatar(arredondarComoOficial(v, faixa));
 }
 
 function Grafico({
@@ -67,7 +85,9 @@ function Grafico({
       role="img"
       aria-label={t("elicitacao.curva.rotulo", { nome: criterio.nome })}
     >
-      {[0, 0.5, 1].map((v) => (
+      {/* grade em quartos: 0,25, 0,5 e 0,75 são exatamente os pontos que a
+          elicitação busca, como na grade do oficial */}
+      {[0, 0.25, 0.5, 0.75, 1].map((v) => (
         <g key={v}>
           <line x1={MARGEM.esq} y1={y(v)} x2={LARGURA - MARGEM.dir} y2={y(v)}
             stroke="var(--borda)" strokeWidth={0.5} />
@@ -86,6 +106,17 @@ function Grafico({
         <line x1={x(proposta)} y1={MARGEM.topo} x2={x(proposta)} y2={ALTURA - MARGEM.baixo}
           stroke="var(--accent)" strokeWidth={0.8} strokeDasharray="2 2" />
       )}
+
+      {/* cada ponto elicitado marcado no eixo, com a consequência -- o oficial
+          também escreve o valor de cada ponto ali */}
+      {ordenados.slice(1, -1).map(([c, v]) => (
+        <g key={`marca-${c}-${v}`}>
+          <line x1={x(c)} y1={y(v)} x2={x(c)} y2={ALTURA - MARGEM.baixo}
+            stroke="var(--dado-a)" strokeWidth={0.6} strokeDasharray="1.5 2" opacity={0.7} />
+          <text x={x(c)} y={ALTURA - MARGEM.baixo + 9} fontSize={6.5} textAnchor="middle"
+            fill="var(--tinta-3)" className="tabular-nums">{naTela(c, melhor - pior)}</text>
+        </g>
+      ))}
 
       <polyline points={caminho} fill="none" stroke="var(--dado-a)" strokeWidth={1.8} />
       {ordenados.map(([c, v]) => (
@@ -112,14 +143,11 @@ function Grafico({
   );
 }
 
-/** Quantos ciclos antes de aceitar o meio do intervalo sem perguntar mais. */
-const CICLOS_MAX = 6;
-
 interface Ciclo {
-  baixo: number;
-  meio: number;
-  alto: number;
-  resposta: "baixo" | "alto" | "indiferente";
+  /** O intervalo inferior e o superior desta pergunta, na consequência. */
+  inferior: [number, number];
+  superior: [number, number];
+  resposta: Resposta;
 }
 
 export function CurvaDeValor({
@@ -134,89 +162,68 @@ export function CurvaDeValor({
   onCancelar: () => void;
 }) {
   const { t } = useIdioma();
-  const [pontos, setPontos] = useState<Ponto[]>(
-    inicial ?? [
-      [criterio.pior, 0],
-      [criterio.melhor, 1],
-    ],
-  );
-  /* Onde o ponto procurado ainda pode estar. Vai encolhendo a cada resposta;
-     `null` quer dizer "ainda não comecei este vão". */
-  const [busca, setBusca] = useState<{ baixo: number; alto: number } | null>(null);
+  const extremos: Ponto[] = [
+    [criterio.pior, 0],
+    [criterio.melhor, 1],
+  ];
+  const [pontos, setPontos] = useState<Ponto[]>(inicial ?? extremos);
+  /* A busca do ponto em andamento; `null` quer dizer "o próximo ponto ainda
+     não começou". */
+  const [busca, setBusca] = useState<Busca | null>(null);
+  /* Todos os ciclos, de todos os pontos, numerados em sequência -- a tabela
+     "Information elicited" do oficial também não recomeça a cada ponto. */
   const [ciclos, setCiclos] = useState<Ciclo[]>([]);
 
-  /* A próxima pergunta cai no maior vão de valor ainda sem ponto: é onde a
-     reta pode estar mais longe da verdade. */
-  const vao = useMemo(() => {
-    const ordenados = [...pontos].sort((a, b) => a[1] - b[1]);
-    let maior: [Ponto, Ponto] | null = null;
-    for (let i = 0; i < ordenados.length - 1; i++) {
-      const largura = ordenados[i + 1][1] - ordenados[i][1];
-      if (largura > 0.2 && (!maior || largura > maior[1][1] - maior[0][1])) {
-        maior = [ordenados[i], ordenados[i + 1]];
-      }
-    }
-    return maior;
-  }, [pontos]);
+  /* A regra corre em `s`, de 0 (pior) a 1 (melhor); a tela fala em
+     consequência. Ver `lib/curvaDeValor`. */
+  const faixa = criterio.melhor - criterio.pior;
+  const emConsequencia = (s: number) => criterio.pior + s * faixa;
 
-  const alvo = vao ? (vao[0][1] + vao[1][1]) / 2 : null;
+  const passo = useMemo(
+    () =>
+      proximoPasso(
+        pontos.map(
+          ([c, v]) => [faixa === 0 ? 0 : (c - criterio.pior) / faixa, v] as [number, number],
+        ),
+      ),
+    [pontos, faixa, criterio.pior],
+  );
+  const atual =
+    busca ??
+    (passo ? iniciar(passo, excecaoDoMeioVale(criterio.pior, criterio.melhor)) : null);
+  const tS = atual ? testado(atual) : null;
+  const a = atual ? emConsequencia(atual.a) : null;
+  const b = atual ? emConsequencia(atual.b) : null;
+  const meio = tS == null ? null : emConsequencia(tS);
 
-  /* As pontas do vão em ordem de VALOR, não de número: `de` é a consequência
-     que vale menos e `ate` a que vale mais. Num critério de minimizar isso
-     inverte o eixo -- 90 dias vale menos que 10 --, e é assim que tem de ser.
-     Ordenando por número, a pergunta saía como "ganhar de 10 a 50 dias", que é
-     uma piora; perguntar qual piora traz mais ganho de valor não quer dizer
-     nada. Em ordem de valor as duas metades são sempre melhoras. */
-  const pontas = vao ? { de: vao[0][0], ate: vao[1][0] } : null;
-
-  /* A busca corre num parâmetro de 0 a 1 ao longo de `de` → `ate`, e não na
-     consequência: assim a mesma conta serve para maximizar e minimizar, sem
-     um `if` de direção em cada linha. */
-  const s0 = busca ? busca.baixo : 0;
-  const s1 = busca ? busca.alto : 1;
-  const emS = (v: number) =>
-    pontas ? pontas.de + v * (pontas.ate - pontas.de) : 0;
-  const meioS = (s0 + s1) / 2;
-  const meio = pontas ? emS(meioS) : null;
-
-  /* Quando a faixa fica menor que 1/64 do vão, outra pergunta não move o ponto
-     o bastante para valer o cansaço. */
-  const apertado = s1 - s0 <= 1 / 64;
-
-  const fixar = (consequencia: number) => {
-    if (alvo == null) return;
-    setPontos([...pontos, [consequencia, alvo]]);
-    setBusca(null);
-    setCiclos([]);
-  };
-
-  /* As três respostas do método.
-     "A primeira metade traz mais ganho" significa que o valor sobe rápido logo
-     no começo da melhora, logo o ponto de meio-valor está ANTES do meio -- e a
-     busca desce. "A segunda" é o contrário. Indiferente encerra: o meio
-     testado é o ponto procurado. */
-  const responder = (resposta: Ciclo["resposta"]) => {
-    if (!pontas || meio == null || alvo == null) return;
+  const responder = (resposta: Resposta) => {
+    if (!atual || tS == null) return;
     setCiclos([
       ...ciclos,
-      { baixo: emS(s0), meio, alto: emS(s1), resposta },
+      {
+        inferior: [emConsequencia(atual.lo), emConsequencia(tS)],
+        superior: [emConsequencia(tS), emConsequencia(atual.hi)],
+        resposta,
+      },
     ]);
-
-    if (resposta === "indiferente") return fixar(meio);
-
-    const nova =
-      resposta === "baixo" ? { baixo: s0, alto: meioS } : { baixo: meioS, alto: s1 };
-
-    if (ciclos.length + 1 >= CICLOS_MAX || nova.alto - nova.baixo <= 1 / 64) {
-      return fixar(emS((nova.baixo + nova.alto) / 2));
+    const r = aplicar(atual, resposta);
+    if ("fixa" in r) {
+      setPontos([...pontos, [emConsequencia(r.fixa), atual.alvo]]);
+      setBusca(null);
+    } else {
+      setBusca(r.segue);
     }
-    setBusca(nova);
   };
 
   const elicitados = pontos.length - 2;
   const unidade = criterio.unidade ? ` ${criterio.unidade}` : "";
-  const faixaTexto = (de: number, ate: number) =>
-    `${formatar(de)}${unidade} → ${formatar(ate)}${unidade}`;
+  const f = (v: number) => `${naTela(v, faixa)}${unidade}`;
+  const chavePergunta =
+    criterio.direcao === "min"
+      ? "elicitacao.curva.pergunta.reducao"
+      : "elicitacao.curva.pergunta.aumento";
+  /* Onde o ponto testado cai dentro do intervalo externo, para a barra. */
+  const posicao = atual && tS != null ? (tS - atual.a) / (atual.b - atual.a) : 0.5;
 
   return (
     <div
@@ -239,38 +246,57 @@ export function CurvaDeValor({
         <Grafico pontos={pontos} criterio={criterio} proposta={meio} />
 
         <div className="min-w-0 flex-1">
-          {pontas && meio != null ? (
+          {atual && a != null && b != null && meio != null ? (
             <>
-              <p className="prosa text-[13px]" style={{ color: "var(--tinta-2)" }}>
-                {t("elicitacao.curva.qualMetade")}
+              {/* A pergunta inteira, com os números, como o oficial a escreve:
+                  "What brings you greater increase in value: Increase from 0 to
+                  50 or from 50 to 100?". */}
+              <p className="prosa text-[13px]" style={{ color: "var(--tinta)" }}>
+                {t(chavePergunta, { de: f(a), meio: f(meio), ate: f(b) })}
               </p>
 
-              {/* As duas metades desenhadas, e não só escritas: a proporção
-                  entre elas é a própria pergunta, e uma barra mostra isso mais
-                  rápido do que dois números. */}
-              <div
-                className="mt-3 flex h-2 overflow-hidden rounded-full"
-                aria-hidden
-                style={{ background: "var(--painel-fundo)" }}
-              >
-                <span
-                  style={{
-                    width: `${meioS * 100}%`,
-                    background: "var(--dado-b)",
-                  }}
-                />
-                <span className="flex-1" style={{ background: "var(--serie-1)" }} />
+              {/* Os dois intervalos no eixo do critério, com as três marcas: a
+                  proporção entre eles é a própria pergunta. */}
+              <div className="mt-3" aria-hidden>
+                <div
+                  className="flex h-2.5 overflow-hidden rounded-full"
+                  style={{ background: "var(--painel-fundo)" }}
+                >
+                  <span style={{ width: `${posicao * 100}%`, background: "var(--dado-b)" }} />
+                  <span className="flex-1" style={{ background: "var(--serie-1)" }} />
+                </div>
+                <div
+                  className="relative mt-1 h-4 text-[11px]"
+                  style={{ color: "var(--tinta-fraca)" }}
+                >
+                  <span className="num absolute left-0">{naTela(a, faixa)}</span>
+                  <span
+                    className="num absolute -translate-x-1/2"
+                    style={{ left: `${posicao * 100}%` }}
+                  >
+                    {naTela(meio, faixa)}
+                  </span>
+                  <span className="num absolute right-0">{naTela(b, faixa)}</span>
+                </div>
               </div>
 
               <div
                 role="radiogroup"
-                aria-label={t("elicitacao.curva.qualMetade")}
+                aria-label={t(chavePergunta, { de: f(a), meio: f(meio), ate: f(b) })}
                 className="mt-3 grid gap-1.5"
               >
                 {(
                   [
-                    ["baixo", faixaTexto(pontas.de, meio), "var(--dado-b)"],
-                    ["alto", faixaTexto(meio, pontas.ate), "var(--serie-1)"],
+                    [
+                      "inferior",
+                      t("elicitacao.curva.opcao.inferior", { de: f(a), ate: f(meio) }),
+                      "var(--dado-b)",
+                    ],
+                    [
+                      "superior",
+                      t("elicitacao.curva.opcao.superior", { de: f(meio), ate: f(b) }),
+                      "var(--serie-1)",
+                    ],
                     ["indiferente", t("elicitacao.curva.opcao.indiferente"), null],
                   ] as const
                 ).map(([chave, rotulo, cor]) => (
@@ -291,65 +317,64 @@ export function CurvaDeValor({
                   </button>
                 ))}
               </div>
-
-              {/* O que já foi respondido neste critério. Sem isto, quem chega no
-                  quarto ciclo não sabe mais o que disse nos três anteriores, e
-                  a resposta seguinte fica no escuro. */}
-              {ciclos.length > 0 && (
-                <table className="mt-4 w-full text-left">
-                  <caption
-                    className="pb-1.5 text-left text-[11px] font-semibold uppercase tracking-[0.1em]"
-                    style={{ color: "var(--tinta-fraca)" }}
-                  >
-                    {t("elicitacao.curva.tabela.titulo")}
-                  </caption>
-                  <thead>
-                    <tr>
-                      {["ciclo", "comparadas", "resposta"].map((c) => (
-                        <th
-                          key={c}
-                          className="pb-1 pr-3 text-[11px] font-medium"
-                          style={{ color: "var(--tinta-fraca)" }}
-                        >
-                          {t(`elicitacao.curva.tabela.${c}`)}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {ciclos.map((c, i) => (
-                      <tr key={i} style={{ borderTop: "1px solid var(--borda)" }}>
-                        <td
-                          className="num py-1 pr-3 text-[12px]"
-                          style={{ color: "var(--tinta-fraca)" }}
-                        >
-                          {i + 1}
-                        </td>
-                        <td
-                          className="num py-1 pr-3 text-[12px]"
-                          style={{ color: "var(--tinta-2)" }}
-                        >
-                          {formatar(c.baixo)} · {formatar(c.meio)} · {formatar(c.alto)}
-                        </td>
-                        <td className="py-1 text-[12px]" style={{ color: "var(--tinta-2)" }}>
-                          {t(`elicitacao.curva.opcao.${c.resposta}.curto`)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-
-              {apertado && (
-                <p className="mt-2 text-[12px]" style={{ color: "var(--tinta-fraca)" }}>
-                  {t("elicitacao.curva.apertado")}
-                </p>
-              )}
             </>
           ) : (
-            <p className="text-[13px]" style={{ color: "var(--tinta-2)" }}>
-              {t("elicitacao.curva.detalhada")}
+            <p className="text-[13px]" role="status" style={{ color: "var(--tinta-2)" }}>
+              {t("elicitacao.curva.concluida")}
             </p>
+          )}
+
+          {/* O que já foi respondido, em todos os pontos. Sem isto, quem chega
+              no quinto ciclo não sabe mais o que disse nos anteriores. */}
+          {ciclos.length > 0 && (
+            <table className="mt-4 w-full text-left">
+              <caption
+                className="pb-1.5 text-left text-[11px] font-semibold uppercase tracking-[0.1em]"
+                style={{ color: "var(--tinta-fraca)" }}
+              >
+                {t("elicitacao.curva.tabela.titulo")}
+              </caption>
+              <thead>
+                <tr>
+                  {["ciclo", "inferior", "superior", "resposta"].map((c) => (
+                    <th
+                      key={c}
+                      className="pb-1 pr-3 text-[11px] font-medium"
+                      style={{ color: "var(--tinta-fraca)" }}
+                    >
+                      {t(`elicitacao.curva.tabela.${c}`)}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {ciclos.map((c, i) => (
+                  <tr key={i} style={{ borderTop: "1px solid var(--borda)" }}>
+                    <td
+                      className="num py-1 pr-3 text-[12px]"
+                      style={{ color: "var(--tinta-fraca)" }}
+                    >
+                      {i + 1}
+                    </td>
+                    {[c.inferior, c.superior].map(([de, ate], j) => (
+                      <td
+                        key={j}
+                        className="py-1 pr-3 text-[12px] tabular-nums whitespace-nowrap"
+                        style={{ color: "var(--tinta-2)" }}
+                      >
+                        {t("elicitacao.curva.tabela.faixa", {
+                          de: naTela(de, faixa),
+                          ate: naTela(ate, faixa),
+                        })}
+                      </td>
+                    ))}
+                    <td className="py-1 text-[12px]" style={{ color: "var(--tinta-2)" }}>
+                      {t(`elicitacao.curva.opcao.${c.resposta}.curto`)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
 
           <div className="mt-5 flex flex-wrap items-center gap-3">
@@ -369,10 +394,7 @@ export function CurvaDeValor({
             {(elicitados > 0 || ciclos.length > 0) && (
               <button
                 onClick={() => {
-                  setPontos([
-                    [criterio.pior, 0],
-                    [criterio.melhor, 1],
-                  ]);
+                  setPontos(extremos);
                   setBusca(null);
                   setCiclos([]);
                 }}

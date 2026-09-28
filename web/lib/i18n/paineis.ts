@@ -240,26 +240,10 @@ export const PAINEIS = registrar({
   },
   "resultado.ranking.definida": { pt: "definida", en: "settled", es: "definida" },
   "resultado.ranking.emDisputa": { pt: "em disputa", en: "in contention", es: "en disputa" },
-  "resultado.ranking.pendentes": {
-    pt: "Ainda não decidido",
-    en: "Not decided yet",
-    es: "Todavía no decidido",
-  },
-  "resultado.ranking.pendentes.ajuda": {
-    pt: "O quanto cada uma pode superar a outra, no cenário mais favorável. Diferença pequena significa que responder mais sobre esse par muda pouco.",
-    en: "How far each one can get ahead of the other, in its most favorable scenario. A small difference means answering more about this pair changes little.",
-    es: "Cuánto puede cada una superar a la otra, en el escenario más favorable. Una diferencia pequeña significa que responder más sobre ese par cambia poco.",
-  },
   "resultado.ranking.pendentes.tetoVeto": {
     pt: "Com veto declarado, o número é um teto da vantagem: a real é menor ou igual.",
     en: "With a veto declared, the figure is an upper bound on the advantage: the real one is at most this.",
     es: "Con veto declarado, el número es un techo de la ventaja: la real es menor o igual.",
-  },
-  "resultado.ranking.par": { pt: "Par", en: "Pair", es: "Par" },
-  "resultado.ranking.vantagemMax": {
-    pt: "vantagem máx.",
-    en: "max. advantage",
-    es: "ventaja máx.",
   },
 
   // --- resultado: sorting ---------------------------------------------------

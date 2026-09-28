@@ -99,10 +99,21 @@ class RankingProblematic(Problematic):
                 # o quanto, no pior caso, uma pode superar a outra: e o que diz
                 # se vale a pena continuar respondendo por aquele par
                 "diferencas_maximas": self._max_differences(problem, space, dominance),
-                # arestas do diagrama de Hasse: so a cobertura transitiva, pois
-                # desenhar todas as relacoes deixaria o grafo ilegivel
-                "dominancia_direta": self._cover(problem, dominance),
-                "niveis": self._levels(problem, dominance),
+                # Arestas e camadas do diagrama de Hasse saem da dominancia
+                # ESTRITA. Um empate faz as duas alternativas "dominarem" uma a
+                # outra; com ele junto, o par virava duas setas opostas, a
+                # reducao transitiva apagava as setas que saiam dele, e nenhuma
+                # das duas ficava no topo -- todas as alternativas caiam numa
+                # camada so. Empate e indiferenca, e tem campo proprio.
+                "dominancia_direta": self._cover(problem, estrita),
+                "niveis": self._levels(problem, estrita),
+                "indiferencas": [
+                    {"a": problem.alternatives[i], "b": problem.alternatives[l]}
+                    for i in range(n)
+                    for l in range(i + 1, n)
+                    if empate[i, l]
+                ],
+                "posicoes": self._positions(problem, estrita, acima),
             },
         )
 
@@ -221,6 +232,33 @@ class RankingProblematic(Problematic):
             camadas.append([problem.alternatives[i] for i in sorted(topo)])
             restantes -= set(topo)
         return camadas
+
+    def _positions(
+        self, problem: Problem, estrita: np.ndarray, acima: np.ndarray
+    ) -> list[list[str]]:
+        """As posicoes do ranking, como o sistema de referencia as separa.
+
+        Uma posicao termina onde ha um corte limpo: tudo o que ficou acima
+        supera estritamente tudo o que ficou abaixo. Dentro de uma posicao pode
+        haver dominancia -- o que falta e ordem entre todos. Com o ranking
+        completo, cada posicao tem uma alternativa; no inicio da elicitacao, e
+        comum haver uma posicao so.
+
+        Quem supera todas as de baixo e superado por menos alternativas do que
+        qualquer uma delas, entao os cortes possiveis sao os prefixos da ordem
+        por ``acima``; basta conferir cada um.
+        """
+        n = problem.n_alternatives
+        ordem = sorted(range(n), key=lambda i: int(acima[i]))
+        s = estrita[np.ix_(ordem, ordem)]
+        posicoes: list[list[str]] = []
+        inicio = 0
+        for k in range(1, n):
+            if s[:k, k:].all():
+                posicoes.append([problem.alternatives[i] for i in ordem[inicio:k]])
+                inicio = k
+        posicoes.append([problem.alternatives[i] for i in ordem[inicio:]])
+        return posicoes
 
     def _unresolved_pairs(self, problem: Problem, dominance: np.ndarray) -> list[str]:
         """Pares em que nenhuma das duas domina a outra -- o que falta decidir."""

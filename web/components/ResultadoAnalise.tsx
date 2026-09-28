@@ -51,6 +51,9 @@ export function ResultadoAnalise({ analise }: { analise: Analise }) {
             <DiagramaHasse
               niveis={analise.niveis}
               arestas={analise.dominancia_direta ?? []}
+              indiferencas={analise.indiferencas}
+              posicoes={analise.posicoes}
+              diferencas={analise.diferencas_maximas}
             />
           </Secao>
         )}
@@ -75,43 +78,6 @@ export function ResultadoAnalise({ analise }: { analise: Analise }) {
             </tbody>
           </table>
         </Secao>
-        {(analise.diferencas_maximas?.length ?? 0) > 0 && (
-          <Secao titulo={t("resultado.ranking.pendentes")}>
-            <p className="prosa mb-3 text-[12px]" style={{ color: "var(--tinta-3)" }}>
-              {t("resultado.ranking.pendentes.ajuda")}
-              {/* Sob veto o número deixa de ser a vantagem máxima exata e passa
-                  a ser um teto dela. Sem dizer isso, a tabela promete precisão
-                  que o cálculo não tem. */}
-              {analise.diferencas_maximas!.some((d) => d.limite_superior) && (
-                <> {t("resultado.ranking.pendentes.tetoVeto")}</>
-              )}
-            </p>
-            <table className="w-full text-[12px]">
-              <thead>
-                <tr style={{ color: "var(--tinta-fraca)" }}>
-                  <th className="py-1 text-left font-normal">
-                    {t("resultado.ranking.par")}
-                  </th>
-                  <th className="py-1 text-right font-normal">
-                    {t("resultado.ranking.vantagemMax")}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {analise.diferencas_maximas!.map((d) => (
-                  <tr key={`${d.a}-${d.b}`} style={{ color: "var(--tinta-2)" }}>
-                    <td className="py-1">
-                      {d.a} <span style={{ color: "var(--tinta-fraca)" }}>vs</span> {d.b}
-                    </td>
-                    <td className="num py-1 text-right">
-                      {d.a_supera_b_em_ate.toFixed(3)} / {d.b_supera_a_em_ate.toFixed(3)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </Secao>
-        )}
       </>
     );
   }

@@ -116,6 +116,25 @@ def _verificar(settings: Settings, token: str) -> dict | None:
 _clientes_jwks: dict[str, jwt.PyJWKClient] = {}
 
 
+#: Como este servico se apresenta ao buscar as chaves publicas.
+#:
+#: Nao e cortesia. O PyJWKClient usa urllib, que se identifica como
+#: ``Python-urllib/3.x`` -- e uma aplicacao atras da Cloudflare recusa esse
+#: agente com 403, pela verificacao de integridade de navegador.
+#:
+#: Medido contra a instalacao real, de dentro do container:
+#:
+#:     sem User-Agent (padrao do urllib) ....... HTTP 403
+#:     com qualquer outro ...................... HTTP 200
+#:
+#: O modo como isso falha e o que torna a linha necessaria. Sem chave publica
+#: nao ha o que verificar, entao ``_verificar`` recusa TODO token -- e o
+#: registro diz apenas ``PyJWKClientConnectionError``. Ninguem liga esse nome a
+#: uma regra de bot da Cloudflare; procura-se o defeito na assinatura, no
+#: emissor, no relogio.
+AGENTE = "fitradeoff-mcp"
+
+
 def _jwks(url: str) -> jwt.PyJWKClient:
     """Um cliente por URL, guardado entre chamadas.
 
@@ -123,7 +142,16 @@ def _jwks(url: str) -> jwt.PyJWKClient:
     vez, e o cache que o PyJWT mantem existe justamente para isso nao acontecer.
     """
     if url not in _clientes_jwks:
-        _clientes_jwks[url] = jwt.PyJWKClient(url, cache_keys=True)
+        _clientes_jwks[url] = jwt.PyJWKClient(
+            url,
+            cache_keys=True,
+            headers={"User-Agent": AGENTE},
+            # Sem teto, uma busca que trava deixa a requisicao pendurada pelo
+            # tempo que o sistema operacional decidir. Dez segundos e generoso
+            # para um arquivo de meio quilobyte, e o cliente so busca quando
+            # encontra um `kid` que nao conhece -- ou seja, na rotacao.
+            timeout=10,
+        )
     return _clientes_jwks[url]
 
 

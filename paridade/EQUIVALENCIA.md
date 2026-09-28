@@ -307,6 +307,11 @@ níveis (3, depois 2 ou 4), exatamente como nós — duas rodadas, 6 perguntas
 iguais, ordem completa nas duas. O terço e o meio são coisa de critério discreto
 com curva.
 
+Nas outras problemáticas o critério discreto se comporta igual: a mesma nota no
+meio da ordem, com curva, deu as mesmas perguntas e o mesmo resultado em escolha
+(3 perguntas, Alt 1), sorting (4, as mesmas classes) e benefício-custo (4, a
+mesma carteira).
+
 Com essas regras as seis decisões com critério construído e curva saem iguais à dele:
 mesmos pares, na mesma ordem, os mesmos valores, a mesma contagem e o mesmo
 desfecho. Os 20 casos anteriores não mudam.

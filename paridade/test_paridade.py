@@ -366,12 +366,13 @@ def test_beneficio_custo_com_curva_bate_com_o_oficial():
 CURVA_NOTA = [[1, 0], [2, 0.5], [3, 0.75], [5, 1]]
 
 
-def _decisao_discreta(criterios, consequencias, respostas="", linear=False):
+def _decisao_discreta(criterios, consequencias, respostas="", linear=False,
+                      problematica="ranking", **extra):
     from fitradeoff import DecisionService, build_container
 
     servico = DecisionService(build_container(epsilon=0.0))
     d = servico.create("discreto", ["Alt 1", "Alt 2", "Alt 3", "Alt 4"], criterios,
-                       consequencias, problematica="ranking")["id"]
+                       consequencias, problematica=problematica, **extra)["id"]
     curvas = {"Indice de qualidade": CURVAS_RANKING_CRUZADO["c0"],
               "Custo unitario": CURVAS_RANKING_CRUZADO["c1"], "Nota": CURVA_NOTA}
     for c in [] if linear else criterios:
@@ -479,3 +480,30 @@ def test_custo_em_milhares_so_acaba_pelo_peso():
         for linha in caso["consequencias"]
     ]
     assert roda_nosso(caso)["steps_tradeoff"] == 25
+
+
+NOTA_NO_MEIO = [[0.95, 2, 16.0], [0.70, 4, 10.0], [0.80, 5, 13.0], [0.85, 1, 15.0]]
+
+
+def test_nota_discreta_em_foco_na_escolha_bate_com_o_oficial():
+    pares, _, analise = _decisao_discreta([Q_, N_, C_], NOTA_NO_MEIO, problematica="escolha")
+    assert pares == [(QUAL, CUSTO), (QUAL, NOTA), (NOTA, CUSTO)]
+    assert analise["potencialmente_otimas"] == ["Alt 1"]  # "A Solution has been found"
+
+
+def test_nota_discreta_em_foco_no_sorting_bate_com_o_oficial():
+    pares, _, analise = _decisao_discreta(
+        [Q_, N_, C_], NOTA_NO_MEIO, problematica="sorting",
+        configuracao={"perfis": [0.35, 0.7], "classes": ["Baixa", "Media", "Alta"]})
+    assert pares == [(QUAL, CUSTO), (QUAL, NOTA), (NOTA, CUSTO), (QUAL, NOTA)]
+    # C3, C1, C2, C2 na tela dele
+    classes = {a: x["classes_possiveis"] for a, x in analise["alocacao"].items()}
+    assert classes == {"Alt 1": ["Alta"], "Alt 2": ["Baixa"], "Alt 3": ["Media"], "Alt 4": ["Media"]}
+
+
+def test_nota_discreta_em_foco_no_beneficio_custo_bate_com_o_oficial():
+    pares, _, analise = _decisao_discreta(
+        [Q_, N_, C_], NOTA_NO_MEIO, problematica="beneficio_custo",
+        custos=[40.0, 25.0, 35.0, 20.0], configuracao={"orcamento": 60.0})
+    assert pares == [(QUAL, CUSTO), (QUAL, NOTA), (NOTA, CUSTO), (QUAL, NOTA)]
+    assert analise["carteira_mais_frequente"]["projetos"] == ["Alt 1", "Alt 4"]  # [Alt 4, Alt 1], $60

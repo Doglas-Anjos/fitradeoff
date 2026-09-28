@@ -366,7 +366,7 @@ def test_beneficio_custo_com_curva_bate_com_o_oficial():
 CURVA_NOTA = [[1, 0], [2, 0.5], [3, 0.75], [5, 1]]
 
 
-def _decisao_discreta(criterios, consequencias, respostas=""):
+def _decisao_discreta(criterios, consequencias, respostas="", linear=False):
     from fitradeoff import DecisionService, build_container
 
     servico = DecisionService(build_container(epsilon=0.0))
@@ -374,7 +374,7 @@ def _decisao_discreta(criterios, consequencias, respostas=""):
                        consequencias, problematica="ranking")["id"]
     curvas = {"Indice de qualidade": CURVAS_RANKING_CRUZADO["c0"],
               "Custo unitario": CURVAS_RANKING_CRUZADO["c1"], "Nota": CURVA_NOTA}
-    for c in criterios:
+    for c in [] if linear else criterios:
         servico.set_value_curve(d, c["chave"], curvas[c["nome"]])
     servico.rank_criteria(d, [c["chave"] for c in criterios])
     pares, notas = [], []
@@ -420,3 +420,15 @@ def test_nota_discreta_em_foco_bate_com_o_oficial(respostas, notas):
     assert len(pares) == 2 + 2 + len(notas) - 1  # 6 ou 7, como o oficial
     # "There are no comparisons to be made ... anymore", com avaliação holística
     assert not analise["resolvido"]
+
+
+@pytest.mark.parametrize("respostas, notas", [("", [3, 2]), ("AAB", [3, 4])])
+def test_nota_discreta_sem_curva_so_pergunta_nivel(respostas, notas):
+    """Sem curva, o oficial não pergunta entre níveis: terço e meio são só com curva."""
+    pares, perguntadas, analise = _decisao_discreta(
+        [Q_, N_, C_], [[0.95, 2, 16.0], [0.70, 4, 10.0], [0.80, 5, 13.0], [0.85, 1, 15.0]],
+        respostas, linear=True)
+    q, n, c = QUAL, NOTA, CUSTO
+    assert pares == [(q, c), (q, n), (n, c), (q, n), (n, c), (q, n)]
+    assert perguntadas == notas
+    assert analise["resolvido"]  # "A complete order has been found"

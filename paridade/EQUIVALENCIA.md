@@ -289,7 +289,12 @@ contínuo: a pergunta é pulada quando mostraria exatamente o pior (ou o melhor)
 escala. A qualidade de 0,70 a 0,95 chega a 0,7039, que aparece "0,70", e ele não
 pergunta; no `bc-08` o pior é 0,609, e 0,6145 ("0,61") ele pergunta.
 
-Com essas regras as seis decisões com critério construído saem iguais à dele:
+Sem curva, nada disso: com a mesma nota declarada linear, ele pergunta só nos
+níveis (3, depois 2 ou 4), exatamente como nós — duas rodadas, 6 perguntas
+iguais, ordem completa nas duas. O terço e o meio são coisa de critério discreto
+com curva.
+
+Com essas regras as seis decisões com critério construído e curva saem iguais à dele:
 mesmos pares, na mesma ordem, os mesmos valores, a mesma contagem e o mesmo
 desfecho. Os 20 casos anteriores não mudam.
 

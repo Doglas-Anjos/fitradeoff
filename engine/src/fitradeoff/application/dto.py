@@ -34,6 +34,10 @@ class CriterionDTO:
     # criterio ainda linear de um ja ajustado -- e reabriria o editor vazio,
     # perdendo o que o decisor respondeu.
     curva_de_valor: list[list[float]] | None = None
+    # Os niveis da escala construida, do pior ao melhor. A curva de uma escala
+    # destas so fixa valor em nivel -- e a regra do sistema de referencia --, e
+    # a tela nao tem como saber quais sao sem eles.
+    niveis: list[float] | None = None
     # Limites de veto, na unidade original. Voltam pelo mesmo motivo da curva:
     # sem eles a tela reabre o campo vazio e apaga o que o decisor declarou.
     veto_superior: float | None = None

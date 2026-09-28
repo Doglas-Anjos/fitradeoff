@@ -37,15 +37,28 @@
  * derrubaram.)
  *
  * **O valor fixado.** O meio da faixa final -- nos pontos de quarto, sempre
- * (lido no gráfico final do oficial em quatro rodadas). No ponto 0,5 há uma
- * exceção: se a terceira resposta repete a primeira, fica o último ponto
- * testado. Mas só em escalas que começam perto do zero -- quando a ponta mais
- * próxima de zero fica a menos de um terço da largura da escala. Medido em
- * catorze escalas: 0-100, 0-1, 0-0,25, 10-100, 20-100, 90->0 e 100->10 mantêm o
- * último testado; 30-100, 50-100, 100-200, 0,70-0,95, 0,70-1,70 e 16->10 ficam
- * com o meio. O corte do oficial está entre 25% (20-100) e 43% (30-100); um
- * terço fica dentro, e o número exato dele não sabemos. Parece uma tolerância
- * relativa no código dele; o comportamento é o que se reproduz aqui.
+ * (lido no gráfico final do oficial em quatro rodadas). No ponto 0,5 o oficial
+ * às vezes descarta a terceira resposta e fica com o último ponto testado, e
+ * quando isso acontece segue uma regra só, medida em 38 rodadas: compara o ponto
+ * testado com a **metade da largura da escala**, sem somar o pior. Acima dela,
+ * a resposta que subiria o limite de baixo da faixa é que se perde; abaixo, a
+ * que desceria o limite de cima. Tem cara de defeito -- o "meio da escala"
+ * calculado sem a origem --, e é por isso que a primeira leitura parecia "vale
+ * só perto do zero": numa escala de 0 a 100 a metade da largura é o meio de
+ * verdade; numa de 100 a 200, fica abaixo da escala inteira. As duas leituras
+ * anteriores desta regra ("terceira igual à primeira" e "perto do zero")
+ * descreviam casos particulares dela, e cada uma caiu com uma escala nova.
+ *
+ * **Escala discreta.** O oficial só aceita escala construída como Likert (2 a 7
+ * níveis; 1 a n, ou 0 e 1), e a curva dela fixa valor em **nível**, nunca entre
+ * dois. A pergunta é a mesma; muda o resto. O ponto testado é o nível do meio da
+ * faixa, arredondado para cima (de 1 a 4, testa 3; de 2 a 5, testa 4). A busca
+ * para quando não sobra nível dentro da faixa, e fica com o último testado -- sem
+ * a largura de 1/8 e sem a exceção do ponto 0,5. Um ponto de quarto é pulado quando
+ * não há nível dentro do intervalo dele. Medido em 28/09/2026 com 3, 4 e 5
+ * níveis, as únicas escalas em que ele oferece a curva (ver NIVEIS_COM_CURVA).
+ * Aqui a conta corre na posição do nível, o que numa Likert é a mesma coisa e
+ * vale também para níveis que não sejam 1..n.
  *
  * **Na tela.** O oficial arredonda o que mostra: inteiro quando o valor e a
  * largura da escala passam de 10 (37,5 aparece como 38), duas casas nos outros
@@ -54,16 +67,44 @@
 
 export type Resposta = "inferior" | "superior" | "indiferente";
 
-/** Abaixo disto (distância da escala ao zero, em larguras dela), vale a exceção
- *  do ponto 0,5. Medido: entre 0,25 e 0,43. */
-export const LIMIAR_PERTO_DO_ZERO = 1 / 3;
+/** A escala, em consequências: a regra do ponto 0,5 depende dela. */
+export interface Escala {
+  pior: number;
+  melhor: number;
+}
 
-/** Se a exceção do ponto 0,5 vale nesta escala. */
-export function excecaoDoMeioVale(pior: number, melhor: number): boolean {
-  if (pior * melhor <= 0) return true; // toca ou atravessa o zero
-  const largura = Math.abs(melhor - pior);
-  if (largura === 0) return false;
-  return Math.min(Math.abs(pior), Math.abs(melhor)) / largura < LIMIAR_PERTO_DO_ZERO;
+/**
+ * Se, no ponto 0,5, esta última resposta é a que o oficial descarta (ver o
+ * cabeçalho): acima da metade da largura da escala, a que sobe o limite de
+ * baixo; abaixo, a que desce o de cima. Em cima da metade exata, nenhuma -- o
+ * oficial não foi medido ali.
+ */
+export function respostaDescartada(t: number, resposta: Resposta, escala: Escala): boolean {
+  const { pior, melhor } = escala;
+  const x = pior + t * (melhor - pior);
+  const metade = Math.abs(melhor - pior) / 2;
+  // "superior" sobe `lo` em s; em consequência, sobe o limite de baixo só se a
+  // escala cresce do pior para o melhor
+  const sobeOLimiteDeBaixo = (resposta === "superior") === melhor > pior;
+  if (x > metade) return sobeOLimiteDeBaixo;
+  if (x < metade) return !sobeOLimiteDeBaixo;
+  return false;
+}
+
+/** Quantos níveis uma escala discreta pode ter para a curva ser elicitada. O
+ *  oficial oferece a curva com 3, 4 e 5 níveis; com 2 não há nível no meio, e com
+ *  6 ou 7 o critério nem aparece na avaliação intra-critério -- fica linear.
+ *  Medido em 28/09/2026. */
+export const NIVEIS_COM_CURVA = { min: 3, max: 5 };
+
+/** Se a curva deste critério pode ser elicitada. */
+export function curvaElicitavel(
+  escala: "continua" | "construida",
+  niveis?: number[] | null,
+): boolean {
+  if (escala !== "construida") return true;
+  const n = niveis?.length ?? 0;
+  return n >= NIVEIS_COM_CURVA.min && n <= NIVEIS_COM_CURVA.max;
 }
 
 /** A busca para quando a faixa onde o ponto pode estar chega a isto (em `s`). */
@@ -88,9 +129,11 @@ export interface Busca extends Passo {
   lo: number;
   hi: number;
   ciclos: number;
-  primeira?: Resposta;
-  /** Se a exceção do ponto 0,5 vale nesta escala (ver `excecaoDoMeioVale`). */
-  excecaoDoMeio: boolean;
+  /** Sem ela, o ponto 0,5 fica sempre no meio da faixa final. */
+  escala?: Escala;
+  /** Os níveis de uma escala discreta, em `s` e em ordem: com eles vale a
+   *  regra discreta (ver o cabeçalho). */
+  niveis?: number[];
 }
 
 const perto = (x: number, y: number) => Math.abs(x - y) < 1e-9;
@@ -100,25 +143,50 @@ function emS(pontosS: [s: number, valor: number][], valor: number): number | und
   return pontosS.find(([, v]) => perto(v, valor))?.[0];
 }
 
-/** O próximo ponto a buscar, ou `null` quando os pontos necessários já estão. */
-export function proximoPasso(pontosS: [s: number, valor: number][]): Passo | null {
+/** Os níveis estritamente dentro de (a, b). */
+const nivelDentro = (niveis: number[], a: number, b: number) =>
+  niveis.filter((n) => n > a + 1e-9 && n < b - 1e-9);
+
+/** O próximo ponto a buscar, ou `null` quando os pontos necessários já estão.
+ *  Com `niveis`, um intervalo só é buscado se houver nível dentro dele. */
+export function proximoPasso(
+  pontosS: [s: number, valor: number][],
+  niveis?: number[],
+): Passo | null {
+  const cabe = (a: number, b: number) =>
+    niveis ? nivelDentro(niveis, a, b).length > 0 : b - a >= LIMIAR_DO_QUARTO - 1e-9;
   const meio = emS(pontosS, 0.5);
-  if (meio === undefined) return { alvo: 0.5, a: 0, b: 1 };
-  if (emS(pontosS, 0.25) === undefined && meio >= LIMIAR_DO_QUARTO - 1e-9) {
+  if (meio === undefined) return !niveis || cabe(0, 1) ? { alvo: 0.5, a: 0, b: 1 } : null;
+  if (emS(pontosS, 0.25) === undefined && cabe(0, meio)) {
     return { alvo: 0.25, a: 0, b: meio };
   }
-  if (emS(pontosS, 0.75) === undefined && 1 - meio >= LIMIAR_DO_QUARTO - 1e-9) {
+  if (emS(pontosS, 0.75) === undefined && cabe(meio, 1)) {
     return { alvo: 0.75, a: meio, b: 1 };
   }
   return null;
 }
 
-export function iniciar(passo: Passo, excecaoDoMeio = true): Busca {
-  return { ...passo, lo: passo.a, hi: passo.b, ciclos: 0, excecaoDoMeio };
+export function iniciar(passo: Passo, escala?: Escala, niveis?: number[]): Busca {
+  return { ...passo, lo: passo.a, hi: passo.b, ciclos: 0, escala, niveis };
 }
 
-/** O ponto testado agora. */
-export const testado = (busca: Busca) => (busca.lo + busca.hi) / 2;
+/** A posição do nível mais perto de `s`. Mais perto, e não igual: uma curva
+ *  salva antes desta regra pode ter ponto fora de nível, e ela ainda abre. */
+function posicao(niveis: number[], s: number): number {
+  let melhor = 0;
+  niveis.forEach((n, i) => {
+    if (Math.abs(n - s) < Math.abs(niveis[melhor] - s)) melhor = i;
+  });
+  return melhor;
+}
+
+/** O ponto testado agora: o meio da faixa, ou, numa escala discreta, o nível do
+ *  meio arredondado para cima. */
+export function testado(busca: Busca): number {
+  if (!busca.niveis) return (busca.lo + busca.hi) / 2;
+  const [a, b] = [posicao(busca.niveis, busca.lo), posicao(busca.niveis, busca.hi)];
+  return busca.niveis[Math.floor((a + b) / 2 + 0.5)];
+}
 
 /** Aplica uma resposta: ou a busca segue, ou o ponto fica fixado em `s`. */
 export function responder(
@@ -131,14 +199,22 @@ export function responder(
   const lo = resposta === "superior" ? t : busca.lo;
   const hi = resposta === "inferior" ? t : busca.hi;
   const ciclos = busca.ciclos + 1;
-  const primeira = busca.primeira ?? resposta;
+
+  if (busca.niveis) {
+    // sem nível dentro da faixa, fica o último testado
+    return nivelDentro(busca.niveis, lo, hi).length === 0
+      ? { fixa: t }
+      : { segue: { ...busca, lo, hi, ciclos } };
+  }
 
   if (hi - lo <= LARGURA_FINAL + 1e-9) {
-    const excecaoDoMeio =
-      busca.excecaoDoMeio && perto(busca.alvo, 0.5) && resposta === primeira;
-    return { fixa: excecaoDoMeio ? t : (lo + hi) / 2 };
+    const descarta =
+      busca.escala !== undefined &&
+      perto(busca.alvo, 0.5) &&
+      respostaDescartada(t, resposta, busca.escala);
+    return { fixa: descarta ? t : (lo + hi) / 2 };
   }
-  return { segue: { ...busca, lo, hi, ciclos, primeira } };
+  return { segue: { ...busca, lo, hi, ciclos } };
 }
 
 /**

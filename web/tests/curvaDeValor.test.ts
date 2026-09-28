@@ -16,7 +16,7 @@ import { describe, expect, it } from "vitest";
 import {
   LARGURA_FINAL,
   arredondarComoOficial,
-  excecaoDoMeioVale,
+  respostaDescartada,
   iniciar,
   proximoPasso,
   responder,
@@ -55,9 +55,9 @@ const RODADAS: Rodada[] = [
   { respostas: "NSSSS", pior: 0, melhor: 100, perguntas: [[0, 50, 100], [0, 25, 50], [0, 38, 50], [50, 75, 100], [50, 88, 100]], pontos: [44, 50, 94] },
   { respostas: "ISIIIISI", pior: 0, melhor: 100, perguntas: [[0, 50, 100], [0, 25, 100], [0, 38, 100], [0, 19, 38], [0, 9.38, 38], [38, 69, 100], [38, 53, 100], [38, 61, 100]], pontos: [4.69, 38, 57] },
   { respostas: "ISISIISS", pior: 0, melhor: 100, perguntas: [[0, 50, 100], [0, 25, 100], [0, 38, 100], [0, 19, 38], [0, 28, 38], [38, 69, 100], [38, 53, 100], [38, 61, 100]], pontos: [23, 38, 65] },
-  // A exceção do ponto 0,5 (terceira resposta igual à primeira) depende da
-  // escala: nas que começam perto do zero fica o último testado; nas outras, o
-  // meio. ILO-ILO-ILO em onze escalas, e a quarta pergunta mostra o que ficou.
+  // O ponto 0,5 com a terceira resposta descartada: ILO-ILO-ILO em onze escalas
+  // (a quarta pergunta mostra o que ficou), e depois as seis sequências mistas
+  // em escalas longe do zero -- foram elas que derrubaram "perto do zero".
   { respostas: "IIIN", pior: 0, melhor: 1, perguntas: [[0, 0.5, 1], [0, 0.25, 1], [0, 0.13, 1], [0.13, 0.56, 1]], parcial: true },
   { respostas: "IIIN", pior: 0, melhor: 0.25, perguntas: [[0, 0.13, 0.25], [0, 0.06, 0.25], [0, 0.03, 0.25], [0.03, 0.14, 0.25]], parcial: true },
   { respostas: "IIIN", pior: 10, melhor: 100, perguntas: [[10, 55, 100], [10, 33, 100], [10, 21, 100], [21, 61, 100]], parcial: true },
@@ -69,6 +69,18 @@ const RODADAS: Rodada[] = [
   { respostas: "IIIN", pior: 0.7, melhor: 0.95, perguntas: [[0.7, 0.83, 0.95], [0.7, 0.76, 0.95], [0.7, 0.73, 0.95], [0.72, 0.83, 0.95]], parcial: true },
   { respostas: "SSSN", pior: 90, melhor: 0, perguntas: [[90, 45, 0], [90, 23, 0], [90, 11, 0], [90, 51, 11]], parcial: true },
   { respostas: "SSSN", pior: 16, melhor: 10, perguntas: [[16, 13, 10], [16, 11.5, 10], [16, 10.75, 10], [16, 13.19, 10.38]], parcial: true },
+  { respostas: "ISIN", pior: 100, melhor: 200, perguntas: [[100, 150, 200], [100, 125, 200], [100, 138, 200], [100, 116, 131]], parcial: true },
+  { respostas: "SISN", pior: 100, melhor: 200, perguntas: [[100, 150, 200], [100, 175, 200], [100, 163, 200], [100, 131, 163]], parcial: true },
+  { respostas: "IISN", pior: 100, melhor: 200, perguntas: [[100, 150, 200], [100, 125, 200], [100, 113, 200], [113, 156, 200]], parcial: true },
+  { respostas: "SSIN", pior: 100, melhor: 200, perguntas: [[100, 150, 200], [100, 175, 200], [100, 188, 200], [100, 141, 181]], parcial: true },
+  { respostas: "ISSN", pior: 100, melhor: 200, perguntas: [[100, 150, 200], [100, 125, 200], [100, 138, 200], [100, 119, 138]], parcial: true },
+  { respostas: "SIIN", pior: 100, melhor: 200, perguntas: [[100, 150, 200], [100, 175, 200], [100, 163, 200], [100, 128, 156]], parcial: true },
+  { respostas: "ISIN", pior: 16, melhor: 10, perguntas: [[16, 13, 10], [16, 14.5, 10], [16, 13.75, 10], [16, 14.88, 13.75]], parcial: true },
+  { respostas: "SISN", pior: 16, melhor: 10, perguntas: [[16, 13, 10], [16, 11.5, 10], [16, 12.25, 10], [16, 13.94, 11.88]], parcial: true },
+  { respostas: "ISIN", pior: 30, melhor: 100, perguntas: [[30, 65, 100], [30, 48, 100], [30, 56, 100], [30, 41, 52]], parcial: true },
+  { respostas: "SISN", pior: 30, melhor: 100, perguntas: [[30, 65, 100], [30, 83, 100], [30, 74, 100], [30, 52, 74]], parcial: true },
+  // a Durabilidade do bc-08 com curva, que abriu esta investigação
+  { respostas: "SISN", pior: 4.921, melhor: 8.869, perguntas: [[4.92, 6.9, 8.87], [4.92, 7.88, 8.87], [4.92, 7.39, 8.87], [4.92, 6.15, 7.39]], parcial: true },
 ];
 
 const LETRA: Record<string, Resposta> = { I: "inferior", S: "superior", N: "indiferente" };
@@ -86,7 +98,7 @@ function simular(respostas: string, pior: number, melhor: number) {
     const passo = proximoPasso(pontos);
     if (!busca) {
       if (!passo) throw new Error("perguntou depois de encerrar");
-      busca = iniciar(passo, excecaoDoMeioVale(pior, melhor));
+      busca = iniciar(passo, { pior, melhor });
     }
     perguntas.push(
       [busca.a, testado(busca), busca.b].map((s) => arredondarComoOficial(emConsequencia(s), melhor - pior)),
@@ -127,7 +139,7 @@ describe("curva de valor, contra o sistema de referência", () => {
 });
 
 describe("as regras, uma a uma", () => {
-  const comecar = () => iniciar(proximoPasso([[0, 0], [1, 1]])!);
+  const comecar = () => iniciar(proximoPasso([[0, 0], [1, 1]])!, { pior: 0, melhor: 100 });
   const segue = (b: Busca, r: Resposta) => (responder(b, r) as { segue: Busca }).segue;
 
   it("começa pelo ponto de valor 0,5, testando o meio da faixa", () => {
@@ -154,14 +166,15 @@ describe("as regras, uma a uma", () => {
     expect("fixa" in responder(b, "superior")).toBe(true);
   });
 
-  it("ponto 0,5, terceira resposta igual à primeira: fica o último testado", () => {
-    // ILO, IUP, ILO: faixa final 0,25-0,375, e o oficial fixa 0,375
+  it("ponto 0,5 abaixo da metade da largura: a resposta que desce o limite de cima se perde", () => {
+    // 0 a 100, ILO, IUP, ILO: faixa final 0,25-0,375; 37,5 < 50 e ILO desce o
+    // limite de cima, então fica o último testado
     const b = segue(segue(comecar(), "inferior"), "superior");
     expect(responder(b, "inferior")).toEqual({ fixa: 0.375 });
   });
 
-  it("ponto 0,5, terceira resposta diferente da primeira: fica o meio da faixa final", () => {
-    // IUP, IUP, ILO: faixa final 0,75-0,875, e o oficial fixa 0,8125
+  it("ponto 0,5 acima da metade da largura: o que se perde é subir o limite de baixo", () => {
+    // IUP, IUP, ILO: 87,5 > 50 e ILO desce o de cima -- vale, fica o meio
     const b = segue(segue(comecar(), "superior"), "superior");
     expect(responder(b, "inferior")).toEqual({ fixa: 0.8125 });
   });
@@ -185,20 +198,103 @@ describe("as regras, uma a uma", () => {
     expect(proximoPasso([[0, 0], [1, 1], [0.5, 0.5], [0.3, 0.25], [0.7, 0.75]])).toBeNull();
   });
 
-  it("a exceção do ponto 0,5 só vale em escala que começa perto do zero", () => {
-    expect([[0, 100], [10, 100], [20, 100], [90, 0], [100, 10]].map(([p, m]) => excecaoDoMeioVale(p, m)))
-      .toEqual([true, true, true, true, true]);
-    expect([[30, 100], [50, 100], [100, 200], [0.7, 0.95], [16, 10]].map(([p, m]) => excecaoDoMeioVale(p, m)))
-      .toEqual([false, false, false, false, false]);
-    // longe do zero, ILO-ILO-ILO fica com o meio: 0,0625, e não 0,125
-    let b = iniciar(proximoPasso([[0, 0], [1, 1]])!, false);
+  it("a metade é da largura, sem a origem: de 100 a 200 ela fica abaixo da escala toda", () => {
+    const e = { pior: 100, melhor: 200 };
+    // todo ponto testado passa da metade (50): só subir o limite de baixo se perde
+    expect(respostaDescartada(0.375, "superior", e)).toBe(true);
+    expect(respostaDescartada(0.375, "inferior", e)).toBe(false);
+    // ILO-ILO-ILO fica com o meio: 0,0625, e não 0,125
+    let b = iniciar(proximoPasso([[0, 0], [1, 1]])!, e);
     b = segue(b, "inferior");
     b = segue(b, "inferior");
     expect(responder(b, "inferior")).toEqual({ fixa: 0.0625 });
   });
 
+  it("em escala de minimizar, os limites se invertem em consequência", () => {
+    // 16 -> 10: ILO sobe o limite de baixo em consequência (13 -> 13,75), acima de 3
+    expect(respostaDescartada(0.375, "inferior", { pior: 16, melhor: 10 })).toBe(true);
+    expect(respostaDescartada(0.625, "superior", { pior: 16, melhor: 10 })).toBe(false);
+  });
+
+  it("sem a escala, o ponto 0,5 fica sempre no meio", () => {
+    const b = segue(segue(iniciar(proximoPasso([[0, 0], [1, 1]])!), "inferior"), "superior");
+    expect(responder(b, "inferior")).toEqual({ fixa: 0.3125 });
+  });
+
   it("arredonda como a tela do oficial: inteiro só com valor e escala acima de 10", () => {
     expect([37.5, 12.5, 9.375, 4.6875].map((v) => arredondarComoOficial(v, 100))).toEqual([38, 13, 9.38, 4.69]);
     expect([11.5, 13.1875, 0.8333].map((v) => arredondarComoOficial(v, 6))).toEqual([11.5, 13.19, 0.83]);
+  });
+});
+
+/* Escala discreta: o que o oficial perguntou, em cada rodada de 28/09/2026, num
+ * critério Likert de maximizar. `valores` é o gráfico final dele: o valor de
+ * cada nível fixado (os outros ele interpola). */
+interface RodadaDiscreta {
+  respostas: string;
+  niveis: number[];
+  perguntas: number[][];
+  valores?: Record<number, number>;
+}
+
+const RODADAS_DISCRETAS: RodadaDiscreta[] = [
+  { respostas: "ISIS", niveis: [1, 2, 3, 4, 5], perguntas: [[1, 3, 5], [1, 2, 5], [2, 4, 5], [2, 3, 5]], valores: { 2: 0.5, 3: 0.75 } },
+  { respostas: "SISI", niveis: [1, 2, 3, 4, 5], perguntas: [[1, 3, 5], [1, 4, 5], [1, 3, 4]] },
+  { respostas: "IIII", niveis: [1, 2, 3, 4, 5], perguntas: [[1, 3, 5], [1, 2, 5], [2, 4, 5], [2, 3, 5]] },
+  { respostas: "SSSS", niveis: [1, 2, 3, 4, 5], perguntas: [[1, 3, 5], [1, 4, 5], [1, 3, 4]] },
+  { respostas: "NIII", niveis: [1, 2, 3, 4, 5], perguntas: [[1, 3, 5], [1, 2, 3], [3, 4, 5]] },
+  { respostas: "IIII", niveis: [1, 2, 3], perguntas: [[1, 2, 3]] },
+];
+
+function simularDiscreta(respostas: string, niveis: number[]) {
+  const [pior, melhor] = [niveis[0], niveis[niveis.length - 1]];
+  const emS = (c: number) => (c - pior) / (melhor - pior);
+  const emC = (s: number) => Math.round((pior + s * (melhor - pior)) * 1e6) / 1e6;
+  const niveisS = niveis.map(emS);
+  const pontos: [number, number][] = [[0, 0], [1, 1]];
+  const perguntas: number[][] = [];
+  let busca: Busca | null = null;
+  for (const letra of respostas + "NNNNNNNN") {
+    if (!busca) {
+      const passo = proximoPasso(pontos, niveisS);
+      if (!passo) break;
+      busca = iniciar(passo, { pior, melhor }, niveisS);
+    }
+    perguntas.push([busca.a, testado(busca), busca.b].map(emC));
+    const r = responder(busca, LETRA[letra]);
+    if ("fixa" in r) {
+      pontos.push([r.fixa, busca.alvo]);
+      busca = null;
+    } else {
+      busca = r.segue;
+    }
+  }
+  const valores: Record<number, number> = {};
+  for (const [s, v] of pontos) if (v > 0 && v < 1) valores[emC(s)] = v;
+  return { perguntas, valores };
+}
+
+describe("curva em escala discreta, contra o sistema de referência", () => {
+  it.each(RODADAS_DISCRETAS)("respostas $respostas em $niveis", ({ respostas, niveis, perguntas, valores }) => {
+    const nossa = simularDiscreta(respostas, niveis);
+    expect(nossa.perguntas).toEqual(perguntas);
+    if (valores) expect(nossa.valores).toEqual(valores);
+  });
+
+  it("só fixa valor em nível, e fica com o último testado quando a faixa se esgota", () => {
+    // ISIS de 1 a 5: o 0,5 fica entre 2 e 3, sem nível dentro -- fica o 2
+    expect(simularDiscreta("ISIS", [1, 2, 3, 4, 5]).valores).toEqual({ 2: 0.5, 3: 0.75 });
+    // SISI: entre 3 e 4 -- fica o 4, o último testado, e não o de baixo
+    expect(simularDiscreta("SISI", [1, 2, 3, 4, 5]).valores).toEqual({ 3: 0.25, 4: 0.5 });
+  });
+
+  it("com dois níveis não há o que perguntar -- o oficial nem oferece a curva", () => {
+    expect(proximoPasso([[0, 0], [1, 1]], [0, 1])).toBeNull();
+  });
+
+  it("níveis que não são 1..n seguem a posição do nível", () => {
+    // mesma escala de cinco níveis, espaçada de outro jeito: as mesmas escolhas
+    const nossa = simularDiscreta("ISIS", [0, 10, 40, 70, 100]);
+    expect(nossa.perguntas).toEqual([[0, 40, 100], [0, 10, 100], [10, 70, 100], [10, 40, 100]]);
   });
 });

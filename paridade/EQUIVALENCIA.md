@@ -212,6 +212,79 @@ exatamente 17 perguntas, como o oficial.
 A carteira continua a mesma. A tela diz quando ela já está definida e a ordem
 ainda não.
 
+### Com curva não linear: o par se encerra no que a tela mostra
+
+Os 16 casos acima usam função de valor linear. Em 28/09/2026 levamos quatro
+decisões inteiras com curva elicitada aos dois sistemas, com as mesmas respostas
+de curva por critério. Ranking, escolha e sorting bateram de primeira (3, 3 e 4
+perguntas de tradeoff, mesmo resultado, mesmas faixas de valor). `bc-08` não:
+**21 perguntas dele contra 14 nossas**, e carteira diferente.
+
+Duas regras faltavam, e cada uma só aparece com curva.
+
+**A curva.** No ponto 0,5, o oficial às vezes descarta a terceira resposta e
+fica com o último ponto testado. A regra certa só saiu na terceira leitura: ele
+compara o ponto testado com a *metade da largura da escala*, sem somar o pior
+— acima dela perde-se a resposta que subiria o limite de baixo; abaixo, a que
+desceria o de cima. As duas leituras anteriores ("terceira resposta igual à
+primeira", depois "só perto do zero") eram casos particulares desta, e cada uma
+caiu com uma escala nova; a Durabilidade do `bc-08` (4,92 a 8,87) derrubou a
+segunda. A regra está em `web/lib/curvaDeValor.ts` e reproduz as 38 rodadas
+medidas.
+
+**O fim de um par.** Com as curvas iguais, as sequências de tradeoff seguiram
+idênticas até a 10ª pergunta. Na 11ª o oficial abandona `Qualidade × Custo`, que
+nós continuávamos perguntando:
+
+```
+pergunta 8:  Qualidade 0,6145 ("0,61" na tela) × Custo 9,02
+restante:    Qualidade entre 0,609 e 0,6145 -- as duas pontas "0,61"
+```
+
+A tela de tradeoff dele mostra sempre duas casas. Quando as duas pontas da faixa
+de um par mostrariam o mesmo número, a próxima pergunta não teria o que mostrar
+— e ele encerra o par. `Custo × Prazo` termina igual, em 18,08, com o pior da
+escala em 18,084. Nós encerrávamos pelo **valor** (faixa abaixo de 0,01), e com
+curva a mesma faixa de valor cabe numa fatia de consequência muito diferente.
+
+Com a regra dele (`CASAS_DA_TELA` em `engine/src/fitradeoff/elicitation/selectors.py`)
+as 21 perguntas saem iguais, uma a uma, e o fim também: Alt 05 e Alt 08 sem
+ordem, porque o peso do custo nunca chega a ser apertado, e a Alt 05 na carteira.
+Nos 16 casos lineares e nas outras três decisões com curva, nenhuma contagem
+muda.
+
+Duas hipóteses foram refutadas no caminho, por simulação contra os 20 casos:
+bissecção no meio da *consequência* em vez do valor (quebra o ranking e o sorting
+com curva) e pergunta com a consequência *arredondada* (quebra 12 dos 16
+lineares). O arredondamento decide quando um par acaba, não o que se pergunta.
+
+### Escala construída: curva em nível, tradeoff entre níveis
+
+O oficial só aceita escala construída como Likert: 2 a 7 níveis, de 1 a n (ou 0
+e 1). A curva dela tem regra própria, medida em 28/09/2026 com 3, 4 e 5 níveis:
+a mesma pergunta de bissecção, mas o ponto testado é sempre um nível (o do meio
+da faixa, arredondado para cima), a busca para quando não sobra nível dentro da
+faixa e fica com o último testado, e um ponto de quarto sem nível dentro é
+pulado. O valor, portanto, só cai em nível. Com 2 níveis não há o que perguntar,
+e com 6 ou 7 o critério nem aparece na avaliação intra-critério — fica linear.
+Nós fazíamos a bissecção contínua e fixávamos pontos entre níveis; agora a regra
+é a dele (`web/lib/curvaDeValor.ts`), e a tela só oferece a curva de 3 a 5
+níveis.
+
+No tradeoff, ao contrário, ele pergunta **entre** níveis: com a nota no meio da
+ordem, depois de "nota 2" vem uma tela própria de critério discreto com a nota
+em 1,5 e 1,33, interpolada na curva. Duas regras de fim de par apareceram aí, as
+duas do tipo "o que a tela mostra": num critério discreto o número aparece
+inteiro, e o par se encerra quando as pontas da faixa mostram o mesmo inteiro;
+num contínuo, a pergunta é pulada quando mostraria exatamente o pior (ou o
+melhor) da escala. Com elas as duas decisões medidas saem com os mesmos pares,
+na mesma ordem, a mesma contagem e o mesmo desfecho (uma com ordem completa,
+outra parcial); os 20 casos anteriores não mudam.
+
+Fica uma diferença: na última pergunta discreta ele mostra a nota em 1,33, onde
+nós perguntamos 1,25. Não muda contagem nem resultado, e com uma medida só não
+dá para dizer de onde vem o número dele.
+
 ## O que permanece diferente
 
 ### Portfólio combinatorial: não comparável em sessão
@@ -229,7 +302,15 @@ assíncrono —
 Quatro casos ficaram sete minutos sem concluir, inclusive um com orçamento menor
 que o projeto mais barato, cujo conjunto viável é trivial. É diferença de
 arquitetura: ele enumera carteiras offline, nós aproximamos por amostragem de
-vértices e respondemos na hora. Comparar exige o modelo de voltar depois.
+vértices e respondemos na hora.
+
+Voltamos dois dias depois (28/09/2026). Nenhum e-mail de conclusão chegou, e os
+nove projetos submetidos não abrem: em "Continue a registered issue", selecionar
+qualquer um deles faz o sistema responder com uma exceção interna — *"'' is not
+a valid integer value"* — e a tela trava. Só abrem os dois que nunca tiveram a
+matriz salva. Então o resultado do portfólio combinatorial não fica acessível
+por nenhum dos dois caminhos que ele oferece, e a comparação não tem como ser
+feita.
 
 ## Onde o oficial não completa
 

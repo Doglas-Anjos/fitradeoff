@@ -31,6 +31,9 @@ export interface CriterioOut extends CriterioIn {
   melhor: number;
   pior: number;
   escala: "continua" | "construida";
+  /* Níveis da escala construída, do pior ao melhor: a curva dela só fixa valor
+     em nível. */
+  niveis?: number[] | null;
 }
 
 export interface Analise {

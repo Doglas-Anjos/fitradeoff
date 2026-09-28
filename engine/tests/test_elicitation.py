@@ -291,21 +291,30 @@ def test_seletor_ataca_o_par_mais_incerto(fornecedores, evaluator):
     assert question.value == pytest.approx(0.5)
 
 
-def test_seletor_ignora_pares_ja_suficientemente_estreitos(fornecedores, evaluator):
+def test_seletor_abandona_o_par_cujas_pontas_mostram_o_mesmo_numero(fornecedores, evaluator):
+    """O par se encerra na consequencia, com duas casas, como na tela do oficial."""
     from fitradeoff.domain import WeightSpace
 
     selector = WidestBracketSelector()
-    estreitos = (Bracket(0, 1, 0.5, 0.501), Bracket(1, 2, 0.2, 0.201))
-    assert (
-        selector.select(
-            fornecedores,
-            AuditLog(),
-            estreitos,
-            WeightSpace(3),
-            ChoiceProblematic(evaluator),
-        )
-        is None
+    # qualidade de 0,71 a 0,95: valor 0,5 a 0,501 da 0,8300 a 0,8302 -- "0,83"
+    # nas duas pontas, e a pergunta seguinte nao mostraria nada de novo
+    colapsado = (Bracket(0, 1, 0.5, 0.501),)
+    assert selector.select(
+        fornecedores, AuditLog(), colapsado, WeightSpace(3), ChoiceProblematic(evaluator)
+    ) is None
+
+
+def test_faixa_estreita_no_valor_ainda_e_perguntada_se_a_tela_distingue(fornecedores, evaluator):
+    """A mesma largura em valor, noutra escala, ainda separa dois numeros."""
+    from fitradeoff.domain import WeightSpace
+
+    selector = WidestBracketSelector()
+    # custo de 15,80 a 10,20: valor 0,2 a 0,201 da 14,68 a 14,67
+    faixa = (Bracket(1, 2, 0.2, 0.201),)
+    pergunta = selector.select(
+        fornecedores, AuditLog(), faixa, WeightSpace(3), ChoiceProblematic(evaluator)
     )
+    assert pergunta is not None and (pergunta.criterion, pergunta.rival) == (1, 2)
 
 
 def test_ganho_de_informacao_nao_perde_a_alternativa_otima(evaluator, clock):
@@ -372,3 +381,48 @@ def test_decisor_oraculo_nunca_perde_a_alternativa_otima(seed, evaluator, clock)
     )
     assert otima in final
     assert len(final) <= max(inicial, 1)
+
+
+def _seletor_pergunta(problem, bracket, evaluator):
+    from fitradeoff.domain import WeightSpace
+
+    return WidestBracketSelector().select(
+        problem, AuditLog(), (bracket,), WeightSpace(problem.n_criteria),
+        ChoiceProblematic(evaluator),
+    )
+
+
+def _qualidade_e_custo(pior_qualidade):
+    criterios = (
+        Criterion("q", "Qualidade", Direction.MAX),
+        Criterion("c", "Custo", Direction.MIN),
+    )
+    return Problem("q", criterios, ("A", "B"),
+                   np.array([[pior_qualidade, 10.0], [0.95, 16.0]]))
+
+
+def test_pula_a_pergunta_que_mostraria_o_pior_exato(evaluator):
+    """0,7039 aparece "0,70" -- o proprio pior da escala: o oficial nao pergunta."""
+    # qualidade de 0,70 a 0,95, faixa de valor 0 a 1/32: o meio cai em 0,7039,
+    # e as pontas (0,70 e 0,7078) ainda mostram numeros diferentes
+    assert _seletor_pergunta(_qualidade_e_custo(0.70), Bracket(0, 1, 0.0, 1 / 32), evaluator) is None
+
+
+def test_pergunta_quando_o_arredondado_nao_e_o_pior(evaluator):
+    """Com o pior em 0,609, a mesma pergunta aparece "0,61" -- e e feita."""
+    pergunta = _seletor_pergunta(_qualidade_e_custo(0.609), Bracket(0, 1, 0.0, 1 / 32), evaluator)
+    assert pergunta is not None
+
+
+def test_criterio_discreto_se_encerra_no_nivel_inteiro(evaluator):
+    """Nota de 1 a 5 com curva: a tela mostra inteiro, e o par para em "1" e "1"."""
+    criterios = (
+        Criterion("n", "Nota", Direction.MAX, levels=(1, 2, 3, 4, 5),
+                  value_points=((1, 0.0), (2, 0.5), (3, 0.75), (5, 1.0))),
+        Criterion("c", "Custo", Direction.MIN),
+    )
+    problema = Problem("n", criterios, ("A", "B"), np.array([[1, 10.0], [5, 16.0]]))
+    # faixa de valor 0 a 0,25: nota de 1 a 1,5 -- "1" e "2", ainda pergunta
+    assert _seletor_pergunta(problema, Bracket(0, 1, 0.0, 0.25), evaluator) is not None
+    # 0 a 0,125: nota de 1 a 1,25 -- "1" nas duas pontas, acabou
+    assert _seletor_pergunta(problema, Bracket(0, 1, 0.0, 0.125), evaluator) is None

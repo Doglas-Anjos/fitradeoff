@@ -77,3 +77,31 @@ describe("CurvaDeValor", () => {
     ]);
   });
 });
+
+describe("CurvaDeValor em escala construída", () => {
+  const NOTA: CriterioOut = {
+    chave: "n", nome: "Nota", direcao: "max", pior: 1, melhor: 5, escala: "construida",
+    niveis: [1, 2, 3, 4, 5],
+  };
+
+  it("pergunta só níveis, como o oficial", () => {
+    render(<CurvaDeValor criterio={NOTA} onSalvar={() => {}} onCancelar={() => {}} />);
+    expect(pergunta()).toContain("aumentar de 1 para 3, ou de 3 para 5");
+    responder("superior");
+    // de 3 a 5 o meio é 4, um nível
+    expect(pergunta()).toContain("aumentar de 1 para 4, ou de 4 para 5");
+  });
+});
+
+describe("AvaliacaoIntraCriterio", () => {
+  it("não oferece curva numa escala construída de 7 níveis", async () => {
+    const { AvaliacaoIntraCriterio } = await import("@/components/AvaliacaoIntraCriterio");
+    const sete: CriterioOut = {
+      chave: "n", nome: "Nota", direcao: "max", pior: 1, melhor: 7, escala: "construida",
+      niveis: [1, 2, 3, 4, 5, 6, 7],
+    };
+    render(<AvaliacaoIntraCriterio criterios={[QUALIDADE, sete]} ocupado={false} onSalvar={() => {}} />);
+    expect(screen.getAllByRole("button", { name: /ajustar/i })).toHaveLength(1);
+    expect(screen.getByText(/com 7 níveis não há curva a elicitar/)).toBeTruthy();
+  });
+});

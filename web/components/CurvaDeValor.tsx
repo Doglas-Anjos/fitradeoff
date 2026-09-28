@@ -31,7 +31,6 @@ import { useIdioma } from "@/lib/i18n";
 import "@/lib/i18n/visualizacoes";
 import {
   arredondarComoOficial,
-  excecaoDoMeioVale,
   iniciar,
   proximoPasso,
   responder as aplicar,
@@ -179,18 +178,32 @@ export function CurvaDeValor({
   const faixa = criterio.melhor - criterio.pior;
   const emConsequencia = (s: number) => criterio.pior + s * faixa;
 
+  /* Escala construída: a curva só fixa valor em nível (regra discreta). */
+  const niveisS = useMemo(
+    () =>
+      criterio.escala === "construida" && criterio.niveis && faixa !== 0
+        ? criterio.niveis
+            .map((n) => (n - criterio.pior) / faixa)
+            .sort((x, y) => x - y)
+        : undefined,
+    [criterio.escala, criterio.niveis, criterio.pior, faixa],
+  );
+
   const passo = useMemo(
     () =>
       proximoPasso(
         pontos.map(
           ([c, v]) => [faixa === 0 ? 0 : (c - criterio.pior) / faixa, v] as [number, number],
         ),
+        niveisS,
       ),
-    [pontos, faixa, criterio.pior],
+    [pontos, faixa, criterio.pior, niveisS],
   );
   const atual =
     busca ??
-    (passo ? iniciar(passo, excecaoDoMeioVale(criterio.pior, criterio.melhor)) : null);
+    (passo
+      ? iniciar(passo, { pior: criterio.pior, melhor: criterio.melhor }, niveisS)
+      : null);
   const tS = atual ? testado(atual) : null;
   const a = atual ? emConsequencia(atual.a) : null;
   const b = atual ? emConsequencia(atual.b) : null;

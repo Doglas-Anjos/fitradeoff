@@ -272,23 +272,138 @@ CURVAS_RANKING_CRUZADO = {
 }
 
 
-def test_decisao_inteira_com_curva_nao_linear_bate_com_o_oficial():
+# Os outros três, na mesma rodada e com as mesmas respostas de curva por
+# critério (Durabilidade IUP-ILO-IUP-Ind-Ind). Os pontos conferem com os gráficos
+# e com os extremos das perguntas dele. O `bc-08` é o que mostrou as duas regras
+# que faltavam: a Durabilidade fixa o 0,5 no último testado (7,39, e não 7,64 --
+# ver `web/lib/curvaDeValor.ts`), e o par de critérios sai da lista quando as
+# pontas da faixa mostram o mesmo número com duas casas (`CASAS_DA_TELA`). As 21
+# perguntas saem iguais às dele, uma a uma.
+
+CURVAS_SORTING_04 = {
+    "c0": [[0.655, 0], [0.671438, 0.5], [0.856359, 0.75], [0.918, 1]],
+    "c1": [[9.743, 1], [10.250813, 0.5], [15.963703, 0.25], [17.868, 0]],
+    "c2": [[10.25, 1], [20.1175, 0.75], [29.985, 0.5], [35.9055, 0.25], [41.826, 0]],
+}
+
+CURVAS_BC_08 = {
+    "c0": [[0.609, 0], [0.631, 0.5], [0.8785, 0.75], [0.961, 1]],
+    "c1": [[9.015, 1], [9.581812, 0.5], [15.958453, 0.25], [18.084, 0]],
+    "c2": [[11.527, 1], [22.103875, 0.75], [32.68075, 0.5], [39.026875, 0.25], [45.373, 0]],
+    "c3": [[4.921, 0], [6.15475, 0.25], [7.3885, 0.5], [8.12875, 0.75], [8.869, 1]],
+}
+
+
+def _decisao_com_curva(chave, problematica, curvas):
+    """Percorre o caso com as curvas dadas, respondendo sempre A."""
     from comparar import _criterios
     from fitradeoff import DecisionService, build_container
 
-    caso = next(c for c in CASOS if c["chave"] == "ranking-cruzado")
+    caso = next(c for c in CASOS if c["chave"] == chave)
     crits = _criterios(caso)
+    extra = {}
+    if caso.get("custos"):
+        extra = {"custos": caso["custos"], "configuracao": {"orcamento": caso["orcamento"]}}
+    elif caso.get("configuracao"):
+        extra = {"configuracao": caso["configuracao"]}
     servico = DecisionService(build_container(epsilon=0.0))
     d = servico.create(caso["chave"], caso["alternativas"], crits,
-                       caso["consequencias"], problematica="ranking")["id"]
-    for chave, pontos in CURVAS_RANKING_CRUZADO.items():
-        servico.set_value_curve(d, chave, pontos)
+                       caso["consequencias"], problematica=problematica, **extra)["id"]
+    for criterio, pontos in curvas.items():
+        servico.set_value_curve(d, criterio, pontos)
     servico.rank_criteria(d, [c["chave"] for c in crits])
 
     perguntas = 0
     while "enunciado" in servico.next_question(d):
         servico.answer(d, "A")
         perguntas += 1
-    analise = servico.state(d)["analise"]
+    return perguntas, servico.state(d)["analise"]
+
+
+def test_decisao_inteira_com_curva_nao_linear_bate_com_o_oficial():
+    perguntas, analise = _decisao_com_curva("ranking-cruzado", "ranking", CURVAS_RANKING_CRUZADO)
     assert perguntas == 3
     assert analise["ordem_definida"] == ["Plano A", "Plano C", "Plano B"]
+
+
+def test_escolha_com_curva_bate_com_o_oficial():
+    perguntas, analise = _decisao_com_curva("ranking-cruzado", "escolha", CURVAS_RANKING_CRUZADO)
+    # "A Solution has been found", Plano A, "Questions Answered: 3"
+    assert perguntas == 3
+    assert analise["potencialmente_otimas"] == ["Plano A"]
+
+
+def test_sorting_com_curva_bate_com_o_oficial():
+    perguntas, analise = _decisao_com_curva("sorting-04", "sorting", CURVAS_SORTING_04)
+    # C1..C3 dele são Baixa..Alta; as faixas também batem (Alt 01: 0,48 a 0,63)
+    assert perguntas == 4
+    classes = {alt: a["classes_possiveis"] for alt, a in analise["alocacao"].items()}
+    assert classes == {"Alt 01": ["Media"], "Alt 02": ["Alta"], "Alt 03": ["Baixa"], "Alt 04": ["Media"]}
+    assert analise["alocacao"]["Alt 01"]["faixa_de_valor"] == pytest.approx([0.48, 0.63], abs=0.005)
+
+
+def test_beneficio_custo_com_curva_bate_com_o_oficial():
+    perguntas, analise = _decisao_com_curva("bc-08", "beneficio_custo", CURVAS_BC_08)
+    # ele: "There are no comparisons to be made in the elicitation by
+    # decomposition anymore", com [Alt 05][Alt 08] na mesma posição e a carteira
+    # [Alt 04, Alt 02, Alt 03, Alt 05]
+    assert perguntas == 21
+    assert analise["pares_sem_ordem_de_razao"] == ["Alt 05 vs Alt 08"]
+    assert analise["carteira_mais_frequente"]["projetos"] == ["Alt 02", "Alt 03", "Alt 04", "Alt 05"]
+
+
+# --- escala construída (discreta) --------------------------------------------
+#
+# Medido no oficial em 28/09/2026: uma nota de 1 a 5 (Likert, "Discrete" no
+# cadastro dele), com a curva elicitada ILO-IUP-ILO-IUP -- que dá valor 0,5 ao
+# nível 2 e 0,75 ao 3; o 4 ele interpola --, e qualidade e custo com as curvas do
+# `ranking-cruzado`. Duas ordens: a nota por último, só como rival, e a nota no
+# meio, em foco. No meio, o oficial pergunta a nota ENTRE níveis (2, depois 1,5 e
+# 1,33, numa tela própria de critério discreto) e encerra o par quando a faixa
+# mostra "1" nas duas pontas. Nós perguntamos 1,25 onde ele pergunta 1,33 -- o
+# valor dele não tem explicação ainda --, e o resto sai igual.
+
+CURVA_NOTA = [[1, 0], [2, 0.5], [3, 0.75], [5, 1]]
+
+
+def _decisao_discreta(criterios, consequencias):
+    from fitradeoff import DecisionService, build_container
+
+    servico = DecisionService(build_container(epsilon=0.0))
+    d = servico.create("discreto", ["Alt 1", "Alt 2", "Alt 3", "Alt 4"], criterios,
+                       consequencias, problematica="ranking")["id"]
+    curvas = {"Indice de qualidade": CURVAS_RANKING_CRUZADO["c0"],
+              "Custo unitario": CURVAS_RANKING_CRUZADO["c1"], "Nota": CURVA_NOTA}
+    for c in criterios:
+        servico.set_value_curve(d, c["chave"], curvas[c["nome"]])
+    servico.rank_criteria(d, [c["chave"] for c in criterios])
+    pares = []
+    while True:
+        q = servico.next_question(d)
+        if "enunciado" not in q:
+            break
+        pares.append((q["criterio_em_foco"], q["criterio_rival"]))
+        servico.answer(d, "A")
+    return pares, servico.state(d)["analise"]
+
+
+Q_ = {"chave": "q", "nome": "Indice de qualidade", "direcao": "max"}
+C_ = {"chave": "c", "nome": "Custo unitario", "direcao": "min"}
+N_ = {"chave": "n", "nome": "Nota", "direcao": "max", "niveis": [1, 2, 3, 4, 5]}
+
+
+def test_nota_discreta_como_rival_bate_com_o_oficial():
+    pares, analise = _decisao_discreta(
+        [Q_, C_, N_], [[0.95, 16.0, 2], [0.70, 10.0, 4], [0.80, 13.0, 5], [0.85, 15.0, 1]])
+    q, c, n = "Indice de qualidade", "Custo unitario", "Nota"
+    assert pares == [(q, n), (q, c), (c, n), (q, c), (c, n), (c, n)]
+    assert analise["resolvido"]  # "A complete order has been found"
+
+
+def test_nota_discreta_em_foco_bate_com_o_oficial():
+    pares, analise = _decisao_discreta(
+        [Q_, N_, C_], [[0.95, 2, 16.0], [0.70, 4, 10.0], [0.80, 5, 13.0], [0.85, 1, 15.0]])
+    q, c, n = "Indice de qualidade", "Custo unitario", "Nota"
+    assert pares == [(q, c), (q, n), (n, c), (q, n), (n, c), (n, c)]
+    # "There are no comparisons to be made ... anymore", com avaliação holística
+    assert not analise["resolvido"]

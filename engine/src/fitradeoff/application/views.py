@@ -58,6 +58,7 @@ def problem_dto(record: DecisionRecord) -> ProblemDTO:
                 ),
                 veto_superior=criterion.veto_upper,
                 veto_inferior=criterion.veto_lower,
+                niveis=list(criterion.levels) if criterion.levels is not None else None,
             )
             for criterion, scale in zip(problem.criteria, problem.scales)
         ],

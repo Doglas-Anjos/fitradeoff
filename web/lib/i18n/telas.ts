@@ -187,6 +187,13 @@ export const TELAS = registrar({
     es: "Por defecto el método asume crecimiento lineal. Si en un criterio las primeras ganancias valen más que las últimas, vale la pena ajustar.",
   },
   "tela.decisao.curva.linear": { pt: "linear", en: "linear", es: "lineal" },
+  /* Escala construída fora de 3 a 5 níveis: o sistema de referência não elicita
+     a curva, e a nossa segue a mesma regra. */
+  "tela.decisao.curva.semCurvaDiscreta": {
+    pt: "linear: com {n} níveis não há curva a elicitar",
+    en: "linear: with {n} levels there is no curve to elicit",
+    es: "lineal: con {n} niveles no hay curva que elicitar",
+  },
   /* Uma curva salva tem os dois extremos mais ao menos um ponto elicitado, ou
      ela não é curva e some da tela. O singular é inalcançável e não tem chave:
      chave morta no catálogo dá a impressão de que alguém esqueceu de usá-la. */

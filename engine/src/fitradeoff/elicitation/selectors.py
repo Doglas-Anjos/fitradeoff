@@ -8,6 +8,7 @@ enterrada no meio do processo.
 
 from __future__ import annotations
 
+import math
 from abc import ABC, abstractmethod
 
 from ..domain.audit import AuditLog
@@ -17,22 +18,37 @@ from ..domain.weights import WeightSpace
 from ..problematics.base import Problematic
 from .questions import Bracket, TradeoffQuestion
 
-# Abaixo desta largura, continuar perguntando sobre um par ja nao informa nada.
+# Abaixo desta largura (em valor), a faixa de um par ja e ruido de ponto
+# flutuante. So isso: quem encerra um par e `CASAS_DA_TELA`, logo abaixo.
 #
-# E um piso, nao o criterio de parada. Quem le este 1e-2 ao lado do limiar de
-# equivalencia (0,01, em `problematics/evaluator.py`) tende a supor que e ele
-# que decide quando a elicitacao encerra -- nao e. Nos 16 casos medidos contra o
-# sistema oficial (`paridade/`), o processo sempre para porque a problematica se
-# resolveu, nunca porque os intervalos ficaram estreitos demais: variar este
-# valor entre 1e-3 e 2e-2 nao muda uma unica contagem de perguntas. So em 5e-2
-# ele passa a cortar perguntas, e ai quebra `ranking-15`, `bc-08` e `sorting-20`,
-# que hoje batem.
+# Ja foi 1e-2, e era o que encerrava os pares -- sem que se soubesse, porque nos
+# 16 casos lineares variar o numero entre 1e-3 e 2e-2 nao mudava uma contagem.
+# Quem mostrou o erro foi `bc-08` com curva nao linear: as 18 primeiras perguntas
+# identicas as do oficial, e ai ele seguia perguntando `Custo x Prazo` numa faixa
+# de valor de 1/256, bem abaixo de 1e-2, ate a consequencia da pergunta chegar a
+# 18,08 -- o pior da escala (18,084) na tela dele. Com a curva, a mesma faixa de
+# valor cabe numa fatia de consequencia muito diferente, e o piso em valor corta
+# no lugar errado.
+DEFAULT_RESOLUTION = 1e-9
+
+# Um par e abandonado quando as duas pontas da faixa, levadas a consequencia e
+# arredondadas a esta quantidade de casas, ficam iguais -- quando a proxima
+# pergunta mostraria na tela o mesmo numero de uma ponta. A tela de tradeoff do
+# oficial mostra sempre duas casas ("0,63", "32,68"), e e ela que decide.
 #
-# O registro importa porque ha uma tentacao obvia: `bc-20` faz 11 perguntas
-# contra 17 do oficial, e engrossar a resolucao parece o caminho para alcanca-lo.
-# Nao e -- em 5e-2 aquele caso continua em 11. A hipotese ja esta refutada em
-# `paridade/EQUIVALENCIA.md`, junto com outras quatro.
-DEFAULT_RESOLUTION = 1e-2
+# Medido em `bc-08` com curva: o oficial abandona `Qualidade x Custo` depois de
+# perguntar 0,6145 ("0,61"), com a faixa restante entre 0,609 e 0,6145 -- as duas
+# "0,61" --, e `Custo x Prazo` depois de 18,08, com o pior em 18,084. Com esta
+# regra as 21 perguntas saem iguais, uma a uma, e o fim tambem: a Alt 05 e a
+# Alt 08 sem ordem, porque o peso do custo nunca chega a ser apertado. Nos 16
+# casos lineares e nos outros tres com curva, nenhuma contagem muda.
+CASAS_DA_TELA = 2
+
+# Num criterio de escala construida a tela mostra o nivel inteiro ("Value 1 for
+# Nota"), e e com zero casas que o par se encerra. Medido em 28/09/2026 com uma
+# nota de 1 a 5 no meio da ordem: o oficial pergunta 2, depois 1,5 e 1,33 (entre
+# niveis, na curva), e para quando a faixa vai de 1 a 1,33 -- as duas pontas "1".
+CASAS_DA_TELA_DISCRETA = 0
 
 # Abaixo deste peso maximo possivel para o criterio rival, a pergunta sobre o par
 # e abandonada: nenhuma resposta muda coisa alguma que se enxergue.
@@ -46,6 +62,45 @@ DEFAULT_RESOLUTION = 1e-2
 # ranking, escolha e sorting -- 1e-5 fica no meio. Nao sabemos o numero exato
 # dele, e o que se afirma e a janela.
 PESO_DESPREZIVEL = 1e-5
+
+
+def _na_tela(x: float, casas: int = CASAS_DA_TELA) -> float:
+    """Arredondado como a tela do oficial: metade para longe do zero."""
+    escala = 10**casas
+    return math.copysign(math.floor(abs(x) * escala + 0.5), x) / escala
+
+
+def _colapsou_na_tela(problem: Problem, bracket: Bracket) -> bool:
+    """Se a proxima pergunta deste par nao teria o que mostrar na tela.
+
+    Duas situacoes, as duas medidas no oficial:
+
+    - as duas pontas da faixa ja mostram o mesmo numero (ver CASAS_DA_TELA e
+      CASAS_DA_TELA_DISCRETA);
+    - num criterio continuo, a pergunta mostraria exatamente o pior (ou o
+      melhor) da escala. Com a qualidade de 0,70 a 0,95, o oficial pula a
+      pergunta em 0,7039 -- "0,70", o proprio pior --, nas duas decisoes com
+      nota discreta; no `bc-08`, com o pior em 0,609, ele pergunta 0,6145, que
+      aparece "0,61" mas nao e o pior. A comparacao e com o numero guardado, nao
+      com o que a tela mostra dele. Num criterio discreto isso nao vale: ele
+      pergunta 1,33 ("Value 1") com o pior no nivel 1.
+
+    Escala construida sem curva fica de fora: la a pergunta so usa niveis
+    declarados, e o esgotamento e o de ``Bracket.candidate_value``.
+    """
+    escala = problem.scales[bracket.criterion]
+    if escala.intermediate_values() is not None:
+        return False
+    discreto = problem.criteria[bracket.criterion].levels is not None
+    casas = CASAS_DA_TELA_DISCRETA if discreto else CASAS_DA_TELA
+    if _na_tela(escala.consequence_at(bracket.lower), casas) == _na_tela(
+        escala.consequence_at(bracket.upper), casas
+    ):
+        return True
+    if discreto:
+        return False
+    pergunta = _na_tela(escala.consequence_at(bracket.midpoint), casas)
+    return pergunta in (escala.consequence_at(0.0), escala.consequence_at(1.0))
 
 
 class QuestionSelector(ABC):
@@ -71,7 +126,7 @@ class QuestionSelector(ABC):
         """Perguntas ainda realizaveis, da faixa mais larga para a mais estreita."""
         found = []
         for bracket in sorted(brackets, key=lambda b: -b.width):
-            if bracket.width < self._resolution:
+            if bracket.width < self._resolution or _colapsou_na_tela(problem, bracket):
                 continue
             value = bracket.candidate_value(problem)
             if value is not None:

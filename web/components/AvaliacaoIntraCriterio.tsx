@@ -21,6 +21,7 @@ import { useState } from "react";
 
 import { CurvaDeValor, type Ponto } from "@/components/CurvaDeValor";
 import { Dica, Selo } from "@/components/ui";
+import { curvaElicitavel } from "@/lib/curvaDeValor";
 import { useIdioma } from "@/lib/i18n";
 import "@/lib/i18n/telas";
 import type { CriterioOut } from "@/lib/types";
@@ -90,6 +91,8 @@ export function AvaliacaoIntraCriterio({
           <ul className="space-y-1.5">
             {criterios.map((c) => {
               const ajustado = Boolean(c.curva_de_valor);
+              // escala construída fora de 3 a 5 níveis: o oficial não elicita
+              const elicitavel = curvaElicitavel(c.escala, c.niveis);
               return (
                 <li key={c.chave} className="flex items-center gap-3 text-[13px]">
                   <span
@@ -107,18 +110,22 @@ export function AvaliacaoIntraCriterio({
                   <span style={{ color: "var(--tinta-fraca)" }}>
                     {ajustado
                       ? t("tela.decisao.curva.pontos", { n: c.curva_de_valor!.length })
-                      : t("tela.decisao.curva.linear")}
+                      : elicitavel
+                        ? t("tela.decisao.curva.linear")
+                        : t("tela.decisao.curva.semCurvaDiscreta", { n: c.niveis?.length ?? 0 })}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => setEmEdicao(emEdicao === c.chave ? null : c.chave)}
-                    disabled={ocupado}
-                    className="tatil flex items-center gap-1 underline underline-offset-2 disabled:opacity-40"
-                    style={{ color: "var(--accent)" }}
-                  >
-                    <PencilSimple size={12} weight="bold" />
-                    {t("tela.decisao.curva.ajustar")}
-                  </button>
+                  {elicitavel && (
+                    <button
+                      type="button"
+                      onClick={() => setEmEdicao(emEdicao === c.chave ? null : c.chave)}
+                      disabled={ocupado}
+                      className="tatil flex items-center gap-1 underline underline-offset-2 disabled:opacity-40"
+                      style={{ color: "var(--accent)" }}
+                    >
+                      <PencilSimple size={12} weight="bold" />
+                      {t("tela.decisao.curva.ajustar")}
+                    </button>
+                  )}
                 </li>
               );
             })}

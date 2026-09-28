@@ -8,10 +8,24 @@
 #   docker compose run --rm mcp python -m fitradeoff_api.chaves listar
 #   docker compose run --rm mcp python -m fitradeoff_api.chaves revogar <id>
 #
-# Um servico so, de proposito. O aplicativo completo -- com `/api` e a tela de
-# chaves -- nao vem para ca: ele nao tem autenticacao nesta versao, e subir um
-# segundo container com as decisoes atras de uma porta so aumentaria a chance de
-# alguem publica-lo por engano.
+# Por padrao, um servico so: o MCP. O aplicativo completo -- a tela e `/api` --
+# nao subia porque nao tinha autenticacao, e por um segundo container com as
+# decisoes atras de uma porta ser um jeito facil de publica-las por engano.
+#
+# Essa condicao mudou. Com FITRADEOFF_JWT_JWKS_URL apontando para uma aplicacao
+# que assina, o `deps.acervo()` deixa de aceitar chamada anonima: quem nao
+# apresentar a afirmacao assinada leva 401, e quem apresentar recebe o proprio
+# acervo. A autenticacao esta amarrada a essa mesma configuracao, e nao a um
+# interruptor a parte -- o estado perigoso nao e alcancavel por esquecimento.
+#
+# Entao o aplicativo completo vive atras de um PERFIL, e nao sobe sozinho:
+#
+#   docker compose up -d                          # so o MCP, como antes
+#   docker compose --profile plataforma up -d     # tela, API e MCP
+#
+# Os dois servicos do perfil exigem as tres variaveis de identidade com `:?`.
+# Sem elas o `up` para com a mensagem escrita, em vez de levantar a tela com o
+# acervo aberto a quem chegar.
 
 services:
   mcp:
@@ -23,7 +37,7 @@ services:
       # Sem o dominio declarado, a protecao contra DNS rebinding recusa tudo o
       # que chegar por ele com 421. O `:?` derruba o `up` aqui, com uma
       # mensagem clara, em vez de deixar o erro aparecer so no primeiro pedido.
-      FITRADEOFF_MCP_HOSTS: ${FITRADEOFF_MCP_HOSTS:?declare o dominio publico, ex.: fit.seu-dominio.org}
+      FITRADEOFF_MCP_HOSTS: "${FITRADEOFF_MCP_HOSTS:?declare o dominio publico, ex.: fit.seu-dominio.org}"
       # A asserção de identidade da aplicacao da frente. Vazias, nenhum token e
       # aceito e so as chaves do cofre entram -- que e o certo enquanto a
       # integracao nao existir.
@@ -44,6 +58,95 @@ services:
     # esta porta direto nao serviria de qualquer forma.
     ports:
       - "127.0.0.1:8765:8765"
+
+  # --- o aplicativo completo, so com --profile plataforma -------------------
+
+  api:
+    profiles: ["plataforma"]
+    # A MESMA imagem do MCP, com outro comando. O Dockerfile ja instala engine,
+    # mcp_server e api juntos; duas imagens para o mesmo codigo dobrariam o
+    # tempo de build e abririam a chance de publicar uma versao de cada.
+    build: .
+    image: fitradeoff-mcp
+    command: ["uvicorn", "fitradeoff_api.app:app", "--host", "0.0.0.0", "--port", "3001"]
+    restart: unless-stopped
+    environment:
+      FITRADEOFF_DATA: /dados/decisoes
+
+      # As tres sao obrigatorias aqui, e e o ponto todo deste perfil.
+      #
+      # `jwt_configurado` e o que faz `deps.acervo()` recusar chamada anonima.
+      # Sem chave de verificacao ele devolveria a TODO mundo o acervo do dono da
+      # plataforma -- que e o comportamento certo numa maquina pessoal e o
+      # errado num servidor publico.
+      FITRADEOFF_JWT_ISSUER: "${FITRADEOFF_JWT_ISSUER:?a URL de quem assina, ex.: https://fasorx.com.br}"
+      FITRADEOFF_JWT_AUDIENCE: "${FITRADEOFF_JWT_AUDIENCE:?o publico deste servico, ex.: fitradeoff-mcp}"
+      FITRADEOFF_JWT_JWKS_URL: "${FITRADEOFF_JWT_JWKS_URL:?as chaves publicas, ex.: https://fasorx.com.br/.well-known/jwks.json}"
+
+      # Teto de validade. A aplicacao da frente emite por 300 s; este numero e o
+      # limite que ESTE lado aceita, independente do que vier escrito no token.
+      FITRADEOFF_JWT_MAX_VALIDADE: ${FITRADEOFF_JWT_MAX_VALIDADE:-900}
+
+      # Vazio: a tela fala com esta API por dentro da rede do compose, nao pelo
+      # navegador. Nenhuma requisicao cruza origem, entao nao ha o que liberar.
+      # Uma origem a mais aqui seria permissao concedida a troco de nada.
+      FITRADEOFF_CORS: ""
+
+      # Chave do cofre desligada neste servico.
+      #
+      # Ela existe para o cliente MCP do dono falar direto com o servidor. Aqui
+      # todo mundo entra pela aplicacao da frente, que assina -- aceitar tambem
+      # a chave deixaria uma credencial emitida para um assistente virando
+      # credencial de navegador, e some o vetor da chave vazada em log de proxy.
+      FITRADEOFF_ACEITAR_CHAVES_DO_COFRE: "0"
+    volumes:
+      - fitradeoff:/dados
+    # Sem `ports`. Quem alcanca esta API e o servico `web`, pela rede interna do
+    # compose. Publicar a porta no hospedeiro criaria um segundo caminho ate as
+    # decisoes, que nao passa pela tela nem pelos cabecalhos do proxy.
+    expose:
+      - "3001"
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3001/saude').read()"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  web:
+    profiles: ["plataforma"]
+    build: ./web
+    image: fitradeoff-web
+    restart: unless-stopped
+    environment:
+      # O next.config.mjs reescreve /api/* para ca. O navegador nunca ve este
+      # endereco: quem encaminha e o processo do Next, de dentro da rede.
+      API_URL: http://api:3001
+    depends_on:
+      api:
+        condition: service_healthy
+    # Esta e a unica porta publicada do perfil, e so no loopback: quem termina o
+    # TLS e aplica os cabecalhos e o Caddy da plataforma.
+    ports:
+      - "127.0.0.1:3000:3000"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   fitradeoff:

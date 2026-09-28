@@ -1,0 +1,26 @@
+# O que nao tem o que fazer dentro da imagem da tela.
+#
+# node_modules e .next sao os dois que importam: sem eles na lista, o contexto
+# de build leva centenas de megabytes da maquina de quem constroi -- e pior,
+# o `COPY . .` sobrescreveria o node_modules recem-instalado pela camada
+# anterior por uma copia montada noutro sistema operacional, onde os binarios
+# nativos nao servem.
+
+node_modules/
+.next/
+out/
+
+# Saidas de teste e cobertura.
+coverage/
+.vitest/
+
+# Ambiente local; os valores de producao vem do compose.
+.env
+.env.local
+.env.*.local
+
+# Nada disso e lido em execucao.
+*.md
+.eslintrc*
+eslint.config.*
+vitest.config.*

@@ -114,6 +114,62 @@ def test_preferir_A_na_abertura_nao_move_piso_nenhum(clock):
     assert all(b.lower == 0.0 for b in brackets_from_log(problem, log))
 
 
+def test_piso_desconta_os_fatores_ja_fixados(clock):
+    """Com fatores ja fixados, o piso dos outros sobe: piso / produto dos tetos.
+
+    Foi o que o estresse achou (28/09/2026): abertura indiferente em 0,5 e dois
+    fatores indiferentes em 0,8 -- o terceiro precisa ser ao menos
+    0,5 / (0,8 * 0,8) = 0,78, e o piso antigo (0,5) deixava perguntar abaixo.
+    """
+    problem = make_problem([[1.0, 2.0, 3.0, 4.0], [4.0, 3.0, 2.0, 1.0]])
+    log = AuditLog().record(CriteriaRanking((0, 1, 2, 3)), clock)
+    log = log.record(TradeoffAnswer(0, 3, 0.5, Preference.INDIFFERENT), clock)
+    log = log.record(TradeoffAnswer(0, 1, 0.8, Preference.INDIFFERENT), clock)
+    log = log.record(TradeoffAnswer(1, 2, 0.8, Preference.INDIFFERENT), clock)
+
+    faixa = {(b.criterion, b.rival): b for b in brackets_from_log(problem, log)}
+    assert faixa[(2, 3)].lower == pytest.approx(0.5 / 0.64)
+
+
+def test_teto_da_abertura_desce_com_os_pisos_dos_outros(clock):
+    """Teto no produto vira teto num fator quando os outros ja tem piso."""
+    problem = make_problem([[1.0, 2.0, 3.0, 4.0], [4.0, 3.0, 2.0, 1.0]])
+    log = AuditLog().record(CriteriaRanking((0, 1, 2, 3)), clock)
+    log = log.record(TradeoffAnswer(0, 3, 0.3, Preference.FIRST), clock)
+    log = log.record(TradeoffAnswer(0, 1, 0.6, Preference.SECOND), clock)
+    log = log.record(TradeoffAnswer(1, 2, 0.6, Preference.SECOND), clock)
+
+    faixa = {(b.criterion, b.rival): b for b in brackets_from_log(problem, log)}
+    assert faixa[(2, 3)].upper == pytest.approx(0.3 / 0.36)
+
+
+@pytest.mark.parametrize("semente", [11, 59, 66, 86])
+def test_respostas_aleatorias_nunca_se_contradizem(semente):
+    """O motor so pergunta dentro da faixa possivel: nenhuma resposta contradiz.
+
+    As sementes sao as que, com a propagacao antiga, terminavam em "as
+    declaracoes se contradizem" -- numa varredura de 200 decisoes com respostas
+    aleatorias, cerca de 1 em 10 terminava assim, nas quatro problematicas.
+    """
+    import random
+
+    from fitradeoff import DecisionService, build_container
+
+    rng = random.Random(semente)
+    k, n = 5 + semente % 3, 7
+    crits = [{"chave": "c%d" % j, "nome": "C%d" % j, "direcao": "max"} for j in range(k)]
+    matriz = [[rng.uniform(0, 10) for _ in range(k)] for _ in range(n)]
+    servico = DecisionService(build_container(epsilon=0.0))
+    d = servico.create("f", ["A%d" % i for i in range(n)], crits, matriz,
+                       problematica="escolha")["id"]
+    servico.rank_criteria(d, [c["chave"] for c in crits])
+    for _ in range(25):
+        if "enunciado" not in servico.next_question(d):
+            break
+        servico.answer(d, rng.choice(["B", "indiferente", "indiferente"]))
+        assert servico.state(d)["consistente"]
+
+
 def test_com_dois_criterios_nao_ha_abertura_separada(clock):
     """O par extremo ja e o consecutivo: abrir por ele seria repetir."""
     problem = make_problem([[1.0, 2.0], [3.0, 4.0]])

@@ -8,6 +8,7 @@ inteira de bugs.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, replace
 
 from ..domain.audit import AuditLog
@@ -142,38 +143,61 @@ def _propagar_abertura(
     ordem: tuple[int, ...],
     respostas: tuple[TradeoffAnswer, ...],
 ) -> list[Bracket]:
-    """Leva o piso da razao extrema para os pares consecutivos.
+    """Leva o que se sabe da razao extrema para os pares consecutivos.
 
     Sem isto a abertura vira armadilha. A razao extrema ``k_base / k_topo`` e o
     **produto** das razoes consecutivas, e cada fator esta em (0, 1] porque a
-    ordem ja foi declarada. Entao, se o produto e no minimo ``v``, cada fator
-    tambem e no minimo ``v`` -- nenhum deles pode ser menor sem derrubar o
-    produto abaixo de ``v``.
+    ordem ja foi declarada. Quem nao propaga isso pergunta sobre um par
+    consecutivo no meio de uma faixa que ja nao existe, e uma das duas respostas
+    esvazia o espaco de pesos: o decisor recebe "as declaracoes se contradizem"
+    por ter respondido o que lhe foi perguntado.
 
-    Quem nao propaga isso pergunta sobre um par consecutivo no meio de uma faixa
-    que ja nao existe, e uma das duas respostas esvazia o espaco de pesos: o
-    decisor recebe "as declaracoes se contradizem" por ter respondido o que lhe
-    foi perguntado. Foi assim que este defeito apareceu -- so com a resposta B,
-    porque preferir A limita o produto **por cima**, e um teto no produto nao
-    diz nada sobre cada fator (os outros podem valer 1).
+    Se o produto e no minimo ``piso``, cada fator e no minimo ``piso`` dividido
+    pelo maximo que os outros ainda podem valer juntos -- o produto dos tetos
+    deles. Se o produto e no maximo ``teto``, cada fator e no maximo ``teto``
+    dividido pelo minimo dos outros juntos. Um ajusta o outro, entao a conta se
+    repete ate parar de mudar.
+
+    Houve uma versao que usava so ``piso`` como piso de cada fator, e bastava
+    enquanto os outros fatores podiam valer 1. Quatro respostas "indiferente"
+    seguidas (28/09/2026, no estresse com 7 criterios) a derrubaram: com dois
+    fatores ja fixados em v2 e v3, o seguinte precisa ser ao menos piso/(v2*v3),
+    e o seletor perguntou abaixo disso.
     """
     topo, base = ordem[0], ordem[-1]
-    piso = 0.0
+    piso, teto = 0.0, 1.0
     for a in respostas:
         if a.criterion != topo or a.rival != base:
             continue
-        if a.preference is Preference.SECOND or a.preference is Preference.INDIFFERENT:
+        if a.preference in (Preference.SECOND, Preference.INDIFFERENT):
             piso = max(piso, a.value)
-    if piso <= 0.0:
+        if a.preference in (Preference.FIRST, Preference.INDIFFERENT):
+            teto = min(teto, a.value)
+    if piso <= 0.0 and teto >= 1.0:
         return brackets
 
     pares = set(zip(ordem, ordem[1:]))
-    return [
-        replace(b, lower=max(b.lower, min(piso, b.upper)))
-        if (b.criterion, b.rival) in pares
-        else b
-        for b in brackets
-    ]
+    indices = [i for i, b in enumerate(brackets) if (b.criterion, b.rival) in pares]
+    saida = list(brackets)
+    for _ in range(len(indices) * 4):
+        mudou = False
+        for i in indices:
+            outros = [saida[j] for j in indices if j != i]
+            max_outros = math.prod(o.upper for o in outros)
+            min_outros = math.prod(o.lower for o in outros)
+            b = saida[i]
+            lower, upper = b.lower, b.upper
+            if piso > 0.0 and max_outros > 0.0:
+                lower = max(lower, piso / max_outros)
+            if teto < 1.0 and min_outros > 0.0:
+                upper = min(upper, teto / min_outros)
+            lower = min(lower, upper)
+            if lower > b.lower + 1e-15 or upper < b.upper - 1e-15:
+                saida[i] = replace(b, lower=lower, upper=upper)
+                mudou = True
+        if not mudou:
+            break
+    return saida
 
 
 # --- enunciado ----------------------------------------------------------------

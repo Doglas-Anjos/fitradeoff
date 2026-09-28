@@ -6,7 +6,7 @@
  */
 
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { DiagramaHasse } from "@/components/DiagramaHasse";
 
@@ -143,6 +143,41 @@ describe("DiagramaHasse", () => {
     // par sem relação a mostrar fica com traço
     expect(screen.getAllByText("–").length).toBeGreaterThan(0);
     expect(screen.getByText("0.012")).toBeInTheDocument();
+  });
+
+  it("diferenças sob demanda: só pede ao abrir o painel", async () => {
+    const carregar = vi.fn().mockResolvedValue([
+      { a: "A", b: "B", a_supera_b_em_ate: 0.2, b_supera_a_em_ate: 0.05 },
+    ]);
+    render(
+      <DiagramaHasse
+        niveis={[["A", "B"]]}
+        arestas={[]}
+        posicoes={[["A", "B"]]}
+        carregarDiferencas={carregar}
+      />,
+    );
+    // fechado, nada é calculado: são dois LPs por par
+    expect(carregar).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByText("Mostrar diferenças máximas"));
+    expect(carregar).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText("0.200")).toBeInTheDocument();
+    // fechar e abrir de novo não pede outra vez
+    fireEvent.click(screen.getByText("Ocultar diferenças máximas"));
+    fireEvent.click(screen.getByText("Mostrar diferenças máximas"));
+    expect(carregar).toHaveBeenCalledTimes(1);
+  });
+
+  it("com posições de uma alternativa só, nem oferece o painel sob demanda", () => {
+    render(
+      <DiagramaHasse
+        niveis={[["X"], ["Y"]]}
+        arestas={[{ de: "X", para: "Y" }]}
+        posicoes={[["X"], ["Y"]]}
+        carregarDiferencas={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText("Mostrar diferenças máximas")).toBeNull();
   });
 
   it("sem diferenças, não oferece o painel", () => {

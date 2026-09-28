@@ -5,6 +5,7 @@
  */
 
 import type {
+  Analise,
   Auditoria,
   Direcao,
   Estado,
@@ -152,6 +153,11 @@ export const api = {
   desfazer: (id: string) => post<Estado>(`/api/decisoes/${id}/desfazer`, {}),
 
   auditoria: (id: string) => request<Auditoria>(`/api/decisoes/${id}/auditoria`),
+  /* Sob demanda: fora do /estado, porque custam dois LPs por par incomparável. */
+  diferencasMaximas: (id: string) =>
+    request<{ diferencas_maximas: NonNullable<Analise["diferencas_maximas"]> }>(
+      `/api/decisoes/${id}/diferencas-maximas`,
+    ),
 
   trocarProblematica: (
     id: string,

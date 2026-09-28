@@ -640,7 +640,7 @@ function Decisao() {
                     estado={estado}
                     encerrado={encerrado}
                   />
-                  <ResultadoAnalise analise={estado.analise} />
+                  <ResultadoAnalise analise={estado.analise} decisaoId={estado.id} />
                 </>
               )}
 

@@ -29,7 +29,7 @@
  * outra, com a maior destacada -- é onde ainda há mais em jogo.
  */
 
-import { useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { BotaoSalvarGrafico } from "@/components/BotaoSalvarGrafico";
 import { Dica } from "@/components/ui";
@@ -42,7 +42,7 @@ interface Aresta {
   origem?: "decomposicao" | "holistica";
 }
 
-interface Diferenca {
+export interface Diferenca {
   a: string;
   b: string;
   a_supera_b_em_ate: number;
@@ -93,7 +93,8 @@ export function DiagramaHasse({
   arestas,
   indiferencas = [],
   posicoes,
-  diferencas = [],
+  diferencas: diferencasDadas = [],
+  carregarDiferencas,
   destaque,
 }: {
   niveis: string[][];
@@ -101,12 +102,49 @@ export function DiagramaHasse({
   indiferencas?: { a: string; b: string }[];
   posicoes?: string[][];
   diferencas?: Diferenca[];
+  /* As diferenças máximas custam dois LPs por par incomparável, então não vêm
+     com a análise: o painel as pede quando é aberto. */
+  carregarDiferencas?: () => Promise<Diferenca[]>;
   destaque?: string | null;
 }) {
   const { t } = useIdioma();
   const id = useId().replace(/:/g, "");
   const figura = useRef<HTMLDivElement>(null);
   const [comDiferencas, setComDiferencas] = useState(false);
+  const [carregadas, setCarregadas] = useState<Diferenca[] | null>(null);
+  const [carregando, setCarregando] = useState(false);
+  const [falhou, setFalhou] = useState(false);
+  const diferencas = diferencasDadas.length > 0 ? diferencasDadas : (carregadas ?? []);
+
+  const carregar = () => {
+    if (!carregarDiferencas) return;
+    setCarregando(true);
+    setFalhou(false);
+    carregarDiferencas()
+      .then((d) => setCarregadas(d))
+      .catch(() => setFalhou(true))
+      .finally(() => setCarregando(false));
+  };
+
+  /* Uma resposta nova muda o diagrama e as diferenças: o que foi carregado
+     deixa de valer, e o painel aberto pede de novo. */
+  const assinatura = JSON.stringify([niveis, arestas]);
+  useEffect(() => {
+    setCarregadas(null);
+    if (comDiferencas && carregarDiferencas) carregar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assinatura]);
+
+  const alternar = () => {
+    const abrir = !comDiferencas;
+    setComDiferencas(abrir);
+    if (abrir && diferencasDadas.length === 0 && carregadas === null && !carregando) carregar();
+  };
+  /* Com carregamento, o botão aparece quando alguma posição tem mais de uma
+     alternativa -- só ali pode haver par incomparável. */
+  const podeHaverDiferencas =
+    diferencasDadas.length > 0 ||
+    (carregarDiferencas !== undefined && (posicoes ?? [niveis.flat()]).some((p) => p.length > 1));
   const ordem = useMemo(() => ordenar(niveis, arestas), [niveis, arestas]);
   if (!ordem.length) return null;
 
@@ -179,10 +217,10 @@ export function DiagramaHasse({
           </Dica>
         </span>
         <span className="ml-auto flex items-center gap-2">
-          {diferencas.length > 0 && (
+          {podeHaverDiferencas && (
             <button
               type="button"
-              onClick={() => setComDiferencas(!comDiferencas)}
+              onClick={alternar}
               aria-expanded={comDiferencas}
               className="text-[12px] underline underline-offset-2"
               style={{ color: "var(--accent)" }}
@@ -366,7 +404,22 @@ export function DiagramaHasse({
           </ul>
         </div>
 
-        {comDiferencas && (
+        {comDiferencas && carregando && diferencas.length === 0 && (
+          <p className="text-[12px]" style={{ color: "var(--tinta-3)" }} role="status">
+            {t("viz.hasse.diferencas.carregando")}
+          </p>
+        )}
+        {comDiferencas && falhou && (
+          <p className="text-[12px]" style={{ color: "var(--erro)" }} role="alert">
+            {t("viz.hasse.diferencas.erro")}
+          </p>
+        )}
+        {comDiferencas && !carregando && !falhou && diferencas.length === 0 && carregadas !== null && (
+          <p className="text-[12px]" style={{ color: "var(--tinta-3)" }}>
+            {t("viz.hasse.diferencas.vazio")}
+          </p>
+        )}
+        {comDiferencas && diferencas.length > 0 && (
           <PainelDiferencas
             ordem={ordem.flat()}
             posicoes={posicoes ?? [ordem.flat()]}

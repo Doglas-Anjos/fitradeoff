@@ -307,6 +307,12 @@ níveis (3, depois 2 ou 4), exatamente como nós — duas rodadas, 6 perguntas
 iguais, ordem completa nas duas. O terço e o meio são coisa de critério discreto
 com curva.
 
+As telas, nos mesmos estados — cada imagem diz o que é igual e o que difere:
+
+![Curva discreta: a primeira pergunta](telas/comparar-curva-discreta-pergunta.png)
+![Curva discreta: depois de quatro respostas](telas/comparar-curva-discreta-fim.png)
+![Tradeoff entre os níveis 1 e 2](telas/comparar-tradeoff-entre-niveis.png)
+
 Nas outras problemáticas o critério discreto se comporta igual: a mesma nota no
 meio da ordem, com curva, deu as mesmas perguntas e o mesmo resultado em escolha
 (3 perguntas, Alt 1), sorting (4, as mesmas classes) e benefício-custo (4, a

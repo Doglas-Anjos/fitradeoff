@@ -226,6 +226,36 @@ export const PARIDADE_TEXTOS = registrar({
     en: "The marginal value function — the method does not assume value grows linearly with performance. Here parity is in the rule, not just the screen: we answered 38 sequences on the official system, across fourteen scales, and read the final points off its chart; our elicitation reproduces every question, in the same order, ends at the same step and fixes the same points. The rule: at most three points (0.5, then 0.25, then 0.75), a quarter point skipped when its interval is narrower than a quarter of the range, and the search stopping once the bracket reaches 1/8 of the scale. The fixed value is the midpoint of the final bracket, with an exception at the 0.5 point that looks like a defect in the original: it compares the tested point with half the scale's width, without adding the worst value, and depending on the side it discards the last answer and keeps the last tested point. Two earlier readings of this exception fell, each to a new scale; this one explains all 38. Numbers on screen follow its rounding, which also depends on the scale.",
     es: "La función de valor marginal — el método no supone que el valor crezca en línea recta con el desempeño. Aquí la paridad es de regla, y no solo de pantalla: respondimos en el oficial 38 secuencias, en catorce escalas, y leímos los puntos finales en su gráfico; nuestra elicitación reproduce cada pregunta, en el mismo orden, termina en el mismo paso y fija los mismos puntos. La regla: como máximo tres puntos (0,5, después 0,25, después 0,75), un punto de cuarto omitido cuando su intervalo tiene menos de un cuarto del rango, y la búsqueda deteniéndose cuando el intervalo llega a 1/8 de la escala. El valor fijado es el medio del intervalo final, con una excepción en el punto 0,5 que parece un defecto del original: compara el punto probado con la mitad del ancho de la escala, sin sumar el peor, y según el lado descarta la última respuesta y queda el último punto probado. Dos lecturas anteriores de esa excepción cayeron, cada una con una escala nueva; esta explica las 38. Los números en pantalla siguen su redondeo, que también depende de la escala.",
   },
+  "paridade.telas.curvaDiscretaPergunta": {
+    pt: "Curva de um critério de escala construída",
+    en: "Value curve of a constructed-scale criterion",
+    es: "Curva de un criterio de escala construida",
+  },
+  "paridade.telas.curvaDiscretaPergunta.nota": {
+    pt: "Uma nota de 1 a 5. A mesma pergunta nos dois — de 1 a 3, ou de 3 a 5 —, e o ponto testado é sempre um nível: numa escala construída o original só dá valor a nível, e nós também. Muda só o desenho: ele usa uma seta sobre a escala; nós, a barra com os três marcos.",
+    en: "A score from 1 to 5. The same question on both — from 1 to 3, or from 3 to 5 — and the tested point is always a level: on a constructed scale the original only values levels, and so do we. Only the drawing differs: it uses an arrow over the scale; we use the bar with three marks.",
+    es: "Una nota de 1 a 5. La misma pregunta en los dos — de 1 a 3, o de 3 a 5 —, y el punto probado es siempre un nivel: en una escala construida el original solo da valor a niveles, y nosotros también. Cambia solo el dibujo: él usa una flecha sobre la escala; nosotros, la barra con tres marcas.",
+  },
+  "paridade.telas.curvaDiscretaFim": {
+    pt: "A curva da nota, depois de quatro respostas",
+    en: "The score's curve, after four answers",
+    es: "La curva de la nota, después de cuatro respuestas",
+  },
+  "paridade.telas.curvaDiscretaFim.nota": {
+    pt: "As mesmas quatro perguntas e os mesmos pontos: o nível 2 vale 0,5, o 3 vale 0,75, e o 4 é interpolado. A diferença é o que acompanha o gráfico: nós mostramos a tabela dos ciclos, como na elicitação de critério contínuo; ele mostra só o gráfico, com o rótulo de cada nível.",
+    en: "The same four questions and the same points: level 2 is worth 0.5, level 3 is worth 0.75, and level 4 is interpolated. The difference is what goes with the chart: we show the table of cycles, as in continuous-criterion elicitation; it shows only the chart, with a label on each level.",
+    es: "Las mismas cuatro preguntas y los mismos puntos: el nivel 2 vale 0,5, el 3 vale 0,75, y el 4 se interpola. La diferencia es lo que acompaña al gráfico: nosotros mostramos la tabla de ciclos, como en la elicitación de criterio continuo; él muestra solo el gráfico, con la etiqueta de cada nivel.",
+  },
+  "paridade.telas.tradeoffEntreNiveis": {
+    pt: "Tradeoff entre dois níveis de uma nota",
+    en: "Tradeoff between two levels of a score",
+    es: "Tradeoff entre dos niveles de una nota",
+  },
+  "paridade.telas.tradeoffEntreNiveis.nota": {
+    pt: "Com a nota em foco, a quinta pergunta dos dois é a mesma: nota em 1,5 — o meio entre os níveis 1 e 2 — com o custo no pior, contra o custo no melhor. Entre dois níveis o original só pergunta no terço, no meio e nos dois terços, e nós também. A diferença está no número: ele escreve \"Value 2\" no texto e só o gráfico mostra 1,5; nós mostramos 1.5, com ponto, numa tela em português.",
+    en: "With the score in focus, the fifth question is the same on both: score at 1.5 — midway between levels 1 and 2 — with cost at its worst, against cost at its best. Between two levels the original only asks at the third, the middle and two thirds, and so do we. The difference is the number: it writes \"Value 2\" in the text and only the chart shows 1.5; we show 1.5 directly.",
+    es: "Con la nota en foco, la quinta pregunta es la misma en los dos: nota en 1,5 — el medio entre los niveles 1 y 2 — con el costo en el peor, contra el costo en el mejor. Entre dos niveles el original solo pregunta en el tercio, el medio y los dos tercios, y nosotros también. La diferencia está en el número: él escribe \"Value 2\" en el texto y solo el gráfico muestra 1,5; nosotros mostramos 1.5, con punto, en una pantalla en español.",
+  },
   "paridade.telas.hasse": {
     pt: "Diagrama de Hasse",
     en: "Hasse diagram",

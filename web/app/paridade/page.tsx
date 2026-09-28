@@ -255,6 +255,24 @@ export default function ParidadePage() {
           nosso="/paridade/nosso-curva.png"
         />
         <ParDeTelas
+          titulo={t("paridade.telas.curvaDiscretaPergunta")}
+          nota={t("paridade.telas.curvaDiscretaPergunta.nota")}
+          oficial="/paridade/oficial-curva-discreta-pergunta.png"
+          nosso="/paridade/nosso-curva-discreta-pergunta.png"
+        />
+        <ParDeTelas
+          titulo={t("paridade.telas.curvaDiscretaFim")}
+          nota={t("paridade.telas.curvaDiscretaFim.nota")}
+          oficial="/paridade/oficial-curva-discreta-fim.png"
+          nosso="/paridade/nosso-curva-discreta-fim.png"
+        />
+        <ParDeTelas
+          titulo={t("paridade.telas.tradeoffEntreNiveis")}
+          nota={t("paridade.telas.tradeoffEntreNiveis.nota")}
+          oficial="/paridade/oficial-tradeoff-entre-niveis.png"
+          nosso="/paridade/nosso-tradeoff-entre-niveis.png"
+        />
+        <ParDeTelas
           titulo={t("paridade.telas.hasse")}
           nota={t("paridade.telas.hasse.nota")}
           oficial="/paridade/oficial-hasse.png"

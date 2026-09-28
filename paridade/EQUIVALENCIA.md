@@ -212,7 +212,7 @@ exatamente 17 perguntas, como o oficial.
 A carteira continua a mesma. A tela diz quando ela já está definida e a ordem
 ainda não.
 
-### Com curva não linear: o par se encerra no que a tela mostra
+### Com curva não linear: o par se encerra na unidade do critério
 
 Os 16 casos acima usam função de valor linear. Em 28/09/2026 levamos quatro
 decisões inteiras com curva elicitada aos dois sistemas, com as mesmas respostas
@@ -241,22 +241,35 @@ pergunta 8:  Qualidade 0,6145 ("0,61" na tela) × Custo 9,02
 restante:    Qualidade entre 0,609 e 0,6145 -- as duas pontas "0,61"
 ```
 
-A tela de tradeoff dele mostra sempre duas casas. Quando as duas pontas da faixa
-de um par mostrariam o mesmo número, a próxima pergunta não teria o que mostrar
-— e ele encerra o par. `Custo × Prazo` termina igual, em 18,08, com o pior da
-escala em 18,084. Nós encerrávamos pelo **valor** (faixa abaixo de 0,01), e com
-curva a mesma faixa de valor cabe numa fatia de consequência muito diferente.
+Ele encerra um par quando a faixa ainda possível, levada à **consequência**, fica
+mais estreita que 0,01 — na unidade do critério. Aqui, 0,609 a 0,6145: largura
+0,0055. Nós encerrávamos pelo **valor** (faixa abaixo de 0,01), e com curva a
+mesma faixa de valor cabe numa fatia de consequência muito diferente.
 
-Com a regra dele (`CASAS_DA_TELA` em `engine/src/fitradeoff/elicitation/selectors.py`)
+Com a regra dele (`LARGURA_MINIMA` em `engine/src/fitradeoff/elicitation/selectors.py`)
 as 21 perguntas saem iguais, uma a uma, e o fim também: Alt 05 e Alt 08 sem
 ordem, porque o peso do custo nunca chega a ser apertado, e a Alt 05 na carteira.
 Nos 16 casos lineares e nas outras três decisões com curva, nenhuma contagem
 muda.
 
+A regra teve duas leituras parciais antes desta, as duas do tipo "o que a tela
+mostra": as pontas da faixa iguais com duas casas ("0,61" e "0,61"), e a pergunta
+que mostraria o pior exato (0,7039, que aparece "0,70", numa escala que começa em
+0,70). Juntas, explicavam todas as medidas até então. Para testá-las numa escala
+nova, a simulação procurou um caso em que a segunda leitura mudasse a contagem, e
+achou o `sorting-20` com a qualidade reescalada para 0,60..0,80: 24 perguntas com
+ela, 17 sem ela. O oficial fez **22**. As 22 dele são idênticas às nossas com a
+regra até o fim, onde ele para com o custo entre 17,668 e 17,677 — as pontas
+"17,67" e "17,68", diferentes na tela, mas a faixa com 0,0086. A largura em
+consequência explica as três medidas que as leituras anteriores explicavam, e
+esta também. O corte dele está entre 0,0086 (a maior faixa em que parou) e 0,011
+(a menor em que perguntou).
+
 Duas hipóteses foram refutadas no caminho, por simulação contra os 20 casos:
 bissecção no meio da *consequência* em vez do valor (quebra o ranking e o sorting
 com curva) e pergunta com a consequência *arredondada* (quebra 12 dos 16
-lineares). O arredondamento decide quando um par acaba, não o que se pergunta.
+lineares). Arredondamento de tela não entra em nada: nem no que se pergunta,
+nem em quando o par acaba.
 
 ### Escala construída: curva em nível, tradeoff entre níveis
 
@@ -279,15 +292,10 @@ não há mais o que perguntar. Entre 2 e 3, o mesmo: 2,5, depois 2,33 ou 2,67. A
 escolha é a de qualquer escala discreta, o valor mais perto do meio da faixa.
 Foram cinco rodadas com respostas diferentes, e o valor exato lido no gráfico
 dele em cada uma; nós fazíamos bissecção contínua (1,25 onde ele pergunta 1,33) e
-seguíamos perguntando até o arredondamento esgotar. Uma hipótese intermediária —
+seguíamos perguntando até a faixa esgotar. Uma hipótese intermediária —
 "a tela mostra inteiro, e o par para quando as pontas mostram o mesmo inteiro" —
 explicava as duas primeiras rodadas e caiu na terceira, em que ele pergunta 1,67
 com a faixa entre 1,5 e 2, as duas pontas "2".
-
-Nas mesmas decisões apareceu mais uma regra de fim de par, esta para critério
-contínuo: a pergunta é pulada quando mostraria exatamente o pior (ou o melhor) da
-escala. A qualidade de 0,70 a 0,95 chega a 0,7039, que aparece "0,70", e ele não
-pergunta; no `bc-08` o pior é 0,609, e 0,6145 ("0,61") ele pergunta.
 
 Sem curva, nada disso: com a mesma nota declarada linear, ele pergunta só nos
 níveis (3, depois 2 ou 4), exatamente como nós — duas rodadas, 6 perguntas

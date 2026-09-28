@@ -432,3 +432,27 @@ def test_nota_discreta_sem_curva_so_pergunta_nivel(respostas, notas):
     assert pares == [(q, c), (q, n), (n, c), (q, n), (n, c), (q, n)]
     assert perguntadas == notas
     assert analise["resolvido"]  # "A complete order has been found"
+
+
+def test_sorting_20_com_qualidade_reescalada_bate_com_o_oficial():
+    """O caso que separou as leituras do fim de um par (28/09/2026).
+
+    `sorting-20` com a qualidade levada para 0,60..0,80, linear. O oficial faz
+    22 perguntas e termina sem classificar todas ("no comparisons to be made
+    anymore"). As duas leituras anteriores do fim de par davam 24 e 17; a faixa
+    abaixo de 0,01 na unidade do criterio (`LARGURA_MINIMA`) da as mesmas 22.
+    """
+    import copy
+
+    from comparar import roda_nosso
+
+    caso = copy.deepcopy(next(c for c in CASOS if c["chave"] == "sorting-20"))
+    coluna = [linha[0] for linha in caso["consequencias"]]
+    lo, hi = min(coluna), max(coluna)
+    caso["consequencias"] = [
+        [round(0.6 + (linha[0] - lo) / (hi - lo) * 0.2, 4)] + list(linha[1:])
+        for linha in caso["consequencias"]
+    ]
+    resultado = roda_nosso(caso)
+    assert resultado["steps_tradeoff"] == 22
+    assert not resultado["analise"]["resolvido"]

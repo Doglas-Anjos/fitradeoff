@@ -8,7 +8,6 @@ enterrada no meio do processo.
 
 from __future__ import annotations
 
-import math
 from abc import ABC, abstractmethod
 
 from ..domain.audit import AuditLog
@@ -19,30 +18,36 @@ from ..problematics.base import Problematic
 from .questions import Bracket, TradeoffQuestion
 
 # Abaixo desta largura (em valor), a faixa de um par ja e ruido de ponto
-# flutuante. So isso: quem encerra um par e `CASAS_DA_TELA`, logo abaixo.
+# flutuante. So isso: quem encerra um par e `LARGURA_MINIMA`, logo abaixo.
 #
 # Ja foi 1e-2, e era o que encerrava os pares -- sem que se soubesse, porque nos
 # 16 casos lineares variar o numero entre 1e-3 e 2e-2 nao mudava uma contagem.
-# Quem mostrou o erro foi `bc-08` com curva nao linear: as 18 primeiras perguntas
-# identicas as do oficial, e ai ele seguia perguntando `Custo x Prazo` numa faixa
-# de valor de 1/256, bem abaixo de 1e-2, ate a consequencia da pergunta chegar a
-# 18,08 -- o pior da escala (18,084) na tela dele. Com a curva, a mesma faixa de
-# valor cabe numa fatia de consequencia muito diferente, e o piso em valor corta
-# no lugar errado.
+# Quem mostrou o erro foi `bc-08` com curva nao linear: com a curva, a mesma
+# faixa de valor cabe numa fatia de consequencia muito diferente, e o piso em
+# valor corta no lugar errado.
 DEFAULT_RESOLUTION = 1e-9
 
-# Um par e abandonado quando as duas pontas da faixa, levadas a consequencia e
-# arredondadas a esta quantidade de casas, ficam iguais -- quando a proxima
-# pergunta mostraria na tela o mesmo numero de uma ponta. A tela de tradeoff do
-# oficial mostra sempre duas casas ("0,63", "32,68"), e e ela que decide.
+# Um par e abandonado quando a faixa ainda possivel, levada a consequencia, fica
+# mais estreita que isto -- na unidade do criterio, e nao em valor.
 #
-# Medido em `bc-08` com curva: o oficial abandona `Qualidade x Custo` depois de
-# perguntar 0,6145 ("0,61"), com a faixa restante entre 0,609 e 0,6145 -- as duas
-# "0,61" --, e `Custo x Prazo` depois de 18,08, com o pior em 18,084. Com esta
-# regra as 21 perguntas saem iguais, uma a uma, e o fim tambem: a Alt 05 e a
-# Alt 08 sem ordem, porque o peso do custo nunca chega a ser apertado. Nos 16
-# casos lineares e nos outros tres com curva, nenhuma contagem muda.
-CASAS_DA_TELA = 2
+# Saiu de tres medidas que o piso em valor nao explicava, e explica cada uma
+# delas sem ajuste. Em `bc-08` com curva, o oficial abandona `Qualidade x Custo`
+# com a qualidade entre 0,609 e 0,6145 (largura 0,0055) e pergunta com ela entre
+# 0,609 e 0,62 (0,011). Numa decisao com nota discreta, abandona a qualidade
+# entre 0,70 e 0,7078 (0,0078). No `sorting-20` com a qualidade reescalada para
+# 0,60..0,80, pergunta entre 0,600 e 0,6125 (0,0125) e abandona o custo entre
+# 17,668 e 17,677 (0,0086). O corte dele esta entre 0,0086 e 0,011; 0,01 fica
+# dentro, e o numero exato nao sabemos.
+#
+# Antes desta regra houve duas leituras parciais dela, as duas do tipo "o que a
+# tela mostra": as pontas da faixa iguais com duas casas, e a pergunta que
+# mostraria o pior exato. Cada uma explicava parte das medidas; o `sorting-20`
+# reescalado derrubou a combinacao das duas e mostrou esta.
+#
+# Na unidade do criterio quer dizer que a regra depende da escala: um custo em
+# milhares nunca chega a uma faixa de 0,01, e o par so se encerra pelo peso ou
+# pela problematica. E o que o oficial faz, e o que se reproduz aqui.
+LARGURA_MINIMA = 0.01
 
 # Abaixo deste peso maximo possivel para o criterio rival, a pergunta sobre o par
 # e abandonada: nenhuma resposta muda coisa alguma que se enxergue.
@@ -58,37 +63,17 @@ CASAS_DA_TELA = 2
 PESO_DESPREZIVEL = 1e-5
 
 
-def _na_tela(x: float) -> float:
-    """Arredondado como a tela do oficial: metade para longe do zero."""
-    escala = 10**CASAS_DA_TELA
-    return math.copysign(math.floor(abs(x) * escala + 0.5), x) / escala
+def _estreita_demais(problem: Problem, bracket: Bracket) -> bool:
+    """Se a faixa deste par, em consequencia, ja e mais estreita que LARGURA_MINIMA.
 
-
-def _colapsou_na_tela(problem: Problem, bracket: Bracket) -> bool:
-    """Se a proxima pergunta deste par nao teria o que mostrar na tela.
-
-    Duas situacoes, as duas medidas no oficial:
-
-    - as duas pontas da faixa ja mostram o mesmo numero (ver CASAS_DA_TELA);
-    - a pergunta mostraria exatamente o pior (ou o melhor) da escala. Com a
-      qualidade de 0,70 a 0,95, o oficial pula a pergunta em 0,7039 -- "0,70", o
-      proprio pior --, nas decisoes com nota discreta; no `bc-08`, com o pior em
-      0,609, ele pergunta 0,6145, que aparece "0,61" mas nao e o pior. A
-      comparacao e com o numero guardado, nao com o que a tela mostra dele.
-
-    So vale para escala continua. Numa discreta -- com curva ou sem -- a
-    pergunta so usa valores declarados, e o esgotamento e o de
-    ``Bracket.candidate_value``.
+    So para escala continua. Numa discreta -- com curva ou sem -- a pergunta so
+    usa valores declarados, e o esgotamento e o de ``Bracket.candidate_value``.
     """
     escala = problem.scales[bracket.criterion]
     if escala.intermediate_values() is not None:
         return False
-    if _na_tela(escala.consequence_at(bracket.lower)) == _na_tela(
-        escala.consequence_at(bracket.upper)
-    ):
-        return True
-    pergunta = _na_tela(escala.consequence_at(bracket.midpoint))
-    return pergunta in (escala.consequence_at(0.0), escala.consequence_at(1.0))
+    largura = escala.consequence_at(bracket.upper) - escala.consequence_at(bracket.lower)
+    return abs(largura) < LARGURA_MINIMA
 
 
 class QuestionSelector(ABC):
@@ -114,7 +99,7 @@ class QuestionSelector(ABC):
         """Perguntas ainda realizaveis, da faixa mais larga para a mais estreita."""
         found = []
         for bracket in sorted(brackets, key=lambda b: -b.width):
-            if bracket.width < self._resolution or _colapsou_na_tela(problem, bracket):
+            if bracket.width < self._resolution or _estreita_demais(problem, bracket):
                 continue
             value = bracket.candidate_value(problem)
             if value is not None:

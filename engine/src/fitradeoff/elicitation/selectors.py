@@ -44,12 +44,6 @@ DEFAULT_RESOLUTION = 1e-9
 # casos lineares e nos outros tres com curva, nenhuma contagem muda.
 CASAS_DA_TELA = 2
 
-# Num criterio de escala construida a tela mostra o nivel inteiro ("Value 1 for
-# Nota"), e e com zero casas que o par se encerra. Medido em 28/09/2026 com uma
-# nota de 1 a 5 no meio da ordem: o oficial pergunta 2, depois 1,5 e 1,33 (entre
-# niveis, na curva), e para quando a faixa vai de 1 a 1,33 -- as duas pontas "1".
-CASAS_DA_TELA_DISCRETA = 0
-
 # Abaixo deste peso maximo possivel para o criterio rival, a pergunta sobre o par
 # e abandonada: nenhuma resposta muda coisa alguma que se enxergue.
 #
@@ -64,9 +58,9 @@ CASAS_DA_TELA_DISCRETA = 0
 PESO_DESPREZIVEL = 1e-5
 
 
-def _na_tela(x: float, casas: int = CASAS_DA_TELA) -> float:
+def _na_tela(x: float) -> float:
     """Arredondado como a tela do oficial: metade para longe do zero."""
-    escala = 10**casas
+    escala = 10**CASAS_DA_TELA
     return math.copysign(math.floor(abs(x) * escala + 0.5), x) / escala
 
 
@@ -75,31 +69,25 @@ def _colapsou_na_tela(problem: Problem, bracket: Bracket) -> bool:
 
     Duas situacoes, as duas medidas no oficial:
 
-    - as duas pontas da faixa ja mostram o mesmo numero (ver CASAS_DA_TELA e
-      CASAS_DA_TELA_DISCRETA);
-    - num criterio continuo, a pergunta mostraria exatamente o pior (ou o
-      melhor) da escala. Com a qualidade de 0,70 a 0,95, o oficial pula a
-      pergunta em 0,7039 -- "0,70", o proprio pior --, nas duas decisoes com
-      nota discreta; no `bc-08`, com o pior em 0,609, ele pergunta 0,6145, que
-      aparece "0,61" mas nao e o pior. A comparacao e com o numero guardado, nao
-      com o que a tela mostra dele. Num criterio discreto isso nao vale: ele
-      pergunta 1,33 ("Value 1") com o pior no nivel 1.
+    - as duas pontas da faixa ja mostram o mesmo numero (ver CASAS_DA_TELA);
+    - a pergunta mostraria exatamente o pior (ou o melhor) da escala. Com a
+      qualidade de 0,70 a 0,95, o oficial pula a pergunta em 0,7039 -- "0,70", o
+      proprio pior --, nas decisoes com nota discreta; no `bc-08`, com o pior em
+      0,609, ele pergunta 0,6145, que aparece "0,61" mas nao e o pior. A
+      comparacao e com o numero guardado, nao com o que a tela mostra dele.
 
-    Escala construida sem curva fica de fora: la a pergunta so usa niveis
-    declarados, e o esgotamento e o de ``Bracket.candidate_value``.
+    So vale para escala continua. Numa discreta -- com curva ou sem -- a
+    pergunta so usa valores declarados, e o esgotamento e o de
+    ``Bracket.candidate_value``.
     """
     escala = problem.scales[bracket.criterion]
     if escala.intermediate_values() is not None:
         return False
-    discreto = problem.criteria[bracket.criterion].levels is not None
-    casas = CASAS_DA_TELA_DISCRETA if discreto else CASAS_DA_TELA
-    if _na_tela(escala.consequence_at(bracket.lower), casas) == _na_tela(
-        escala.consequence_at(bracket.upper), casas
+    if _na_tela(escala.consequence_at(bracket.lower)) == _na_tela(
+        escala.consequence_at(bracket.upper)
     ):
         return True
-    if discreto:
-        return False
-    pergunta = _na_tela(escala.consequence_at(bracket.midpoint), casas)
+    pergunta = _na_tela(escala.consequence_at(bracket.midpoint))
     return pergunta in (escala.consequence_at(0.0), escala.consequence_at(1.0))
 
 

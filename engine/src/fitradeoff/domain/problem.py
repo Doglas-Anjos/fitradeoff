@@ -164,12 +164,30 @@ class Criterion:
         cada desempenho, nao ha por que supor linearidade.
         """
         if self.value_points is not None:
-            return PiecewiseScale(
-                tuple((float(c), float(v)) for c, v in self.value_points)
-            )
+            pontos = tuple((float(c), float(v)) for c, v in self.value_points)
+            if self.levels is None:
+                return PiecewiseScale(pontos)
+            return PiecewiseScale(pontos, _perguntaveis(self.levels))
         if self.levels is not None:
             return DiscreteScale(tuple(float(v) for v in self.levels))
         return scale_from_column(column, self.direction.ascending)
+
+
+def _perguntaveis(niveis: tuple[float, ...]) -> tuple[float, ...]:
+    """O que uma pergunta de tradeoff pode mostrar numa escala construida com curva.
+
+    Os niveis e, entre cada dois, o terco, o meio e os dois tercos. E o que o
+    sistema de referencia faz, medido em 28/09/2026 com uma nota de 1 a 5: depois
+    de perguntar o nivel 2, ele pergunta 1,5, e depois 1,33 ou 1,67 conforme a
+    resposta, e para -- entre 1 e 2 nao ha mais nada a perguntar. Do mesmo jeito
+    entre 2 e 3 (2,5, depois 2,33 ou 2,67). A escolha entre eles e a de qualquer
+    escala discreta: o mais perto do meio da faixa (``Bracket.candidate_value``).
+    """
+    ordenados = sorted(float(n) for n in niveis)
+    saida = []
+    for a, b in zip(ordenados, ordenados[1:]):
+        saida += [a, a + (b - a) / 3, a + (b - a) / 2, a + 2 * (b - a) / 3]
+    return tuple(saida + [ordenados[-1]])
 
 
 # eq=False: a matriz de consequencias e um ndarray, que nao se compara nem se

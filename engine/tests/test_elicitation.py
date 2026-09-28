@@ -414,15 +414,19 @@ def test_pergunta_quando_o_arredondado_nao_e_o_pior(evaluator):
     assert pergunta is not None
 
 
-def test_criterio_discreto_se_encerra_no_nivel_inteiro(evaluator):
-    """Nota de 1 a 5 com curva: a tela mostra inteiro, e o par para em "1" e "1"."""
+def test_criterio_discreto_com_curva_so_pergunta_nivel_tercos_e_meio(evaluator):
+    """Nota de 1 a 5 com curva: entre os niveis 1 e 2, so 1,33, 1,5 e 1,67."""
     criterios = (
         Criterion("n", "Nota", Direction.MAX, levels=(1, 2, 3, 4, 5),
                   value_points=((1, 0.0), (2, 0.5), (3, 0.75), (5, 1.0))),
         Criterion("c", "Custo", Direction.MIN),
     )
     problema = Problem("n", criterios, ("A", "B"), np.array([[1, 10.0], [5, 16.0]]))
-    # faixa de valor 0 a 0,25: nota de 1 a 1,5 -- "1" e "2", ainda pergunta
-    assert _seletor_pergunta(problema, Bracket(0, 1, 0.0, 0.25), evaluator) is not None
-    # 0 a 0,125: nota de 1 a 1,25 -- "1" nas duas pontas, acabou
-    assert _seletor_pergunta(problema, Bracket(0, 1, 0.0, 0.125), evaluator) is None
+    nota = problema.scales[0]
+    # faixa de valor 0 a 0,25 (nota de 1 a 1,5): o meio seria 1,25, mas o que se
+    # pergunta e 1,33, o terco
+    pergunta = _seletor_pergunta(problema, Bracket(0, 1, 0.0, 0.25), evaluator)
+    assert nota.consequence_at(pergunta.value) == pytest.approx(4 / 3)
+    # respondido A, a faixa vai de 1 a 1,33 -- a ponta e o valor perguntado, e
+    # entre os dois nao ha mais nada
+    assert _seletor_pergunta(problema, Bracket(0, 1, 0.0, pergunta.value), evaluator) is None

@@ -358,15 +358,15 @@ def test_beneficio_custo_com_curva_bate_com_o_oficial():
 # cadastro dele), com a curva elicitada ILO-IUP-ILO-IUP -- que dá valor 0,5 ao
 # nível 2 e 0,75 ao 3; o 4 ele interpola --, e qualidade e custo com as curvas do
 # `ranking-cruzado`. Duas ordens: a nota por último, só como rival, e a nota no
-# meio, em foco. No meio, o oficial pergunta a nota ENTRE níveis (2, depois 1,5 e
-# 1,33, numa tela própria de critério discreto) e encerra o par quando a faixa
-# mostra "1" nas duas pontas. Nós perguntamos 1,25 onde ele pergunta 1,33 -- o
-# valor dele não tem explicação ainda --, e o resto sai igual.
+# meio, em foco. Em foco, o oficial pergunta a nota nos níveis e, entre dois
+# níveis, só no terço, no meio e nos dois terços (numa tela própria de critério
+# discreto, com o valor exato no gráfico). As respostas variam de propósito: cada
+# uma leva a um valor diferente, lido no gráfico dele.
 
 CURVA_NOTA = [[1, 0], [2, 0.5], [3, 0.75], [5, 1]]
 
 
-def _decisao_discreta(criterios, consequencias):
+def _decisao_discreta(criterios, consequencias, respostas=""):
     from fitradeoff import DecisionService, build_container
 
     servico = DecisionService(build_container(epsilon=0.0))
@@ -377,33 +377,46 @@ def _decisao_discreta(criterios, consequencias):
     for c in criterios:
         servico.set_value_curve(d, c["chave"], curvas[c["nome"]])
     servico.rank_criteria(d, [c["chave"] for c in criterios])
-    pares = []
+    pares, notas = [], []
     while True:
         q = servico.next_question(d)
         if "enunciado" not in q:
             break
         pares.append((q["criterio_em_foco"], q["criterio_rival"]))
-        servico.answer(d, "A")
-    return pares, servico.state(d)["analise"]
+        if q["criterio_em_foco"] == "Nota":
+            notas.append(round(float(q["opcao_a"][0].split(": ")[1]), 2))
+        servico.answer(d, (respostas + "A" * 99)[len(pares) - 1])
+    return pares, notas, servico.state(d)["analise"]
 
 
 Q_ = {"chave": "q", "nome": "Indice de qualidade", "direcao": "max"}
 C_ = {"chave": "c", "nome": "Custo unitario", "direcao": "min"}
 N_ = {"chave": "n", "nome": "Nota", "direcao": "max", "niveis": [1, 2, 3, 4, 5]}
+QUAL, CUSTO, NOTA = "Indice de qualidade", "Custo unitario", "Nota"
 
 
 def test_nota_discreta_como_rival_bate_com_o_oficial():
-    pares, analise = _decisao_discreta(
+    pares, _, analise = _decisao_discreta(
         [Q_, C_, N_], [[0.95, 16.0, 2], [0.70, 10.0, 4], [0.80, 13.0, 5], [0.85, 15.0, 1]])
-    q, c, n = "Indice de qualidade", "Custo unitario", "Nota"
+    q, c, n = QUAL, CUSTO, NOTA
     assert pares == [(q, n), (q, c), (c, n), (q, c), (c, n), (c, n)]
     assert analise["resolvido"]  # "A complete order has been found"
 
 
-def test_nota_discreta_em_foco_bate_com_o_oficial():
-    pares, analise = _decisao_discreta(
-        [Q_, N_, C_], [[0.95, 2, 16.0], [0.70, 4, 10.0], [0.80, 5, 13.0], [0.85, 1, 15.0]])
-    q, c, n = "Indice de qualidade", "Custo unitario", "Nota"
-    assert pares == [(q, c), (q, n), (n, c), (q, n), (n, c), (n, c)]
+@pytest.mark.parametrize("respostas, notas", [
+    ("", [2, 1.5, 1.33]),
+    ("AAAAAB", [2, 1.5, 1.33]),
+    ("AAAAB", [2, 1.5, 1.67]),
+    ("AABAAA", [2, 3, 2.5, 2.33]),
+    ("AABAAB", [2, 3, 2.5, 2.67]),
+])
+def test_nota_discreta_em_foco_bate_com_o_oficial(respostas, notas):
+    pares, perguntadas, analise = _decisao_discreta(
+        [Q_, N_, C_], [[0.95, 2, 16.0], [0.70, 4, 10.0], [0.80, 5, 13.0], [0.85, 1, 15.0]],
+        respostas)
+    q, n = QUAL, NOTA
+    assert pares[:4] == [(q, CUSTO), (q, n), (n, CUSTO), (q, n)]
+    assert perguntadas == notas
+    assert len(pares) == 2 + 2 + len(notas) - 1  # 6 ou 7, como o oficial
     # "There are no comparisons to be made ... anymore", com avaliação holística
     assert not analise["resolvido"]

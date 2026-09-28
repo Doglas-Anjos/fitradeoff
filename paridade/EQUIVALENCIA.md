@@ -271,19 +271,27 @@ Nós fazíamos a bissecção contínua e fixávamos pontos entre níveis; agora 
 é a dele (`web/lib/curvaDeValor.ts`), e a tela só oferece a curva de 3 a 5
 níveis.
 
-No tradeoff, ao contrário, ele pergunta **entre** níveis: com a nota no meio da
-ordem, depois de "nota 2" vem uma tela própria de critério discreto com a nota
-em 1,5 e 1,33, interpolada na curva. Duas regras de fim de par apareceram aí, as
-duas do tipo "o que a tela mostra": num critério discreto o número aparece
-inteiro, e o par se encerra quando as pontas da faixa mostram o mesmo inteiro;
-num contínuo, a pergunta é pulada quando mostraria exatamente o pior (ou o
-melhor) da escala. Com elas as duas decisões medidas saem com os mesmos pares,
-na mesma ordem, a mesma contagem e o mesmo desfecho (uma com ordem completa,
-outra parcial); os 20 casos anteriores não mudam.
+No tradeoff, ao contrário, ele pergunta **entre** níveis, numa tela própria de
+critério discreto, mas não em qualquer ponto: entre dois níveis, só no terço, no
+meio e nos dois terços. Com a nota de 1 a 5 no meio da ordem, depois de "nota 2"
+vem 1,5, e depois 1,33 ou 1,67 conforme a resposta — e acabou, porque entre 1 e 2
+não há mais o que perguntar. Entre 2 e 3, o mesmo: 2,5, depois 2,33 ou 2,67. A
+escolha é a de qualquer escala discreta, o valor mais perto do meio da faixa.
+Foram cinco rodadas com respostas diferentes, e o valor exato lido no gráfico
+dele em cada uma; nós fazíamos bissecção contínua (1,25 onde ele pergunta 1,33) e
+seguíamos perguntando até o arredondamento esgotar. Uma hipótese intermediária —
+"a tela mostra inteiro, e o par para quando as pontas mostram o mesmo inteiro" —
+explicava as duas primeiras rodadas e caiu na terceira, em que ele pergunta 1,67
+com a faixa entre 1,5 e 2, as duas pontas "2".
 
-Fica uma diferença: na última pergunta discreta ele mostra a nota em 1,33, onde
-nós perguntamos 1,25. Não muda contagem nem resultado, e com uma medida só não
-dá para dizer de onde vem o número dele.
+Nas mesmas decisões apareceu mais uma regra de fim de par, esta para critério
+contínuo: a pergunta é pulada quando mostraria exatamente o pior (ou o melhor) da
+escala. A qualidade de 0,70 a 0,95 chega a 0,7039, que aparece "0,70", e ele não
+pergunta; no `bc-08` o pior é 0,609, e 0,6145 ("0,61") ele pergunta.
+
+Com essas regras as seis decisões com critério construído saem iguais à dele:
+mesmos pares, na mesma ordem, os mesmos valores, a mesma contagem e o mesmo
+desfecho. Os 20 casos anteriores não mudam.
 
 ## O que permanece diferente
 

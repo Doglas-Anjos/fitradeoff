@@ -133,9 +133,14 @@ class PiecewiseScale(Scale):
     ``pontos`` sao pares (consequencia, valor) com valor em [0, 1], incluindo as
     extremidades. Entre dois pontos consecutivos a curva e um segmento de reta,
     que e como o sistema de referencia a desenha.
+
+    ``realizaveis``, quando existe, e o conjunto de consequencias que uma
+    pergunta de tradeoff pode mostrar -- e o caso da escala construida com curva
+    (ver ``Criterion.scale_for``). Sem ele, qualquer ponto da curva serve.
     """
 
     pontos: tuple[tuple[float, float], ...]
+    realizaveis: tuple[float, ...] | None = None
 
     def __post_init__(self) -> None:
         if len(self.pontos) < 2:
@@ -185,7 +190,10 @@ class PiecewiseScale(Scale):
         return float(np.interp(value, ys, xs))
 
     def intermediate_values(self) -> tuple[float, ...] | None:
-        return None
+        if self.realizaveis is None:
+            return None
+        valores = {self.value_of(c) for c in self.realizaveis}
+        return tuple(sorted(v for v in valores if 0.0 < v < 1.0))
 
 
 def scale_from_column(column: np.ndarray, ascending: bool) -> Scale:

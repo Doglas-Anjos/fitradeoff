@@ -219,10 +219,12 @@ SEGREDO_DO_DONO = "segredo-do-dono-" + "x" * 32
 def test_de_fora_exige_o_token_de_administracao(tmp_path):
     configurado = ajustes(tmp_path, admin_token=SEGREDO_DO_DONO)
     with cliente_de(configurado, client=DE_FORA) as c:
-        assert c.get("/api/chaves").status_code == 401
+        # 403 e nao 401: falta permissao, nao sessao. Com 401 a tela tratava
+        # como sessao encerrada e mandava a pessoa, ja logada, de volta ao login.
+        assert c.get("/api/chaves").status_code == 403
         assert (
             c.get("/api/chaves", headers={"X-Fitradeoff-Admin": "chute"}).status_code
-            == 401
+            == 403
         )
         assert (
             c.get(

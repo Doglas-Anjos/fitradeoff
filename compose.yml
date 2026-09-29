@@ -129,12 +129,22 @@ services:
       # significam a mesma coisa la.
       FITRADEOFF_CORS: ""
 
-      # Emitir chave de MCP com o FasorX autenticando na frente.
+      # O endereco do MCP que a tela Conectar mostra para colar no assistente.
       #
-      # Sem isto a tela Conectar responde 503: com uma aplicacao autenticando
-      # na frente, a API deixa de confiar no loopback -- quem chega por ela
-      # tambem chega da rede interna, e uma chave do cofre abre o acervo do
-      # DONO, nao o de quem pediu. Vazio mantem a emissao fechada.
+      # Sem estas duas, a tela mostrava http://127.0.0.1:8000/mcp/... -- o
+      # padrao de desenvolvimento, que so existe dentro do servidor. A URL
+      # explicita vence; sem ela, a API usa o primeiro dominio de
+      # FITRADEOFF_MCP_HOSTS (o mesmo que o servico mcp ja exige).
+      FITRADEOFF_MCP_URL: ${FITRADEOFF_MCP_URL:-}
+      FITRADEOFF_MCP_HOSTS: ${FITRADEOFF_MCP_HOSTS:-}
+
+      # Emitir chaves do DONO da plataforma (que abrem o acervo principal) de
+      # fora do servidor.
+      #
+      # Nao e preciso para as pessoas: quem entra pelo FasorX emite a propria
+      # chave na tela Conectar, e ela abre so o acervo dela. Este token so vale
+      # para as chaves do dono -- vazio mantem essa emissao fechada, e a linha
+      # de comando no servidor continua funcionando.
       FITRADEOFF_ADMIN_TOKEN: ${FITRADEOFF_ADMIN_TOKEN:-}
 
       # Chave do cofre desligada neste servico.

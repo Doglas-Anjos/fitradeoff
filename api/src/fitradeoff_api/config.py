@@ -61,6 +61,28 @@ def _mcp_hosts() -> list[str]:
     return [h.strip() for h in bruto.split(",") if h.strip()]
 
 
+def _mcp_url() -> str:
+    """O endereco do MCP que a tela Conectar mostra para colar no assistente.
+
+    ``FITRADEOFF_MCP_URL`` quando declarado. Sem ele, o primeiro dominio publico
+    de ``FITRADEOFF_MCP_HOSTS`` -- que o servidor publicado ja declara, porque o
+    SDK exige. So no fim o endereco local de desenvolvimento.
+
+    A reserva existe por um defeito medido: em producao o servico `api` nao
+    recebia FITRADEOFF_MCP_URL, e a tela mandava as pessoas colarem
+    ``http://127.0.0.1:8000/mcp/...`` no assistente -- um endereco que so
+    existe dentro do servidor.
+    """
+    explicito = os.environ.get("FITRADEOFF_MCP_URL", "").strip()
+    if explicito:
+        return explicito.rstrip("/")
+    for dominio in _mcp_hosts():
+        nome = dominio.split(":", 1)[0]
+        if nome not in ("127.0.0.1", "localhost", "::1", "[::1]"):
+            return f"https://{dominio}/mcp"
+    return "http://127.0.0.1:8000/mcp"
+
+
 @dataclass(frozen=True)
 class Settings:
     """Ajustes da API.
@@ -108,11 +130,7 @@ class Settings:
     chat_model: str = field(
         default_factory=lambda: os.environ.get("FITRADEOFF_CHAT_MODEL", "claude-sonnet-5")
     )
-    mcp_url: str = field(
-        default_factory=lambda: os.environ.get(
-            "FITRADEOFF_MCP_URL", "http://127.0.0.1:8000/mcp"
-        ).rstrip("/")
-    )
+    mcp_url: str = field(default_factory=_mcp_url)
     mcp_hosts: list[str] = field(default_factory=_mcp_hosts)
     mcp_json: bool = field(
         default_factory=lambda: _ligado("FITRADEOFF_MCP_JSON", False)

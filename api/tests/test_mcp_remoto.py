@@ -72,7 +72,7 @@ def test_a_chave_emitida_no_aplicativo_local_vale_aqui(cliente, ajustes):
         headers={**CABECALHOS, "Authorization": f"Bearer {texto}"},
     )
     assert resposta.status_code == 200
-    assert "criar_problema" in resposta.text
+    assert "create_problem" in resposta.text
 
 
 def test_a_chave_na_url_tambem_vale(cliente, ajustes):
@@ -127,7 +127,7 @@ def test_o_token_da_aplicacao_da_frente_abre_o_acervo_da_pessoa(tmp_path):
         "id": 2,
         "method": "tools/call",
         "params": {
-            "name": "criar_problema",
+            "name": "create_problem",
             "arguments": {
                 "nome": "So da primeira",
                 "alternativas": ["A", "B", "C"],
@@ -143,7 +143,7 @@ def test_o_token_da_aplicacao_da_frente_abre_o_acervo_da_pessoa(tmp_path):
         "jsonrpc": "2.0",
         "id": 3,
         "method": "tools/call",
-        "params": {"name": "listar_problemas", "arguments": {}},
+        "params": {"name": "list_problems", "arguments": {}},
     }
 
     with TestClient(

@@ -148,9 +148,9 @@ export const CHAVES = registrar({
     es: "En el archivo de configuración MCP del editor:",
   },
   "tela.chaves.conectar.conferir": {
-    pt: "Pergunte ao assistente se ele tem a ferramenta criar_problema. Se tiver, está conectado.",
-    en: "Ask the assistant whether it has the criar_problema tool. If it does, it is connected.",
-    es: "Pregunte al asistente si tiene la herramienta criar_problema. Si la tiene, está conectado.",
+    pt: "Pergunte ao assistente se ele tem a ferramenta create_problem. Se tiver, está conectado.",
+    en: "Ask the assistant whether it has the create_problem tool. If it does, it is connected.",
+    es: "Pregunte al asistente si tiene la herramienta create_problem. Si la tiene, está conectado.",
   },
 
   // --- alcance ----------------------------------------------------------------

@@ -269,7 +269,7 @@ def test_a_chave_emitida_na_tela_abre_o_mcp(cliente):
         headers={**CABECALHOS_MCP, "Authorization": f"Bearer {texto}"},
     )
     assert aberto.status_code == 200
-    assert "criar_problema" in aberto.text
+    assert "create_problem" in aberto.text
 
     # E revogar fecha, sem reiniciar nada.
     id = cliente.get("/api/chaves").json()["chaves"][0]["id"]
@@ -449,7 +449,7 @@ def test_decisao_criada_pelo_assistente_aparece_na_tela_de_quem_emitiu_a_chave(t
         "id": 1,
         "method": "tools/call",
         "params": {
-            "name": "criar_problema",
+            "name": "create_problem",
             "arguments": {
                 "nome": "Decisao da Ana",
                 "alternativas": ["A", "B", "C"],

@@ -319,3 +319,156 @@ def test_o_cli_avisa_quando_a_chave_nao_existe(tmp_path, monkeypatch, capsys):
 
     assert cofre._cli(["revogar", "nao-existe"]) == 1
     assert "nao encontrada" in capsys.readouterr().out
+
+
+# --- chaves por pessoa ----------------------------------------------------------
+#
+# Com o FasorX autenticando na frente, qualquer pessoa logada emite a PROPRIA
+# chave, e ela abre so o acervo dessa pessoa -- o mesmo que ela ve na tela.
+
+EMISSOR = "https://principal.exemplo.org"
+
+
+def com_identidade(tmp_path, **mudancas) -> Settings:
+    return ajustes(
+        tmp_path,
+        jwt_secret="segredo-compartilhado-entre-as-duas-aplicacoes",
+        jwt_issuer=EMISSOR,
+        jwt_audience="fitradeoff-mcp",
+        **mudancas,
+    )
+
+
+def portador(settings: Settings, pessoa: str) -> dict[str, str]:
+    import time
+
+    import jwt
+
+    assinado = jwt.encode(
+        {"sub": pessoa, "iss": EMISSOR, "aud": "fitradeoff-mcp", "exp": int(time.time()) + 300},
+        settings.jwt_secret,
+        algorithm="HS256",
+    )
+    return {"Authorization": f"Bearer {assinado}"}
+
+
+def test_pessoa_logada_emite_a_propria_chave_sem_token_de_admin(tmp_path):
+    from fitradeoff_api import identidade
+
+    s = com_identidade(tmp_path)
+    with cliente_de(s, client=DE_FORA) as c:
+        r = c.post("/api/chaves", json={"rotulo": "Claude"}, headers=portador(s, "fasorx:1"))
+    assert r.status_code == 201
+    texto = r.json()["texto"]
+
+    # A chave abre o acervo DESSA pessoa -- o mesmo diretorio que a API abre
+    # para o token dela. E nao o acervo do dono da plataforma.
+    abre = cofre.resolver(s)(texto)
+    assert abre == identidade.acervo_de(s, EMISSOR, "fasorx:1")
+    assert abre != s.storage
+
+
+def test_cada_pessoa_ve_e_revoga_so_as_proprias(tmp_path):
+    s = com_identidade(tmp_path)
+    ana, bia = portador(s, "fasorx:1"), portador(s, "fasorx:2")
+    with cliente_de(s, client=DE_FORA) as c:
+        id_ana = c.post("/api/chaves", json={"rotulo": "da Ana"}, headers=ana).json()["chave"]["id"]
+
+        assert [k["rotulo"] for k in c.get("/api/chaves", headers=ana).json()["chaves"]] == ["da Ana"]
+        assert c.get("/api/chaves", headers=bia).json()["chaves"] == []
+
+        # A Bia nao revoga a chave da Ana -- e o 404 nao confirma que o id existe.
+        assert c.delete(f"/api/chaves/{id_ana}", headers=bia).status_code == 404
+        assert c.delete(f"/api/chaves/{id_ana}", headers=ana).status_code == 200
+
+
+def test_chave_do_dono_continua_abrindo_o_acervo_principal_e_nao_aparece_para_pessoas(tmp_path):
+    s = com_identidade(tmp_path)
+    chave_do_dono, texto = cofre.criar(s, "linha de comando")
+    assert cofre.resolver(s)(texto) == s.storage
+    with cliente_de(s, client=DE_FORA) as c:
+        lista = c.get("/api/chaves", headers=portador(s, "fasorx:1")).json()["chaves"]
+    assert chave_do_dono.id not in [k["id"] for k in lista]
+
+
+def test_token_invalido_leva_401_e_sem_token_vale_a_regra_do_admin(tmp_path):
+    s = com_identidade(tmp_path)
+    with cliente_de(s, client=DE_FORA) as c:
+        invalido = c.get("/api/chaves", headers={"Authorization": "Bearer nao-e-jwt"})
+        assert invalido.status_code == 401
+        # Sem token e sem FITRADEOFF_ADMIN_TOKEN: a emissao das chaves do DONO
+        # segue fechada, como antes.
+        assert c.get("/api/chaves").status_code == 503
+
+
+def test_teto_de_chaves_por_pessoa(tmp_path):
+    s = com_identidade(tmp_path)
+    dono = "a" * 32
+    for i in range(cofre.LIMITE_POR_PESSOA):
+        cofre.criar(s, f"chave {i}", dono)
+    with pytest.raises(ValueError, match="Limite"):
+        cofre.criar(s, "uma a mais", dono)
+    # O teto e de cada um: outra pessoa ainda emite.
+    cofre.criar(s, "de outra pessoa", "b" * 32)
+
+
+def test_dono_adulterado_no_arquivo_nao_abre_nada(tmp_path):
+    """Um "../" gravado no dono nao pode apontar para fora de /dados/pessoas."""
+    s = com_identidade(tmp_path)
+    _, texto = cofre.criar(s, "legitima", "c" * 32)
+    arquivo = cofre.caminho(s)
+    bruto = json.loads(arquivo.read_text(encoding="utf-8"))
+    bruto["chaves"][0]["dono"] = "../../etc"
+    arquivo.write_text(json.dumps(bruto), encoding="utf-8")
+    assert cofre.resolver(s)(texto) is None
+
+
+def test_criar_recusa_dono_fora_do_formato(tmp_path):
+    s = com_identidade(tmp_path)
+    with pytest.raises(ValueError):
+        cofre.criar(s, "x", "../fora")
+
+
+def test_decisao_criada_pelo_assistente_aparece_na_tela_de_quem_emitiu_a_chave(tmp_path):
+    """A promessa da tela Conectar, de ponta a ponta, com duas pessoas.
+
+    A Ana emite a chave na tela (com o token do FasorX), o assistente dela cria
+    uma decisao pelo MCP com essa chave, e a decisao aparece na lista da Ana --
+    e nao na da Bia, nem no acervo do dono da plataforma.
+    """
+    from fitradeoff_api.mcp_remoto import create_mcp_app
+
+    s = com_identidade(tmp_path)
+    ana, bia = portador(s, "fasorx:1"), portador(s, "fasorx:2")
+
+    with cliente_de(s, client=DE_FORA) as api:
+        texto = api.post("/api/chaves", json={"rotulo": "Claude da Ana"}, headers=ana).json()["texto"]
+
+    criar = {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "tools/call",
+        "params": {
+            "name": "criar_problema",
+            "arguments": {
+                "nome": "Decisao da Ana",
+                "alternativas": ["A", "B", "C"],
+                "criterios": [
+                    {"chave": "q", "nome": "Qualidade", "direcao": "max"},
+                    {"chave": "c", "nome": "Custo", "direcao": "min"},
+                ],
+                "consequencias": [[0.8, 10.0], [0.9, 15.0], [0.7, 8.0]],
+            },
+        },
+    }
+    with TestClient(create_mcp_app(s), base_url="http://127.0.0.1:8765", client=DE_FORA) as mcp:
+        r = mcp.post("/mcp", json=criar, headers={**CABECALHOS_MCP, "Authorization": f"Bearer {texto}"})
+        assert r.status_code == 200, r.text
+
+    with cliente_de(s, client=DE_FORA) as api:
+        da_ana = api.get("/api/decisoes", headers=ana)
+        da_bia = api.get("/api/decisoes", headers=bia)
+    assert da_ana.status_code == 200
+    assert "Decisao da Ana" in da_ana.text
+    assert "Decisao da Ana" not in da_bia.text
+    assert not s.storage.exists(), "nada pode ir para o acervo do dono da plataforma"

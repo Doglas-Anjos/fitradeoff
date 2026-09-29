@@ -25,7 +25,8 @@ import hashlib
 import hmac
 import json
 import secrets
-from dataclasses import asdict, dataclass
+import re
+from dataclasses import asdict, dataclass, replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -40,11 +41,25 @@ PREFIXO = "fit_"
 _BYTES = 32
 
 LIMITE = 50
-"""Teto de chaves vivas.
+"""Teto de chaves vivas do DONO da plataforma.
 
 Nao e restricao de negocio: e o mesmo motivo do teto do rascunho -- um cliente
 com defeito chamando a criacao em laco nao deve encher o disco em silencio.
 """
+
+LIMITE_POR_PESSOA = 10
+"""Teto de chaves vivas de cada pessoa. Um assistente por aparelho cabe folgado."""
+
+LIMITE_TOTAL = 5000
+"""Teto do cofre inteiro, somando todo mundo -- o arquivo e reescrito inteiro a
+cada emissao, e sem teto um laco de criacao em varias contas o faria crescer
+sem limite."""
+
+# O dono de uma chave de pessoa e o nome do diretorio do acervo dela: o resumo
+# de 32 hexadecimais que identidade.acervo_de calcula. Conferido na leitura e na
+# resolucao -- um arquivo adulterado com "../" no dono nao pode apontar para
+# fora de /dados/pessoas.
+_DONO_VALIDO = re.compile(r"^[0-9a-f]{32}$")
 
 LIMITE_ROTULO = 60
 
@@ -64,6 +79,11 @@ class Chave:
     resumo: str
     criada_em: str
     ultimo_uso: str | None = None
+    # De quem e a chave. None: do dono da plataforma (emitida pela linha de
+    # comando ou com o token de administracao) -- abre o acervo principal,
+    # como toda chave abria antes. Preenchido: de uma pessoa que entrou pelo
+    # FasorX -- abre so o acervo dela.
+    dono: str | None = None
 
     def publica(self) -> dict[str, str | None]:
         """A forma que pode sair na resposta: tudo menos o resumo."""
@@ -121,6 +141,7 @@ def _ler(settings: Settings) -> list[Chave]:
                         if registro.get("ultimo_uso")
                         else None
                     ),
+                    dono=(str(registro["dono"]) if registro.get("dono") else None),
                 )
             )
         except (KeyError, TypeError):
@@ -144,12 +165,20 @@ def _gravar(settings: Settings, chaves: list[Chave]) -> None:
     provisorio.replace(arquivo)
 
 
-def listar(settings: Settings) -> list[Chave]:
-    """As chaves vivas, da mais nova para a mais velha."""
-    return sorted(_ler(settings), key=lambda c: c.criada_em, reverse=True)
+def listar(settings: Settings, dono: str | None = None) -> list[Chave]:
+    """As chaves vivas DESTE dono, da mais nova para a mais velha.
+
+    Cada um ve so as proprias: a lista de chaves de outra pessoa diria quem usa
+    a plataforma e de onde.
+    """
+    return sorted(
+        (c for c in _ler(settings) if c.dono == dono),
+        key=lambda c: c.criada_em,
+        reverse=True,
+    )
 
 
-def criar(settings: Settings, rotulo: str) -> tuple[Chave, str]:
+def criar(settings: Settings, rotulo: str, dono: str | None = None) -> tuple[Chave, str]:
     """Emite uma chave. O texto dela sai daqui e nao volta a existir.
 
     Devolve o registro e o texto, nessa ordem, para que quem chama nao confunda
@@ -162,11 +191,17 @@ def criar(settings: Settings, rotulo: str) -> tuple[Chave, str]:
     if len(rotulo) > LIMITE_ROTULO:
         raise ValueError(f"Rotulo longo demais (maximo {LIMITE_ROTULO} caracteres).")
 
+    if dono is not None and not _DONO_VALIDO.match(dono):
+        raise ValueError("Dono de chave invalido.")
+
     chaves = _ler(settings)
-    if len(chaves) >= LIMITE:
+    teto = LIMITE if dono is None else LIMITE_POR_PESSOA
+    if sum(1 for c in chaves if c.dono == dono) >= teto:
         raise ValueError(
-            f"Limite de {LIMITE} chaves alcancado. Revogue as que nao estao em uso."
+            f"Limite de {teto} chaves alcancado. Revogue as que nao estao em uso."
         )
+    if len(chaves) >= LIMITE_TOTAL:
+        raise ValueError("O cofre de chaves esta cheio. Fale com o administrador.")
 
     texto = PREFIXO + secrets.token_urlsafe(_BYTES)
     chave = Chave(
@@ -178,19 +213,23 @@ def criar(settings: Settings, rotulo: str) -> tuple[Chave, str]:
         prefixo=f"{texto[: len(PREFIXO) + 4]}...{texto[-4:]}",
         resumo=_resumir(texto),
         criada_em=_agora(),
+        dono=dono,
     )
     _gravar(settings, [*chaves, chave])
     return chave, texto
 
 
-def revogar(settings: Settings, id: str) -> bool:
-    """Apaga o registro. Devolve se havia o que apagar.
+def revogar(settings: Settings, id: str, dono: str | None = None) -> bool:
+    """Apaga o registro, se for deste dono. Devolve se havia o que apagar.
+
+    O dono entra na busca, e nao so o id: sem isso, quem soubesse (ou
+    adivinhasse) o id da chave de outra pessoa a revogaria.
 
     Apaga, e nao marca como revogada: uma chave revogada nao tem uso futuro, e
     a trilha de auditoria da plataforma e sobre decisoes, nao sobre credenciais.
     """
     chaves = _ler(settings)
-    restantes = [c for c in chaves if c.id != id]
+    restantes = [c for c in chaves if not (c.id == id and c.dono == dono)]
     if len(restantes) == len(chaves):
         return False
     _gravar(settings, restantes)
@@ -220,16 +259,9 @@ def _marcar_uso(settings: Settings, id: str, quando: datetime) -> None:
                     return
             except ValueError:
                 pass  # carimbo ilegivel: reescreve
-        atualizadas.append(
-            Chave(
-                id=chave.id,
-                rotulo=chave.rotulo,
-                prefixo=chave.prefixo,
-                resumo=chave.resumo,
-                criada_em=chave.criada_em,
-                ultimo_uso=quando.isoformat(timespec="seconds"),
-            )
-        )
+        # replace, e nao Chave(...) campo a campo: montada a mao, a copia
+        # perderia qualquer campo novo -- foi o que quase aconteceu com o dono.
+        atualizadas.append(replace(chave, ultimo_uso=quando.isoformat(timespec="seconds")))
         mudou = True
     if mudou:
         _gravar(settings, atualizadas)
@@ -238,13 +270,16 @@ def _marcar_uso(settings: Settings, id: str, quando: datetime) -> None:
 def resolver(settings: Settings):
     """O ``Resolvedor`` que o MCP remoto usa: chave apresentada -> onde gravar.
 
-    Toda chave valida abre o mesmo acervo -- o que a tela mostra. A plataforma
-    tem um acervo so, e separar o que a chave ve do que a tela ve faria o
-    decisor criar uma decisao pelo Claude e nao encontra-la no site.
+    A chave abre o acervo do DONO dela -- o mesmo que ele ve na tela:
 
-    E aqui, e so aqui, que isolar dados por chave passaria a existir: bastaria
-    devolver um diretorio derivado de ``chave.id``. Por isso a assinatura
-    devolve caminho, e nao um "sim" -- a decisao de escopo mora num lugar so.
+      - chave de pessoa (emitida por quem entrou pelo FasorX): o acervo dessa
+        pessoa, /dados/pessoas/<dono>. O mesmo diretorio que a API abre para o
+        token dela, entao a decisao criada pelo Claude aparece no site;
+      - chave do dono da plataforma (linha de comando, token de admin): o
+        acervo principal, como toda chave abria antes.
+
+    A decisao de escopo mora aqui, num lugar so -- por isso a assinatura
+    devolve caminho, e nao um "sim".
     """
 
     def para(apresentada: str) -> Path | None:
@@ -253,8 +288,15 @@ def resolver(settings: Settings):
             # Tempo constante: comparar resumos com `==` daria, em principio,
             # uma medida de quantos caracteres batem.
             if hmac.compare_digest(chave.resumo, alvo):
+                if chave.dono is None:
+                    destino = settings.storage
+                elif _DONO_VALIDO.match(chave.dono):
+                    destino = settings.storage.parent / "pessoas" / chave.dono
+                else:
+                    # Dono adulterado no arquivo: nao abre nada.
+                    return None
                 _marcar_uso(settings, chave.id, datetime.now(timezone.utc))
-                return settings.storage
+                return destino
         return None
 
     return para

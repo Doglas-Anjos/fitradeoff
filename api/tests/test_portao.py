@@ -201,19 +201,35 @@ def test_a_saude_nao_conta_onde_os_dados_moram(atras_da_aplicacao, tmp_path):
     assert corpo.json()["autenticado_por_terceiros"] is True
 
 
-def test_atras_da_aplicacao_ninguem_emite_chave_do_cofre(atras_da_aplicacao):
-    """Fecha uma escalada.
+def test_atras_da_aplicacao_a_chave_de_cada_um_abre_so_o_proprio_acervo(tmp_path):
+    """Fecha a mesma escalada de antes, por outro caminho.
 
-    A chave do cofre abre o acervo do dono da plataforma, nao o de quem a pediu.
-    Onde ha gente autenticada entrando -- e chegando, por tabela, da rede
-    interna -- emitir uma chave seria o caminho mais curto para ler as decisoes
-    alheias.
+    A preocupacao: onde ha gente autenticada entrando, emitir uma chave nao pode
+    virar o caminho mais curto para ler as decisoes alheias. Antes isso era
+    fechado proibindo a emissao; agora a chave de quem entrou pelo FasorX abre
+    SO o acervo dessa pessoa -- nunca o do dono da plataforma, nem o de outra.
     """
-    listagem = atras_da_aplicacao.get("/api/chaves", headers=como("ana"))
-    emissao = atras_da_aplicacao.post(
-        "/api/chaves", json={"rotulo": "minha"}, headers=como("ana")
-    )
+    from fitradeoff_api import chaves as cofre
+    from fitradeoff_api import deps, identidade
 
-    assert listagem.status_code == 503
-    assert emissao.status_code == 503
-    assert "FITRADEOFF_ADMIN_TOKEN" in emissao.json()["detail"]
+    settings = Settings(
+        storage=tmp_path / "decisoes",
+        jwt_secret=SEGREDO,
+        jwt_issuer=EMISSOR,
+        jwt_audience=PUBLICO,
+    )
+    deps.get_settings.cache_clear()
+    app = create_app(settings)
+    app.dependency_overrides[deps.get_settings] = lambda: settings
+    with TestClient(app, base_url="http://127.0.0.1:8000") as c:
+        emissao = c.post("/api/chaves", json={"rotulo": "minha"}, headers=como("ana"))
+        # Sem o token do FasorX, as chaves do DONO seguem fechadas como antes.
+        sem_token = c.get("/api/chaves")
+
+    assert emissao.status_code == 201
+    abre = cofre.resolver(settings)(emissao.json()["texto"])
+    assert abre == identidade.acervo_de(settings, EMISSOR, "ana")
+    assert abre != settings.storage
+    assert abre != identidade.acervo_de(settings, EMISSOR, "bia")
+    assert sem_token.status_code == 503
+    assert "FITRADEOFF_ADMIN_TOKEN" in sem_token.json()["detail"]

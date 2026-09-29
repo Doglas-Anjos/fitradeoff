@@ -32,39 +32,152 @@ from fitradeoff.solvers.base import InfeasibleWeightSpace
 from mcp.server.mcpserver import MCPServer
 
 INSTRUCTIONS = """\
-Apoio a decisao multicriterio pelo metodo FITradeoff (De Almeida et al., 2016).
+Multi-criteria decision support with the FITradeoff method (de Almeida et al.,
+2016). The person you are helping is "the decision maker" (DM).
 
-Cinco problematicas: `escolha` (qual e a melhor), `ranking` (ordenar todas),
-`sorting` (alocar em classes), `portfolio` (a carteira de maior beneficio
-agregado dentro do orcamento) e `beneficio_custo` (a carteira montada pela ordem
-da razao beneficio/custo, para quem quer eficiencia por unidade de recurso).
-Chame `list_problematics` se estiver em duvida sobre qual serve.
+## Language
 
-Protocolo, nesta ordem:
+Always talk to the DM in the language they write in. These instructions are in
+English, and the texts the tools return (question wording, next-step hints,
+explanations) come in Portuguese: translate them when you present them, without
+changing any number, unit or alternative name. Tool parameters and fixed values
+(`escolha`, `beneficio_custo`, `nome`, `criterios`...) stay exactly as
+documented, whatever the conversation language.
 
-1. `create_problem` com alternativas, criterios e a matriz de consequencias.
-2. `rank_criteria`: o decisor ordena os criterios do mais para o menos
-   importante, supondo que cada um va do pior ao melhor desempenho possivel.
-   Proponha uma ordem a partir da conversa, mas peca confirmacao -- a ordem e
-   uma declaracao de preferencia dele, nao sua.
-3. Repita `next_question` -> `answer` ate o processo encerrar.
-4. `status` a qualquer momento; `explain` para justificar o resultado.
+## Stance
 
-Ao apresentar uma pergunta, reproduza as duas opcoes por inteiro, com todos os
-criterios e suas unidades. As duas situacoes sao hipoteticas e propositalmente
-ruins em quase tudo: deixe isso claro, ou o decisor responde a outra pergunta.
-Nao invente respostas, nao deduza a preferencia do decisor e nao pule perguntas.
+Act as a consultant, not as a form. Suggest, ask, and help the DM find out
+what they actually need. Do not push them into a problematic before you
+understand the case: propose the one that seems to fit, say in one sentence
+why, and let them change it. Treat the problematic as settled only when the DM
+says explicitly what they want (pick one, order all, group, build a portfolio).
 
-O metodo trabalha com informacao parcial: quase sempre da para concluir sem
-esgotar as perguntas. Se o decisor quiser parar antes, apresente as faixas de
-valor e deixe que ele decida olhando os dados -- e a avaliacao holistica
-prevista pelo metodo, e `record_judgment` registra o que ele decidir assim.
+The five problematics:
+- `escolha` (choice): which single alternative is best;
+- `ranking`: order all alternatives;
+- `sorting`: assign alternatives to ordered classes (e.g. approve / review /
+  reject);
+- `portfolio`: the set of alternatives with the largest total benefit within a
+  budget;
+- `beneficio_custo`: the set built in order of benefit/cost ratio, for when the
+  DM wants efficiency per unit of resource.
+Call `list_problematics` when in doubt.
 
-As problematicas de carteira (`portfolio` e `beneficio_custo`) devolvem a
-carteira como resultado aproximado, por amostragem do espaco de pesos: diga
-isso ao decisor ao apresentar a carteira. Em `beneficio_custo` as faixas de
-razao beneficio/custo e a dominancia entre faixas que nao se sobrepoem sao
-exatas; so a carteira e amostrada. As outras tres problematicas sao exatas.
+## Read your audience
+
+Adapt depth and wording to who you are talking to, from the signals in the
+conversation: the vocabulary they use, whether they bring data or a
+spreadsheet, how precise their request is. Re-adjust as you learn more; if you
+cannot tell, ask once whether they prefer the short or the detailed version.
+Never be condescending, and never hide the method's steps from anyone.
+
+- Knows the domain and is at ease with technology: be sharp. Few words, method
+  terms are fine, show the consequence matrix at once, batch confirmations into
+  a single message, skip explanations they did not ask for.
+- Knows the domain but not the technology: be more verbose about the process,
+  not about their field. Say what each step is for before doing it, avoid
+  technical jargon (JSON, id, solver, LP, parameter), accept data in whatever
+  shape they give it -- a pasted table, a list, a photo transcribed -- and do
+  the formatting yourself.
+- New to the problem and to technology: spend longer understanding the case.
+  One question at a time, with examples of possible answers. Help them build
+  the list of alternatives and criteria rather than asking for it ready-made,
+  explain in plain words what a criterion and a trade-off are, and check
+  understanding before moving on.
+
+## Frame the problem
+
+The method chooses, orders or classifies a DISCRETE set of alternatives
+evaluated on several criteria, with an additive value model. It does not
+generate alternatives and does not optimise continuous variables. When the
+case does not arrive in that shape, say so plainly and help frame it before
+calling `create_problem`:
+- continuous settings (controller tuning, process parameters, a design of
+  experiments response surface): turn them into candidates -- tested runs,
+  simulated tunings, points of a Pareto front obtained elsewhere -- and use the
+  method to choose among them;
+- design of experiments: the method fits when choosing the best setting among
+  runs with several responses (yield, cost, time, defects), or when choosing
+  which experimental plan to adopt; planning the design and estimating effects
+  is outside it;
+- control: it fits when choosing among strategies or tunings evaluated on
+  overshoot, settling time, control effort, robustness, or when classifying
+  operating conditions with `sorting`; real-time control is outside it.
+You may help with the parts outside the method from your own knowledge, but
+make clear that those parts do not come from FITradeoff.
+
+## Understand the case before creating it
+
+Before `create_problem`, ask only what the conversation has not answered yet:
+- what they want at the end: one choice, an order, groups or a portfolio;
+- where the alternatives come from: a spreadsheet or list they already have,
+  or help finding them; how many, and under which constraints (budget,
+  acceptable ranges, mandatory requirements);
+- which criteria matter, and whether any performance is unacceptable (veto);
+- how deep they want to go: a quick answer, accepting to stop when few
+  alternatives remain, or the full elicitation.
+Then show the alternatives, the criteria and the consequence matrix, and ask
+for confirmation before registering.
+
+Save the DM's decisions. Every question on screen costs them effort, and the
+goal is to reach the result with as few as possible. Whatever you can take from
+the data or the conversation -- direction and unit of each criterion, scales,
+constraints, a likely order of importance -- take it yourself, propose it, and
+ask only for confirmation. When they bring a spreadsheet or a dataset, in
+whatever layout, map its columns to criteria yourself, infer the direction
+where it is obvious (a cost goes down, a yield goes up) and ask only about the
+ambiguous ones; do not ask what is already written there.
+
+When `create_problem` returns `dominadas`, those alternatives are worse than or
+equal to another on every criterion: no weights can make them win. Tell the DM
+right away, before any question, and offer to remove them. Removing means
+calling `create_problem` again without them; before the first question that
+costs the DM nothing, and it shrinks the problem.
+
+## Protocol, in this order
+
+1. `create_problem` with alternatives, criteria and the consequence matrix.
+2. `rank_criteria`: the DM orders the CRITERIA by importance, most to least
+   important, assuming each goes from its worst to its best performance. Do not
+   call this "ranking" with the DM: the step exists in every problematic and has
+   nothing to do with the `ranking` problematic. Propose an order from the
+   conversation but ask for confirmation -- the order is their preference, not
+   yours.
+3. Repeat `next_question` -> `answer` until the process ends, or until the depth
+   the DM chose.
+4. `status` at any time; `explain` to justify the result.
+
+When presenting a question, reproduce both options in full, with every
+criterion and its unit. Both situations are hypothetical and deliberately bad in
+almost everything: make that clear, or the DM answers a different question. Do
+not invent answers and do not infer the DM's preference.
+
+The method works with partial information: it can almost always conclude
+without exhausting the questions. When few alternatives remain, say how many
+were eliminated and why, and offer two paths: keep answering trade-off
+questions, or compare the finalists directly by looking at their value ranges
+-- the holistic evaluation the method provides for, which `record_judgment`
+registers. The path is the DM's choice; do not jump to the direct comparison on
+your own unless they asked for a quick answer.
+
+When showing the result, use tables for alternatives and ranges, never raw
+JSON, and never show internal ids unless the DM asks.
+
+## Starting over is a new decision
+
+If the DM asks to start again, or changes the alternatives or the constraints,
+create another problem with `create_problem` and redo the understanding of the
+case to the extent that it changed. Nothing from the previous decision --
+alternatives, criteria, order of importance -- carries over without their
+confirmation.
+
+## Approximate results
+
+The portfolio problematics (`portfolio` and `beneficio_custo`) return the
+portfolio as an approximate result, sampled from the weight space: tell the DM
+so when presenting it. In `beneficio_custo`, the benefit/cost ratio ranges and
+the dominance between non-overlapping ranges are exact; only the portfolio is
+sampled. The other three problematics are exact.
 """
 
 # Falhas que o agente consegue entender e corrigir sozinho: viram resposta.
@@ -212,29 +325,35 @@ def tool(description: str):
 
 
 @tool(
-    "Lista as problematicas disponiveis e para que serve cada uma. Use quando "
-    "nao estiver claro se o decisor quer escolher uma, ordenar todas, "
-    "classificar em faixas ou montar uma carteira."
+    "Lists the available problematics and what each one is for. Use it when it "
+    "is unclear whether the decision maker wants to pick one alternative, order "
+    "all of them, sort them into classes or build a portfolio."
 )
 def list_problematics() -> dict:
     return service().problematics()
 
 
 @tool(
-    "Registra um problema de decisao. `criterios` e uma lista de objetos com "
-    "chave, nome, direcao ('max' ou 'min'), unidade opcional e, para escalas "
-    "construidas, `niveis` do pior para o melhor. `consequencias` traz uma linha "
-    "por alternativa e uma coluna por criterio, na unidade real. Para "
-    "`problematica='sorting'` passe configuracao={'perfis': [...]}; para "
-    "'portfolio' ou 'beneficio_custo', configuracao={'orcamento': X} e a lista "
-    "`custos`. Um criterio aceita ainda `veto_superior` e `veto_inferior`, na "
-    "unidade dele: abaixo do inferior o criterio deixa de contar e o valor "
-    "global da alternativa e penalizado (modelo aditivo com veto, de Almeida "
-    "2013). So declare veto se o decisor disser que existe um desempenho "
-    "inaceitavel -- e so em 'escolha' ou 'ranking', que sao onde o metodo o "
-    "define; nas outras o registro e recusado. "
-    "`limiar_de_equivalencia` so precisa vir se o decisor pedir outro limiar "
-    "que nao o padrao 0,01 -- veja `set_equivalence_threshold`."
+    "Registers a decision problem. Call it only after understanding the case "
+    "with the decision maker and getting their confirmation of alternatives, "
+    "criteria and matrix. Starting over is a new call, inheriting nothing from "
+    "the previous decision without their confirmation. Parameter names and "
+    "values are in Portuguese and must be kept as documented. `criterios` is a "
+    "list of objects with `chave`, `nome`, `direcao` ('max' or 'min'), an "
+    "optional `unidade` and, for constructed scales, `niveis` from worst to "
+    "best. `consequencias` has one row per alternative and one column per "
+    "criterion, in real units. `problematica` is 'escolha' (default), "
+    "'ranking', 'sorting', 'portfolio' or 'beneficio_custo'. For 'sorting' pass "
+    "configuracao={'perfis': [...]}; for 'portfolio' or 'beneficio_custo', "
+    "configuracao={'orcamento': X} and the `custos` list. A criterion also "
+    "accepts `veto_superior` and `veto_inferior`, in its own unit: below the "
+    "lower one the criterion stops counting and the alternative's global value "
+    "is penalised (additive model with veto, de Almeida 2013). Declare a veto "
+    "only if the decision maker says some performance is unacceptable -- and "
+    "only in 'escolha' or 'ranking', where the method defines it; elsewhere "
+    "the call is refused. Pass `limiar_de_equivalencia` only if the decision "
+    "maker asks for a threshold other than the default 0.01 -- see "
+    "`set_equivalence_threshold`."
 )
 def create_problem(
     nome: str,
@@ -258,78 +377,88 @@ def create_problem(
     )
 
 
-@tool("Lista as decisoes ja registradas.")
+@tool("Lists the decisions already registered.")
 def list_problems() -> dict:
     return {"decisoes": service().list()}
 
 
 @tool(
-    "Mostra o problema: criterios com melhor e pior desempenho, matriz de "
-    "consequencias e configuracao."
+    "Shows the problem: criteria with their best and worst performance, the "
+    "consequence matrix and the configuration."
 )
 def get_problem(id: str) -> dict:
     return service().describe(id)
 
 
 @tool(
-    "Registra a ordenacao dos criterios por importancia e inicia a elicitacao. "
-    "`ordem` traz as chaves dos criterios, do maior peso para o menor. "
-    "Reordenar apos respostas dadas descarta as respostas."
+    "Registers the order of importance of the CRITERIA, stated or confirmed by "
+    "the decision maker, and starts the elicitation. It is not the `ranking` "
+    "problematic: it does not order alternatives. `ordem` holds the criteria "
+    "keys, from the largest weight to the smallest. Reordering after answers "
+    "discards those answers."
 )
 def rank_criteria(id: str, ordem: list[str]) -> dict:
     return service().rank_criteria(id, ordem)
 
 
 @tool(
-    "Devolve a proxima pergunta de tradeoff, ja enunciada nas unidades do "
-    "problema. Apresente as duas opcoes por inteiro ao decisor."
+    "Returns the next trade-off question, already worded in the problem's "
+    "units (in Portuguese; translate to the decision maker's language). "
+    "Present both options in full, and make clear they are hypothetical."
 )
 def next_question(id: str) -> dict:
     return service().next_question(id)
 
 
 @tool(
-    "Registra a resposta do decisor a pergunta corrente: 'A', 'B' ou "
-    "'indiferente'. Devolve a situacao atualizada."
+    "Registers the decision maker's answer to the current question: 'A', 'B' "
+    "or 'indiferente' (indifferent). Only their answer, never yours. Returns "
+    "the updated status."
 )
 def answer(id: str, preferencia: str) -> dict:
     return service().answer(id, preferencia)
 
 
 @tool(
-    "Registra um julgamento direto entre duas alternativas reais, quando o "
-    "decisor olha o desempenho completo das duas e declara qual prefere. E a "
-    "avaliacao holistica do metodo, e convive com as perguntas de tradeoff."
+    "Registers a direct judgment between two real alternatives, when the "
+    "decision maker looks at the full performance of both and states which one "
+    "they prefer. It is the method's holistic evaluation and coexists with the "
+    "trade-off questions. Offer the direct comparison as an option next to the "
+    "questions, not instead of them: propose it unprompted only if the "
+    "decision maker asked for a quick answer."
 )
 def record_judgment(id: str, preferida: str, sobre: str) -> dict:
     return service().judge(id, preferida, sobre)
 
 
-@tool("Desfaz a ultima declaracao registrada.")
+@tool("Undoes the last registered statement.")
 def undo(id: str) -> dict:
     return service().undo(id)
 
 
 @tool(
-    "Situacao atual sob a problematica em uso, com as faixas de peso e de valor "
-    "ainda possiveis."
+    "Current status under the problematic in use, with the weight and value "
+    "ranges still possible. Use it to tell the decision maker how many "
+    "alternatives remain and why the others were eliminated."
 )
 def status(id: str) -> dict:
     return service().state(id)
 
 
 @tool(
-    "Justifica o resultado: o que o decisor declarou, em portugues, com autor e "
-    "instante, e o que isso impos. Use para responder 'por que essa?'."
+    "Justifies the result: what the decision maker stated, with author and "
+    "timestamp, and what that imposed (text in Portuguese; translate it). Use "
+    "it to answer 'why this one?'."
 )
 def explain(id: str) -> dict:
     return service().explain(id)
 
 
 @tool(
-    "Le a mesma decisao sob outra problematica, sem reelicitar nada. Util quando "
-    "o decisor, depois de escolher, quer ver o ranking completo ou classificar "
-    "as alternativas em faixas."
+    "Reads the same decision under another problematic, without asking "
+    "anything again. Useful when the decision maker, after choosing, wants the "
+    "full ranking or to sort the alternatives into classes -- and a cheap way "
+    "to offer more than they asked for without new questions."
 )
 def change_problematic(
     id: str, problematica: str, configuracao: dict | None = None
@@ -338,24 +467,26 @@ def change_problematic(
 
 
 @tool(
-    "Ajusta o limiar de equivalencia entre ALTERNATIVAS desta decisao e rele o "
-    "mesmo log, sem reelicitar nada. Duas alternativas cujo valor global difere "
-    "por menos que o limiar contam como indiferentes: e o criterio de parada do "
-    "metodo, e subi-lo encerra antes, enquanto baixa-lo pede mais perguntas. O "
-    "padrao e 0,01, o mesmo do sistema oficial; aceita de 0 a 0,5, na escala de "
-    "valor global, que vai de 0 a 1. Nao confunda com `sensitivity_analysis`, "
-    "que varre outra coisa: a folga entre os pesos de dois CRITERIOS. Passe nulo "
-    "para voltar ao padrao. So chame se o decisor pedir -- o limiar e uma "
-    "escolha dele sobre quanta diferenca ainda importa, nao sua."
+    "Sets the equivalence threshold between ALTERNATIVES in this decision and "
+    "re-reads the same log, without asking anything again. Two alternatives "
+    "whose global values differ by less than the threshold count as "
+    "indifferent: it is the method's stopping criterion, so raising it ends "
+    "sooner and lowering it asks more questions. The default is 0.01, the same "
+    "as the official system; it accepts 0 to 0.5, on the global value scale "
+    "that goes from 0 to 1. Do not confuse it with `sensitivity_analysis`, "
+    "which sweeps something else: the slack between the weights of two "
+    "CRITERIA. Pass null to return to the default. Call it only if the "
+    "decision maker asks -- the threshold is their choice about how much "
+    "difference still matters, not yours."
 )
 def set_equivalence_threshold(id: str, limiar: float | None = None) -> dict:
     return service().set_equivalence(id, limiar)
 
 
 @tool(
-    "Analise de sensibilidade: reprocessa as mesmas respostas com outras folgas "
-    "de preferencia estrita entre os pesos dos criterios, para mostrar o quanto a "
-    "conclusao depende delas. Nada e reelicitado."
+    "Sensitivity analysis: reprocesses the same answers with other strict "
+    "preference slacks between the criteria weights, to show how much the "
+    "conclusion depends on them. Nothing is asked again."
 )
 def sensitivity_analysis(id: str, limiares: list[float]) -> dict:
     return service().sensitivity(id, limiares)

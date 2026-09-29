@@ -31,14 +31,19 @@ from .inconsistency import diagnosticar, resolver
 from .limits import LimitExceeded, Limits
 from .sensitivity import VariacaoCriterio, analisar
 from .views import (
+    LEITURA_DAS_DOMINADAS,
     PROXIMO_PASSO,
     analysis_dto,
     audit_dto,
+    pareto_dominance,
     problem_dto,
     question_dto,
     state_dto,
     summary_dto,
 )
+
+
+_CARTEIRAS = frozenset({"portfolio", "beneficio_custo"})
 
 
 class InvalidRequest(Exception):
@@ -204,6 +209,13 @@ class DecisionService:
         self._container.repository.save(record)
         payload = problem_dto(record).to_dict()
         payload["proximo_passo"] = PROXIMO_PASSO
+        # Nas carteiras o custo entra na conta: uma alternativa pior em todo
+        # criterio ainda pode caber no orcamento onde a outra nao cabe.
+        if problematica not in _CARTEIRAS:
+            dominadas = pareto_dominance(problem)
+            if dominadas:
+                payload["dominadas"] = dominadas
+                payload["leitura_das_dominadas"] = LEITURA_DAS_DOMINADAS
         return payload
 
     def rank_criteria(self, record_id: str, ordem: Sequence[str]) -> dict:

@@ -43,6 +43,57 @@ def test_criar_devolve_problema_e_proximo_passo(criada):
     assert "ordene os critérios" in criada["proximo_passo"]
 
 
+DOMINANCIA_CRITERIOS = [
+    {"chave": "custo", "nome": "Custo", "direcao": "min", "unidade": "R$"},
+    {"chave": "desempenho", "nome": "Desempenho", "direcao": "max"},
+]
+DOMINANCIA_ALTERNATIVAS = ["A", "B", "C", "D"]
+DOMINANCIA_MATRIZ = [
+    [100, 80],
+    [120, 50],  # mais cara e pior que A
+    [150, 70],  # idem
+    [100, 80],  # identica a A: empata, nao domina
+]
+
+
+def test_criar_aponta_as_dominadas_antes_de_qualquer_pergunta(service):
+    criada = service.create(
+        "Dominancia", DOMINANCIA_ALTERNATIVAS, DOMINANCIA_CRITERIOS, DOMINANCIA_MATRIZ
+    )
+    dominadas = {d["alternativa"]: d["dominada_por"] for d in criada["dominadas"]}
+    # C nao domina B: e melhor em desempenho, mas custa mais
+    assert dominadas == {"B": ["A", "D"], "C": ["A", "D"]}
+    assert "nunca vale mais" in criada["leitura_das_dominadas"]
+
+
+def test_dominantes_listados_tem_teto_e_total(service):
+    # cinco alternativas boas e uma pior que todas: lista 3 nomes, conta 5
+    alternativas = ["P1", "P2", "P3", "P4", "P5", "Pior"]
+    matriz = [[100 + i, 80 - i] for i in range(5)] + [[200, 10]]
+    criada = service.create("Teto", alternativas, DOMINANCIA_CRITERIOS, matriz)
+    (pior,) = [d for d in criada["dominadas"] if d["alternativa"] == "Pior"]
+    assert pior["dominada_por"] == ["P1", "P2", "P3"]
+    assert pior["total_de_dominantes"] == 5
+
+
+def test_criar_sem_dominadas_nao_traz_o_campo(criada):
+    assert "dominadas" not in criada
+
+
+def test_carteira_nao_aponta_dominadas(service):
+    # na carteira o custo conta: a dominada pode ser a que cabe no orcamento
+    criada = service.create(
+        "Dominancia",
+        DOMINANCIA_ALTERNATIVAS,
+        DOMINANCIA_CRITERIOS,
+        DOMINANCIA_MATRIZ,
+        problematica="portfolio",
+        configuracao={"orcamento": 250.0},
+        custos=[100.0, 120.0, 150.0, 100.0],
+    )
+    assert "dominadas" not in criada
+
+
 def test_matriz_incoerente_e_recusada(service):
     with pytest.raises(ValueError, match="esperado"):
         service.create("Ruim", ALTERNATIVAS, CRITERIOS_SPEC, [[1.0, 2.0, 3.0]])

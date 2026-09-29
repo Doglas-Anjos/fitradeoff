@@ -72,8 +72,27 @@ def test_assinaturas_preservadas_apesar_do_decorador():
 
 
 def test_instrucoes_orientam_o_agente():
-    assert "Nao invente respostas" in srv.INSTRUCTIONS
-    assert "aproximado" in srv.INSTRUCTIONS
+    assert "not invent answers" in srv.INSTRUCTIONS
+    assert "approximate result" in srv.INSTRUCTIONS
+
+
+def test_instrucoes_conduzem_sem_engessar():
+    # fala a lingua do decisor, mas os parametros ficam como documentados
+    assert "the language they write in" in srv.INSTRUCTIONS
+    # entender o caso antes de registrar, e sem impor a problematica
+    assert "Understand the case before creating it" in srv.INSTRUCTIONS
+    assert "how deep they want to go" in srv.INSTRUCTIONS
+    assert "Save the DM's decisions" in srv.INSTRUCTIONS
+    # o tom acompanha o publico
+    assert "Read your audience" in srv.INSTRUCTIONS
+    # caso fora do formato do metodo e enquadrado, nao forcado
+    assert "Frame the problem" in srv.INSTRUCTIONS
+    # recomecar nao herda nada sem confirmacao
+    assert "Starting over is a new decision" in srv.INSTRUCTIONS
+    # a comparacao direta e oferecida, nao imposta
+    assert "The path is the DM's choice" in srv.INSTRUCTIONS
+    # ordenar criterios nao e a problematica ranking
+    assert "nothing to do with the `ranking`" in srv.INSTRUCTIONS
 
 
 # --- erros viram resposta, nao excecao ----------------------------------------

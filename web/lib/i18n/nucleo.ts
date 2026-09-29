@@ -35,6 +35,31 @@ export const NUCLEO = registrar({
   "nav.menu.fechar": { pt: "Fechar menu", en: "Close menu", es: "Cerrar menú" },
   "nav.menu.rotulo": { pt: "Navegação", en: "Navigation", es: "Navegación" },
 
+  // --- conta do FasorX ------------------------------------------------------
+  "conta.sair": { pt: "Sair", en: "Sign out", es: "Salir" },
+  "conta.sair.titulo": {
+    pt: "Sair da sua conta FasorX",
+    en: "Sign out of your FasorX account",
+    es: "Salir de su cuenta FasorX",
+  },
+  "conta.rotulo": { pt: "Sua conta", en: "Your account", es: "Su cuenta" },
+  "portao.verificando": {
+    pt: "Verificando seu acesso…",
+    en: "Checking your access…",
+    es: "Verificando su acceso…",
+  },
+  "portao.falha": {
+    pt: "Não foi possível confirmar seu acesso. Verifique a conexão.",
+    en: "Could not confirm your access. Check your connection.",
+    es: "No fue posible confirmar su acceso. Verifique la conexión.",
+  },
+  "portao.tentar": { pt: "Tentar de novo", en: "Try again", es: "Intentar de nuevo" },
+  "rodape.fasorx": {
+    pt: "Uma aplicação",
+    en: "An application by",
+    es: "Una aplicación de",
+  },
+
   // --- as problemáticas, nos termos da literatura ---------------------------
   /* Os nomes seguem o sistema de referencia, nao a traducao mais natural.
      "Montar carteira" descrevia melhor a acao, mas quem chega de um artigo ou

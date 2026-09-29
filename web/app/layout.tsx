@@ -6,6 +6,8 @@ import { ProvedorIdioma } from "@/lib/i18n";
 import { Avisos } from "@/components/Avisos";
 import { FundoGuache } from "@/components/FundoGuache";
 import { Navegacao } from "@/components/Navegacao";
+import { Portao } from "@/components/Portao";
+import { RodapeFasorx } from "@/components/RodapeFasorx";
 import { Sessao } from "@/components/Sessao";
 import { SCRIPT_TEMA } from "@/lib/tema";
 import "./globals.css";
@@ -54,11 +56,16 @@ export default function RootLayout({
         <ProvedorIdioma>
           {/* Antes da navegação e fora dela: é fundo de tudo, e fica fixo. */}
           <FundoGuache />
-          <Navegacao />
-          {children}
-          {/* uma só, na raiz: duas montadas duplicam todo aviso */}
-          <Avisos />
-          <Sessao />
+          {/* Nada da aplicacao -- nem a navegacao -- antes de o FasorX
+              confirmar a sessao. Sem sessao, o Portao manda para o login. */}
+          <Portao>
+            <Navegacao />
+            {children}
+            <RodapeFasorx />
+            {/* uma só, na raiz: duas montadas duplicam todo aviso */}
+            <Avisos />
+            <Sessao />
+          </Portao>
         </ProvedorIdioma>
       </body>
     </html>

@@ -106,7 +106,15 @@ async function autorizacao(): Promise<Record<string, string>> {
 }
 
 function semSessao(): never {
-  identidade.irParaLogin();
+  // false = o disjuntor de irParaLogin segurou: a pessoa acabou de voltar do
+  // FasorX e a API daqui continua recusando. Mandar de novo seria um laco;
+  // dizer o que houve e o que resta.
+  if (!identidade.irParaLogin()) {
+    throw new ApiError(
+      401,
+      "Sua sessão no FasorX está ativa, mas esta aplicação não conseguiu confirmá-la. Tente de novo em instantes.",
+    );
+  }
   throw new ApiError(401, "Sessão encerrada. Entrando de novo…");
 }
 

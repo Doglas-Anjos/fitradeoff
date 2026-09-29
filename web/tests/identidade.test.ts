@@ -30,6 +30,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  window.sessionStorage.clear();
   vi.useRealTimers();
   vi.unstubAllGlobals();
   delete process.env.NEXT_PUBLIC_FASORX_URL;
@@ -173,5 +174,107 @@ describe("vigiar", () => {
 
     await vi.advanceTimersByTimeAsync(20 * 60 * 1000);
     expect(buscar).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("pessoa, sair e a volta do login", () => {
+  /** window.location do jsdom nao navega; troca-se por um objeto simples para
+   *  ler o endereco que a aplicacao TENTOU abrir. */
+  function prenderNavegacao() {
+    const alvo = { href: "https://fitradeoff.fasorx.com.br/" };
+    vi.stubGlobal("location", alvo);
+    Object.defineProperty(window, "location", { value: alvo, configurable: true });
+    return alvo;
+  }
+
+  it("guarda nome e e-mail que vem junto com o token, e avisa quem assina", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        resposta({
+          token: "t1",
+          validade: 300,
+          pessoa: { nome: "Maria Silva", email: "maria@ufpe.br" },
+          sair: `${URL_FASORX}/sair/`,
+        }),
+      ),
+    );
+    const id = await carregar();
+    const ouvinte = vi.fn();
+    id.assinar(ouvinte);
+
+    expect(id.pessoaAtual()).toBeNull();
+    await id.obter();
+    expect(id.pessoaAtual()).toEqual({ nome: "Maria Silva", email: "maria@ufpe.br" });
+    expect(ouvinte).toHaveBeenCalledTimes(1);
+  });
+
+  it("sem sessao, manda ao login do FasorX pedindo para voltar", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => resposta({ erro: "sem sessao" }, 401)));
+    const id = await carregar();
+    const nav = prenderNavegacao();
+    await id.obter();
+    id.irParaLogin();
+    expect(nav.href).toBe(`${URL_FASORX}/entrar/?volta=fitradeoff`);
+  });
+
+  it("com termo pendente, vai para a /conta/ do FasorX -- e nao para o login", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => resposta({ erro: "termo pendente", completar: `${URL_FASORX}/conta/` }, 403)),
+    );
+    const id = await carregar();
+    const nav = prenderNavegacao();
+    await id.obter();
+    id.irParaLogin();
+    expect(nav.href).toBe(`${URL_FASORX}/conta/?volta=fitradeoff`);
+  });
+
+  it("ignora `completar` e `sair` que apontem para fora do FasorX", async () => {
+    const buscar = vi
+      .fn()
+      .mockResolvedValueOnce(resposta({ token: "t1", validade: 300, sair: "https://evil.example/" }))
+      .mockResolvedValueOnce(resposta({ erro: "x", completar: "https://evil.example/conta/" }, 403));
+    vi.stubGlobal("fetch", buscar);
+    const id = await carregar();
+    const nav = prenderNavegacao();
+
+    await id.obter();
+    id.sair();
+    expect(nav.href).toBe(`${URL_FASORX}/sair/`);
+
+    await id.obter();
+    id.irParaLogin();
+    expect(nav.href).toBe(`${URL_FASORX}/entrar/?volta=fitradeoff`);
+  });
+
+  it("disjuntor: nao gira em circulo se voltou do login ha pouco", async () => {
+    // O FasorX tem sessao e devolve a pessoa, mas a API daqui recusa o token
+    // (JWKS fora do ar, relogio): sem o disjuntor, o navegador pingaria entre
+    // os dois ate o limitador do FasorX bloquear o IP.
+    vi.stubGlobal("fetch", vi.fn(async () => resposta({ erro: "sem sessao" }, 401)));
+    const id = await carregar();
+    const nav = prenderNavegacao();
+    await id.obter();
+
+    expect(id.irParaLogin()).toBe(true);
+    nav.href = "https://fitradeoff.fasorx.com.br/";
+    expect(id.irParaLogin()).toBe(false);
+    expect(nav.href).toBe("https://fitradeoff.fasorx.com.br/");
+
+    vi.advanceTimersByTime(61_000);
+    expect(id.irParaLogin()).toBe(true);
+  });
+
+  it("sair leva a pagina /sair/ do FasorX e esquece o token", async () => {
+    const buscar = vi.fn(async () => resposta({ token: "t1", validade: 300, sair: `${URL_FASORX}/sair/` }));
+    vi.stubGlobal("fetch", buscar);
+    const id = await carregar();
+    const nav = prenderNavegacao();
+    await id.obter();
+    id.sair();
+    expect(nav.href).toBe(`${URL_FASORX}/sair/`);
+    await id.obter();
+    expect(buscar).toHaveBeenCalledTimes(2);
   });
 });

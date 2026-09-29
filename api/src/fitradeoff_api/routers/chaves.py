@@ -85,9 +85,15 @@ def gestao_liberada(
 
     apresentado = request.headers.get(CABECALHO_ADMIN, "")
     if not hmac.compare_digest(apresentado, settings.admin_token):
+        # 403, e nao 401. Quem chega aqui pela tela ja esta autenticado no
+        # FasorX; o que falta e PERMISSAO para emitir chave. Com 401 a tela lia
+        # "sessao encerrada", mandava a pessoa de volta ao login -- que estava
+        # valido -- e a mensagem final ("sua sessao esta ativa, mas...") nao
+        # dizia o que de fato aconteceu.
         raise HTTPException(
-            status.HTTP_401_UNAUTHORIZED,
-            f"Apresente o token de administracao no cabecalho {CABECALHO_ADMIN}.",
+            status.HTTP_403_FORBIDDEN,
+            "A emissao de chaves do MCP e restrita ao administrador da "
+            f"plataforma (token de administracao no cabecalho {CABECALHO_ADMIN}).",
         )
 
 

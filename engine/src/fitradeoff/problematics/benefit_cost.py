@@ -142,8 +142,27 @@ class BenefitCostProblematic(Problematic):
         sem_ordem = self._pares_sem_ordem(
             problem, space, costs, razao_minima, razao_maxima
         )
-        resolved = not sem_ordem
-        if resolved:
+        # So antes do primeiro tradeoff: no bc-20 o sistema de referencia tem a
+        # carteira fechada pelo orcamento desde a 11a pergunta e segue ate a 17a,
+        # fechando a ordem inteira -- ele nao reavalia esta parada no meio.
+        so_a_ordenacao = len(set(space.sources)) <= 1
+        pelo_orcamento = (
+            bool(sem_ordem)
+            and so_a_ordenacao
+            and self._carteira_fechada_pelo_orcamento(
+                problem.n_alternatives, costs, razao_minima, razao_maxima
+            )
+        )
+        resolved = not sem_ordem or pelo_orcamento
+        if pelo_orcamento:
+            headline = (
+                f"Considerando o orçamento, a carteira está definida: "
+                f"{', '.join(problem.names_of(mais_frequente))} "
+                f"(custo {costs[list(mais_frequente)].sum():.2f} "
+                f"de {self._budget:.2f}). A ordem entre os projetos que ficam de "
+                f"fora ainda está aberta, mas nenhuma delas muda a carteira."
+            )
+        elif resolved:
             headline = (
                 f"Carteira única pela razão benefício-custo: "
                 f"{', '.join(problem.names_of(mais_frequente))} "
@@ -265,6 +284,48 @@ class BenefitCostProblematic(Problematic):
                 if l_sobre_i > TOLERANCE and i_sobre_l > TOLERANCE:
                     pendentes.append((i, l))
         return pendentes
+
+    def _carteira_fechada_pelo_orcamento(
+        self,
+        n: int,
+        costs: np.ndarray,
+        razao_minima: np.ndarray,
+        razao_maxima: np.ndarray,
+    ) -> bool:
+        """Se a ordem de razao ja conhecida basta para fixar a carteira gulosa.
+
+        E a segunda parada do sistema de referencia ("Considering the budget
+        value, this is the recommendation"), medida em 29/09/2026: com oito
+        projetos e orcamento de 50, a ordem que a ordenacao dos criterios ja
+        impoe poe dois projetos na frente, que cabem juntos (34), o terceiro nao
+        cabe no que sobra, e nenhum dos outros custa ate 16 -- a ordem entre eles
+        nao muda a carteira, e ele encerra sem pergunta nenhuma. Nos seguiamos
+        dez perguntas ate fechar a ordem inteira.
+
+        As posicoes sao blocos com corte limpo pelas faixas disjuntas: todo
+        projeto de um bloco supera todo projeto dos blocos de baixo. Descendo
+        os blocos, cada um precisa caber inteiro no que resta ou nao ter projeto
+        nenhum que caiba; um bloco em que uns cabem e outros nao deixa a
+        carteira depender da ordem interna, e as perguntas continuam.
+        """
+        # Ordenados pelo pior caso, o corte depois da k-esima posicao e limpo
+        # quando o pior caso de tudo acima supera o melhor caso de tudo abaixo.
+        ordem = sorted(range(n), key=lambda i: -razao_minima[i])
+        piso = np.minimum.accumulate(razao_minima[ordem])
+        teto = np.maximum.accumulate(razao_maxima[ordem][::-1])[::-1]
+        blocos, inicio = [], 0
+        for k in range(1, n + 1):
+            if k == n or piso[k - 1] > teto[k] + TOLERANCE:
+                blocos.append(ordem[inicio:k])
+                inicio = k
+        restante = self._budget
+        for bloco in blocos:
+            custo_do_bloco = float(costs[bloco].sum())
+            if custo_do_bloco <= restante + TOLERANCE:
+                restante -= custo_do_bloco
+            elif (costs[bloco] <= restante + TOLERANCE).any():
+                return False
+        return True
 
     def _dominancia_por_razao(
         self, razao_minima: np.ndarray, razao_maxima: np.ndarray

@@ -22,6 +22,29 @@ ENTRADA=/tmp/fitradeoff.tgz
 DESTINO=/srv/fitradeoff
 MARCA="$DESTINO/.conteudo"
 
+# As metricas vao para o Prometheus da FasorX pela rede que a stack de
+# observabilidade cria. Sem ela, o FITradeoff sobe do mesmo jeito, so sem ser
+# coletado -- a coleta nao pode ser o motivo de uma publicacao falhar.
+REDE_METRICAS=0
+if docker network inspect fasorx-obs-fitradeoff >/dev/null 2>&1; then
+  REDE_METRICAS=1
+else
+  echo "==> Aviso: rede fasorx-obs-fitradeoff ausente; publicando sem metricas." >&2
+fi
+
+# `docker compose` do diretorio atual, com o arquivo das metricas quando ELE
+# existe ali. Decidido a cada chamada, e nao uma vez no inicio: ao voltar para a
+# versao anterior, o diretorio restaurado pode nao ter o compose.fasorx.yml -- e
+# um `-f` para arquivo ausente faz o compose recusar tudo, o que deixaria a
+# volta sem efeito, em silencio, pelo `|| true` dela.
+compor() {
+  local arquivos=(-f compose.yml)
+  if [ "$REDE_METRICAS" = 1 ] && [ -f compose.fasorx.yml ]; then
+    arquivos+=(-f compose.fasorx.yml)
+  fi
+  docker compose "${arquivos[@]}" --profile plataforma "$@"
+}
+
 [ -f "$ENTRADA" ] || { echo "==> Sem codigo para publicar."; exit 0; }
 trap 'rm -f "$ENTRADA"' EXIT
 
@@ -34,7 +57,7 @@ tar -xzf "$ENTRADA" -C "$NOVO"
 # exige recriar o container, que o `up -d` faz sozinho.
 conteudo=$(cd "$NOVO" && find . -type f \
   \( -name '*.py' -o -name '*.ts' -o -name '*.tsx' -o -name '*.json' \
-     -o -name '*.toml' -o -name 'Dockerfile' -o -name 'compose.yml' \) \
+     -o -name '*.toml' -o -name 'Dockerfile' -o -name 'compose*.yml' \) \
   -not -path './web/node_modules/*' -not -path './web/.next/*' \
   | sort | xargs sha256sum | sha256sum | cut -d' ' -f1)
 
@@ -58,7 +81,7 @@ voltar() {
   for img in fitradeoff-mcp fitradeoff-web; do
     docker image inspect "$img:anterior" >/dev/null 2>&1 && docker tag "$img:anterior" "$img"
   done
-  (cd "$DESTINO" && docker compose --profile plataforma up -d --no-build >/dev/null 2>&1) || true
+  (cd "$DESTINO" && compor up -d --no-build >/dev/null 2>&1) || true
   echo "    Estado: $(docker ps --filter name=fitradeoff --format '{{.Names}} {{.Status}}' | tr '\n' ' ')" >&2
 }
 
@@ -72,26 +95,26 @@ for d in engine api mcp_server web servidor; do
   rm -rf "${DESTINO:?}/$d"
   cp -a "$NOVO/$d" "$DESTINO/$d"
 done
-for f in Dockerfile compose.yml .dockerignore; do
+for f in Dockerfile compose.yml compose.fasorx.yml .dockerignore; do
   [ -f "$NOVO/$f" ] && cp -a "$NOVO/$f" "$DESTINO/$f"
 done
 rm -rf "$NOVO"
 
 if [ "$conteudo" = "$anterior" ]; then
   echo "==> Sem mudanca no codigo; so recriando o que precisar."
-  (cd "$DESTINO" && docker compose --profile plataforma up -d --no-build >/dev/null 2>&1) \
+  (cd "$DESTINO" && compor up -d --no-build >/dev/null 2>&1) \
     || { echo "ERRO: os servicos nao subiram." >&2; voltar; exit 1; }
 else
   echo "==> O codigo mudou. Reconstruindo."
   # A saida do build so aparece quando ele falha: em sucesso sao centenas de
   # linhas de camada que escondem o que importa no registro.
-  if ! saida=$(cd "$DESTINO" && docker compose --profile plataforma build 2>&1); then
+  if ! saida=$(cd "$DESTINO" && compor build 2>&1); then
     echo "ERRO: a construcao falhou." >&2
     echo "$saida" | tail -30 >&2
     voltar
     exit 1
   fi
-  if ! (cd "$DESTINO" && docker compose --profile plataforma up -d >/dev/null 2>&1); then
+  if ! (cd "$DESTINO" && compor up -d >/dev/null 2>&1); then
     echo "ERRO: os servicos nao subiram." >&2
     voltar
     exit 1

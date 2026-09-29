@@ -29,12 +29,14 @@ from contextlib import asynccontextmanager
 from fitradeoff_mcp import remoto
 from fitradeoff_mcp.vagas import avisar_se_sem_folga
 from starlette.applications import Starlette
+from starlette.middleware import Middleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 from starlette.routing import Route
 
 from . import identidade
 from .config import Settings, load_settings, vagas_de
+from .limite import LimiteDeCorpo
 
 
 async def saude(request: Request) -> JSONResponse:
@@ -56,7 +58,13 @@ def create_mcp_app(settings: Settings | None = None) -> Starlette:
         async with remoto.ciclo_de_vida(app.state.mcp):
             yield
 
-    app = Starlette(routes=[Route("/saude", saude)], lifespan=ciclo)
+    app = Starlette(
+        routes=[Route("/saude", saude)],
+        # A mensagem MCP maior e um problema de 500 alternativas, bem abaixo do
+        # teto. Ver `limite.py`.
+        middleware=[Middleware(LimiteDeCorpo)],
+        lifespan=ciclo,
+    )
     app.state.vagas = vagas_de(settings)
     app.state.mcp = remoto.montar(
         app,

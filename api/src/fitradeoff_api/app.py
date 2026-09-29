@@ -20,6 +20,7 @@ from fitradeoff_mcp.vagas import avisar_se_sem_folga
 
 from . import identidade
 from .config import Settings, load_settings, vagas_de
+from .limite import LimiteDeCorpo
 from .routers import chat, chaves, decisions, planilhas, rascunhos
 
 DESCRIPTION = """\
@@ -97,6 +98,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_methods=["GET", "POST"],
         allow_headers=["*"],
     )
+    # Antes das rotas lerem o corpo -- e o FastAPI le o de um formulario antes
+    # da autenticacao. Ver `limite.py`.
+    app.add_middleware(LimiteDeCorpo)
     # Uma instancia so para a API e para o MCP montado aqui: cada pessoa segura
     # no maximo `vagas_por_pessoa` calculos somando os dois lados.
     app.state.vagas = vagas_de(settings)

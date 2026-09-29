@@ -46,6 +46,10 @@ LOOPBACK = frozenset({"127.0.0.1", "::1", "localhost"})
 
 CABECALHO_ADMIN = "X-Fitradeoff-Admin"
 
+#: 32 caracteres de `token_urlsafe` sao 192 bits: fora do alcance de tentativa,
+#: mesmo sem limite de pedidos na frente.
+ADMIN_TOKEN_MINIMO = 32
+
 
 def gestao_liberada(
     request: Request, settings: Settings = Depends(get_settings)
@@ -59,6 +63,17 @@ def gestao_liberada(
         anfitriao = request.client.host if request.client else None
         if anfitriao in LOOPBACK:
             return
+
+    if settings.admin_token and len(settings.admin_token) < ADMIN_TOKEN_MINIMO:
+        # Atras da aplicacao da frente, esta rota e alcancada pela internet, sem
+        # limite de tentativas. Um token curto seria uma senha a adivinhar que
+        # abre o acervo do dono -- melhor nao emitir do que emitir por ele.
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            f"FITRADEOFF_ADMIN_TOKEN curto demais: use ao menos "
+            f"{ADMIN_TOKEN_MINIMO} caracteres aleatorios "
+            "(ex.: python -c \"import secrets; print(secrets.token_urlsafe(32))\").",
+        )
 
     if not settings.admin_token:
         raise HTTPException(

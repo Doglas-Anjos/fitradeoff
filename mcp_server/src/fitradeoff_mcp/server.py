@@ -11,7 +11,10 @@ from __future__ import annotations
 
 import contextvars
 import functools
+import logging
 import os
+import time
+from collections.abc import Callable
 from pathlib import Path
 
 from fitradeoff import (
@@ -155,17 +158,41 @@ def service() -> DecisionService:
     return _build_service()
 
 
+Observador = Callable[[str, str, float], None]
+"""(ferramenta, resultado, segundos) -> nada. ``resultado``: ok, erro ou falha.
+
+Quem mede e quem monta o servidor -- a API registra aqui o observador que
+alimenta as metricas. Este pacote continua sem saber de Prometheus: em stdio,
+ninguem observa, e nada muda.
+"""
+
+observadores: list[Observador] = []
+
+
+def _observar(ferramenta: str, resultado: str, inicio: float) -> None:
+    duracao = time.perf_counter() - inicio
+    for observador in observadores:
+        try:
+            observador(ferramenta, resultado, duracao)
+        except Exception:  # noqa: BLE001
+            # Medir nunca derruba a ferramenta que estava sendo medida.
+            logging.getLogger(__name__).exception("observador de ferramenta falhou")
+
+
 def tool(description: str):
     """Registra a ferramenta e converte falhas previsiveis em resposta util."""
 
     def decorator(fn):
         @functools.wraps(fn)
         def wrapper(*args, **kwargs):
+            inicio = time.perf_counter()
             try:
-                return fn(*args, **kwargs)
+                resposta = fn(*args, **kwargs)
             except _ESPERADAS as exc:
+                _observar(fn.__name__, "erro", inicio)
                 return {"erro": str(exc)}
             except Exception as exc:  # noqa: BLE001
+                _observar(fn.__name__, "falha", inicio)
                 # Rede de seguranca: uma excecao crua atravessando o protocolo
                 # nao diz nada ao decisor e ainda pode expor caminho de arquivo
                 # ou trecho de codigo. Melhor uma mensagem inutil porem contida.
@@ -176,6 +203,8 @@ def tool(description: str):
                         f"decisao no diretorio de dados."
                     )
                 }
+            _observar(fn.__name__, "ok", inicio)
+            return resposta
 
         return server.tool(description=description)(wrapper)
 

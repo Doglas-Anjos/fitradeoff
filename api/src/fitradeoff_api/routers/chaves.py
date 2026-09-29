@@ -36,6 +36,7 @@ from urllib.parse import urlsplit
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from .. import chaves as cofre
+from .. import identidade
 from ..config import Settings
 from ..deps import get_settings
 from ..schemas import ChaveIn
@@ -97,6 +98,39 @@ def gestao_liberada(
         )
 
 
+def dono_da_gestao(
+    request: Request, settings: Settings = Depends(get_settings)
+) -> str | None:
+    """De quem sao as chaves desta requisicao -- e se ela pode gerencia-las.
+
+    **Com o token do FasorX** (quem entrou pela tela): gerencia as PROPRIAS
+    chaves. Devolve o dono -- o nome do diretorio do acervo dessa pessoa --, e
+    cada chave emitida assim abre so esse acervo (ver chaves.resolver). E o que
+    deixa qualquer pessoa conectar o proprio assistente sem enxergar o acervo
+    de mais ninguem.
+
+    **Sem token**: vale a regra de antes para as chaves do DONO da plataforma,
+    que abrem o acervo principal -- maquina local sem autenticacao na frente,
+    ou o token de administracao. Devolve None.
+    """
+    if settings.jwt_configurado:
+        cabecalho = request.headers.get("authorization", "")
+        esquema, _, token = cabecalho.partition(" ")
+        if esquema.lower() == "bearer" and token.strip():
+            caminho = identidade.assercao(settings, token.strip())
+            if caminho is None:
+                # Mesmo texto e mesmo codigo de deps.acervo: a tela trata o 401
+                # como sessao encerrada e manda entrar de novo.
+                raise HTTPException(
+                    status.HTTP_401_UNAUTHORIZED,
+                    "Sessao invalida ou expirada. Entre de novo.",
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
+            return caminho.name
+    gestao_liberada(request, settings)
+    return None
+
+
 def aviso_de_configuracao(settings: Settings) -> str | None:
     """A incoerencia que custaria mais caro descobrir sozinho.
 
@@ -121,11 +155,14 @@ def aviso_de_configuracao(settings: Settings) -> str | None:
 @router.get("", summary="As chaves emitidas e como conectar")
 def listar(
     settings: Settings = Depends(get_settings),
-    _: None = Depends(gestao_liberada),
+    dono: str | None = Depends(dono_da_gestao),
 ) -> dict[str, object]:
-    """A lista nunca traz o texto das chaves -- ele nao existe mais em lugar algum."""
+    """A lista nunca traz o texto das chaves -- ele nao existe mais em lugar algum.
+
+    So as chaves de quem pergunta: cada pessoa ve as proprias.
+    """
     return {
-        "chaves": [c.publica() for c in cofre.listar(settings)],
+        "chaves": [c.publica() for c in cofre.listar(settings, dono)],
         "url": settings.mcp_url,
         "publicado": settings.mcp_publicado,
         "aviso": aviso_de_configuracao(settings),
@@ -136,11 +173,11 @@ def listar(
 def criar(
     dados: ChaveIn,
     settings: Settings = Depends(get_settings),
-    _: None = Depends(gestao_liberada),
+    dono: str | None = Depends(dono_da_gestao),
 ) -> dict[str, object]:
     """A unica resposta da API que contem o texto de uma chave."""
     try:
-        chave, texto = cofre.criar(settings, dados.rotulo)
+        chave, texto = cofre.criar(settings, dados.rotulo, dono)
     except ValueError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
     return {"chave": chave.publica(), "texto": texto, "url": settings.mcp_url}
@@ -150,8 +187,10 @@ def criar(
 def revogar(
     id: str,
     settings: Settings = Depends(get_settings),
-    _: None = Depends(gestao_liberada),
+    dono: str | None = Depends(dono_da_gestao),
 ) -> dict[str, bool]:
-    if not cofre.revogar(settings, id):
+    # So revoga chave do proprio dono. A de outra pessoa responde 404, igual a
+    # uma que nao existe -- 403 confirmaria que o id e de alguem.
+    if not cofre.revogar(settings, id, dono):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Chave nao encontrada.")
     return {"revogada": True}

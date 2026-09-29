@@ -46,9 +46,9 @@ export const CHAVES = registrar({
     es: "MCP es el protocolo por el cual un asistente usa herramientas externas. Conectado a este servidor, arma el problema, propone el orden de los criterios, hace las preguntas de tradeoff y explica el resultado. Nada de eso lo calcula por su cuenta: cada paso es una llamada al método, con los mismos números que mostraría la pantalla de decisión.",
   },
   "tela.chaves.oque.p2": {
-    pt: "As decisões criadas pelo assistente são as mesmas que aparecem aqui: a chave abre o acervo desta plataforma, não uma cópia à parte.",
-    en: "Decisions created by the assistant are the same ones that show up here: the key opens this platform's collection, not a separate copy.",
-    es: "Las decisiones creadas por el asistente son las mismas que aparecen aquí: la clave abre el acervo de esta plataforma, no una copia aparte.",
+    pt: "As decisões criadas pelo assistente são as mesmas que aparecem aqui para você: a chave abre o seu acervo, e só o seu — não uma cópia à parte, nem o de outra pessoa.",
+    en: "Decisions created by the assistant are the same ones that show up here for you: the key opens your collection, and only yours — not a separate copy, nor anyone else's.",
+    es: "Las decisiones creadas por el asistente son las mismas que aparecen aquí para usted: la clave abre su acervo, y solo el suyo — no una copia aparte, ni el de otra persona.",
   },
   "tela.chaves.oque.p3": {
     pt: "Uma chave por cliente, e revogar uma não derruba as outras. Quem tem a chave entra, então trate-a como senha.",

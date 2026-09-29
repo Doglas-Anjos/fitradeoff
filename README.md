@@ -519,17 +519,20 @@ mais chamada anônima, e cada `sub` alcança o próprio acervo — decisões e r
 perigoso, publicado e aberto, não é alcançável por esquecimento, porque é a mesma configuração que
 liga a integração e que tranca a porta.
 
-Junto disso, emitir chave do cofre passa a exigir `FITRADEOFF_ADMIN_TOKEN` mesmo vindo da rede
-interna. A chave do cofre abre o acervo do **dono**, não o de quem a pediu: onde há gente
-autenticada entrando, emiti-la seria o caminho mais curto para ler as decisões alheias. A
-consequência prática é que a tela *Conectar* não emite chaves num servidor atrás da aplicação
-principal — chave por pessoa é o passo seguinte.
+**Cada pessoa emite a própria chave, e ela abre só o próprio acervo.** Na tela *Conectar*, quem
+entrou pela aplicação principal emite, lista e revoga as próprias chaves — e a chave guarda o
+**dono** (o mesmo resumo de `iss` + `sub` que nomeia o diretório do acervo), então o assistente
+dessa pessoa grava onde ela vê na tela, e em nenhum outro lugar. Ninguém vê nem revoga a chave de
+outra pessoa. Até 10 chaves por pessoa.
 
-Atrás dela, **as chaves do cofre não precisam valer**. Ninguém entra por elas ali: todo mundo
-vem pela aplicação, que assina. `FITRADEOFF_ACEITAR_CHAVES_DO_COFRE=0` no servidor publicado remove
-de vez o vetor da chave vazada em log de proxy ou em histórico de navegador, sem tirar nada do
-servidor local, onde a tela vive. O preço é que um cliente falando direto com o servidor publicado
-— o Claude Code do seu notebook — deixa de entrar por ele.
+As chaves **do dono da plataforma** — emitidas pela linha de comando (`python -m
+fitradeoff_api.chaves criar`) ou com `FITRADEOFF_ADMIN_TOKEN` — continuam abrindo o acervo
+principal, e continuam exigindo esse token para serem emitidas de fora.
+
+Para as pessoas conectarem o assistente, o servidor do MCP precisa aceitar as chaves do cofre
+(`FITRADEOFF_ACEITAR_CHAVES_DO_COFRE=1`, o padrão do serviço `mcp`). Desligar (`=0`) remove o vetor
+da chave vazada em log de proxy ou em histórico de navegador, ao preço de ninguém conectar o
+assistente pelo servidor publicado.
 
 Se o encaminhamento dela acumular a resposta antes de repassar, a ferramenta parece travar sem
 erro nenhum. `FITRADEOFF_MCP_JSON=1` troca o fluxo de eventos por um JSON só, e aí não há o que

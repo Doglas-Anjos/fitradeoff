@@ -38,6 +38,31 @@ const FOLGA_MS = 30_000;
 
 let token: string | null = null;
 let vence = 0;
+
+/** Quem esta logado, como o FasorX informou junto com o token.
+ *
+ *  Vem na RESPOSTA do pedido de token, e nao de dentro do JWT: o token so
+ *  carrega o `sub`, de proposito -- o que nao esta nele nao vaza por ele. */
+export type Pessoa = { nome: string; email: string };
+let pessoa: Pessoa | null = null;
+/** Onde sair. A sessao e do FasorX, e so ele a encerra. */
+let urlSair = "";
+/** Para onde mandar quem tem sessao mas ainda nao pode entrar (perfil ou termo
+ *  de uso pendente). Vem do FasorX num 403; vazio, vai para /entrar/. */
+let completar = "";
+
+/** Quem quer saber quando a pessoa muda (a navegacao, para mostrar o nome). */
+const ouvintes = new Set<() => void>();
+function avisar() {
+  ouvintes.forEach((f) => f());
+}
+export function assinar(f: () => void): () => void {
+  ouvintes.add(f);
+  return () => {
+    ouvintes.delete(f);
+  };
+}
+export const pessoaAtual = (): Pessoa | null => pessoa;
 /** A busca em curso.
  *
  *  Sem isto, cinco chamadas simultaneas da tela -- que e o normal ao abrir uma
@@ -64,6 +89,21 @@ async function buscar(): Promise<string | null> {
   if (r.status === 401 || r.status === 403) {
     token = null;
     vence = 0;
+    // 403 com `completar`: ha sessao, mas falta perfil ou o aceite do termo.
+    // Mandar para /entrar/ seria mandar quem ja entrou entrar de novo.
+    completar = "";
+    try {
+      const j = (await r.json()) as { completar?: unknown };
+      if (typeof j.completar === "string" && j.completar.startsWith(`${FASORX}/`)) {
+        completar = j.completar;
+      }
+    } catch {
+      /* corpo sem JSON: vai para /entrar/ */
+    }
+    if (pessoa !== null) {
+      pessoa = null;
+      avisar();
+    }
     return null;
   }
   if (!r.ok) {
@@ -73,10 +113,22 @@ async function buscar(): Promise<string | null> {
     throw new Error(`token: ${r.status}`);
   }
 
-  const j = (await r.json()) as { token: string; validade: number };
+  const j = (await r.json()) as {
+    token: string;
+    validade: number;
+    pessoa?: Pessoa;
+    sair?: string;
+  };
   token = j.token;
   // `validade` vem em segundos a partir de agora.
   vence = Date.now() + j.validade * 1000;
+  // So o endereco do proprio FasorX: o link de sair nunca leva a outro lugar.
+  if (typeof j.sair === "string" && j.sair.startsWith(`${FASORX}/`)) urlSair = j.sair;
+  const nova = j.pessoa && typeof j.pessoa.nome === "string" ? j.pessoa : null;
+  if (nova?.nome !== pessoa?.nome || nova?.email !== pessoa?.email) {
+    pessoa = nova;
+    avisar();
+  }
   return token;
 }
 
@@ -92,11 +144,44 @@ export async function obter(): Promise<string | null> {
   return buscando;
 }
 
-/** Manda para o FasorX. A volta e pela tela de aplicacoes, de proposito:
- *  e de la que a pessoa escolhe para onde ir. */
-export function irParaLogin(): void {
+/** Manda para o FasorX -- e pede para voltar para ca depois.
+ *
+ *  `?volta=fitradeoff` e um NOME, que o FasorX confere contra a lista fixa de
+ *  aplicacoes dele; nunca um endereco. Com sessao mas perfil ou termo
+ *  pendente, vai direto para a /conta/ de la, que devolve a pessoa aqui depois
+ *  de salvar. */
+export function irParaLogin(): boolean {
+  if (!identidadeLigada()) return false;
+
+  // Disjuntor. Se esta aba ja foi mandada ao FasorX ha pouco e voltou sem
+  // conseguir entrar, mandar de novo so gira em circulo: o FasorX tem sessao,
+  // devolve a pessoa para ca, a API daqui recusa o token (JWKS fora do ar,
+  // relogio fora da folga, emissor divergente), e tudo recomeca -- ate o
+  // limitador do FasorX responder 429 para o IP inteiro, que numa
+  // universidade e o de todo mundo. Na segunda vez em menos de um minuto, para
+  // e devolve false: quem chamou mostra o erro em vez de redirecionar.
+  const CHAVE = "fitradeoff:foi-ao-login";
+  try {
+    const antes = Number(window.sessionStorage.getItem(CHAVE) || 0);
+    if (Date.now() - antes < 60_000) return false;
+    window.sessionStorage.setItem(CHAVE, String(Date.now()));
+  } catch {
+    /* sem sessionStorage (janela privada restrita): segue sem disjuntor */
+  }
+
+  const destino = completar || `${FASORX}/entrar/`;
+  window.location.href = `${destino}${destino.includes("?") ? "&" : "?"}volta=fitradeoff`;
+  return true;
+}
+
+/** Sair. A sessao e do FasorX: a pagina /sair/ de la a encerra. Um POST daqui
+ *  para /api/sair seria recusado -- o FasorX so aceita escrita da propria
+ *  origem, para que nenhuma aplicacao consiga deslogar alguem sem pedir. */
+export function sair(): void {
   if (!identidadeLigada()) return;
-  window.location.href = `${FASORX}/entrar/`;
+  token = null;
+  vence = 0;
+  window.location.href = urlSair || `${FASORX}/sair/`;
 }
 
 /** O cabecalho, ou nada quando nao ha identidade a apresentar. */

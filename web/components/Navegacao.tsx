@@ -11,6 +11,7 @@ import { ArrowSquareOut, List, X } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
+import { ContaFasorx, ContaFasorxMenu } from "@/components/ContaFasorx";
 import { SeletorIdioma } from "@/components/SeletorIdioma";
 import { SeletorTema } from "@/components/SeletorTema";
 import { useIdioma } from "@/lib/i18n";
@@ -131,6 +132,10 @@ export function Navegacao() {
             <span className="sr-only">{t("nav.abreEmOutraAba")}</span>
           </a>
 
+          {/* Quem esta logado no FasorX, e o sair. Por ultimo: e a conta, nao
+              uma preferencia da tela. */}
+          <ContaFasorx />
+
           <div ref={menu} className="relative sm:hidden">
             <button
               ref={botaoMenu}
@@ -160,6 +165,7 @@ export function Navegacao() {
                 className="entra-subindo absolute right-0 top-11 w-[min(19rem,calc(100vw-2.5rem))] overflow-hidden rounded-[var(--raio-painel)] border p-2 shadow-[var(--sombra-alta)]"
                 style={{ borderColor: "var(--borda)", background: "var(--painel)" }}
               >
+                <ContaFasorxMenu />
                 <p className="px-3 pb-1.5 pt-1 text-[11px] font-medium uppercase tracking-[0.12em]" style={{ color: "var(--tinta-fraca)" }}>
                   {t("nav.menu.rotulo")}
                 </p>

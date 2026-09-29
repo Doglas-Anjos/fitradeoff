@@ -36,6 +36,7 @@ from starlette.routing import Route
 
 from . import identidade
 from .config import Settings, load_settings, vagas_de
+from . import metricas
 from .limite import LimiteDeCorpo
 
 
@@ -55,7 +56,9 @@ def create_mcp_app(settings: Settings | None = None) -> Starlette:
     @asynccontextmanager
     async def ciclo(app: Starlette) -> AsyncIterator[None]:
         avisar_se_sem_folga(app.state.vagas)
-        async with remoto.ciclo_de_vida(app.state.mcp):
+        async with remoto.ciclo_de_vida(app.state.mcp), metricas.servir(
+            settings.metricas_porta
+        ):
             yield
 
     app = Starlette(
@@ -74,6 +77,8 @@ def create_mcp_app(settings: Settings | None = None) -> Starlette:
         # a superficie publica e onde o limite por pessoa mais importa
         vagas=app.state.vagas,
     )
+    # Por ultimo: por fora da autenticacao do MCP, para contar os 401 dela.
+    metricas.ligar(app, app.state.vagas)
     return app
 
 

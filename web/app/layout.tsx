@@ -6,6 +6,7 @@ import { ProvedorIdioma } from "@/lib/i18n";
 import { Avisos } from "@/components/Avisos";
 import { FundoGuache } from "@/components/FundoGuache";
 import { Navegacao } from "@/components/Navegacao";
+import { Sessao } from "@/components/Sessao";
 import { SCRIPT_TEMA } from "@/lib/tema";
 import "./globals.css";
 
@@ -57,6 +58,7 @@ export default function RootLayout({
           {children}
           {/* uma só, na raiz: duas montadas duplicam todo aviso */}
           <Avisos />
+          <Sessao />
         </ProvedorIdioma>
       </body>
     </html>

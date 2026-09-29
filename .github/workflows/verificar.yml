@@ -1,0 +1,130 @@
+# ---------------------------------------------------------------------------
+# A conferencia de cada pedido de merge. NAO publica nada.
+# ---------------------------------------------------------------------------
+#
+# Existe separada do `publicar` por um motivo estrutural: aquele workflow
+# confere E publica, no mesmo job, e dispara em `push`. Exigi-lo como
+# verificacao obrigatoria de um pedido de merge faria o servidor ser atualizado
+# a partir do ramo de quem abriu o pedido -- antes de qualquer revisao, que e o
+# oposto do que a protecao existe para fazer.
+#
+# Este aqui nao toca no servidor, nao usa segredo nenhum e nao alcanca nada:
+# `permissions: contents: read` e o minimo para clonar. Mesmo que alguem abra
+# um pedido de merge com codigo hostil, ele nao chega ao VPS nem aos segredos.
+#
+# Sao as mesmas conferencias que rodam na maquina de quem escreve. Conferencia
+# que so existe na integracao vira surpresa, e quem descobre o problema
+# descobre depois de ja ter pedido revisao a alguem.
+
+name: verificar
+
+on:
+  pull_request:
+    branches: [main]
+  # Tambem na main: se algo escapar por um merge administrativo, o historico
+  # registra em qual commit passou a falhar.
+  push:
+    branches: [main]
+
+concurrency:
+  group: verificar-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.13"
+
+      # Os tres pacotes juntos e na ordem do Dockerfile: a API importa do
+      # motor, e o motor instalado a partir do diretorio (e nao do PyPI) e o
+      # que garante que o teste roda contra o codigo DESTE commit.
+      - name: Instalar
+        run: pip install ./engine ./mcp_server "./api[dev]"
+
+      - name: Testes do motor
+        run: python -m pytest engine/tests -q
+
+      - name: Testes da API
+        run: python -m pytest api/tests -q
+
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      # `ci` e nao `install`: respeita o package-lock.json e falha se ele
+      # estiver fora de sincronia com o package.json, em vez de resolver as
+      # versoes de novo e testar algo diferente do que sera publicado.
+      - name: Instalar
+        working-directory: web
+        run: npm ci
+
+      - name: Tipos
+        working-directory: web
+        run: npx tsc --noEmit -p tsconfig.json
+
+      - name: Testes
+        working-directory: web
+        run: npm test
+
+      # A construcao entra na conferencia porque ela falha por coisas que os
+      # testes nao veem: um componente de cliente sem "use client", um import
+      # que so existe em desenvolvimento, uma pagina que nao prerrenderiza.
+      - name: Construir
+        working-directory: web
+        run: npm run build
+
+  yaml:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.13"
+
+      # Vale conferir, e nao e teoria: o compose deste projeto ja esteve com
+      # `: ` dentro de um escalar sem aspas e nao parseava -- o
+      # `docker compose up` nao chegava a ler o arquivo, e a mensagem nao dizia
+      # qual linha.
+      - name: Conferir os YAML
+        run: |
+          python -m pip install --quiet pyyaml
+          python - <<'PY'
+          import sys, pathlib, yaml
+          ruins = []
+          for p in sorted(pathlib.Path(".").rglob("*.y*ml")):
+              if any(x in p.parts for x in ("node_modules", ".venv", ".venv311")):
+                  continue
+              try:
+                  yaml.safe_load(p.read_text(encoding="utf-8"))
+              except yaml.YAMLError as e:
+                  linha = getattr(getattr(e, "problem_mark", None), "line", None)
+                  onde = f":{linha + 1}" if linha is not None else ""
+                  ruins.append(f"  {p}{onde}  {getattr(e, 'problem', e)}")
+              else:
+                  print(f"  ok   {p}")
+          if ruins:
+              print("\nYAML invalido:\n" + "\n".join(ruins))
+              sys.exit(1)
+          PY

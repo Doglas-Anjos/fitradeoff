@@ -20,6 +20,7 @@ from fitradeoff_mcp.vagas import avisar_se_sem_folga
 
 from . import identidade
 from .config import Settings, load_settings, vagas_de
+from . import metricas
 from .limite import LimiteDeCorpo
 from .routers import chat, chaves, decisions, planilhas, rascunhos
 
@@ -81,7 +82,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         ``app.state``, ja que a leitura acontece na partida, nao aqui.
         """
         avisar_se_sem_folga(app.state.vagas)
-        async with remoto.ciclo_de_vida(app.state.mcp):
+        async with remoto.ciclo_de_vida(app.state.mcp), metricas.servir(
+            settings.metricas_porta
+        ):
             yield
 
     app = FastAPI(
@@ -119,6 +122,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         respostas_em_json=settings.mcp_json,
         vagas=app.state.vagas,
     )
+    # Por ultimo: por fora da autenticacao do MCP, para contar os 401 dela.
+    metricas.ligar(app, app.state.vagas)
 
     @app.get("/api/saude", tags=["infra"], summary="Estado do servico")
     def saude():

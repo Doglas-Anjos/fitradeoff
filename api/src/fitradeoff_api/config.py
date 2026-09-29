@@ -144,6 +144,11 @@ class Settings:
     admin_token: str | None = field(
         default_factory=lambda: os.environ.get("FITRADEOFF_ADMIN_TOKEN") or None
     )
+    metricas_porta: int | None = field(
+        default_factory=lambda: int(os.environ.get("FITRADEOFF_METRICAS_PORTA") or 0)
+        or None
+    )
+    """Porta do ``/metrics`` para o Prometheus. Ausente, nada sobe. Ver ``metricas``."""
 
     # --- asserção de identidade vinda da aplicacao da frente -------------------
     #

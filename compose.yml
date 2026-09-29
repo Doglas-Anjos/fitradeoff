@@ -27,11 +27,44 @@
 # Sem elas o `up` para com a mensagem escrita, em vez de levantar a tela com o
 # acervo aberto a quem chegar.
 
+# O mesmo endurecimento nos tres servicos.
+#
+# Os processos ja rodam sem root, mas isso so vale ate o primeiro binario setuid
+# -- e a imagem python:slim traz varios (su, mount, passwd). O Docker deste
+# hospedeiro nao remapeia usuarios: root dentro do container e root no host se
+# alguem escapar dele, e o host e o mesmo da FasorX.
+#
+#   no-new-privileges   setuid deixa de elevar; quem entrou como fitradeoff
+#                       continua fitradeoff
+#   cap_drop ALL        nenhum servico aqui abre porta baixa, muda dono de
+#                       arquivo ou fala raw socket
+#   read_only           o codigo nao muda em execucao; so o volume e o /tmp
+#                       aceitam escrita, e o /tmp tem teto -- disco e memoria
+#                       do hospedeiro sao divididos com a FasorX
+#
+# Cada servico tambem tem teto de processos (`deploy.resources.limits.pids`): um
+# laco de fork nao derruba o hospedeiro inteiro. Fica no `deploy`, e nao aqui,
+# porque o compose recusa `pids_limit` ao lado de `deploy.resources.limits`.
+x-endurecido: &endurecido
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  read_only: true
+  tmpfs:
+    - /tmp:size=64m
+
 services:
   mcp:
+    <<: *endurecido
     build: .
     image: fitradeoff-mcp
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+          pids: 256
     environment:
       FITRADEOFF_DATA: /dados/decisoes
       # Sem o dominio declarado, a protecao contra DNS rebinding recusa tudo o
@@ -62,6 +95,7 @@ services:
   # --- o aplicativo completo, so com --profile plataforma -------------------
 
   api:
+    <<: *endurecido
     profiles: ["plataforma"]
     # A MESMA imagem do MCP, com outro comando. O Dockerfile ja instala engine,
     # mcp_server e api juntos; duas imagens para o mesmo codigo dobrariam o
@@ -90,7 +124,18 @@ services:
       # Vazio: a tela fala com esta API por dentro da rede do compose, nao pelo
       # navegador. Nenhuma requisicao cruza origem, entao nao ha o que liberar.
       # Uma origem a mais aqui seria permissao concedida a troco de nada.
+      # Vazio de proposito: o navegador chama /api do mesmo endereco, pelo
+      # rewrite do Next. Ver _origins() em config.py -- vazio e ausente nao
+      # significam a mesma coisa la.
       FITRADEOFF_CORS: ""
+
+      # Emitir chave de MCP com o FasorX autenticando na frente.
+      #
+      # Sem isto a tela Conectar responde 503: com uma aplicacao autenticando
+      # na frente, a API deixa de confiar no loopback -- quem chega por ela
+      # tambem chega da rede interna, e uma chave do cofre abre o acervo do
+      # DONO, nao o de quem pediu. Vazio mantem a emissao fechada.
+      FITRADEOFF_ADMIN_TOKEN: ${FITRADEOFF_ADMIN_TOKEN:-}
 
       # Chave do cofre desligada neste servico.
       #
@@ -110,6 +155,7 @@ services:
       resources:
         limits:
           memory: 768M
+          pids: 256
     healthcheck:
       # `/api/saude`, e nao `/saude`.
       #
@@ -134,8 +180,20 @@ services:
         max-file: "3"
 
   web:
+    <<: *endurecido
+    # O Next escreve em execucao no cache dele, e o npm nos proprios registros.
+    # Com o disco somente leitura, os dois precisam de um lugar -- em memoria,
+    # e com teto.
+    tmpfs:
+      - /tmp:size=64m
+      - /web/.next/cache:size=128m,uid=1000,gid=1000
+      - /home/node/.npm:size=16m,uid=1000,gid=1000
     profiles: ["plataforma"]
-    build: ./web
+    build:
+      context: ./web
+      args:
+        # Em tempo de CONSTRUCAO, nao de execucao -- ver web/Dockerfile.
+        FASORX_URL: "${FASORX_URL:-https://fasorx.com.br}"
     image: fitradeoff-web
     restart: unless-stopped
     environment:
@@ -153,6 +211,7 @@ services:
       resources:
         limits:
           memory: 512M
+          pids: 256
     logging:
       driver: json-file
       options:

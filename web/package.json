@@ -17,7 +17,7 @@
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
     "geist": "^1.7.2",
-    "next": "15.5.4",
+    "next": "15.5.26",
     "react": "19.1.1",
     "react-dom": "19.1.1",
     "sonner": "^2.0.8"

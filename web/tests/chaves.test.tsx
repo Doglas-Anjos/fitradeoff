@@ -151,6 +151,27 @@ describe("Tela de chaves", () => {
     );
   });
 
+  it("mostra o passo a passo do Claude com as quatro telas, e so na aba do Claude", async () => {
+    vi.spyOn(api, "chaves").mockResolvedValue(VAZIA);
+    const usuario = userEvent.setup();
+    render(<ChavesPage />);
+
+    const resumo = await screen.findByText("Passo a passo no Claude, com as telas");
+    await usuario.click(resumo);
+
+    const telas = screen.getAllByRole("img");
+    const doTutorial = telas.filter((i) => (i.getAttribute("src") ?? "").includes("tutorial"));
+    expect(doTutorial).toHaveLength(4);
+    // Texto alternativo em toda imagem: quem usa leitor de tela segue o mesmo
+    // passo a passo.
+    doTutorial.forEach((i) => expect(i.getAttribute("alt")).toBeTruthy());
+    expect(screen.getByText("Autenticação: No sign-in")).toBeInTheDocument();
+
+    // Nas abas do Claude Code e do editor, o tutorial do Claude nao aparece.
+    await usuario.click(screen.getByRole("radio", { name: /Claude Code/ }));
+    expect(screen.queryByText("Passo a passo no Claude, com as telas")).not.toBeInTheDocument();
+  });
+
   it("avisa que o endereço local não é alcançável de fora", async () => {
     vi.spyOn(api, "chaves").mockResolvedValue(VAZIA);
     render(<ChavesPage />);

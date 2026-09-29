@@ -483,3 +483,36 @@ def test_criterio_discreto_com_curva_so_pergunta_nivel_tercos_e_meio(evaluator):
     # respondido A, a faixa vai de 1 a 1,33 -- a ponta e o valor perguntado, e
     # entre os dois nao ha mais nada
     assert _seletor_pergunta(problema, Bracket(0, 1, 0.0, pergunta.value), evaluator) is None
+
+
+def test_empate_entre_dois_niveis_vai_para_o_de_baixo():
+    """Nota de 1 a 7, faixa de 0 a 0,5: os niveis 2 e 3 ficam a 1/12 do meio.
+
+    O sistema de referencia pergunta o 2 (29/09/2026).
+    """
+    criterios = (
+        Criterion("q", "Qualidade", Direction.MAX),
+        Criterion("n", "Nota", Direction.MAX, levels=(1, 2, 3, 4, 5, 6, 7)),
+    )
+    problema = Problem("n", criterios, ("A", "B"), np.array([[0.5, 1], [0.9, 7]]))
+    valor = Bracket(1, 0, 0.0, 0.5).candidate_value(problema)
+    assert problema.scales[1].consequence_at(valor) == 2
+
+
+def test_pergunta_entre_niveis_so_quando_nao_sobra_outra(evaluator):
+    """Mesmo com a faixa mais larga, a pergunta entre niveis vai para o fim."""
+    from fitradeoff.domain import WeightSpace
+
+    criterios = (
+        Criterion("q", "Qualidade", Direction.MAX),
+        Criterion("n", "Nota", Direction.MAX, levels=(1, 2, 3, 4, 5),
+                  value_points=((1, 0.0), (2, 0.5), (3, 0.75), (5, 1.0))),
+        Criterion("c", "Custo", Direction.MIN),
+    )
+    problema = Problem("n", criterios, ("A", "B"), np.array([[0.7, 1, 10.0], [0.95, 5, 16.0]]))
+    # nota x custo com faixa larga (0 a 0,5 -> entre os niveis 1 e 2); qualidade x
+    # nota mais estreita, mas continua
+    faixas = (Bracket(1, 2, 0.0, 0.5), Bracket(0, 1, 0.0, 0.3))
+    pergunta = WidestBracketSelector().select(
+        problema, AuditLog(), faixas, WeightSpace(3), ChoiceProblematic(evaluator))
+    assert (pergunta.criterion, pergunta.rival) == (0, 1)

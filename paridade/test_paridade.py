@@ -507,3 +507,53 @@ def test_nota_discreta_em_foco_no_beneficio_custo_bate_com_o_oficial():
         custos=[40.0, 25.0, 35.0, 20.0], configuracao={"orcamento": 60.0})
     assert pares == [(QUAL, CUSTO), (QUAL, NOTA), (NOTA, CUSTO), (QUAL, NOTA)]
     assert analise["carteira_mais_frequente"]["projetos"] == ["Alt 1", "Alt 4"]  # [Alt 4, Alt 1], $60
+
+
+# --- os casos medidos em 29/09/2026 ------------------------------------------
+#
+# Sete decisoes levadas ao oficial com o script de medicao corrigido (ele so
+# segue quando a pergunta muda ou o contador "Questions Answered" sobe). A
+# primeira e a validacao: repete um caso ja conhecido e saiu identica. Estao em
+# `resultados/casos_medidos_2026_09_29.json`, com a sequencia de pares dele;
+# "entre-niveis" e a tela propria de criterio discreto. Foram eles que
+# mostraram as duas ultimas regras: a pergunta entre niveis vai para o fim, e o
+# empate de distancia entre dois niveis vai para o de baixo.
+
+import json as _json
+from pathlib import Path as _Path
+
+MEDIDOS_29 = _json.loads(
+    (_Path(__file__).parent / "resultados" / "casos_medidos_2026_09_29.json").read_text(encoding="utf-8")
+)
+
+
+@pytest.mark.parametrize("caso", MEDIDOS_29, ids=[c["chave"] for c in MEDIDOS_29])
+def test_casos_medidos_em_29_de_setembro(caso):
+    from fitradeoff import DecisionService, build_container
+
+    extra = {}
+    if caso["custos"]:
+        extra = {"custos": caso["custos"], "configuracao": {"orcamento": caso["orcamento"]}}
+    elif caso["configuracao"]:
+        extra = {"configuracao": caso["configuracao"]}
+    servico = DecisionService(build_container(epsilon=0.0))
+    d = servico.create(caso["chave"], caso["alternativas"], caso["criterios"],
+                       caso["consequencias"], problematica=caso["problematica"], **extra)["id"]
+    for chave, pontos in (caso["curvas"] or {}).items():
+        servico.set_value_curve(d, chave, pontos)
+    servico.rank_criteria(d, [c["chave"] for c in caso["criterios"]])
+
+    niveis = {c["nome"]: c.get("niveis") for c in caso["criterios"]}
+    pares = []
+    while len(pares) < 80:
+        q = servico.next_question(d)
+        if "enunciado" not in q:
+            break
+        foco = q["criterio_em_foco"]
+        valor = float(q["opcao_a"][0].split(": ")[1].split(" ")[0])
+        if caso["curvas"] and niveis.get(foco) and valor not in niveis[foco]:
+            pares.append("entre-niveis")
+        else:
+            pares.append([foco, q["criterio_rival"]])
+        servico.answer(d, "A")
+    assert pares == caso["oficial"]["pares"]

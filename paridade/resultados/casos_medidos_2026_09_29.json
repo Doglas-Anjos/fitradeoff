@@ -1,0 +1,1416 @@
+[
+ {
+  "chave": "validacao",
+  "problematica": "ranking",
+  "alternativas": [
+   "Alt 1",
+   "Alt 2",
+   "Alt 3",
+   "Alt 4"
+  ],
+  "criterios": [
+   {
+    "chave": "c0",
+    "nome": "Indice de qualidade",
+    "direcao": "max"
+   },
+   {
+    "chave": "c1",
+    "nome": "Nota",
+    "direcao": "max",
+    "niveis": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ]
+   },
+   {
+    "chave": "c2",
+    "nome": "Custo unitario",
+    "direcao": "min"
+   }
+  ],
+  "consequencias": [
+   [
+    0.95,
+    2,
+    16.0
+   ],
+   [
+    0.7,
+    4,
+    10.0
+   ],
+   [
+    0.8,
+    5,
+    13.0
+   ],
+   [
+    0.85,
+    1,
+    15.0
+   ]
+  ],
+  "custos": null,
+  "orcamento": null,
+  "configuracao": null,
+  "curvas": {
+   "c0": [
+    [
+     0.7,
+     0.0
+    ],
+    [
+     0.715625,
+     0.5
+    ],
+    [
+     0.89140625,
+     0.75
+    ],
+    [
+     0.95,
+     1.0
+    ]
+   ],
+   "c1": [
+    [
+     1.0,
+     0.0
+    ],
+    [
+     2.0,
+     0.5
+    ],
+    [
+     3.0,
+     0.75
+    ],
+    [
+     5.0,
+     1.0
+    ]
+   ],
+   "c2": [
+    [
+     10.0,
+     1.0
+    ],
+    [
+     10.375,
+     0.5
+    ],
+    [
+     14.59375,
+     0.25
+    ],
+    [
+     16.0,
+     0.0
+    ]
+   ]
+  },
+  "oficial": {
+   "perguntas": 6,
+   "pares": [
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Indice de qualidade",
+     "Nota"
+    ],
+    [
+     "Nota",
+     "Custo unitario"
+    ],
+    [
+     "Indice de qualidade",
+     "Nota"
+    ],
+    "entre-niveis",
+    "entre-niveis"
+   ],
+   "tela_final": "You may perform holistic assessments: | Holistic Evaluation | There are no comparisons to be made in the elicitation by decomposition anymore. You can either co"
+  }
+ },
+ {
+  "chave": "escolha-06-nota",
+  "problematica": "escolha",
+  "alternativas": [
+   "Alt 01",
+   "Alt 02",
+   "Alt 03",
+   "Alt 04",
+   "Alt 05",
+   "Alt 06"
+  ],
+  "criterios": [
+   {
+    "chave": "c0",
+    "nome": "Indice de qualidade",
+    "direcao": "max"
+   },
+   {
+    "chave": "c1",
+    "nome": "Nota",
+    "direcao": "max",
+    "niveis": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ]
+   },
+   {
+    "chave": "c2",
+    "nome": "Custo unitario",
+    "direcao": "min"
+   },
+   {
+    "chave": "c3",
+    "nome": "Prazo de entrega",
+    "direcao": "min"
+   },
+   {
+    "chave": "c4",
+    "nome": "Suporte tecnico",
+    "direcao": "max"
+   }
+  ],
+  "consequencias": [
+   [
+    0.764,
+    2,
+    18.084,
+    37.672,
+    5.232
+   ],
+   [
+    0.936,
+    1,
+    16.291,
+    17.183,
+    7.097
+   ],
+   [
+    0.905,
+    3,
+    11.086,
+    10.852,
+    8.916
+   ],
+   [
+    0.704,
+    5,
+    8.98,
+    26.976,
+    8.016
+   ],
+   [
+    0.589,
+    4,
+    12.701,
+    44.953,
+    5.845
+   ],
+   [
+    0.724,
+    2,
+    17.001,
+    40.76,
+    5.041
+   ]
+  ],
+  "custos": null,
+  "orcamento": null,
+  "configuracao": null,
+  "curvas": {
+   "c0": [
+    [
+     0.589,
+     0.0
+    ],
+    [
+     0.6106874999999999,
+     0.5
+    ],
+    [
+     0.854671875,
+     0.75
+    ],
+    [
+     0.936,
+     1.0
+    ]
+   ],
+   "c1": [
+    [
+     1.0,
+     0.0
+    ],
+    [
+     2.0,
+     0.5
+    ],
+    [
+     3.0,
+     0.75
+    ],
+    [
+     5.0,
+     1.0
+    ]
+   ],
+   "c2": [
+    [
+     8.98,
+     1.0
+    ],
+    [
+     9.549,
+     0.5
+    ],
+    [
+     15.95025,
+     0.25
+    ],
+    [
+     18.084,
+     0.0
+    ]
+   ],
+   "c3": [
+    [
+     10.852,
+     1.0
+    ],
+    [
+     21.508562500000004,
+     0.75
+    ],
+    [
+     32.165125,
+     0.5
+    ],
+    [
+     38.5590625,
+     0.25
+    ],
+    [
+     44.953,
+     0.0
+    ]
+   ],
+   "c4": [
+    [
+     5.041,
+     0.0
+    ],
+    [
+     5.2831875,
+     0.25
+    ],
+    [
+     6.9785,
+     0.5
+    ],
+    [
+     7.94725,
+     0.75
+    ],
+    [
+     8.916,
+     1.0
+    ]
+   ]
+  },
+  "oficial": {
+   "perguntas": 24,
+   "pares": [
+    [
+     "Indice de qualidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Indice de qualidade",
+     "Nota"
+    ],
+    [
+     "Nota",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Suporte tecnico"
+    ],
+    [
+     "Indice de qualidade",
+     "Nota"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Suporte tecnico"
+    ],
+    [
+     "Indice de qualidade",
+     "Nota"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Suporte tecnico"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Suporte tecnico"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Suporte tecnico"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Suporte tecnico"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Suporte tecnico"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    "entre-niveis",
+    "entre-niveis"
+   ],
+   "tela_final": "There are no comparisons to be made in the elicitation by decomposition anymore. You can either continue the decision process though holistic evaluation or fina"
+  }
+ },
+ {
+  "chave": "bc-08-nota",
+  "problematica": "beneficio_custo",
+  "alternativas": [
+   "Alt 01",
+   "Alt 02",
+   "Alt 03",
+   "Alt 04",
+   "Alt 05",
+   "Alt 06",
+   "Alt 07",
+   "Alt 08"
+  ],
+  "criterios": [
+   {
+    "chave": "c0",
+    "nome": "Indice de qualidade",
+    "direcao": "max"
+   },
+   {
+    "chave": "c1",
+    "nome": "Nota",
+    "direcao": "max",
+    "niveis": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ]
+   },
+   {
+    "chave": "c2",
+    "nome": "Custo unitario",
+    "direcao": "min"
+   },
+   {
+    "chave": "c3",
+    "nome": "Prazo de entrega",
+    "direcao": "min"
+   }
+  ],
+  "consequencias": [
+   [
+    0.764,
+    2,
+    18.084,
+    37.672
+   ],
+   [
+    0.905,
+    1,
+    17.353,
+    22.673
+   ],
+   [
+    0.961,
+    2,
+    14.033,
+    11.527
+   ],
+   [
+    0.877,
+    4,
+    10.386,
+    12.075
+   ],
+   [
+    0.712,
+    5,
+    9.015,
+    23.879
+   ],
+   [
+    0.614,
+    5,
+    10.41,
+    37.776
+   ],
+   [
+    0.609,
+    4,
+    14.062,
+    45.373
+   ],
+   [
+    0.712,
+    2,
+    17.561,
+    41.312
+   ]
+  ],
+  "custos": [
+   40.0,
+   25.0,
+   35.0,
+   20.0,
+   30.0,
+   45.0,
+   18.0,
+   28.0
+  ],
+  "orcamento": 110.0,
+  "configuracao": null,
+  "curvas": {
+   "c0": [
+    [
+     0.609,
+     0.0
+    ],
+    [
+     0.631,
+     0.5
+    ],
+    [
+     0.8785,
+     0.75
+    ],
+    [
+     0.961,
+     1.0
+    ]
+   ],
+   "c1": [
+    [
+     1.0,
+     0.0
+    ],
+    [
+     2.0,
+     0.5
+    ],
+    [
+     3.0,
+     0.75
+    ],
+    [
+     5.0,
+     1.0
+    ]
+   ],
+   "c2": [
+    [
+     9.015,
+     1.0
+    ],
+    [
+     9.5818125,
+     0.5
+    ],
+    [
+     15.958453125,
+     0.25
+    ],
+    [
+     18.084,
+     0.0
+    ]
+   ],
+   "c3": [
+    [
+     11.527,
+     1.0
+    ],
+    [
+     22.103875,
+     0.75
+    ],
+    [
+     32.68075,
+     0.5
+    ],
+    [
+     39.026875,
+     0.25
+    ],
+    [
+     45.373,
+     0.0
+    ]
+   ]
+  },
+  "oficial": {
+   "perguntas": 17,
+   "pares": [
+    [
+     "Indice de qualidade",
+     "Prazo de entrega"
+    ],
+    [
+     "Indice de qualidade",
+     "Nota"
+    ],
+    [
+     "Nota",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Indice de qualidade",
+     "Nota"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Indice de qualidade",
+     "Nota"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    "entre-niveis",
+    "entre-niveis"
+   ],
+   "tela_final": "$110.00 | $0.00 | Remaining budget: | Portfolio\tResources Utilization | [Alt 04, Alt 02, Alt 03, Alt 05]\t$110.00 | Total budget: | FU-TXMMO-WF1 | Ranking\tProjec"
+  }
+ },
+ {
+  "chave": "sorting-06-nota",
+  "problematica": "sorting",
+  "alternativas": [
+   "Alt 01",
+   "Alt 02",
+   "Alt 03",
+   "Alt 04",
+   "Alt 05",
+   "Alt 06"
+  ],
+  "criterios": [
+   {
+    "chave": "c0",
+    "nome": "Indice de qualidade",
+    "direcao": "max"
+   },
+   {
+    "chave": "c1",
+    "nome": "Nota",
+    "direcao": "max",
+    "niveis": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ]
+   },
+   {
+    "chave": "c2",
+    "nome": "Custo unitario",
+    "direcao": "min"
+   },
+   {
+    "chave": "c3",
+    "nome": "Prazo de entrega",
+    "direcao": "min"
+   },
+   {
+    "chave": "c4",
+    "nome": "Suporte tecnico",
+    "direcao": "max"
+   }
+  ],
+  "consequencias": [
+   [
+    0.764,
+    2,
+    18.084,
+    37.672,
+    5.232
+   ],
+   [
+    0.936,
+    1,
+    16.291,
+    17.183,
+    7.097
+   ],
+   [
+    0.905,
+    3,
+    11.086,
+    10.852,
+    8.916
+   ],
+   [
+    0.704,
+    5,
+    8.98,
+    26.976,
+    8.016
+   ],
+   [
+    0.589,
+    4,
+    12.701,
+    44.953,
+    5.845
+   ],
+   [
+    0.724,
+    2,
+    17.001,
+    40.76,
+    5.041
+   ]
+  ],
+  "custos": null,
+  "orcamento": null,
+  "configuracao": {
+   "perfis": [
+    0.35,
+    0.7
+   ],
+   "classes": [
+    "Baixa",
+    "Media",
+    "Alta"
+   ]
+  },
+  "curvas": {
+   "c0": [
+    [
+     0.589,
+     0.0
+    ],
+    [
+     0.6106874999999999,
+     0.5
+    ],
+    [
+     0.854671875,
+     0.75
+    ],
+    [
+     0.936,
+     1.0
+    ]
+   ],
+   "c1": [
+    [
+     1.0,
+     0.0
+    ],
+    [
+     2.0,
+     0.5
+    ],
+    [
+     3.0,
+     0.75
+    ],
+    [
+     5.0,
+     1.0
+    ]
+   ],
+   "c2": [
+    [
+     8.98,
+     1.0
+    ],
+    [
+     9.549,
+     0.5
+    ],
+    [
+     15.95025,
+     0.25
+    ],
+    [
+     18.084,
+     0.0
+    ]
+   ],
+   "c3": [
+    [
+     10.852,
+     1.0
+    ],
+    [
+     21.508562500000004,
+     0.75
+    ],
+    [
+     32.165125,
+     0.5
+    ],
+    [
+     38.5590625,
+     0.25
+    ],
+    [
+     44.953,
+     0.0
+    ]
+   ],
+   "c4": [
+    [
+     5.041,
+     0.0
+    ],
+    [
+     5.2831875,
+     0.25
+    ],
+    [
+     6.9785,
+     0.5
+    ],
+    [
+     7.94725,
+     0.75
+    ],
+    [
+     8.916,
+     1.0
+    ]
+   ]
+  },
+  "oficial": {
+   "perguntas": 9,
+   "pares": [
+    [
+     "Indice de qualidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Indice de qualidade",
+     "Nota"
+    ],
+    [
+     "Nota",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Suporte tecnico"
+    ],
+    [
+     "Indice de qualidade",
+     "Nota"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Suporte tecnico"
+    ],
+    [
+     "Indice de qualidade",
+     "Nota"
+    ]
+   ],
+   "tela_final": "All the alternatives have been sorted into a unique category. This is the final result. | Warning | FU-T3MMM-WF1a | Alternatives\tCategory\tMin. Value\tMax. Value "
+  }
+ },
+ {
+  "chave": "est-quase-empate",
+  "problematica": "ranking",
+  "alternativas": [
+   "Alt 01",
+   "Alt 02",
+   "Alt 03",
+   "Alt 04",
+   "Alt 05",
+   "Alt 06",
+   "Alt 07",
+   "Alt 08"
+  ],
+  "criterios": [
+   {
+    "chave": "c0",
+    "nome": "Indice de qualidade",
+    "direcao": "max"
+   },
+   {
+    "chave": "c1",
+    "nome": "Custo unitario",
+    "direcao": "min"
+   },
+   {
+    "chave": "c2",
+    "nome": "Prazo de entrega",
+    "direcao": "min"
+   },
+   {
+    "chave": "c3",
+    "nome": "Durabilidade",
+    "direcao": "max"
+   }
+  ],
+  "consequencias": [
+   [
+    0.789,
+    17.488,
+    37.631,
+    5.548
+   ],
+   [
+    0.925,
+    16.915,
+    22.754,
+    5.038
+   ],
+   [
+    0.962,
+    14.353,
+    11.289,
+    5.722
+   ],
+   [
+    0.963,
+    14.3674,
+    11.3003,
+    5.7277
+   ],
+   [
+    0.736,
+    9.135,
+    23.746,
+    8.634
+   ],
+   [
+    0.626,
+    10.615,
+    37.791,
+    8.875
+   ],
+   [
+    0.614,
+    13.976,
+    46.008,
+    7.702
+   ],
+   [
+    0.728,
+    17.625,
+    41.459,
+    6.062
+   ]
+  ],
+  "custos": null,
+  "orcamento": null,
+  "configuracao": null,
+  "curvas": null,
+  "oficial": {
+   "perguntas": 8,
+   "pares": [
+    [
+     "Indice de qualidade",
+     "Durabilidade"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ]
+   ],
+   "tela_final": "A complete order has been found. | Warning | Hasse DiagramTabular Visualization | *The hasse diagram is being generated, please wait a few seconds. | Hasse Diag"
+  }
+ },
+ {
+  "chave": "est-binario-unidades",
+  "problematica": "ranking",
+  "alternativas": [
+   "Alt 01",
+   "Alt 02",
+   "Alt 03",
+   "Alt 04",
+   "Alt 05",
+   "Alt 06",
+   "Alt 07",
+   "Alt 08",
+   "Alt 09",
+   "Alt 10"
+  ],
+  "criterios": [
+   {
+    "chave": "c0",
+    "nome": "Indice de qualidade",
+    "direcao": "max"
+   },
+   {
+    "chave": "c1",
+    "nome": "Custo unitario",
+    "direcao": "min"
+   },
+   {
+    "chave": "c2",
+    "nome": "Prazo de entrega",
+    "direcao": "min"
+   },
+   {
+    "chave": "c3",
+    "nome": "Durabilidade",
+    "direcao": "max"
+   },
+   {
+    "chave": "c4",
+    "nome": "Suporte tecnico",
+    "direcao": "max"
+   }
+  ],
+  "consequencias": [
+   [
+    0.771,
+    17822.0,
+    0.3715,
+    9.0,
+    5.214
+   ],
+   [
+    0.889,
+    17482.0,
+    0.2589,
+    5.0,
+    6.142
+   ],
+   [
+    0.939,
+    15465.0,
+    0.1534,
+    9.0,
+    7.582
+   ],
+   [
+    0.951,
+    12664.0,
+    0.1027,
+    5.0,
+    8.645
+   ],
+   [
+    0.839,
+    10177.0,
+    0.1276,
+    9.0,
+    8.901
+   ],
+   [
+    0.736,
+    8927.0,
+    0.2208,
+    5.0,
+    8.53
+   ],
+   [
+    0.646,
+    9930.0,
+    0.3333,
+    9.0,
+    7.587
+   ],
+   [
+    0.608,
+    12240.0,
+    0.4302,
+    5.0,
+    6.06
+   ],
+   [
+    0.628,
+    15020.0,
+    0.4515,
+    9.0,
+    5.257
+   ],
+   [
+    0.712,
+    17564.0,
+    0.412,
+    5.0,
+    5.037
+   ]
+  ],
+  "custos": null,
+  "orcamento": null,
+  "configuracao": null,
+  "curvas": null,
+  "oficial": {
+   "perguntas": 14,
+   "pares": [
+    [
+     "Indice de qualidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Durabilidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Durabilidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Durabilidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ]
+   ],
+   "tela_final": "A complete order has been found. | Warning | Hasse DiagramTabular Visualization | *The hasse diagram is being generated, please wait a few seconds. | Hasse Diag"
+  }
+ },
+ {
+  "chave": "est-discreto7",
+  "problematica": "ranking",
+  "alternativas": [
+   "Alt 01",
+   "Alt 02",
+   "Alt 03",
+   "Alt 04",
+   "Alt 05",
+   "Alt 06",
+   "Alt 07",
+   "Alt 08",
+   "Alt 09",
+   "Alt 10",
+   "Alt 11",
+   "Alt 12"
+  ],
+  "criterios": [
+   {
+    "chave": "c0",
+    "nome": "Indice de qualidade",
+    "direcao": "max"
+   },
+   {
+    "chave": "c1",
+    "nome": "Nota",
+    "direcao": "max",
+    "niveis": [
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7
+    ]
+   },
+   {
+    "chave": "c2",
+    "nome": "Prazo de entrega",
+    "direcao": "min"
+   },
+   {
+    "chave": "c3",
+    "nome": "Durabilidade",
+    "direcao": "max"
+   }
+  ],
+  "consequencias": [
+   [
+    0.776,
+    1,
+    37.966,
+    5.577
+   ],
+   [
+    0.875,
+    4,
+    28.111,
+    4.992
+   ],
+   [
+    0.913,
+    7,
+    18.785,
+    5.027
+   ],
+   [
+    0.95,
+    3,
+    12.167,
+    5.742
+   ],
+   [
+    0.915,
+    6,
+    9.867,
+    6.683
+   ],
+   [
+    0.858,
+    2,
+    13.406,
+    7.693
+   ],
+   [
+    0.766,
+    5,
+    20.851,
+    8.684
+   ],
+   [
+    0.669,
+    1,
+    29.914,
+    9.14
+   ],
+   [
+    0.61,
+    4,
+    38.761,
+    8.945
+   ],
+   [
+    0.611,
+    7,
+    44.073,
+    8.113
+   ],
+   [
+    0.634,
+    3,
+    45.374,
+    7.272
+   ],
+   [
+    0.722,
+    6,
+    41.826,
+    6.021
+   ]
+  ],
+  "custos": null,
+  "orcamento": null,
+  "configuracao": null,
+  "curvas": null,
+  "oficial": {
+   "perguntas": 12,
+   "pares": [
+    [
+     "Indice de qualidade",
+     "Durabilidade"
+    ],
+    [
+     "Indice de qualidade",
+     "Nota"
+    ],
+    [
+     "Nota",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Indice de qualidade",
+     "Nota"
+    ],
+    [
+     "Nota",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Indice de qualidade",
+     "Nota"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Indice de qualidade",
+     "Nota"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Indice de qualidade",
+     "Nota"
+    ]
+   ],
+   "tela_final": "A complete order has been found. | Warning | Hasse DiagramTabular Visualization | *The hasse diagram is being generated, please wait a few seconds. | Hasse Diag"
+  }
+ }
+]

@@ -89,7 +89,11 @@ class Bracket:
         inside = [v for v in realizable if self.lower < v < self.upper]
         if not inside:
             return None
-        return min(inside, key=lambda v: abs(v - self.midpoint))
+        # Empate de distancia vai para o valor de baixo. Numa nota de 1 a 7, com
+        # a faixa de 0 a 0,5, os niveis 2 e 3 ficam a 1/12 do meio, e o sistema
+        # de referencia pergunta o 2 (medido em 29/09/2026). O arredondamento da
+        # distancia e o que faz o empate ser empate em ponto flutuante.
+        return min(inside, key=lambda v: (round(abs(v - self.midpoint), 9), v))
 
 
 def brackets_from_log(

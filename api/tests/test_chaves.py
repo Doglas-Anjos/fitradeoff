@@ -472,3 +472,25 @@ def test_decisao_criada_pelo_assistente_aparece_na_tela_de_quem_emitiu_a_chave(t
     assert "Decisao da Ana" in da_ana.text
     assert "Decisao da Ana" not in da_bia.text
     assert not s.storage.exists(), "nada pode ir para o acervo do dono da plataforma"
+
+
+def test_endereco_do_mcp_vem_do_dominio_publico_quando_a_url_nao_foi_declarada(monkeypatch):
+    """Em producao a tela mostrava http://127.0.0.1:8000/mcp/... para colar no assistente."""
+    from fitradeoff_api.config import _mcp_url
+
+    monkeypatch.delenv("FITRADEOFF_MCP_URL", raising=False)
+    monkeypatch.setenv("FITRADEOFF_MCP_HOSTS", "fitradeoff.fasorx.com.br")
+    assert _mcp_url() == "https://fitradeoff.fasorx.com.br/mcp"
+
+    # Vazio (como o compose passa quando nao declarado) conta como ausente.
+    monkeypatch.setenv("FITRADEOFF_MCP_URL", "")
+    assert _mcp_url() == "https://fitradeoff.fasorx.com.br/mcp"
+
+    # Declarada, vence -- e a barra final sai.
+    monkeypatch.setenv("FITRADEOFF_MCP_URL", "https://outro.exemplo.org/mcp/")
+    assert _mcp_url() == "https://outro.exemplo.org/mcp"
+
+    # Sem nada publico declarado: o endereco local, para o desenvolvimento.
+    monkeypatch.delenv("FITRADEOFF_MCP_URL")
+    monkeypatch.setenv("FITRADEOFF_MCP_HOSTS", "127.0.0.1:8765,localhost")
+    assert _mcp_url() == "http://127.0.0.1:8000/mcp"

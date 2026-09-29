@@ -23,9 +23,12 @@ from .dto import (
     SummaryDTO,
 )
 
+# Sem nome de ferramenta: o motor e usado pelo MCP (`rank_criteria`) e pelo chat
+# da tela (`ordenar_criterios`), e cada um ja diz nas proprias instrucoes qual
+# ferramenta registra a ordem. Um nome aqui estaria errado para um dos dois.
 PROXIMO_PASSO = (
     "Peça ao decisor que ordene os critérios do mais para o menos importante e "
-    "registre com `ordenar_criterios`."
+    "registre essa ordem."
 )
 
 LEITURA_DA_TRILHA = (

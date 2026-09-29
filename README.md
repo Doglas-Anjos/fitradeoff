@@ -346,9 +346,9 @@ print(service.state(criada["id"])["analise"]["resumo"])
 
 ### Ferramentas MCP
 
-`listar_problematicas` · `criar_problema` · `listar_problemas` · `ver_problema` ·
-`ordenar_criterios` · `proxima_pergunta` · `responder` · `julgar` · `desfazer` · `situacao` ·
-`explicar` · `mudar_problematica` · `definir_limiar_de_equivalencia` · `analise_sensibilidade`
+`list_problematics` · `create_problem` · `list_problems` · `get_problem` ·
+`rank_criteria` · `next_question` · `answer` · `record_judgment` · `undo` · `status` ·
+`explain` · `change_problematic` · `set_equivalence_threshold` · `sensitivity_analysis`
 
 As `instructions` do servidor instruem o agente a **não responder pelo decisor**, a reproduzir as
 duas opções por inteiro, e a declarar a ressalva do portfólio. A ordenação dos critérios é uma

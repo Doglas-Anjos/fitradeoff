@@ -80,13 +80,13 @@ def test_mede_cada_ferramenta_do_mcp(tmp_path):
     settings = Settings(storage=tmp_path / "decisoes", mcp_hosts=["fit.exemplo.org"])
     _, texto = cofre.criar(settings, "teste")
     antes = valor(
-        "fitradeoff_ferramentas_total", ferramenta="listar_problematicas", resultado="ok"
+        "fitradeoff_ferramentas_total", ferramenta="list_problematics", resultado="ok"
     )
     pedido = {
         "jsonrpc": "2.0",
         "id": 1,
         "method": "tools/call",
-        "params": {"name": "listar_problematicas", "arguments": {}},
+        "params": {"name": "list_problematics", "arguments": {}},
     }
     # O host declarado: a protecao contra DNS rebinding recusa `testserver`.
     with TestClient(create_mcp_app(settings), base_url="http://fit.exemplo.org") as c:
@@ -97,7 +97,7 @@ def test_mede_cada_ferramenta_do_mcp(tmp_path):
         )
     assert r.status_code == 200
     assert valor(
-        "fitradeoff_ferramentas_total", ferramenta="listar_problematicas", resultado="ok"
+        "fitradeoff_ferramentas_total", ferramenta="list_problematics", resultado="ok"
     ) == antes + 1
 
 

@@ -40,7 +40,7 @@ def test_criar_devolve_problema_e_proximo_passo(criada):
     assert criada["id"] == "d1"
     assert criada["criterios"][1]["unidade"] == "R$/un"
     assert criada["criterios"][1]["melhor"] == 10.20  # custo: menor e melhor
-    assert "ordenar_criterios" in criada["proximo_passo"]
+    assert "ordene os critérios" in criada["proximo_passo"]
 
 
 def test_matriz_incoerente_e_recusada(service):

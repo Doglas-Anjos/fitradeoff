@@ -157,7 +157,7 @@ def criar_problema(cliente, chave: str, nome: str) -> dict:
             f"/mcp/{chave}",
             json=pedido(
                 "tools/call",
-                name="criar_problema",
+                name="create_problem",
                 arguments={
                     "nome": nome,
                     "alternativas": ["A", "B", "C"],
@@ -177,7 +177,7 @@ def listar_problemas(cliente, chave: str) -> list[dict]:
     return conteudo(
         cliente.post(
             f"/mcp/{chave}",
-            json=pedido("tools/call", name="listar_problemas", arguments={}),
+            json=pedido("tools/call", name="list_problems", arguments={}),
             headers=CABECALHOS,
         )
     )["decisoes"]

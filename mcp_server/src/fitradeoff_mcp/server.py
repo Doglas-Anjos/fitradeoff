@@ -38,17 +38,17 @@ Cinco problematicas: `escolha` (qual e a melhor), `ranking` (ordenar todas),
 `sorting` (alocar em classes), `portfolio` (a carteira de maior beneficio
 agregado dentro do orcamento) e `beneficio_custo` (a carteira montada pela ordem
 da razao beneficio/custo, para quem quer eficiencia por unidade de recurso).
-Chame `listar_problematicas` se estiver em duvida sobre qual serve.
+Chame `list_problematics` se estiver em duvida sobre qual serve.
 
 Protocolo, nesta ordem:
 
-1. `criar_problema` com alternativas, criterios e a matriz de consequencias.
-2. `ordenar_criterios`: o decisor ordena os criterios do mais para o menos
+1. `create_problem` com alternativas, criterios e a matriz de consequencias.
+2. `rank_criteria`: o decisor ordena os criterios do mais para o menos
    importante, supondo que cada um va do pior ao melhor desempenho possivel.
    Proponha uma ordem a partir da conversa, mas peca confirmacao -- a ordem e
    uma declaracao de preferencia dele, nao sua.
-3. Repita `proxima_pergunta` -> `responder` ate o processo encerrar.
-4. `situacao` a qualquer momento; `explicar` para justificar o resultado.
+3. Repita `next_question` -> `answer` ate o processo encerrar.
+4. `status` a qualquer momento; `explain` para justificar o resultado.
 
 Ao apresentar uma pergunta, reproduza as duas opcoes por inteiro, com todos os
 criterios e suas unidades. As duas situacoes sao hipoteticas e propositalmente
@@ -58,7 +58,7 @@ Nao invente respostas, nao deduza a preferencia do decisor e nao pule perguntas.
 O metodo trabalha com informacao parcial: quase sempre da para concluir sem
 esgotar as perguntas. Se o decisor quiser parar antes, apresente as faixas de
 valor e deixe que ele decida olhando os dados -- e a avaliacao holistica
-prevista pelo metodo, e `julgar` registra o que ele decidir assim.
+prevista pelo metodo, e `record_judgment` registra o que ele decidir assim.
 
 As problematicas de carteira (`portfolio` e `beneficio_custo`) devolvem a
 carteira como resultado aproximado, por amostragem do espaco de pesos: diga
@@ -216,7 +216,7 @@ def tool(description: str):
     "nao estiver claro se o decisor quer escolher uma, ordenar todas, "
     "classificar em faixas ou montar uma carteira."
 )
-def listar_problematicas() -> dict:
+def list_problematics() -> dict:
     return service().problematics()
 
 
@@ -234,9 +234,9 @@ def listar_problematicas() -> dict:
     "inaceitavel -- e so em 'escolha' ou 'ranking', que sao onde o metodo o "
     "define; nas outras o registro e recusado. "
     "`limiar_de_equivalencia` so precisa vir se o decisor pedir outro limiar "
-    "que nao o padrao 0,01 -- veja `definir_limiar_de_equivalencia`."
+    "que nao o padrao 0,01 -- veja `set_equivalence_threshold`."
 )
-def criar_problema(
+def create_problem(
     nome: str,
     alternativas: list[str],
     criterios: list[dict],
@@ -259,7 +259,7 @@ def criar_problema(
 
 
 @tool("Lista as decisoes ja registradas.")
-def listar_problemas() -> dict:
+def list_problems() -> dict:
     return {"decisoes": service().list()}
 
 
@@ -267,7 +267,7 @@ def listar_problemas() -> dict:
     "Mostra o problema: criterios com melhor e pior desempenho, matriz de "
     "consequencias e configuracao."
 )
-def ver_problema(id: str) -> dict:
+def get_problem(id: str) -> dict:
     return service().describe(id)
 
 
@@ -276,7 +276,7 @@ def ver_problema(id: str) -> dict:
     "`ordem` traz as chaves dos criterios, do maior peso para o menor. "
     "Reordenar apos respostas dadas descarta as respostas."
 )
-def ordenar_criterios(id: str, ordem: list[str]) -> dict:
+def rank_criteria(id: str, ordem: list[str]) -> dict:
     return service().rank_criteria(id, ordem)
 
 
@@ -284,7 +284,7 @@ def ordenar_criterios(id: str, ordem: list[str]) -> dict:
     "Devolve a proxima pergunta de tradeoff, ja enunciada nas unidades do "
     "problema. Apresente as duas opcoes por inteiro ao decisor."
 )
-def proxima_pergunta(id: str) -> dict:
+def next_question(id: str) -> dict:
     return service().next_question(id)
 
 
@@ -292,7 +292,7 @@ def proxima_pergunta(id: str) -> dict:
     "Registra a resposta do decisor a pergunta corrente: 'A', 'B' ou "
     "'indiferente'. Devolve a situacao atualizada."
 )
-def responder(id: str, preferencia: str) -> dict:
+def answer(id: str, preferencia: str) -> dict:
     return service().answer(id, preferencia)
 
 
@@ -301,12 +301,12 @@ def responder(id: str, preferencia: str) -> dict:
     "decisor olha o desempenho completo das duas e declara qual prefere. E a "
     "avaliacao holistica do metodo, e convive com as perguntas de tradeoff."
 )
-def julgar(id: str, preferida: str, sobre: str) -> dict:
+def record_judgment(id: str, preferida: str, sobre: str) -> dict:
     return service().judge(id, preferida, sobre)
 
 
 @tool("Desfaz a ultima declaracao registrada.")
-def desfazer(id: str) -> dict:
+def undo(id: str) -> dict:
     return service().undo(id)
 
 
@@ -314,7 +314,7 @@ def desfazer(id: str) -> dict:
     "Situacao atual sob a problematica em uso, com as faixas de peso e de valor "
     "ainda possiveis."
 )
-def situacao(id: str) -> dict:
+def status(id: str) -> dict:
     return service().state(id)
 
 
@@ -322,7 +322,7 @@ def situacao(id: str) -> dict:
     "Justifica o resultado: o que o decisor declarou, em portugues, com autor e "
     "instante, e o que isso impos. Use para responder 'por que essa?'."
 )
-def explicar(id: str) -> dict:
+def explain(id: str) -> dict:
     return service().explain(id)
 
 
@@ -331,7 +331,7 @@ def explicar(id: str) -> dict:
     "o decisor, depois de escolher, quer ver o ranking completo ou classificar "
     "as alternativas em faixas."
 )
-def mudar_problematica(
+def change_problematic(
     id: str, problematica: str, configuracao: dict | None = None
 ) -> dict:
     return service().switch_problematic(id, problematica, configuracao)
@@ -343,12 +343,12 @@ def mudar_problematica(
     "por menos que o limiar contam como indiferentes: e o criterio de parada do "
     "metodo, e subi-lo encerra antes, enquanto baixa-lo pede mais perguntas. O "
     "padrao e 0,01, o mesmo do sistema oficial; aceita de 0 a 0,5, na escala de "
-    "valor global, que vai de 0 a 1. Nao confunda com `analise_sensibilidade`, "
+    "valor global, que vai de 0 a 1. Nao confunda com `sensitivity_analysis`, "
     "que varre outra coisa: a folga entre os pesos de dois CRITERIOS. Passe nulo "
     "para voltar ao padrao. So chame se o decisor pedir -- o limiar e uma "
     "escolha dele sobre quanta diferenca ainda importa, nao sua."
 )
-def definir_limiar_de_equivalencia(id: str, limiar: float | None = None) -> dict:
+def set_equivalence_threshold(id: str, limiar: float | None = None) -> dict:
     return service().set_equivalence(id, limiar)
 
 
@@ -357,7 +357,7 @@ def definir_limiar_de_equivalencia(id: str, limiar: float | None = None) -> dict
     "de preferencia estrita entre os pesos dos criterios, para mostrar o quanto a "
     "conclusao depende delas. Nada e reelicitado."
 )
-def analise_sensibilidade(id: str, limiares: list[float]) -> dict:
+def sensitivity_analysis(id: str, limiares: list[float]) -> dict:
     return service().sensitivity(id, limiares)
 
 

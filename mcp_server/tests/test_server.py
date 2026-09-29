@@ -24,20 +24,20 @@ CONSEQUENCIAS = [
 ALTERNATIVAS = ["Fornecedor A", "Fornecedor B", "Fornecedor C", "Fornecedor D"]
 
 FERRAMENTAS = {
-    "listar_problematicas",
-    "criar_problema",
-    "listar_problemas",
-    "ver_problema",
-    "ordenar_criterios",
-    "proxima_pergunta",
-    "responder",
-    "julgar",
-    "desfazer",
-    "situacao",
-    "explicar",
-    "mudar_problematica",
-    "analise_sensibilidade",
-    "definir_limiar_de_equivalencia",
+    "list_problematics",
+    "create_problem",
+    "list_problems",
+    "get_problem",
+    "rank_criteria",
+    "next_question",
+    "answer",
+    "record_judgment",
+    "undo",
+    "status",
+    "explain",
+    "change_problematic",
+    "sensitivity_analysis",
+    "set_equivalence_threshold",
 }
 
 
@@ -49,7 +49,7 @@ def isolated_storage(tmp_path, monkeypatch):
 
 @pytest.fixture
 def problema():
-    return srv.criar_problema("Fornecedores", ALTERNATIVAS, CRITERIOS, CONSEQUENCIAS)
+    return srv.create_problem("Fornecedores", ALTERNATIVAS, CRITERIOS, CONSEQUENCIAS)
 
 
 # --- protocolo ----------------------------------------------------------------
@@ -64,7 +64,7 @@ def test_ferramentas_expostas():
 
 def test_assinaturas_preservadas_apesar_do_decorador():
     tools = {t.name: t for t in asyncio.run(srv.server.list_tools())}
-    propriedades = set(tools["criar_problema"].input_schema["properties"])
+    propriedades = set(tools["create_problem"].input_schema["properties"])
     assert propriedades == {
         "nome", "alternativas", "criterios", "consequencias",
         "problematica", "configuracao", "custos", "limiar_de_equivalencia",
@@ -82,13 +82,13 @@ def test_instrucoes_orientam_o_agente():
 @pytest.mark.parametrize(
     "chamada",
     [
-        lambda: srv.situacao("fantasma"),
-        lambda: srv.ver_problema("fantasma"),
-        lambda: srv.explicar("fantasma"),
-        lambda: srv.desfazer("fantasma"),
-        lambda: srv.ordenar_criterios("fantasma", ["a"]),
-        lambda: srv.criar_problema("x", ALTERNATIVAS, CRITERIOS, [[1.0, 2.0, 3.0]]),
-        lambda: srv.criar_problema(
+        lambda: srv.status("fantasma"),
+        lambda: srv.get_problem("fantasma"),
+        lambda: srv.explain("fantasma"),
+        lambda: srv.undo("fantasma"),
+        lambda: srv.rank_criteria("fantasma", ["a"]),
+        lambda: srv.create_problem("x", ALTERNATIVAS, CRITERIOS, [[1.0, 2.0, 3.0]]),
+        lambda: srv.create_problem(
             "x", ALTERNATIVAS, CRITERIOS, CONSEQUENCIAS, problematica="magica"
         ),
     ],
@@ -100,17 +100,17 @@ def test_falhas_previsiveis_devolvem_erro_legivel(chamada):
 
 
 def test_perguntar_antes_de_ordenar_orienta(problema):
-    assert "ordene os criterios" in srv.proxima_pergunta(problema["id"])["erro"]
+    assert "ordene os criterios" in srv.next_question(problema["id"])["erro"]
 
 
 def test_ordenacao_incompleta_aponta_o_que_falta(problema):
-    resposta = srv.ordenar_criterios(problema["id"], ["qualidade", "custo"])
+    resposta = srv.rank_criteria(problema["id"], ["qualidade", "custo"])
     assert "prazo" in resposta["erro"]
 
 
 def test_resposta_invalida_e_recusada(problema):
-    srv.ordenar_criterios(problema["id"], ["qualidade", "custo", "prazo"])
-    assert "erro" in srv.responder(problema["id"], "talvez")
+    srv.rank_criteria(problema["id"], ["qualidade", "custo", "prazo"])
+    assert "erro" in srv.answer(problema["id"], "talvez")
 
 
 # --- fluxo --------------------------------------------------------------------
@@ -118,23 +118,23 @@ def test_resposta_invalida_e_recusada(problema):
 
 def test_fluxo_completo(problema):
     id_ = problema["id"]
-    assert "ordenar_criterios" in problema["proximo_passo"]
+    assert "ordene os critérios" in problema["proximo_passo"]
 
-    estado = srv.ordenar_criterios(id_, ["qualidade", "custo", "prazo"])
+    estado = srv.rank_criteria(id_, ["qualidade", "custo", "prazo"])
     assert estado["consistente"]
 
     for _ in range(30):
-        pergunta = srv.proxima_pergunta(id_)
+        pergunta = srv.next_question(id_)
         if pergunta.get("pergunta", "sentinela") is None:
             break
         assert "pior desempenho possivel" in pergunta["enunciado"]
         assert 0.0 < pergunta["posicao_na_escala"] < 1.0
-        estado = srv.responder(id_, "A")
+        estado = srv.answer(id_, "A")
         assert "erro" not in estado
     else:
         pytest.fail("A elicitacao nao encerrou.")
 
-    final = srv.situacao(id_)
+    final = srv.status(id_)
     assert final["encerrado"]
     assert final["analise"]["resumo"]
 
@@ -142,36 +142,36 @@ def test_fluxo_completo(problema):
 def test_estado_sobrevive_entre_chamadas(problema):
     """O servidor nao guarda nada: tudo vem de replay do que esta em disco."""
     id_ = problema["id"]
-    srv.ordenar_criterios(id_, ["qualidade", "custo", "prazo"])
-    srv.responder(id_, "A")
+    srv.rank_criteria(id_, ["qualidade", "custo", "prazo"])
+    srv.answer(id_, "A")
 
     # cada ferramenta monta um servico novo, como um processo reiniciado faria
-    assert srv.situacao(id_)["declaracoes"] == 2
+    assert srv.status(id_)["declaracoes"] == 2
 
 
 def test_desfazer(problema):
     id_ = problema["id"]
-    srv.ordenar_criterios(id_, ["qualidade", "custo", "prazo"])
-    srv.responder(id_, "A")
-    assert srv.desfazer(id_)["declaracoes"] == 1
-    srv.desfazer(id_)
-    assert "Nao ha declaracao" in srv.desfazer(id_)["erro"]
+    srv.rank_criteria(id_, ["qualidade", "custo", "prazo"])
+    srv.answer(id_, "A")
+    assert srv.undo(id_)["declaracoes"] == 1
+    srv.undo(id_)
+    assert "Nao ha declaracao" in srv.undo(id_)["erro"]
 
 
 def test_julgamento_holistico(problema):
     id_ = problema["id"]
-    srv.ordenar_criterios(id_, ["qualidade", "custo", "prazo"])
-    estado = srv.julgar(id_, preferida="Fornecedor B", sobre="Fornecedor C")
+    srv.rank_criteria(id_, ["qualidade", "custo", "prazo"])
+    estado = srv.record_judgment(id_, preferida="Fornecedor B", sobre="Fornecedor C")
     assert estado["declaracoes"] == 2
-    assert "erro" in srv.julgar(id_, preferida="Inexistente", sobre="Fornecedor C")
+    assert "erro" in srv.record_judgment(id_, preferida="Inexistente", sobre="Fornecedor C")
 
 
 def test_explicar_fala_em_portugues(problema):
     id_ = problema["id"]
-    srv.ordenar_criterios(id_, ["qualidade", "custo", "prazo"])
-    srv.responder(id_, "B")
+    srv.rank_criteria(id_, ["qualidade", "custo", "prazo"])
+    srv.answer(id_, "B")
 
-    trilha = srv.explicar(id_)
+    trilha = srv.explain(id_)
     texto = " ".join(d["declaracao"] for d in trilha["declaracoes"])
     assert "Indice de qualidade" in texto
     assert "k[" not in texto
@@ -182,28 +182,28 @@ def test_explicar_fala_em_portugues(problema):
 
 
 def test_listar_problematicas():
-    disponiveis = srv.listar_problematicas()["disponiveis"]
+    disponiveis = srv.list_problematics()["disponiveis"]
     assert set(disponiveis) == {
         "escolha", "ranking", "sorting", "portfolio", "beneficio_custo"
     }
 
 
 def test_criar_com_cada_problematica():
-    escolha = srv.criar_problema("E", ALTERNATIVAS, CRITERIOS, CONSEQUENCIAS)
-    ranking = srv.criar_problema(
+    escolha = srv.create_problem("E", ALTERNATIVAS, CRITERIOS, CONSEQUENCIAS)
+    ranking = srv.create_problem(
         "R", ALTERNATIVAS, CRITERIOS, CONSEQUENCIAS, problematica="ranking"
     )
-    sorting = srv.criar_problema(
+    sorting = srv.create_problem(
         "S", ALTERNATIVAS, CRITERIOS, CONSEQUENCIAS,
         problematica="sorting", configuracao={"perfis": [0.5]},
     )
-    portfolio = srv.criar_problema(
+    portfolio = srv.create_problem(
         "P", ALTERNATIVAS, CRITERIOS, CONSEQUENCIAS,
         problematica="portfolio",
         configuracao={"orcamento": 25.0},
         custos=[10.0, 12.0, 8.0, 11.0],
     )
-    razao = srv.criar_problema(
+    razao = srv.create_problem(
         "B", ALTERNATIVAS, CRITERIOS, CONSEQUENCIAS,
         problematica="beneficio_custo",
         configuracao={"orcamento": 25.0},
@@ -214,14 +214,14 @@ def test_criar_com_cada_problematica():
 
 
 def test_sorting_sem_perfis_e_recusado():
-    resposta = srv.criar_problema(
+    resposta = srv.create_problem(
         "S", ALTERNATIVAS, CRITERIOS, CONSEQUENCIAS, problematica="sorting"
     )
     assert "perfil" in resposta["erro"]
 
 
 def test_portfolio_sem_custos_e_recusado():
-    resposta = srv.criar_problema(
+    resposta = srv.create_problem(
         "P", ALTERNATIVAS, CRITERIOS, CONSEQUENCIAS,
         problematica="portfolio", configuracao={"orcamento": 25.0},
     )
@@ -229,28 +229,28 @@ def test_portfolio_sem_custos_e_recusado():
 
 
 def test_portfolio_declara_a_ressalva():
-    criada = srv.criar_problema(
+    criada = srv.create_problem(
         "P", ALTERNATIVAS, CRITERIOS, CONSEQUENCIAS,
         problematica="portfolio",
         configuracao={"orcamento": 25.0, "amostras": 6},
         custos=[10.0, 12.0, 8.0, 11.0],
     )
-    srv.ordenar_criterios(criada["id"], ["qualidade", "custo", "prazo"])
-    analise = srv.situacao(criada["id"])["analise"]
+    srv.rank_criteria(criada["id"], ["qualidade", "custo", "prazo"])
+    analise = srv.status(criada["id"])["analise"]
     assert "aproximado" in analise["ressalva"]
     for carteira in analise["portfolios_encontrados"]:
         assert carteira["custo"] <= 25.0 + 1e-9
 
 
 def test_beneficio_custo_publica_as_faixas_de_razao():
-    criada = srv.criar_problema(
+    criada = srv.create_problem(
         "B", ALTERNATIVAS, CRITERIOS, CONSEQUENCIAS,
         problematica="beneficio_custo",
         configuracao={"orcamento": 25.0, "amostras": 6},
         custos=[10.0, 12.0, 8.0, 11.0],
     )
-    srv.ordenar_criterios(criada["id"], ["qualidade", "custo", "prazo"])
-    analise = srv.situacao(criada["id"])["analise"]
+    srv.rank_criteria(criada["id"], ["qualidade", "custo", "prazo"])
+    analise = srv.status(criada["id"])["analise"]
 
     assert set(analise["razoes"]) == set(ALTERNATIVAS)
     assert "Aproximado" in analise["ressalva"]
@@ -260,56 +260,56 @@ def test_beneficio_custo_publica_as_faixas_de_razao():
 
 def test_mudar_de_problematica_reaproveita_as_respostas(problema):
     id_ = problema["id"]
-    srv.ordenar_criterios(id_, ["qualidade", "custo", "prazo"])
-    srv.responder(id_, "A")
+    srv.rank_criteria(id_, ["qualidade", "custo", "prazo"])
+    srv.answer(id_, "A")
 
-    como_ranking = srv.mudar_problematica(id_, "ranking")
+    como_ranking = srv.change_problematic(id_, "ranking")
     assert como_ranking["declaracoes"] == 2
     assert "posicoes_possiveis" in como_ranking["analise"]
 
-    como_sorting = srv.mudar_problematica(id_, "sorting", {"perfis": [0.5]})
+    como_sorting = srv.change_problematic(id_, "sorting", {"perfis": [0.5]})
     assert "alocacao" in como_sorting["analise"]
 
-    assert "erro" in srv.mudar_problematica(id_, "sorting", {})
+    assert "erro" in srv.change_problematic(id_, "sorting", {})
 
 
 def test_analise_de_sensibilidade_nao_altera_o_log(problema):
     id_ = problema["id"]
-    srv.ordenar_criterios(id_, ["qualidade", "custo", "prazo"])
-    srv.responder(id_, "A")
+    srv.rank_criteria(id_, ["qualidade", "custo", "prazo"])
+    srv.answer(id_, "A")
 
-    resultado = srv.analise_sensibilidade(id_, [0.0, 0.01, 0.5])
+    resultado = srv.sensitivity_analysis(id_, [0.0, 0.01, 0.5])
     assert len(resultado["cenarios"]) == 3
-    assert srv.situacao(id_)["declaracoes"] == 2
+    assert srv.status(id_)["declaracoes"] == 2
 
 
 def test_listar_problemas(problema):
-    srv.criar_problema("Outro", ALTERNATIVAS, CRITERIOS, CONSEQUENCIAS)
-    decisoes = srv.listar_problemas()["decisoes"]
+    srv.create_problem("Outro", ALTERNATIVAS, CRITERIOS, CONSEQUENCIAS)
+    decisoes = srv.list_problems()["decisoes"]
     assert len(decisoes) == 2
 
 
 def test_limiar_de_equivalencia_e_configuravel(problema):
     """O padrao continua 0,01, e a troca atravessa a fronteira do processo:
     cada chamada monta um servico novo e rele o arquivo."""
-    assert srv.situacao(problema["id"])["limiar_de_equivalencia"] == 0.01
+    assert srv.status(problema["id"])["limiar_de_equivalencia"] == 0.01
 
-    ajustada = srv.definir_limiar_de_equivalencia(problema["id"], 0.05)
+    ajustada = srv.set_equivalence_threshold(problema["id"], 0.05)
     assert ajustada["limiar_de_equivalencia"] == 0.05
-    assert srv.situacao(problema["id"])["limiar_de_equivalencia"] == 0.05
+    assert srv.status(problema["id"])["limiar_de_equivalencia"] == 0.05
 
-    srv.definir_limiar_de_equivalencia(problema["id"], None)
-    assert srv.situacao(problema["id"])["limiar_de_equivalencia"] == 0.01
+    srv.set_equivalence_threshold(problema["id"], None)
+    assert srv.status(problema["id"])["limiar_de_equivalencia"] == 0.01
 
 
 def test_limiar_absurdo_devolve_erro_legivel(problema):
-    erro = srv.definir_limiar_de_equivalencia(problema["id"], 42.0)
+    erro = srv.set_equivalence_threshold(problema["id"], 42.0)
     assert "entre 0 e 0.5" in erro["erro"]
 
 
 def test_criar_com_limiar_proprio(problema):
-    criada = srv.criar_problema(
+    criada = srv.create_problem(
         "Com limiar", ALTERNATIVAS, CRITERIOS, CONSEQUENCIAS,
         limiar_de_equivalencia=0.05,
     )
-    assert srv.situacao(criada["id"])["limiar_de_equivalencia"] == 0.05
+    assert srv.status(criada["id"])["limiar_de_equivalencia"] == 0.05

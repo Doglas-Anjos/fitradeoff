@@ -150,16 +150,38 @@ export async function obter(): Promise<string | null> {
  *  aplicacoes dele; nunca um endereco. Com sessao mas perfil ou termo
  *  pendente, vai direto para a /conta/ de la, que devolve a pessoa aqui depois
  *  de salvar. */
+export function urlDeLogin(): string {
+  const destino = completar || `${FASORX}/entrar/`;
+  return `${destino}${destino.includes("?") ? "&" : "?"}volta=fitradeoff`;
+}
+
+/** Vai ao login SEM disjuntor.
+ *
+ *  Para quando o proprio FasorX disse que nao ha sessao (token 401) ou mandou
+ *  completar a conta (403 com `completar`): ai mandar ao login e sempre o
+ *  certo, e nao ha laco -- o /entrar/ do FasorX so devolve a pessoa para ca
+ *  quando ela TEM sessao e conta pronta. Por isso o Portao usa esta, e nao
+ *  `irParaLogin`. */
+export function irAoFasorx(): void {
+  if (!identidadeLigada()) return;
+  window.location.href = urlDeLogin();
+}
+
+/** Vai ao login COM disjuntor. So para quando a API DESTA aplicacao recusou
+ *  um token que o FasorX acabou de emitir (lib/api.ts). */
 export function irParaLogin(): boolean {
   if (!identidadeLigada()) return false;
 
-  // Disjuntor. Se esta aba ja foi mandada ao FasorX ha pouco e voltou sem
-  // conseguir entrar, mandar de novo so gira em circulo: o FasorX tem sessao,
-  // devolve a pessoa para ca, a API daqui recusa o token (JWKS fora do ar,
-  // relogio fora da folga, emissor divergente), e tudo recomeca -- ate o
-  // limitador do FasorX responder 429 para o IP inteiro, que numa
-  // universidade e o de todo mundo. Na segunda vez em menos de um minuto, para
-  // e devolve false: quem chamou mostra o erro em vez de redirecionar.
+  // Disjuntor. Aqui o FasorX TEM sessao (acabou de emitir o token) e quem
+  // recusa e a API daqui -- JWKS fora do ar, relogio fora da folga, emissor
+  // divergente. Mandar ao login devolve a pessoa para ca com outro token, que
+  // a API recusa de novo, e tudo recomeca ate o limitador do FasorX responder
+  // 429 para o IP inteiro, que numa universidade e o de todo mundo. Na segunda
+  // vez em menos de um minuto, para e devolve false: quem chamou mostra o erro.
+  //
+  // So neste caminho. No Portao, "sem sessao" vem do proprio FasorX, e o
+  // disjuntor ali confundia "acabei de entrar e voltei" com um laco -- a
+  // pessoa via "nao foi possivel confirmar seu acesso" logo depois do login.
   const CHAVE = "fitradeoff:foi-ao-login";
   try {
     const antes = Number(window.sessionStorage.getItem(CHAVE) || 0);
@@ -169,8 +191,7 @@ export function irParaLogin(): boolean {
     /* sem sessionStorage (janela privada restrita): segue sem disjuntor */
   }
 
-  const destino = completar || `${FASORX}/entrar/`;
-  window.location.href = `${destino}${destino.includes("?") ? "&" : "?"}volta=fitradeoff`;
+  window.location.href = urlDeLogin();
   return true;
 }
 

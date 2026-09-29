@@ -44,7 +44,11 @@ describe("Portao", () => {
     expect(screen.queryByText("tela da aplicacao")).not.toBeInTheDocument();
   });
 
-  it("acabou de voltar do login sem conseguir: mostra a falha, nao redireciona de novo", async () => {
+  it("acabou de voltar do FasorX e ainda sem sessao: vai ao login de novo, sem tela de falha", async () => {
+    // O caso relatado: a pessoa foi ao /entrar/, entrou, e reabriu o
+    // FITradeoff na mesma aba em menos de um minuto. O disjuntor tratava isso
+    // como laco e mostrava "nao foi possivel confirmar seu acesso". Sem sessao
+    // e resposta do proprio FasorX: mandar ao login e sempre o certo.
     vi.stubGlobal("fetch", vi.fn(async () => resposta({ erro: "sem sessao" }, 401)));
     window.sessionStorage.setItem("fitradeoff:foi-ao-login", String(Date.now()));
     const nav = prenderNavegacao();
@@ -52,8 +56,8 @@ describe("Portao", () => {
 
     render(<Portao><p>tela da aplicacao</p></Portao>);
 
-    expect(await screen.findByRole("button", { name: /Tentar de novo/ })).toBeInTheDocument();
-    expect(nav.href).toBe("https://fitradeoff.fasorx.com.br/");
+    await waitFor(() => expect(nav.href).toBe(`${URL_FASORX}/entrar/?volta=fitradeoff`));
+    expect(screen.queryByText(/Não foi possível/)).not.toBeInTheDocument();
   });
 
   it("com sessao: mostra a aplicacao", async () => {
@@ -65,14 +69,15 @@ describe("Portao", () => {
     expect(await screen.findByText("tela da aplicacao")).toBeInTheDocument();
   });
 
-  it("rede fora: nao manda ao login, oferece tentar de novo", async () => {
+  it("rede fora: nao redireciona sozinho; 'Tentar de novo' leva ao /entrar/ do FasorX", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => resposta({}, 502)));
     const nav = prenderNavegacao();
     const Portao = await carregarPortao();
 
     render(<Portao><p>tela da aplicacao</p></Portao>);
 
-    expect(await screen.findByRole("button", { name: /Tentar de novo/ })).toBeInTheDocument();
+    const tentar = await screen.findByRole("link", { name: /Tentar de novo/ });
+    expect(tentar).toHaveAttribute("href", `${URL_FASORX}/entrar/?volta=fitradeoff`);
     expect(nav.href).toBe("https://fitradeoff.fasorx.com.br/");
     expect(screen.queryByText("tela da aplicacao")).not.toBeInTheDocument();
   });

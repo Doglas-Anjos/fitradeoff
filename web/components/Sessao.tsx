@@ -14,9 +14,10 @@
 
 import { useEffect } from "react";
 
-import { irParaLogin, vigiar } from "@/lib/identidade";
+import { irAoFasorx, vigiar } from "@/lib/identidade";
 
 export function Sessao() {
-  useEffect(() => vigiar(irParaLogin), []);
+  // Sem disjuntor: quem avisa que a sessao acabou e o proprio FasorX.
+  useEffect(() => vigiar(irAoFasorx), []);
   return null;
 }

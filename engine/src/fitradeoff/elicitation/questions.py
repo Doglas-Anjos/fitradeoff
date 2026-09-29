@@ -45,6 +45,8 @@ class Bracket:
     rival: int
     lower: float = 0.0
     upper: float = 1.0
+    #: a pergunta de abertura (topo contra base), ainda nao respondida
+    abertura: bool = False
 
     @property
     def width(self) -> float:
@@ -127,7 +129,7 @@ def brackets_from_log(
             a.criterion == topo and a.rival == base for a in respostas
         )
         if not respondida:
-            brackets.append(Bracket(criterion=topo, rival=base))
+            brackets.append(Bracket(criterion=topo, rival=base, abertura=True))
 
     consecutivos = [
         Bracket(criterion=higher, rival=lower)

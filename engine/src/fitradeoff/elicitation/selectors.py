@@ -116,10 +116,19 @@ class QuestionSelector(ABC):
         e cinco criterios: na escolha ele deixa as duas perguntas entre niveis
         (1,5 e 1,33) para a 23a e a 24a, depois de esgotar todos os outros pares;
         no sorting nem chega a elas.
+
+        Excecao: a **abertura** sai mesmo com o criterio do topo mais estreito que
+        ``LARGURA_MINIMA``. Medido em 29/09/2026 com a qualidade variando so de
+        0,7587 a 0,7650 entre doze alternativas: o sistema de referencia faz a
+        pergunta de abertura (qualidade contra durabilidade) e so depois deixa a
+        qualidade de lado -- Qualidade x Custo ele nunca pergunta. Nos pulavamos
+        a abertura e faziamos uma pergunta a menos.
         """
         found = []
         for bracket in sorted(brackets, key=lambda b: -b.width):
-            if bracket.width < self._resolution or _estreita_demais(problem, bracket):
+            if bracket.width < self._resolution:
+                continue
+            if _estreita_demais(problem, bracket) and not bracket.abertura:
                 continue
             value = bracket.candidate_value(problem)
             if value is not None:

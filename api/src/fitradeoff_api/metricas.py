@@ -69,6 +69,17 @@ DURACAO_FERRAMENTA = Histogram(
 )
 
 
+#: O metodo HTTP e texto livre do cliente: `XYZ1`, `XYZ2`... cada um viraria uma
+#: serie nova, aqui e no Prometheus da FasorX, que e dividido com as outras
+#: aplicacoes. Fora desta lista, conta como `outro`.
+METODOS = frozenset({"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"})
+
+
+def _metodo(scope: Scope) -> str:
+    metodo = scope.get("method", "")
+    return metodo if metodo in METODOS else "outro"
+
+
 def _rota(scope: Scope) -> str:
     """O molde da rota, ou um nome fixo. Nunca o caminho como veio."""
     caminho = getattr(scope.get("route"), "path", None)
@@ -113,7 +124,7 @@ class MedirRequisicoes:
             await self.app(scope, receive, anotando)
         finally:
             EM_ANDAMENTO.dec()
-            rota, metodo = _rota(scope), scope.get("method", "")
+            rota, metodo = _rota(scope), _metodo(scope)
             REQUISICOES.labels(rota, metodo, str(status)).inc()
             DURACAO.labels(rota, metodo).observe(time.perf_counter() - inicio)
 

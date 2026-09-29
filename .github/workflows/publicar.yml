@@ -98,11 +98,17 @@ jobs:
           # maquina de quem constroi -- binarios nativos de outro sistema
           # operacional, que ainda por cima sobrescreveriam o que o Dockerfile
           # instala.
+          #
+          # Sem excluir `paridade` nem `artifacts`: as pastas da raiz ja ficam
+          # de fora por nao estarem na lista abaixo, e no tar um padrao sem
+          # barra casa com o nome em QUALQUER profundidade. `--exclude=paridade`
+          # levava junto web/app/paridade e web/public/paridade, e a pagina
+          # /paridade saia do ar em producao sem erro nenhum no build.
           tar -czf /tmp/fitradeoff.tgz \
             --exclude='web/node_modules' --exclude='web/.next' \
             --exclude='**/__pycache__' --exclude='*.pyc' \
-            --exclude='engine/.venv*' --exclude='artifacts' --exclude='paridade' \
-            engine api mcp_server web servidor Dockerfile compose.yml .dockerignore
+            --exclude='engine/.venv*' \
+            engine api mcp_server web servidor Dockerfile compose.yml compose.fasorx.yml .dockerignore
 
       - name: Enviar
         env:

@@ -1,0 +1,49 @@
+# As metricas do FITradeoff no Prometheus da FasorX.
+#
+#   docker compose -f compose.yml -f compose.fasorx.yml --profile plataforma up -d
+#
+# Um arquivo a parte, e nao dentro do compose.yml, porque depende de uma rede que
+# este projeto nao cria: `fasorx-obs-fitradeoff` nasce com a stack de
+# observabilidade da FasorX. No compose principal, ela tornaria o `up` impossivel
+# em qualquer maquina sem essa stack -- a do decisor, inclusive. O
+# `servidor/publicar.sh` so acrescenta este arquivo quando a rede existe.
+#
+# A rede e EXCLUSIVA do FITradeoff: dela so participam o Prometheus e os dois
+# servicos abaixo. A API da FasorX e o Atlas estao em redes proprias e daqui nao
+# se alcancam. O que um container daqui alcanca a mais e o proprio Prometheus
+# (porta 9090, sem autenticacao, somente leitura) -- o preco de ser coletado por
+# ele, e o motivo de a `web`, o servico mais exposto, ficar de fora.
+#
+# O `/metrics` sai numa porta propria (9464), que nao e publicada: nem o Caddy
+# nem o Next a alcancam. Ver api/src/fitradeoff_api/metricas.py.
+
+x-metricas: &metricas
+  FITRADEOFF_METRICAS_PORTA: "9464"
+
+services:
+  mcp:
+    environment:
+      <<: *metricas
+    networks:
+      default:
+      observabilidade:
+        # Nome proprio, e nao so `mcp`: o Prometheus esta em varias redes, e um
+        # nome repetido entre elas deixaria a resolucao ambigua.
+        aliases: [fitradeoff-mcp]
+
+  api:
+    environment:
+      <<: *metricas
+    networks:
+      default:
+      observabilidade:
+        # O compose da ao servico o alias `api` em toda rede em que ele entra --
+        # e `api` e o nome da API da FasorX na rede dela. O Prometheus da FasorX
+        # precisa coletar esta aqui por `fitradeoff-api`, e a dela por um nome
+        # que so ela tenha.
+        aliases: [fitradeoff-api]
+
+networks:
+  observabilidade:
+    external: true
+    name: fasorx-obs-fitradeoff

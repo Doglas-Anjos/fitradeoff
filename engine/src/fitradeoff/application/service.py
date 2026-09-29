@@ -140,6 +140,23 @@ class DecisionService:
         record, session = self._load(record_id)
         return audit_dto(record, session).to_dict()
 
+    def max_differences(self, record_id: str) -> dict:
+        """Diferencas maximas entre alternativas ainda incomparaveis (ranking).
+
+        Sob demanda, e nao dentro de ``state``: sao dois LPs por par, e o painel
+        que as mostra so e aberto as vezes.
+        """
+        record, session = self._load(record_id)
+        maximas = getattr(session.problematic, "max_differences", None)
+        if maximas is None:
+            raise InvalidRequest(
+                "Diferencas maximas sao uma leitura do ranking; esta decisao esta "
+                f"em '{record.problematic_key}'."
+            )
+        if not session.is_consistent:
+            return {"diferencas_maximas": []}
+        return {"diferencas_maximas": maximas(record.problem, session.weight_space)}
+
     # --- escrita --------------------------------------------------------------
 
     def create(

@@ -10,6 +10,7 @@
 
 import { DiagramaHasse } from "@/components/DiagramaHasse";
 import { GraficoGantt } from "@/components/GraficoGantt";
+import { api } from "@/lib/api";
 import { useIdioma } from "@/lib/i18n";
 import "@/lib/i18n/paineis";
 import type { Analise } from "@/lib/types";
@@ -37,7 +38,14 @@ function Lista({ itens }: { itens: string[] }) {
   );
 }
 
-export function ResultadoAnalise({ analise }: { analise: Analise }) {
+export function ResultadoAnalise({
+  analise,
+  decisaoId,
+}: {
+  analise: Analise;
+  /* Com ele, o painel de diferenças máximas do Hasse as pede sob demanda. */
+  decisaoId?: string;
+}) {
   const { t } = useIdioma();
 
   if (analise.problematica === "ranking" && analise.posicoes_possiveis) {
@@ -54,6 +62,11 @@ export function ResultadoAnalise({ analise }: { analise: Analise }) {
               indiferencas={analise.indiferencas}
               posicoes={analise.posicoes}
               diferencas={analise.diferencas_maximas}
+              carregarDiferencas={
+                decisaoId
+                  ? () => api.diferencasMaximas(decisaoId).then((r) => r.diferencas_maximas)
+                  : undefined
+              }
             />
           </Secao>
         )}

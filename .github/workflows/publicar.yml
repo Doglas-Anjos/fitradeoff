@@ -41,13 +41,13 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # --- conferir antes de publicar -------------------------------------
       # A suite roda AQUI, e nao so em pedido de merge. Publicar direto de um
       # push na main sem rodar os testes seria confiar que ninguem funde nada
       # sem revisao -- e a main deste repositorio nao esta protegida.
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: "3.13"
 
@@ -121,6 +121,7 @@ jobs:
           FITRADEOFF_JWT_ISSUER: ${{ secrets.FITRADEOFF_JWT_ISSUER }}
           FITRADEOFF_JWT_AUDIENCE: ${{ secrets.FITRADEOFF_JWT_AUDIENCE }}
           FITRADEOFF_JWT_JWKS_URL: ${{ secrets.FITRADEOFF_JWT_JWKS_URL }}
+          FITRADEOFF_ADMIN_TOKEN: ${{ secrets.FITRADEOFF_ADMIN_TOKEN }}
         run: |
           for v in FITRADEOFF_MCP_HOSTS FITRADEOFF_JWT_ISSUER \
                    FITRADEOFF_JWT_AUDIENCE FITRADEOFF_JWT_JWKS_URL; do
@@ -139,6 +140,7 @@ jobs:
             echo "FITRADEOFF_JWT_ISSUER=$FITRADEOFF_JWT_ISSUER"
             echo "FITRADEOFF_JWT_AUDIENCE=$FITRADEOFF_JWT_AUDIENCE"
             echo "FITRADEOFF_JWT_JWKS_URL=$FITRADEOFF_JWT_JWKS_URL"
+            echo "FITRADEOFF_ADMIN_TOKEN=$FITRADEOFF_ADMIN_TOKEN"
           } > /tmp/fit.env
 
           scp -P "$PORTA" -i ~/.ssh/id_deploy /tmp/fit.env "$ALVO:/tmp/fit.env"

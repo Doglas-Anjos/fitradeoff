@@ -398,16 +398,20 @@ def test_a_diferenca_maxima_sob_veto_e_um_teto_declarado(evaluator, espaco):
     Deixa de ser o maximo exato e passa a ser um limite superior dele. Quem
     consome precisa saber disso pelo proprio dado, e nao por leitura de codigo.
     """
-    analise = RankingProblematic(evaluator).analyse(problema_com_veto(), espaco)
-    linhas = analise.detail["diferencas_maximas"]
+    linhas = RankingProblematic(evaluator).max_differences(problema_com_veto(), espaco)
     assert linhas, "o caso precisa ter par indefinido para provar algo"
     assert all(linha["limite_superior"] for linha in linhas)
 
     sem_veto = make_problem([[0.9, 0.2, 0.7], [0.1, 0.9, 0.3]])
-    exatas = RankingProblematic(evaluator).analyse(sem_veto, espaco).detail[
-        "diferencas_maximas"
-    ]
+    exatas = RankingProblematic(evaluator).max_differences(sem_veto, espaco)
     assert all("limite_superior" not in linha for linha in exatas)
+
+
+def test_a_analise_do_ranking_nao_calcula_diferencas_maximas(evaluator, espaco):
+    """Saem sob demanda: dentro da analise custavam 80% dela com 200 alternativas."""
+    sem_veto = make_problem([[0.9, 0.2, 0.7], [0.1, 0.9, 0.3]])
+    analise = RankingProblematic(evaluator).analyse(sem_veto, espaco)
+    assert "diferencas_maximas" not in analise.detail
 
 
 # --- a coerencia dos limites ------------------------------------------------------

@@ -8,11 +8,25 @@ from pathlib import Path
 
 
 def _origins() -> list[str]:
-    """Origens permitidas para o front em desenvolvimento."""
+    """Origens permitidas para o front em desenvolvimento.
+
+    VAZIO e AUSENTE sao coisas diferentes, e aqui a diferenca importa.
+
+    Ausente = ninguem decidiu nada: e uma maquina de desenvolvimento, e o front
+    do Next roda em localhost:3000.
+
+    Vazio = alguem decidiu que NAO ha origem permitida. E o caso em producao,
+    onde o navegador chama /api do mesmo endereco pelo rewrite do Next e CORS
+    nao entra na historia.
+
+    Com o `if bruto:` de antes, os dois caiam no mesmo ramo: `FITRADEOFF_CORS=""`
+    no compose de producao devolvia os enderecos de localhost, e a API publicada
+    anunciava como origem permitida exatamente aquilo que ela nao deveria ter.
+    """
     bruto = os.environ.get("FITRADEOFF_CORS")
-    if bruto:
-        return [o.strip() for o in bruto.split(",") if o.strip()]
-    return ["http://localhost:3000", "http://127.0.0.1:3000"]
+    if bruto is None:
+        return ["http://localhost:3000", "http://127.0.0.1:3000"]
+    return [o.strip() for o in bruto.split(",") if o.strip()]
 
 
 def _ligado(nome: str, padrao: bool) -> bool:
@@ -130,6 +144,11 @@ class Settings:
     admin_token: str | None = field(
         default_factory=lambda: os.environ.get("FITRADEOFF_ADMIN_TOKEN") or None
     )
+    metricas_porta: int | None = field(
+        default_factory=lambda: int(os.environ.get("FITRADEOFF_METRICAS_PORTA") or 0)
+        or None
+    )
+    """Porta do ``/metrics`` para o Prometheus. Ausente, nada sobe. Ver ``metricas``."""
 
     # --- asserção de identidade vinda da aplicacao da frente -------------------
     #

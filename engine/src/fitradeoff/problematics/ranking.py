@@ -96,9 +96,10 @@ class RankingProblematic(Problematic):
                     else None
                 ),
                 "pares_indefinidos": self._unresolved_pairs(problem, dominance),
-                # o quanto, no pior caso, uma pode superar a outra: e o que diz
-                # se vale a pena continuar respondendo por aquele par
-                "diferencas_maximas": self._max_differences(problem, space, dominance),
+                # As diferencas maximas saem por `max_differences`, sob demanda:
+                # sao dois LPs por par incomparavel, e com 200 alternativas eram
+                # 80% do tempo de cada analise -- refeitos a cada pergunta, com o
+                # painel que as mostra fechado.
                 # Arestas e camadas do diagrama de Hasse saem da dominancia
                 # ESTRITA. Um empate faz as duas alternativas "dominarem" uma a
                 # outra; com ele junto, o par virava duas setas opostas, a
@@ -116,6 +117,16 @@ class RankingProblematic(Problematic):
                 "posicoes": self._positions(problem, estrita, acima),
             },
         )
+
+    def max_differences(self, problem: Problem, space: WeightSpace) -> list[dict]:
+        """As diferencas maximas entre pares ainda incomparaveis, sob demanda.
+
+        Fora da analise de proposito: e o painel do diagrama de Hasse que as
+        mostra, so quando aberto, e o custo delas cresce com o quadrado do
+        numero de alternativas (ver ``_max_differences``).
+        """
+        dominance = self.evaluator.dominance_matrix(problem, space)
+        return self._max_differences(problem, space, dominance)
 
     def _max_differences(
         self, problem: Problem, space: WeightSpace, dominance: np.ndarray

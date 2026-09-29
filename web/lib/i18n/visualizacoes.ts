@@ -178,6 +178,21 @@ export const VISUALIZACOES = registrar({
     en: "Hide maximum differences",
     es: "Ocultar diferencias máximas",
   },
+  "viz.hasse.diferencas.carregando": {
+    pt: "Calculando as diferenças máximas…",
+    en: "Computing the maximum differences…",
+    es: "Calculando las diferencias máximas…",
+  },
+  "viz.hasse.diferencas.erro": {
+    pt: "Não foi possível calcular as diferenças máximas agora.",
+    en: "The maximum differences could not be computed right now.",
+    es: "No fue posible calcular las diferencias máximas ahora.",
+  },
+  "viz.hasse.diferencas.vazio": {
+    pt: "Não há par de alternativas ainda incomparável.",
+    en: "No pair of alternatives is still incomparable.",
+    es: "No hay par de alternativas aún incomparable.",
+  },
   "viz.hasse.diferencas.titulo": { pt: "Diferenças máximas", en: "Maximum differences", es: "Diferencias máximas" },
   "viz.hasse.diferencas.ajuda": {
     pt: "Cada célula diz o quanto a alternativa da linha pode, no máximo, superar a da coluna, com os pesos ainda possíveis. Só aparecem pares que ainda não se ordenam. A maior de cada posição fica destacada: é onde responder mais pode mudar mais.",

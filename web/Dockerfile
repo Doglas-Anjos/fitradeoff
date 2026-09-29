@@ -28,6 +28,19 @@ COPY . .
 # a reescrita de /api/*. Em producao quem responde e o servico `api` na rede
 # interna do compose.
 ENV API_URL=http://api:3001
+
+# O endereco de quem autentica entra AQUI, na construcao, e nao no compose.
+#
+# `NEXT_PUBLIC_*` nao e lido em tempo de execucao: o `next build` substitui cada
+# ocorrencia pelo texto do valor dentro do JavaScript que vai para o navegador.
+# Declarado so no `environment:` do compose, ele valeria "" na imagem ja
+# construida -- e o efeito seria a aplicacao rodar sem pedir identidade
+# nenhuma, silenciosamente, ate alguem notar que a API responde 401 em tudo.
+#
+# Vazio por padrao de proposito: sem este argumento a imagem e a de uma
+# instalacao local, sem portao. Quem publica passa o valor.
+ARG FASORX_URL=""
+ENV NEXT_PUBLIC_FASORX_URL=$FASORX_URL
 RUN npm run build
 
 # --- etapa 2: executar ------------------------------------------------------

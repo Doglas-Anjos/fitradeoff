@@ -213,8 +213,11 @@ def test_publicar_nao_atrapalha_quem_emite_do_proprio_computador(tmp_path):
         assert c.post("/api/chaves", json={"rotulo": "Claude na web"}).status_code == 201
 
 
+SEGREDO_DO_DONO = "segredo-do-dono-" + "x" * 32
+
+
 def test_de_fora_exige_o_token_de_administracao(tmp_path):
-    configurado = ajustes(tmp_path, admin_token="segredo-do-dono")
+    configurado = ajustes(tmp_path, admin_token=SEGREDO_DO_DONO)
     with cliente_de(configurado, client=DE_FORA) as c:
         assert c.get("/api/chaves").status_code == 401
         assert (
@@ -223,10 +226,19 @@ def test_de_fora_exige_o_token_de_administracao(tmp_path):
         )
         assert (
             c.get(
-                "/api/chaves", headers={"X-Fitradeoff-Admin": "segredo-do-dono"}
+                "/api/chaves", headers={"X-Fitradeoff-Admin": SEGREDO_DO_DONO}
             ).status_code
             == 200
         )
+
+
+def test_token_de_administracao_curto_nao_abre_a_emissao(tmp_path):
+    """Atras da aplicacao da frente, esta rota e publica e sem limite de tentativas."""
+    curto = ajustes(tmp_path, admin_token="segredo")
+    with cliente_de(curto, client=DE_FORA) as c:
+        r = c.get("/api/chaves", headers={"X-Fitradeoff-Admin": "segredo"})
+    assert r.status_code == 503
+    assert "curto demais" in r.json()["detail"]
 
 
 def test_avisa_quando_a_url_publica_nao_foi_declarada(tmp_path):

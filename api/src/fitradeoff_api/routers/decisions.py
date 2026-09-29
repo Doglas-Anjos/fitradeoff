@@ -107,6 +107,15 @@ def auditoria(decisao_id: str, service: DecisionService = CALCULO):
     return _run(lambda: service.explain(decisao_id))
 
 
+@router.get(
+    "/decisoes/{decisao_id}/diferencas-maximas",
+    summary="Diferencas maximas entre alternativas incomparaveis (ranking)",
+)
+def diferencas_maximas(decisao_id: str, service: DecisionService = CALCULO):
+    # sob demanda, fora do /estado: dois LPs por par, e so o painel do Hasse usa
+    return _run(lambda: service.max_differences(decisao_id))
+
+
 @router.post("/decisoes/{decisao_id}/problematica", summary="Troca a leitura")
 def trocar(
     decisao_id: str,

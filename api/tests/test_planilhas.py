@@ -30,7 +30,9 @@ def client(tmp_path, monkeypatch):
     deps.get_settings.cache_clear()
     app = create_app(Settings(storage=tmp_path))
     app.dependency_overrides[deps.get_settings] = lambda: Settings(storage=tmp_path)
-    return TestClient(app)
+    # Como contexto, e não `return`: ver a mesma fixture em `test_rotas.py`.
+    with TestClient(app) as c:
+        yield c
 
 
 def como_xlsx(linhas) -> bytes:

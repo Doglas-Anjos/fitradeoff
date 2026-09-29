@@ -98,3 +98,80 @@ describe("chamadas", () => {
     expect(JSON.parse(init.body as string)).toEqual({ favorita: true });
   });
 });
+
+/** A identidade entra em toda chamada, e a falha dela nao pode culpar a tela.
+ *
+ * Estes testes existem por causa de um defeito encontrado em revisao: sem a
+ * traducao, uma oscilacao no endpoint de token subia como `Error("token: 502")`,
+ * que nao e `ApiError` -- e o `mensagemDeErro` caia na reserva de quem chamou.
+ * A tela dizia "nao foi possivel carregar a analise" quando o que falhou foi o
+ * login.
+ */
+describe("identidade nas chamadas", () => {
+  const URL_FASORX = "https://fasorx.com.br";
+
+  afterEach(() => {
+    delete process.env.NEXT_PUBLIC_FASORX_URL;
+    vi.resetModules();
+  });
+
+  async function comIdentidade() {
+    vi.resetModules();
+    process.env.NEXT_PUBLIC_FASORX_URL = URL_FASORX;
+    return import("@/lib/api");
+  }
+
+  it("manda o Bearer em toda chamada", async () => {
+    const chamadas: [string, RequestInit][] = [];
+    vi.stubGlobal("fetch", vi.fn(async (u: string, init: RequestInit) => {
+      chamadas.push([String(u), init]);
+      if (String(u).includes("/api/token/")) {
+        return respostaFalsa(200, { token: "t1", validade: 300 });
+      }
+      return respostaFalsa(200, { ok: true });
+    }));
+
+    const { api: cliente } = await comIdentidade();
+    await cliente.chaves();
+
+    const pedido = chamadas.find(([u]) => u === "/api/chaves");
+    expect(pedido).toBeDefined();
+    expect((pedido![1].headers as Record<string, string>).Authorization).toBe("Bearer t1");
+  });
+
+  it("falha de rede no token vira ApiError com mensagem propria", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (u: string) => {
+      if (String(u).includes("/api/token/")) return respostaFalsa(502, {});
+      return respostaFalsa(200, { ok: true });
+    }));
+
+    const { api: cliente, ApiError: Erro, mensagemDeErro } = await comIdentidade();
+
+    await expect(cliente.chaves()).rejects.toBeInstanceOf(Erro);
+    try {
+      await cliente.chaves();
+    } catch (e) {
+      // A reserva de quem chama NAO pode vencer: a mensagem do login e que e
+      // verdadeira aqui.
+      expect(mensagemDeErro(e, "Não foi possível carregar as chaves."))
+        .toMatch(/confirmar sua sessão/i);
+    }
+  });
+
+  it("sem FasorX configurado, nao manda Authorization nenhum", async () => {
+    vi.resetModules();
+    delete process.env.NEXT_PUBLIC_FASORX_URL;
+    const chamadas: [string, RequestInit][] = [];
+    vi.stubGlobal("fetch", vi.fn(async (u: string, init: RequestInit) => {
+      chamadas.push([String(u), init]);
+      return respostaFalsa(200, { ok: true });
+    }));
+
+    const { api: cliente } = await import("@/lib/api");
+    await cliente.chaves();
+
+    expect(chamadas.every(([u]) => !u.includes("/api/token/"))).toBe(true);
+    const cab = chamadas[0][1].headers as Record<string, string>;
+    expect(cab.Authorization).toBeUndefined();
+  });
+});

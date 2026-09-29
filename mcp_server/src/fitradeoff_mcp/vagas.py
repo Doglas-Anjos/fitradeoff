@@ -138,6 +138,17 @@ class Vagas:
         return self._total._value
 
     @property
+    def calculando(self) -> int:
+        """Calculos rodando agora, de todas as pessoas."""
+        return self.no_total - self._total._value
+
+    @property
+    def esperando(self) -> int:
+        """Pedidos na fila, ainda sem vaga. Com a fila crescendo, falta vaga."""
+        pedidos = sum(usos for _, usos in self._pessoas.values())
+        return max(pedidos - self.calculando, 0)
+
+    @property
     def pessoas_ativas(self) -> int:
         """Quantas pessoas tem pedido rodando ou esperando. Para os testes."""
         return len(self._pessoas)

@@ -29,7 +29,12 @@ def client(tmp_path, monkeypatch):
     deps.get_settings.cache_clear()
     app = create_app(Settings(storage=tmp_path))
     app.dependency_overrides[deps.get_settings] = lambda: Settings(storage=tmp_path)
-    return TestClient(app)
+    # Como contexto, e não `return`: sem o `with`, o TestClient não executa o
+    # lifespan, e é dele que o gerenciador de sessões do MCP depende para subir.
+    # Fora isso, cada requisição passaria a abrir um event loop próprio, em
+    # thread própria -- centenas deles ao longo da suíte.
+    with TestClient(app) as c:
+        yield c
 
 
 @pytest.fixture

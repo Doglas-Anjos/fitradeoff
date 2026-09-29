@@ -79,6 +79,15 @@ def _estreita_demais(problem: Problem, bracket: Bracket) -> bool:
     return abs(largura) < LARGURA_MINIMA
 
 
+def _entre_niveis(problem: Problem, question: TradeoffQuestion) -> bool:
+    """Se a pergunta cai entre dois niveis de um criterio construido com curva."""
+    criterio = problem.criteria[question.criterion]
+    if criterio.levels is None or criterio.value_points is None:
+        return False
+    x = problem.scales[question.criterion].consequence_at(question.value)
+    return all(abs(x - nivel) > 1e-9 for nivel in criterio.levels)
+
+
 class QuestionSelector(ABC):
     """Decide qual pergunta fazer em seguida."""
 
@@ -99,7 +108,15 @@ class QuestionSelector(ABC):
     def _candidates(
         self, problem: Problem, brackets: tuple[Bracket, ...]
     ) -> list[TradeoffQuestion]:
-        """Perguntas ainda realizaveis, da faixa mais larga para a mais estreita."""
+        """Perguntas ainda realizaveis, da faixa mais larga para a mais estreita.
+
+        Uma pergunta **entre niveis** de um criterio construido com curva vai
+        para o fim, qualquer que seja a largura: o sistema de referencia so a faz
+        quando nao sobra outra. Medido em 29/09/2026 com a nota no meio da ordem
+        e cinco criterios: na escolha ele deixa as duas perguntas entre niveis
+        (1,5 e 1,33) para a 23a e a 24a, depois de esgotar todos os outros pares;
+        no sorting nem chega a elas.
+        """
         found = []
         for bracket in sorted(brackets, key=lambda b: -b.width):
             if bracket.width < self._resolution or _estreita_demais(problem, bracket):
@@ -107,7 +124,8 @@ class QuestionSelector(ABC):
             value = bracket.candidate_value(problem)
             if value is not None:
                 found.append(TradeoffQuestion(bracket.criterion, bracket.rival, value))
-        return found
+        # sort estavel: entre as do mesmo grupo, a largura segue decidindo
+        return sorted(found, key=lambda q: _entre_niveis(problem, q))
 
 
 class WidestBracketSelector(QuestionSelector):

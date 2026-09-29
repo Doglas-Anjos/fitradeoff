@@ -322,6 +322,36 @@ Com essas regras as seis decisões com critério construído e curva saem iguais
 mesmos pares, na mesma ordem, os mesmos valores, a mesma contagem e o mesmo
 desfecho. Os 20 casos anteriores não mudam.
 
+### 29/09/2026: sete decisões, e duas regras de ordem
+
+Uma rodada de manhã, com o script de medição corrigido, levou sete decisões ao
+oficial: a validação (repete um caso já conhecido e saiu idêntica), as três com a
+nota em foco em escolha, benefício-custo e sorting de cinco critérios, e três de
+borda — duas alternativas a 0,1% uma da outra, um critério de só dois valores
+com o custo em milhares e o prazo em frações, e uma nota de 7 níveis sem curva.
+Quatro bateram de primeira; as outras três mostraram duas regras de **ordem**
+que faltavam:
+
+- **A pergunta entre níveis vai para o fim.** Com a nota em foco e cinco
+  critérios, o oficial só pergunta a nota entre níveis quando não sobra outra
+  pergunta: na escolha, as duas (1,5 e 1,33) são a 23ª e a 24ª; no sorting ele
+  classifica tudo antes de chegar nelas. Nós fazíamos pela largura da faixa, e
+  essa pergunta costuma ter a mais larga.
+- **Empate de distância entre dois níveis vai para o de baixo.** Numa nota de 1 a
+  7 com a faixa de 0 a 0,5, os níveis 2 e 3 ficam a 1/12 do meio; ele pergunta o
+  2, nós perguntávamos o 3.
+
+Com as duas, as sete saem com a mesma sequência de pares, uma a uma
+(`resultados/casos_medidos_2026_09_29.json`, preso em `test_paridade`).
+
+Uma nota de método: a primeira versão do script de medição dava a página por
+mudada quando qualquer texto mudava, e o oficial mexe em pedaços da tela enquanto
+processa. Numa noite lenta isso chegou a registrar oito respostas de curva que
+ele nunca recebeu. Nenhuma medida usada aqui foi afetada — todas batiam pergunta
+a pergunta com as previsões, e uma resposta fantasma teria aparecido como
+divergência —, mas a condição agora é a pergunta mudar, ou o contador "Questions
+Answered" subir.
+
 ## O que permanece diferente
 
 ### Portfólio combinatorial: não comparável em sessão

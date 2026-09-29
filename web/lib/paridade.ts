@@ -718,12 +718,335 @@ export const PARIDADE: CasoParidade[] = [
     "resumo": "Ranking completo: Alt 05 > Alt 06 > Alt 04 > Alt 07 > Alt 03 > Alt 08 > Alt 02 > Alt 09 > Alt 01 > Alt 12 > Alt 10 > Alt 11.",
     "bate": true,
     "tipo": "estresse"
+  },
+  {
+    "chave": "est-bc-6x25",
+    "problematica": "beneficio_custo",
+    "alternativas": 25,
+    "criterios": 6,
+    "oficial": {
+      "ordenacao": 11,
+      "tradeoff": 24
+    },
+    "nosso": {
+      "ordenacao": 11,
+      "tradeoff": 24
+    },
+    "resumo": "Carteira única pela razão benefício-custo: Alt 01, Alt 06, Alt 08, Alt 09, Alt 11, Alt 12, Alt 14 (custo 158.00 de 160.00).",
+    "bate": true,
+    "tipo": "estresse"
+  },
+  {
+    "chave": "est-escolha-7x30",
+    "problematica": "escolha",
+    "alternativas": 30,
+    "criterios": 7,
+    "oficial": {
+      "ordenacao": 15,
+      "tradeoff": 14
+    },
+    "nosso": {
+      "ordenacao": 14,
+      "tradeoff": 14
+    },
+    "resumo": "Recomendação: Alt 08.",
+    "bate": false,
+    "tipo": "estresse"
+  },
+  {
+    "chave": "est-ranking-7x25",
+    "problematica": "ranking",
+    "alternativas": 25,
+    "criterios": 7,
+    "oficial": {
+      "ordenacao": 15,
+      "tradeoff": 24
+    },
+    "nosso": {
+      "ordenacao": 14,
+      "tradeoff": 24
+    },
+    "resumo": "Pré-ordem completa: Alt 08 > Alt 07 > Alt 06 > Alt 10 > Alt 05 > Alt 09 > Alt 11 > Alt 04 > Alt 03 > Alt 12 > Alt 02 > Alt 13 > Alt 01 > Alt 14 > Alt 25 > Alt 15 > Alt 24 > Alt 16 ",
+    "bate": false,
+    "tipo": "estresse"
+  },
+  {
+    "chave": "est-sorting-6x30",
+    "problematica": "sorting",
+    "alternativas": 30,
+    "criterios": 6,
+    "oficial": {
+      "ordenacao": 11,
+      "tradeoff": 24
+    },
+    "nosso": {
+      "ordenacao": 11,
+      "tradeoff": 24
+    },
+    "resumo": "Todas as alternativas foram classificadas.",
+    "bate": true,
+    "tipo": "estresse"
+  },
+  {
+    "chave": "vol-bc-3x8",
+    "problematica": "beneficio_custo",
+    "alternativas": 8,
+    "criterios": 3,
+    "oficial": {
+      "ordenacao": 3,
+      "tradeoff": 0
+    },
+    "nosso": {
+      "ordenacao": 3,
+      "tradeoff": 0
+    },
+    "resumo": "Considerando o orçamento, a carteira está definida: Alt 02, Alt 03 (custo 34.00 de 50.00). A ordem entre os projetos que ficam de fora ainda está aberta, mas nenhuma delas muda a c",
+    "bate": true,
+    "tipo": "estresse"
+  },
+  {
+    "chave": "vol-bc-4x10",
+    "problematica": "beneficio_custo",
+    "alternativas": 10,
+    "criterios": 4,
+    "oficial": {
+      "ordenacao": 5,
+      "tradeoff": 11
+    },
+    "nosso": {
+      "ordenacao": 5,
+      "tradeoff": 11
+    },
+    "resumo": "Carteira única pela razão benefício-custo: Alt 01, Alt 02, Alt 03, Alt 05 (custo 78.00 de 80.00).",
+    "bate": true,
+    "tipo": "estresse"
+  },
+  {
+    "chave": "vol-bc-4x20",
+    "problematica": "beneficio_custo",
+    "alternativas": 20,
+    "criterios": 4,
+    "oficial": {
+      "ordenacao": 5,
+      "tradeoff": 23
+    },
+    "nosso": {
+      "ordenacao": 5,
+      "tradeoff": 23
+    },
+    "resumo": "A carteira já está definida pela razão benefício-custo: Alt 03, Alt 06, Alt 07, Alt 11 (custo 54.00 de 60.00). 1 par de projetos ainda não tem a ordem de razão fechada.",
+    "bate": true,
+    "tipo": "estresse"
+  },
+  {
+    "chave": "vol-bc-5x15-ab",
+    "problematica": "beneficio_custo",
+    "alternativas": 15,
+    "criterios": 5,
+    "oficial": {
+      "ordenacao": 8,
+      "tradeoff": 23
+    },
+    "nosso": {
+      "ordenacao": 8,
+      "tradeoff": 23
+    },
+    "resumo": "Carteira única pela razão benefício-custo: Alt 02, Alt 05, Alt 06, Alt 08, Alt 10 (custo 107.00 de 120.00).",
+    "bate": true,
+    "tipo": "estresse"
+  },
+  {
+    "chave": "vol-bc-6x12-b",
+    "problematica": "beneficio_custo",
+    "alternativas": 12,
+    "criterios": 6,
+    "oficial": {
+      "ordenacao": 11,
+      "tradeoff": 11
+    },
+    "nosso": {
+      "ordenacao": 11,
+      "tradeoff": 11
+    },
+    "resumo": "Carteira única pela razão benefício-custo: Alt 02, Alt 04, Alt 05, Alt 08, Alt 09, Alt 10 (custo 95.00 de 100.00).",
+    "bate": false,
+    "tipo": "estresse"
+  },
+  {
+    "chave": "vol-escolha-4x10",
+    "problematica": "escolha",
+    "alternativas": 10,
+    "criterios": 4,
+    "oficial": {
+      "ordenacao": 5,
+      "tradeoff": 8
+    },
+    "nosso": {
+      "ordenacao": 5,
+      "tradeoff": 8
+    },
+    "resumo": "Recomendação: Alt 03.",
+    "bate": true,
+    "tipo": "estresse"
+  },
+  {
+    "chave": "vol-escolha-4x8-nota3",
+    "problematica": "escolha",
+    "alternativas": 8,
+    "criterios": 4,
+    "oficial": {
+      "ordenacao": 5,
+      "tradeoff": 0
+    },
+    "nosso": {
+      "ordenacao": 5,
+      "tradeoff": 0
+    },
+    "resumo": "Recomendação: Alt 03.",
+    "bate": true,
+    "tipo": "estresse"
+  },
+  {
+    "chave": "vol-escolha-5x25-b",
+    "problematica": "escolha",
+    "alternativas": 25,
+    "criterios": 5,
+    "oficial": {
+      "ordenacao": 8,
+      "tradeoff": 6
+    },
+    "nosso": {
+      "ordenacao": 8,
+      "tradeoff": 3
+    },
+    "resumo": "2 alternativas ficaram equivalentes dentro do limiar de 0.01: Alt 11, Alt 12. Qualquer uma delas serve; mais perguntas não separariam.",
+    "bate": false,
+    "tipo": "estresse"
+  },
+  {
+    "chave": "vol-escolha-6x12-ab",
+    "problematica": "escolha",
+    "alternativas": 12,
+    "criterios": 6,
+    "oficial": {
+      "ordenacao": 11,
+      "tradeoff": 20
+    },
+    "nosso": {
+      "ordenacao": 11,
+      "tradeoff": 20
+    },
+    "resumo": "Recomendação: Alt 05.",
+    "bate": true,
+    "tipo": "estresse"
+  },
+  {
+    "chave": "vol-ranking-4x10-ab",
+    "problematica": "ranking",
+    "alternativas": 10,
+    "criterios": 4,
+    "oficial": {
+      "ordenacao": 5,
+      "tradeoff": 15
+    },
+    "nosso": {
+      "ordenacao": 5,
+      "tradeoff": 16
+    },
+    "resumo": "Ranking completo: Alt 04 > Alt 05 > Alt 03 > Alt 06 > Alt 07 > Alt 02 > Alt 08 > Alt 01 > Alt 10 > Alt 09.",
+    "bate": false,
+    "tipo": "estresse"
+  },
+  {
+    "chave": "vol-ranking-6x15",
+    "problematica": "ranking",
+    "alternativas": 15,
+    "criterios": 6,
+    "oficial": {
+      "ordenacao": 11,
+      "tradeoff": 22
+    },
+    "nosso": {
+      "ordenacao": 11,
+      "tradeoff": 21
+    },
+    "resumo": "Pré-ordem completa: Alt 05 > Alt 04 > Alt 06 > Alt 03 > Alt 02 > Alt 07 > Alt 08 > Alt 01 > Alt 09 > Alt 15 > Alt 10 > Alt 14 > Alt 11 > Alt 12 > Alt 13. 3 par(es) empatam dentro d",
+    "bate": false,
+    "tipo": "estresse"
+  },
+  {
+    "chave": "vol-sorting-3x10-b",
+    "problematica": "sorting",
+    "alternativas": 10,
+    "criterios": 3,
+    "oficial": {
+      "ordenacao": 3,
+      "tradeoff": 2
+    },
+    "nosso": {
+      "ordenacao": 3,
+      "tradeoff": 2
+    },
+    "resumo": "Todas as alternativas foram classificadas.",
+    "bate": true,
+    "tipo": "estresse"
+  },
+  {
+    "chave": "vol-sorting-4x12",
+    "problematica": "sorting",
+    "alternativas": 12,
+    "criterios": 4,
+    "oficial": {
+      "ordenacao": 5,
+      "tradeoff": 11
+    },
+    "nosso": {
+      "ordenacao": 5,
+      "tradeoff": 11
+    },
+    "resumo": "Todas as alternativas foram classificadas.",
+    "bate": true,
+    "tipo": "estresse"
+  },
+  {
+    "chave": "vol-sorting-5x20-4c",
+    "problematica": "sorting",
+    "alternativas": 20,
+    "criterios": 5,
+    "oficial": {
+      "ordenacao": 8,
+      "tradeoff": 20
+    },
+    "nosso": {
+      "ordenacao": 8,
+      "tradeoff": 20
+    },
+    "resumo": "Todas as alternativas foram classificadas.",
+    "bate": true,
+    "tipo": "estresse"
+  },
+  {
+    "chave": "vol-sorting-6x15",
+    "problematica": "sorting",
+    "alternativas": 15,
+    "criterios": 6,
+    "oficial": {
+      "ordenacao": 11,
+      "tradeoff": 21
+    },
+    "nosso": {
+      "ordenacao": 11,
+      "tradeoff": 21
+    },
+    "resumo": "Todas as alternativas foram classificadas.",
+    "bate": true,
+    "tipo": "estresse"
   }
 ];
 
 export const RESUMO = {
-  bate: 40,
-  comparaveis: 40,
+  bate: 53,
+  comparaveis: 59,
   travados: 1,
-  maiorProblema: 20,
+  maiorProblema: 30,
 };

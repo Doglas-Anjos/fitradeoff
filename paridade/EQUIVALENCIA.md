@@ -217,6 +217,23 @@ exatamente 17 perguntas, como o oficial.
 A carteira continua a mesma. A tela diz quando ela já está definida e a ordem
 ainda não.
 
+**E uma segunda parada, antes de qualquer pergunta.** Em `vol-bc-3x8` (três
+critérios, oito projetos, orçamento 50) o oficial não fez pergunta nenhuma de
+tradeoff e encerrou com *"Considering the budget value, this is the
+recommendation"*; nós fazíamos 10. Só com a ordem dos critérios, as faixas de
+razão já separam as posições 1, 2 e 3; os dois primeiros cabem juntos (34), o
+terceiro não cabe nos 16 que sobram, e nenhum dos outros cinco custa até 16.
+Qualquer ordem entre eles dá a mesma carteira. A regra: descendo as posições que
+as faixas disjuntas separam, cada bloco cabe inteiro no que resta ou não tem
+projeto nenhum que caiba — um bloco em que uns cabem e outros não deixa a
+carteira depender da ordem interna.
+
+Ele só aplica isso **antes do primeiro tradeoff**. Em `bc-20` a carteira fica
+fechada pelo orçamento desde a 11ª resposta (sobram 17, e tudo o que fica de
+fora custa 19 ou mais), e ele segue até a 17ª, fechando a ordem inteira. Com a
+parada valendo a qualquer momento, `bc-20` cairia para 11; valendo só antes da
+primeira pergunta, os dois casos batem.
+
 ### Com curva não linear: o par se encerra na unidade do critério
 
 Os 16 casos acima usam função de valor linear. Em 28/09/2026 levamos quatro
@@ -353,6 +370,50 @@ divergência —, mas a condição agora é a pergunta mudar, ou o contador "Que
 Answered" subir.
 
 ## O que permanece diferente
+
+### Abertura respondida com B: os valores batem, a escolha do par não
+
+Quando a primeira pergunta (o critério do topo contra o da base) é respondida
+**B**, o oficial às vezes repete o par que acabou de perguntar, e nós seguimos
+para o par mais largo. Dois casos medidos:
+
+| caso | respostas | nós | oficial | sequência |
+|---|---|---|---|---|
+| `vol-bc-6x12-b` | BBABBABBAB | 11 | 11 | igual até a 2ª, depois difere |
+| `vol-escolha-5x25-b` | BBABBABBAB… | 3 | 6 | igual até a 2ª, depois difere |
+
+O que se sabe. Os **valores** de cada pergunta dele são exatamente o meio da
+faixa que o espaço de pesos inteiro admite para aquele par, com a propagação
+pelo produto das razões. Por exemplo, depois de Qualidade × Custo presa em
+[0,75; 0,875], o piso de Custo × Prazo vira 0,5 / 0,875 = 0,571, e ele pergunta
+10,87, o meio de [0,571; 1]. Refazendo o espaço dele pergunta a pergunta, em 8
+das 11 escolhas ele pega o par mais largo, como nós. Nas outras três (3ª, 5ª e
+9ª) ele pega um par com a metade da largura do mais largo. Hipóteses testadas
+contra as 11 escolhas e descartadas: largura pela faixa dos pesos, faixa de razão
+pelas caixas de peso, "repete depois de B", e rodízio que pula o par abaixo da
+metade (ou da média) da maior largura. Com a abertura respondida A, que é o caso
+de todos os outros casos medidos, as sequências batem.
+
+### Ranking: um par a 0,4% do limiar, uma pergunta a mais ou a menos
+
+Dois rankings da rodada de volume terminam com uma pergunta de diferença —
+depois de sequências **idênticas** às dele, pergunta a pergunta e valor a valor:
+
+| caso | nós | oficial | par em aberto | quanto um ainda supera o outro |
+|---|---|---|---|---|
+| `vol-ranking-4x10-ab` | 16 | 15 | Alt 03 × Alt 06 | 0,010041 — ele dá por ordenado, nós não |
+| `vol-ranking-6x15` | 21 | 22 | Alt 02 × Alt 07 | 0,009962 — nós damos por ordenado, ele não |
+
+Nos dois, a diferença máxima que decide o par cai a menos de 0,00005 do limiar de
+0,01, uma vez de cada lado. Nenhum limiar explica os dois casos: subir o nosso
+para 0,01005 acerta o primeiro e erra o segundo, e o contrário também. Então o
+espaço de pesos dele difere do nosso na quarta casa. Duas causas foram testadas
+e descartadas: uma folga de preferência estrita entre os pesos (desmonta o
+segundo caso, que passa a parar na 13ª pergunta) e restrições montadas com o
+valor arredondado a duas casas, como aparece na tela (piora os dois: 17 e 25).
+É o tipo de borda estreita que fica registrado e não é perseguido: ajustar para
+um lado quebra o outro, e o par em jogo está, pela própria medida, dentro do que
+o método chama de indiferença.
 
 ### Portfólio combinatorial: não comparável em sessão
 

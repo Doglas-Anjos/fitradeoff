@@ -527,6 +527,16 @@ _REGISTRO = _medidos.carregar()
 def test_caso_medido_bate_com_o_oficial(caso):
     nosso = _medidos.roda(caso)
     oficial = caso["oficial"]
+    if "divergencia" in caso:
+        # como em DIVERGENCIAS: o vao fica preso, e fecha-lo tambem quebra aqui
+        esperado = {**oficial, **caso["divergencia"]["nosso"]}
+        assert nosso["tradeoff"] == esperado["tradeoff"]
+        assert nosso["ordenacao"] == esperado["ordenacao"]
+        if "pares" in oficial:
+            comum = caso["divergencia"].get(
+                "pares_ate", min(len(nosso["pares"]), len(oficial["pares"])))
+            assert nosso["pares"][:comum] == oficial["pares"][:comum]
+        return
     assert nosso["tradeoff"] == oficial["tradeoff"]
     assert nosso["ordenacao"] == oficial["ordenacao"]
     if "pares" in oficial:

@@ -6,7 +6,10 @@ mesmo, e esta declarado em ``dto.py``.
 
 from __future__ import annotations
 
+import numpy as np
+
 from ..domain.preferences import HolisticJudgement
+from ..domain.problem import Problem
 from ..elicitation.questions import QuestionBrief
 from ..elicitation.session import DecisionSession
 from ..problematics.base import Analysis
@@ -30,6 +33,61 @@ PROXIMO_PASSO = (
     "Peça ao decisor que ordene os critérios do mais para o menos importante e "
     "registre essa ordem."
 )
+
+LEITURA_DAS_DOMINADAS = (
+    "Cada alternativa listada é pior ou igual, em todos os critérios, a cada uma "
+    "das que a dominam, e estritamente pior em pelo menos um. Com quaisquer "
+    "pesos ela nunca vale mais que elas -- dá para dizer isso ao decisor antes "
+    "de qualquer pergunta. `dominada_por` mostra até três nomes; o total vem "
+    "em `total_de_dominantes`. Retirá-la é criar o problema de novo sem ela, e "
+    "antes da primeira pergunta isso não custa nada ao decisor."
+)
+
+
+DOMINANTES_LISTADOS = 3
+
+
+def pareto_dominance(problem: Problem) -> list[dict]:
+    """Alternativas dominadas criterio a criterio, sem pergunta nenhuma.
+
+    E a dominancia que independe de pesos: ``a`` domina ``b`` quando e pelo
+    menos tao boa em todo criterio e melhor em algum. Sai da matriz de valor,
+    que ja resolveu direcao, escala construida e curva elicitada -- em valor,
+    maior e sempre melhor.
+
+    Vale tambem sob veto. O valor penalizado e ``r . V``, com ``r`` e ``V``
+    somas ponderadas de fatores nao negativos, e o fator de veto so cresce com o
+    valor do criterio: melhor ou igual em todo ``v`` implica melhor ou igual em
+    todo ``z``, e o produto preserva a ordem. Comparamos os dois mesmo assim,
+    para que a conclusao nao dependa desse argumento.
+
+    Alternativas identicas nao se dominam: ninguem e estritamente melhor.
+
+    Vetorizado: com 500 alternativas, o teto do motor, sao 250 mil pares, e
+    isto roda a cada criacao. Os nomes de quem domina vao ate
+    ``DOMINANTES_LISTADOS``, com o total ao lado -- a lista inteira, numa
+    matriz grande, encheria de nomes o contexto de quem le.
+    """
+    valores = problem.values
+    fatores = problem.veto_factors
+    # domina[a, b]: a domina b
+    domina = (
+        (valores[:, None, :] >= valores[None, :, :]).all(axis=2)
+        & (fatores[:, None, :] >= fatores[None, :, :]).all(axis=2)
+        & (valores[:, None, :] > valores[None, :, :]).any(axis=2)
+    )
+    dominadas = []
+    for b in np.flatnonzero(domina.any(axis=0)):
+        por = np.flatnonzero(domina[:, b])
+        dominadas.append(
+            {
+                "alternativa": problem.alternatives[b],
+                "dominada_por": problem.names_of(por[:DOMINANTES_LISTADOS]),
+                "total_de_dominantes": int(por.size),
+            }
+        )
+    return dominadas
+
 
 LEITURA_DA_TRILHA = (
     "Cada restrição saiu de uma declaração do decisor. Uma alternativa é "

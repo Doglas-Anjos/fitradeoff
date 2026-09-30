@@ -134,8 +134,8 @@ describe("controles", () => {
     render(
       <PainelProgresso problema={PROBLEMA} estado={null} onDesfazer={nada} podeDesfazer={false} />,
     );
-    expect(screen.getByText("Exportar planilha")).toHaveAttribute(
-      "href", "/api/decisoes/d1/exportar",
-    );
+    // Botao, e nao link: um `<a href>` nao leva o cabecalho de identidade, e
+    // com o portao ligado a API recusava o download. Ver exportar.test.tsx.
+    expect(screen.getByRole("button", { name: "Exportar planilha" })).toBeEnabled();
   });
 });

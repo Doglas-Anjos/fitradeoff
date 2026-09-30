@@ -64,7 +64,7 @@ def conteudo(resposta) -> dict:
 @pytest.fixture
 def acervos(tmp_path) -> dict[str, Path]:
     """Duas chaves, dois diretorios: o que permite ver o escopo funcionando."""
-    return {"chave-a": tmp_path / "a", "chave-b": tmp_path / "b"}
+    return {"fit_a": tmp_path / "a", "fit_b": tmp_path / "b"}
 
 
 @pytest.fixture
@@ -112,7 +112,7 @@ def test_chave_no_cabecalho_abre_as_ferramentas(cliente):
     resposta = cliente.post(
         "/mcp",
         json=pedido("tools/list"),
-        headers={**CABECALHOS, "Authorization": "Bearer chave-a"},
+        headers={**CABECALHOS, "Authorization": "Bearer fit_a"},
     )
     assert resposta.status_code == 200
     assert len(resultado(resposta)["tools"]) == FERRAMENTAS_ESPERADAS
@@ -120,7 +120,7 @@ def test_chave_no_cabecalho_abre_as_ferramentas(cliente):
 
 def test_chave_na_url_abre_as_ferramentas(cliente):
     """A forma que o painel de conectores do claude.ai permite: so a URL."""
-    resposta = cliente.post("/mcp/chave-a", json=pedido("tools/list"), headers=CABECALHOS)
+    resposta = cliente.post("/mcp/fit_a", json=pedido("tools/list"), headers=CABECALHOS)
     assert resposta.status_code == 200
     assert len(resultado(resposta)["tools"]) == FERRAMENTAS_ESPERADAS
 
@@ -130,7 +130,7 @@ def test_cabecalho_vence_a_url(cliente):
     resposta = cliente.post(
         "/mcp/chave-invalida",
         json=pedido("tools/list"),
-        headers={**CABECALHOS, "Authorization": "Bearer chave-a"},
+        headers={**CABECALHOS, "Authorization": "Bearer fit_a"},
     )
     assert resposta.status_code == 200
 
@@ -138,7 +138,7 @@ def test_cabecalho_vence_a_url(cliente):
 def test_caminho_mais_fundo_nao_e_chave(cliente):
     """`/mcp/a/b` nao e chave com barra: e caminho que este servidor nao serve."""
     resposta = cliente.post(
-        "/mcp/chave-a/sobra", json=pedido("tools/list"), headers=CABECALHOS
+        "/mcp/fit_a/sobra", json=pedido("tools/list"), headers=CABECALHOS
     )
     assert resposta.status_code == 401
 
@@ -184,9 +184,9 @@ def listar_problemas(cliente, chave: str) -> list[dict]:
 
 
 def test_a_chave_decide_onde_a_ferramenta_grava(cliente, acervos, tmp_path):
-    criado = criar_problema(cliente, "chave-a", "Fornecedores")
+    criado = criar_problema(cliente, "fit_a", "Fornecedores")
 
-    arquivo = acervos["chave-a"] / f"{criado['id']}.json"
+    arquivo = acervos["fit_a"] / f"{criado['id']}.json"
     assert arquivo.exists(), "a decisao deveria ter ido para o acervo da chave"
     assert not (tmp_path / "ambiente").exists(), (
         "nada pode ter sido gravado no diretorio do ambiente: por HTTP, quem "
@@ -201,10 +201,10 @@ def test_uma_chave_nao_ve_o_que_a_outra_criou(cliente, acervos):
     a chamada roda num task group que nao herda o contexto da requisicao, e as
     duas chaves acabariam no mesmo acervo.
     """
-    criar_problema(cliente, "chave-a", "So da A")
+    criar_problema(cliente, "fit_a", "So da A")
 
-    assert [p["nome"] for p in listar_problemas(cliente, "chave-a")] == ["So da A"]
-    assert listar_problemas(cliente, "chave-b") == []
+    assert [p["nome"] for p in listar_problemas(cliente, "fit_a")] == ["So da A"]
+    assert listar_problemas(cliente, "fit_b") == []
 
 
 # --- o que sobra escrito ------------------------------------------------------
@@ -226,18 +226,18 @@ def test_a_chave_da_url_nao_sobrevive_no_escopo(acervos, tmp_path):
     scope = {
         "type": "http",
         "method": "POST",
-        "path": "/mcp/chave-a",
-        "raw_path": b"/mcp/chave-a",
+        "path": "/mcp/fit_a",
+        "raw_path": b"/mcp/fit_a",
         "headers": [],
     }
 
     anyio.run(guarda, scope, None, None)
 
     assert scope["path"] == "/mcp"
-    assert b"chave-a" not in scope["raw_path"]
-    assert "chave-a" not in str(scope.get("path"))
+    assert b"fit_a" not in scope["raw_path"]
+    assert "fit_a" not in str(scope.get("path"))
     # E o escopo resolvido chegou para quem executa a ferramenta.
-    assert scope[remoto.CAMPO_NO_ESCOPO] == acervos["chave-a"]
+    assert scope[remoto.CAMPO_NO_ESCOPO] == acervos["fit_a"]
 
 
 @pytest.mark.parametrize(
@@ -252,13 +252,120 @@ def test_a_barra_no_fim_e_a_mesma_rota(cliente, caminho):
     resposta = cliente.post(
         caminho,
         json=pedido("tools/list"),
-        headers={**CABECALHOS, "Authorization": "Bearer chave-a"},
+        headers={**CABECALHOS, "Authorization": "Bearer fit_a"},
     )
     assert resposta.status_code == 200
     assert len(resultado(resposta)["tools"]) == FERRAMENTAS_ESPERADAS
 
 
-@pytest.mark.parametrize("caminho", ["/mcp/chave-a", "/mcp/chave-a/"])
+@pytest.mark.parametrize("caminho", ["/mcp/fit_a", "/mcp/fit_a/"])
 def test_a_chave_na_url_tolera_barra_no_fim(cliente, caminho):
     resposta = cliente.post(caminho, json=pedido("tools/list"), headers=CABECALHOS)
     assert resposta.status_code == 200
+
+
+# --- o que pode vir no caminho ------------------------------------------------
+
+# Tres segmentos base64url separados por ponto: a cara de um JWT, que e o que
+# importa aqui -- a autenticacao decide pelo formato, antes de verificar nada.
+UM_JWT = "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJwZXNzb2EifQ.assinatura"
+
+
+@pytest.fixture
+def cliente_com_jwt(acervos, tmp_path, monkeypatch):
+    """Um resolvedor que ACEITARIA o token: a recusa tem de vir antes dele."""
+    monkeypatch.setenv("FITRADEOFF_DATA", str(tmp_path / "ambiente"))
+    aceitos = {**acervos, UM_JWT: tmp_path / "jwt"}
+
+    @asynccontextmanager
+    async def ciclo(app):
+        async with remoto.ciclo_de_vida(app.state.mcp):
+            yield
+
+    externo = Starlette(routes=[], lifespan=ciclo)
+    externo.state.mcp = remoto.montar(externo, aceitos.get)
+    with TestClient(externo, base_url=LOCAL) as c:
+        yield c
+
+
+def test_jwt_no_caminho_e_recusado(cliente_com_jwt):
+    """Um token de pessoa numa URL ficaria gravado em todo proxy do caminho."""
+    resposta = cliente_com_jwt.post(
+        f"/mcp/{UM_JWT}", json=pedido("tools/list"), headers=CABECALHOS
+    )
+    assert resposta.status_code == 401
+    assert resposta.headers["www-authenticate"].startswith("Bearer")
+
+
+def test_o_mesmo_jwt_no_cabecalho_entra(cliente_com_jwt):
+    """A recusa e do lugar, nao do token: no cabecalho ele continua valendo."""
+    resposta = cliente_com_jwt.post(
+        "/mcp",
+        json=pedido("tools/list"),
+        headers={**CABECALHOS, "Authorization": f"Bearer {UM_JWT}"},
+    )
+    assert resposta.status_code == 200
+
+
+def test_chave_do_cofre_no_caminho_continua_entrando(cliente_com_jwt):
+    resposta = cliente_com_jwt.post(
+        "/mcp/fit_a", json=pedido("tools/list"), headers=CABECALHOS
+    )
+    assert resposta.status_code == 200
+    assert len(resultado(resposta)["tools"]) == FERRAMENTAS_ESPERADAS
+
+
+# --- o resolvedor nao para o processo -----------------------------------------
+
+
+def test_resolvedor_lento_nao_congela_o_laco_de_eventos(acervos):
+    """Uma busca de JWKS lenta nao pode parar as outras requisicoes.
+
+    O resolvedor aqui bloqueia de verdade, com `time.sleep`, como faria o
+    urllib esperando a rede. Enquanto ele dorme, outra tarefa do mesmo laco
+    precisa continuar andando -- e o resolvedor precisa ter rodado em outra
+    thread, nao na do laco.
+    """
+    import threading
+    import time
+
+    import anyio
+
+    threads: list[int] = []
+
+    def lento(chave: str):
+        threads.append(threading.get_ident())
+        time.sleep(0.5)
+        return acervos.get(chave)
+
+    async def nada(scope, receive, send):
+        pass
+
+    guarda = remoto.Autenticacao(nada, lento)
+    scope = {"type": "http", "method": "POST", "path": "/mcp", "headers": [
+        (b"authorization", b"Bearer fit_a"),
+    ]}
+    passos = 0
+    laco: list[int] = []
+
+    async def principal():
+        nonlocal passos
+        laco.append(threading.get_ident())
+
+        async def contar():
+            nonlocal passos
+            # Para sozinha quando a autenticacao termina.
+            while remoto.CAMPO_NO_ESCOPO not in scope:
+                passos += 1
+                await anyio.sleep(0.02)
+
+        async with anyio.create_task_group() as grupo:
+            grupo.start_soon(contar)
+            await guarda(scope, None, None)
+
+    anyio.run(principal)
+
+    assert scope[remoto.CAMPO_NO_ESCOPO] == acervos["fit_a"]
+    assert threads and threads[0] != laco[0], "o resolvedor rodou na thread do laco"
+    # Meio segundo a 20 ms por passo da uns 25; com o laco travado, daria 1.
+    assert passos >= 10, f"o laco ficou parado enquanto o resolvedor dormia ({passos})"

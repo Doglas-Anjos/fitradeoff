@@ -144,7 +144,7 @@ class Settings:
     nenhum, e com JSON nao ha o que acumular.
 
     Nao se perde nada aqui: a troca custaria as perguntas do servidor de volta
-    ao cliente, e nenhuma das catorze ferramentas faz isso.
+    ao cliente, e nenhuma das ferramentas faz isso.
     """
     aceitar_chaves_do_cofre: bool = field(
         default_factory=lambda: _ligado("FITRADEOFF_ACEITAR_CHAVES_DO_COFRE", True)
@@ -203,6 +203,44 @@ class Settings:
     assina a cada requisicao que encaminha. Se a integracao emitir tokens mais
     longos que isto, eles sao recusados -- e o motivo aparece no registro.
     """
+
+    def __post_init__(self) -> None:
+        # Com JWKS, emissor e publico sao obrigatorios, e a falta deles derruba
+        # a partida -- nao o primeiro pedido.
+        #
+        # Sem `aud` conferido, qualquer token que a aplicacao da frente assine
+        # com a mesma chave vale aqui: o de outro servico dela, o da propria
+        # sessao de navegador, o de uma API que nada tem a ver com o MCP. E a
+        # chave publica de um JWKS costuma assinar tudo o que aquele emissor
+        # emite. Sem `iss`, um segundo emissor que por acaso publique no mesmo
+        # JWKS (ou que o operador aponte por engano) entraria igual.
+        #
+        # Por que parar em vez de so avisar: o estado perigoso aqui e silencioso.
+        # Tudo funciona, os tokens certos entram -- e os errados tambem. Um aviso
+        # no registro seria lido depois do incidente. O `compose.yml` do servico
+        # `mcp` repassa as tres com `:-` (vazias sao validas: sem JWKS so a
+        # chave do cofre entra); e esta checagem que amarra uma na outra.
+        #
+        # O caminho HS256 (`jwt_secret`) fica de fora de proposito: o segredo e
+        # compartilhado so entre as duas pontas, entao nao ha outro servico
+        # assinando com ele. Emissor e publico continuam valendo se declarados.
+        if self.jwt_jwks_url:
+            faltando = [
+                nome
+                for nome, valor in (
+                    ("FITRADEOFF_JWT_ISSUER", self.jwt_issuer),
+                    ("FITRADEOFF_JWT_AUDIENCE", self.jwt_audience),
+                )
+                if not valor
+            ]
+            if faltando:
+                raise ValueError(
+                    "FITRADEOFF_JWT_JWKS_URL esta definida, mas falta "
+                    + " e ".join(faltando)
+                    + ": com chave publica de terceiros, emissor e publico "
+                    "precisam ser conferidos, ou um token emitido para outro "
+                    "servico do mesmo emissor entraria aqui."
+                )
 
     @property
     def chat_enabled(self) -> bool:

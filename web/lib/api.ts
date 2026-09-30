@@ -184,6 +184,80 @@ async function enviarFormulario<T>(caminho: string, corpo: FormData): Promise<T>
   return resposta.json() as Promise<T>;
 }
 
+/** O nome do arquivo que a API mandou, ou a reserva.
+ *
+ * `filename*` primeiro: e a forma RFC 5987, a unica que carrega acento, e a API
+ * manda as duas justamente porque o `filename` simples perde os acentos pelo
+ * caminho. Qualquer falha de leitura cai na reserva -- um nome feio e melhor do
+ * que um download que nao acontece. */
+export function nomeDoAnexo(cabecalho: string | null, reserva: string): string {
+  if (!cabecalho) return reserva;
+  const estendido = /filename\*\s*=\s*UTF-8''([^;]+)/i.exec(cabecalho);
+  if (estendido) {
+    try {
+      return decodeURIComponent(estendido[1].trim());
+    } catch {
+      // sequencia % malformada: tenta o nome simples abaixo
+    }
+  }
+  const simples = /filename\s*=\s*"([^"]+)"|filename\s*=\s*([^;]+)/i.exec(cabecalho);
+  const nome = (simples?.[1] ?? simples?.[2] ?? "").trim();
+  return nome || reserva;
+}
+
+/** Um arquivo que a API devolveu, pronto para salvar. */
+export interface Anexo {
+  arquivo: Blob;
+  nome: string;
+}
+
+/** Baixa um binario com a identidade junto.
+ *
+ * Existe porque um `<a href>` nao leva cabecalho nenhum: com o portao ligado a
+ * API responde 401 a um link simples, e o navegador salva esse 401 como se fosse
+ * a planilha -- ou mostra uma pagina de erro JSON no lugar do download. Aqui o
+ * pedido sai por `fetch`, com o mesmo `Authorization` das outras chamadas, e o
+ * 401 de sessao vencida segue o mesmo caminho de `request`. */
+async function baixar(caminho: string, reserva: string): Promise<Anexo> {
+  const resposta = await fetch(caminho, { headers: await autorizacao() });
+  if (resposta.status === 401 && ehFimDeSessao()) return semSessao();
+  if (!resposta.ok) {
+    const json = await resposta.json().catch(() => null);
+    const detalhe = json?.detail;
+    throw new ApiError(
+      resposta.status,
+      typeof detalhe === "string" ? detalhe : `Falha ${resposta.status}`,
+    );
+  }
+  return {
+    arquivo: await resposta.blob(),
+    nome: nomeDoAnexo(resposta.headers.get("Content-Disposition"), reserva),
+  };
+}
+
+/** Entrega um arquivo ja baixado ao navegador, como um download comum.
+ *
+ * O link temporario e o jeito que os navegadores aceitam de salvar um Blob com
+ * nome. Ele entra no documento antes do clique porque o Firefox ignora o clique
+ * num link solto; e a URL do objeto e liberada logo depois, ou o Blob ficaria
+ * preso na memoria enquanto a aba vivesse. */
+export function salvarAnexo({ arquivo, nome }: Anexo): void {
+  const url = URL.createObjectURL(arquivo);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = nome;
+  link.style.display = "none";
+  document.body.appendChild(link);
+  try {
+    link.click();
+  } finally {
+    link.remove();
+    // Depois do clique, e nao antes: o download precisa da URL viva quando
+    // comeca. O atraso zero basta para o navegador ja ter pego o arquivo.
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  }
+}
+
 export const api = {
   saude: () =>
     request<{
@@ -213,6 +287,10 @@ export const api = {
   },
 
   ver: (id: string) => request<Problema>(`/api/decisoes/${id}`),
+
+  /** A planilha da decisao, com a identidade junto -- ver `baixar`. */
+  exportar: (id: string) =>
+    baixar(`/api/decisoes/${encodeURIComponent(id)}/exportar`, `decisao-${id}.xlsx`),
   estado: (id: string) => request<Estado>(`/api/decisoes/${id}/estado`),
 
   ordenar: (id: string, ordem: string[]) =>

@@ -6,8 +6,13 @@ os mesmos problemas rodados nos dois sistemas, pergunta a pergunta, resultado a
 resultado.
 
 A distinção importa. Ter a mesma tela não é fazer a mesma coisa; e foi só ao
-rodar lado a lado que apareceram três divergências reais de método, todas
-corrigidas — e duas que permanecem, documentadas aqui.
+rodar lado a lado que apareceram as divergências reais de método — quando cada
+sistema abandona um par, quando para de perguntar, como trata curva não linear e
+critério discreto. As que foram entendidas estão corrigidas; as três que
+permanecem estão descritas em "O que permanece diferente".
+
+**O placar: 74 casos, 63 batem de 73 comparáveis**, e há um caso que o oficial não
+completa.
 
 O sistema de referência é o `FU-T3MMM-WF1a` do CDSID/UFPE, acessado pelo
 navegador, na conta do próprio usuário.
@@ -15,19 +20,22 @@ navegador, na conta do próprio usuário.
 ## Como a comparação é feita
 
 Cada caso é cadastrado nos dois sistemas com as mesmas alternativas, os mesmos
-critérios e a mesma matriz de desempenhos, e respondido com a **mesma política:
-sempre a opção A**.
+critérios e a mesma matriz de desempenhos, e respondido com a **mesma sequência
+de respostas** dos dois lados. Os 17 casos originais respondem sempre a opção A;
+os 57 medidos depois (`resultados/casos_medidos.json`) trazem sequências com A e
+B, e, quando há curva, as mesmas respostas na elicitação da curva.
 
 A política fixa não é a resposta de um decisor real. É a única forma de o
 percurso ser reproduzível dos dois lados — e o que se verifica não é "a
 recomendação está certa", que depende da preferência de quem responde, e sim que
 os dois sistemas **fazem as mesmas perguntas e chegam ao mesmo lugar**.
 
-Dois parâmetros são igualados de propósito: função de valor **linear** em todos
-os critérios (o oficial oferece "declare linear function for all criteria") e
-limiar de equivalência em **0,01**, que é o padrão dele.
+Dois parâmetros são igualados de propósito: o limiar de equivalência em
+**0,01**, que é o padrão dele, e a função de valor — **linear** nos 17 casos
+originais (o oficial oferece "declare linear function for all criteria"), e a
+curva elicitada nos dois sistemas com as mesmas respostas nos casos com curva.
 
-Os casos crescem até 20 alternativas por um motivo: com três ou quatro, duas
+Os casos crescem até 20 alternativas (30 no registro) por um motivo: com três ou quatro, duas
 implementações concordam por coincidência, porque há poucos caminhos possíveis.
 Com 20 são 190 pares para ordenar e 2²⁰ subconjuntos de carteira.
 
@@ -87,6 +95,13 @@ critério e marcamos o que é idêntico nas duas situações.
 
 **16 de 16 casos** que o sistema oficial completa batem em número de perguntas, nas duas fases — ordenação das constantes de escala e elicitação por decomposição. Em 1 caso o oficial não completa.
 <!-- fim:tabela -->
+
+Esta tabela são os **17 casos originais**, lineares e respondidos com A. Os outros
+57 — curva não linear, critério discreto, respostas B, estresse até 7 × 30 e a
+rodada final de casos de borda — estão no registro (`resultados/casos_medidos.json`),
+são conferidos um a um por `test_caso_medido_bate_com_o_oficial` e aparecem na tela
+`/paridade`. Somando os dois, **63 de 73 comparáveis batem**; os que não batem são as
+três diferenças descritas em "O que permanece diferente".
 
 ## O que a comparação encontrou
 

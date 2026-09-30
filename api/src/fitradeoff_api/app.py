@@ -22,6 +22,7 @@ from . import identidade
 from .config import Settings, load_settings, vagas_de
 from . import metricas
 from .limite import LimiteDeCorpo
+from .sem_cache import SemCacheNaApi
 from .routers import chat, chaves, decisions, planilhas, rascunhos
 
 DESCRIPTION = """\
@@ -117,6 +118,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # Antes das rotas lerem o corpo -- e o FastAPI le o de um formulario antes
     # da autenticacao. Ver `limite.py`.
     app.add_middleware(LimiteDeCorpo)
+    # Decisao de pessoa nao fica no cache do navegador. Ver `sem_cache.py`.
+    app.add_middleware(SemCacheNaApi)
     # Uma instancia so para a API e para o MCP montado aqui: cada pessoa segura
     # no maximo `vagas_por_pessoa` calculos somando os dois lados.
     app.state.vagas = vagas_de(settings)

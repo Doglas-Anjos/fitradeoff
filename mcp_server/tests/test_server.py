@@ -38,6 +38,11 @@ FERRAMENTAS = {
     "change_problematic",
     "sensitivity_analysis",
     "set_equivalence_threshold",
+    "consequence_sensitivity",
+    "diagnose_inconsistency",
+    "resolve_inconsistency",
+    "max_differences",
+    "set_value_curve",
 }
 
 
@@ -332,3 +337,114 @@ def test_criar_com_limiar_proprio(problema):
         limiar_de_equivalencia=0.05,
     )
     assert srv.status(criada["id"])["limiar_de_equivalencia"] == 0.05
+
+
+# --- o que o motor ja tinha e o MCP passou a expor -----------------------------
+
+
+def test_curva_de_valor_so_antes_da_ordenacao(problema):
+    pontos = [[0.71, 0.0], [0.85, 0.8], [0.95, 1.0]]
+    com_curva = srv.set_value_curve(problema["id"], "qualidade", pontos)
+    assert "erro" not in com_curva
+
+    srv.rank_criteria(problema["id"], ["qualidade", "custo", "prazo"])
+    depois = srv.set_value_curve(problema["id"], "qualidade", None)
+    assert "antes de ordenar" in depois["erro"]
+
+
+def test_curva_invalida_devolve_erro_legivel(problema):
+    erro = srv.set_value_curve(problema["id"], "qualidade", [[0.71, 0.0], [0.95, 0.5]])
+    assert "valor 0" in erro["erro"]
+
+
+def test_diagnostico_de_decisao_coerente(problema):
+    srv.rank_criteria(problema["id"], ["qualidade", "custo", "prazo"])
+    assert srv.diagnose_inconsistency(problema["id"])["inconsistente"] is False
+
+
+def test_saida_de_inconsistencia_desconhecida_devolve_erro(problema):
+    srv.rank_criteria(problema["id"], ["qualidade", "custo", "prazo"])
+    erro = srv.resolve_inconsistency(problema["id"], "apagar_tudo")
+    assert "erro" in erro
+
+
+def test_sensibilidade_das_consequencias(problema):
+    srv.rank_criteria(problema["id"], ["qualidade", "custo", "prazo"])
+    analise = srv.consequence_sensitivity(
+        problema["id"], [{"criterio": "custo", "para_baixo": 5, "para_cima": 5}],
+        cenarios=20,
+    )
+    assert "erro" not in analise
+
+
+def test_sensibilidade_das_consequencias_exige_a_ordem(problema):
+    erro = srv.consequence_sensitivity(problema["id"], [{"criterio": "custo"}])
+    assert "ordenacao" in erro["erro"]
+
+
+def test_diferencas_maximas_no_ranking():
+    criada = srv.create_problem(
+        "Ordem", ALTERNATIVAS, CRITERIOS, CONSEQUENCIAS, problematica="ranking"
+    )
+    srv.rank_criteria(criada["id"], ["qualidade", "custo", "prazo"])
+    assert "diferencas_maximas" in srv.max_differences(criada["id"])
+
+
+# --- conflito: onde as alternativas disputam ----------------------------------
+
+CRITERIOS_CARRO = [
+    {"chave": "preco", "nome": "Preco", "direcao": "min"},
+    {"chave": "porta_malas", "nome": "Porta-malas", "direcao": "max"},
+    {"chave": "km", "nome": "Quilometragem", "direcao": "min"},
+    {"chave": "ano", "nome": "Ano", "direcao": "max"},
+    {"chave": "consumo", "nome": "Consumo", "direcao": "max"},
+]
+CARROS = ["Logan", "Voyage", "Fiesta", "Prisma", "207"]
+MATRIZ_CARRO = [
+    [20900, 510, 149800, 2013, 12.4],
+    [28000, 480, 124232, 2011, 10.7],
+    [29900, 440, 140692, 2011, 11.9],
+    [29900, 439, 106000, 2008, 10.4],
+    [15990, 420, 162000, 2012, 10.6],
+]
+
+
+def test_conflito_aponta_quem_lidera_quase_tudo():
+    """O caso que motivou o mapa: a decisao se resolveu com uma pergunta, e o
+    decisor achou que o metodo tinha decidido por ele. Quem decidiu foram os
+    criterios, e isso precisa aparecer ANTES das perguntas."""
+    criada = srv.create_problem("Carro", CARROS, CRITERIOS_CARRO, MATRIZ_CARRO)
+    conflito = criada["conflito"]
+
+    [lider] = conflito["lider_amplo"]
+    assert lider["alternativa"] == "Logan"
+    assert (lider["melhor_em"], lider["de"]) == (3, 5)
+    assert lider["perde_em"] == ["Preco", "Quilometragem"]
+    assert set(conflito["sem_vantagem_propria"]) == {"Voyage", "Fiesta"}
+    assert conflito["leitura"]
+
+    # e continua disponivel depois, para quando a ordem eliminar quase todas
+    assert srv.get_problem(criada["id"])["conflito"] == conflito
+
+
+def test_matriz_com_disputa_nao_acusa_lider():
+    """Cada fornecedor e o melhor num criterio: ha trade-off em todo par."""
+    matriz = [[0.95, 15.0, 30], [0.70, 10.0, 25], [0.80, 12.0, 10]]
+    criada = srv.create_problem("Disputa", ALTERNATIVAS[:3], CRITERIOS, matriz)
+    assert criada["conflito"]["lider_amplo"] == []
+    assert criada["conflito"]["sem_vantagem_propria"] == []
+
+
+def test_criterio_igual_em_todas_nao_diferencia():
+    criterios = [*CRITERIOS, {"chave": "garantia", "nome": "Garantia", "direcao": "max"}]
+    matriz = [linha + [12] for linha in CONSEQUENCIAS]
+    criada = srv.create_problem("Garantia igual", ALTERNATIVAS, criterios, matriz)
+    assert criada["conflito"]["criterios_que_nao_diferenciam"] == ["Garantia"]
+
+
+def test_saida_de_inconsistencia_e_aplicada(problema):
+    """O caminho inteiro atravessa o MCP: a saida escolhida vira estado novo."""
+    srv.rank_criteria(problema["id"], ["qualidade", "custo", "prazo"])
+    depois = srv.resolve_inconsistency(problema["id"], "desfazer")
+    assert "erro" not in depois
+    assert srv.get_problem(problema["id"])["declaracoes_registradas"] == 0

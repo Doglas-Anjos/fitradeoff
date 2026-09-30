@@ -31,6 +31,7 @@ from .inconsistency import diagnosticar, resolver
 from .limits import LimitExceeded, Limits
 from .sensitivity import VariacaoCriterio, analisar
 from .views import (
+    CARTEIRAS,
     LEITURA_DAS_DOMINADAS,
     PROXIMO_PASSO,
     analysis_dto,
@@ -43,7 +44,7 @@ from .views import (
 )
 
 
-_CARTEIRAS = frozenset({"portfolio", "beneficio_custo"})
+_CARTEIRAS = CARTEIRAS
 
 
 class InvalidRequest(Exception):

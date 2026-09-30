@@ -61,6 +61,9 @@ class ProblemDTO:
     custos: dict[str, float] | None = None
     configuracao: dict = field(default_factory=dict)
     proximo_passo: str | None = None
+    # fora das carteiras: la o custo entra na conta, e liderar criterio nao diz
+    # quem cabe no orcamento
+    conflito: ConflitoDTO | None = None
 
     def to_dict(self) -> dict:
         return _clean(
@@ -75,8 +78,30 @@ class ProblemDTO:
                 "configuracao": self.configuracao,
                 "declaracoes_registradas": self.declaracoes_registradas,
                 "proximo_passo": self.proximo_passo,
+                "conflito": self.conflito.to_dict() if self.conflito else None,
             }
         )
+
+
+@dataclass(frozen=True)
+class ConflitoDTO:
+    """Onde as alternativas disputam, antes de qualquer peso.
+
+    Ver ``views.mapa_de_conflito``. ``leitura`` diz a quem consome o que fazer
+    com cada campo -- o mesmo papel de ``leitura_das_dominadas``.
+    """
+
+    melhor_por_criterio: list[dict]
+    vantagens_por_alternativa: list[dict]
+    total_com_vantagem: int
+    sem_vantagem_propria: list[str]
+    total_sem_vantagem: int
+    criterios_que_nao_diferenciam: list[str]
+    lider_amplo: list[dict]
+    leitura: str
+
+    def to_dict(self) -> dict:
+        return asdict(self)
 
 
 @dataclass(frozen=True)

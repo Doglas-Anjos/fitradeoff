@@ -219,7 +219,7 @@ def test_resposta_em_json_dispensa_o_fluxo_de_eventos(tmp_path):
     assert resposta.status_code == 200
     assert resposta.headers["content-type"].startswith("application/json")
     # Um JSON de verdade, e nao linhas `data:` que o cliente teria de juntar.
-    assert len(resposta.json()["result"]["tools"]) == 14
+    assert len(resposta.json()["result"]["tools"]) == 19
 
 
 def test_o_fluxo_de_eventos_continua_sendo_o_padrao(tmp_path):

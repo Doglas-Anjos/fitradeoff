@@ -42,7 +42,9 @@ descartável se for compartilhar o terminal.
 
 | Arquivo | |
 |---|---|
-| [casos.py](casos.py) | Os problemas, de 2 a 20 alternativas |
+| [casos.py](casos.py) | Os 17 problemas originais, de 2 a 20 alternativas, todos lineares e respondidos com A |
+| [resultados/casos_medidos.json](resultados/casos_medidos.json) | Os outros 57 casos medidos: curva não linear, critério discreto, respostas A/B, estresse até 7×30. Cada entrada traz a entrada inteira e o que o oficial fez |
+| [medidos.py](medidos.py) | Roda o nosso lado de um caso do registro |
 | [oficial.py](oficial.py) | Dirige o sistema de referência por Playwright |
 | [comparar.py](comparar.py) | Roda os dois lados e monta a tabela |
 | [gerar_tabela.py](gerar_tabela.py) | Reescreve a tabela do relatório |
@@ -55,13 +57,16 @@ descartável se for compartilhar o terminal.
 
 ## O que a suíte trava
 
-Duas coisas, e as duas contra `resultados/oficial.json` — a medição gravada do
-sistema de referência, não um valor que alguém digitou como esperado.
+Tudo contra medição gravada do sistema de referência — `resultados/oficial.json`
+para os 17 casos originais, `resultados/casos_medidos.json` para os demais —, não
+contra um valor que alguém digitou como esperado.
 
 **Quantas perguntas.** Os passos de ordenação das constantes de escala e os de
-tradeoff, caso a caso. As duas divergências que permanecem estão declaradas por
-nome no teste, com o vão exato: fechar uma delas também quebra o teste, de
-propósito, para obrigar a atualizar o relatório e a tela junto.
+tradeoff, caso a caso, e — nos casos do registro — a **sequência de pares**
+pergunta a pergunta. As diferenças que permanecem estão declaradas no próprio
+registro (campo `divergencia`, com o nosso número e o porquê): fechar uma delas
+também quebra o teste, de propósito, para obrigar a atualizar o relatório e a
+tela junto.
 
 **A que resultado se chega.** Cada caso guarda o texto da tela final do oficial,
 e `extrair.py` tira dela o que ele concluiu, conforme a problemática:
@@ -74,10 +79,12 @@ e `extrair.py` tira dela o que ele concluiu, conforme a problemática:
 | benefício-custo | o conjunto de projetos da carteira (a ordem de exibição difere) |
 
 Isso fecha um buraco real: antes, uma mudança no motor podia manter a contagem
-de perguntas e trocar o vencedor sem que nada reclamasse. Nos 16 casos que o
-oficial completa o resultado bate em **todos**, e desde 28/09/2026 o número de
-perguntas também — `ranking-20` e `bc-20`, que divergiam, fecharam por medição
-(ver `EQUIVALENCIA.md`).
+de perguntas e trocar o vencedor sem que nada reclamasse.
+
+O placar hoje: **74 casos, 63 batem de 73 comparáveis**. Os 10 que não batem se
+resumem a três diferenças estreitas — abertura respondida B, ordenação de 7
+critérios, um par colado no limiar — e há um caso que o oficial não completa.
+Tudo descrito em `EQUIVALENCIA.md`.
 
 O leitor falha alto quando não entende a tela, em vez de devolver vazio. Não é
 zelo: um extrator que devolvesse nada deixaria a comparação passar sem comparar
@@ -85,11 +92,18 @@ coisa alguma, e a suíte ficaria verde afirmando o que já não verifica.
 
 ## A política de resposta
 
-Todos os casos respondem **sempre a opção A**. Não é a resposta de um decisor
-real — é a única forma de o percurso ser reproduzível dos dois lados. O que se
-verifica não é "a recomendação está certa", que depende da preferência de quem
-responde, e sim que os dois sistemas **fazem as mesmas perguntas e chegam ao
-mesmo lugar**.
+Os 17 casos originais respondem **sempre a opção A**. Os do registro trazem a
+sequência de respostas (`respostas`, com A e B) e, quando há curva, as respostas
+da elicitação da curva. Nenhuma é a resposta de um decisor real — é o que torna o
+percurso reproduzível dos dois lados. O que se verifica não é "a recomendação
+está certa", que depende da preferência de quem responde, e sim que os dois
+sistemas **fazem as mesmas perguntas e chegam ao mesmo lugar**.
+
+Uma limitação a declarar: os casos do registro foram medidos no oficial com um
+script de sessão estendido (curvas, respostas B, critério discreto) que não está
+neste diretório. O registro guarda a entrada inteira e o que o oficial fez — o
+suficiente para refazer o nosso lado e auditar a comparação —, mas refazer a
+medição do lado oficial para esses casos pede aquele script.
 
 ## Três coisas que o sistema oficial exige e não são óbvias
 

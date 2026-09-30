@@ -509,51 +509,35 @@ def test_nota_discreta_em_foco_no_beneficio_custo_bate_com_o_oficial():
     assert analise["carteira_mais_frequente"]["projetos"] == ["Alt 1", "Alt 4"]  # [Alt 4, Alt 1], $60
 
 
-# --- os casos medidos em 29/09/2026 ------------------------------------------
+# --- todos os casos medidos alem dos 16 lineares ----------------------------
 #
-# Sete decisoes levadas ao oficial com o script de medicao corrigido (ele so
-# segue quando a pergunta muda ou o contador "Questions Answered" sobe). A
-# primeira e a validacao: repete um caso ja conhecido e saiu identica. Estao em
-# `resultados/casos_medidos_2026_09_29.json`, com a sequencia de pares dele;
-# "entre-niveis" e a tela propria de criterio discreto. Foram eles que
-# mostraram as duas ultimas regras: a pergunta entre niveis vai para o fim, e o
-# empate de distancia entre dois niveis vai para o de baixo.
+# `resultados/casos_medidos.json` (lido por `medidos.py`) guarda cada caso medido
+# no oficial depois dos 16 lineares -- curva continua, criterio discreto,
+# estresse --, com o que ele fez: as duas contagens e, quando capturada, a
+# sequencia de pares ("entre-niveis" e a tela propria de criterio discreto). E o
+# mesmo registro que a tela de paridade conta. Cada caso novo que entrar la passa
+# a ser conferido aqui, sem mais codigo.
 
-import json as _json
-from pathlib import Path as _Path
+import medidos as _medidos
 
-MEDIDOS_29 = _json.loads(
-    (_Path(__file__).parent / "resultados" / "casos_medidos_2026_09_29.json").read_text(encoding="utf-8")
-)
+_REGISTRO = _medidos.carregar()
 
 
-@pytest.mark.parametrize("caso", MEDIDOS_29, ids=[c["chave"] for c in MEDIDOS_29])
-def test_casos_medidos_em_29_de_setembro(caso):
-    from fitradeoff import DecisionService, build_container
-
-    extra = {}
-    if caso["custos"]:
-        extra = {"custos": caso["custos"], "configuracao": {"orcamento": caso["orcamento"]}}
-    elif caso["configuracao"]:
-        extra = {"configuracao": caso["configuracao"]}
-    servico = DecisionService(build_container(epsilon=0.0))
-    d = servico.create(caso["chave"], caso["alternativas"], caso["criterios"],
-                       caso["consequencias"], problematica=caso["problematica"], **extra)["id"]
-    for chave, pontos in (caso["curvas"] or {}).items():
-        servico.set_value_curve(d, chave, pontos)
-    servico.rank_criteria(d, [c["chave"] for c in caso["criterios"]])
-
-    niveis = {c["nome"]: c.get("niveis") for c in caso["criterios"]}
-    pares = []
-    while len(pares) < 80:
-        q = servico.next_question(d)
-        if "enunciado" not in q:
-            break
-        foco = q["criterio_em_foco"]
-        valor = float(q["opcao_a"][0].split(": ")[1].split(" ")[0])
-        if caso["curvas"] and niveis.get(foco) and valor not in niveis[foco]:
-            pares.append("entre-niveis")
-        else:
-            pares.append([foco, q["criterio_rival"]])
-        servico.answer(d, "A")
-    assert pares == caso["oficial"]["pares"]
+@pytest.mark.parametrize("caso", _REGISTRO, ids=[c["chave"] for c in _REGISTRO])
+def test_caso_medido_bate_com_o_oficial(caso):
+    nosso = _medidos.roda(caso)
+    oficial = caso["oficial"]
+    if "divergencia" in caso:
+        # como em DIVERGENCIAS: o vao fica preso, e fecha-lo tambem quebra aqui
+        esperado = {**oficial, **caso["divergencia"]["nosso"]}
+        assert nosso["tradeoff"] == esperado["tradeoff"]
+        assert nosso["ordenacao"] == esperado["ordenacao"]
+        if "pares" in oficial:
+            comum = caso["divergencia"].get(
+                "pares_ate", min(len(nosso["pares"]), len(oficial["pares"])))
+            assert nosso["pares"][:comum] == oficial["pares"][:comum]
+        return
+    assert nosso["tradeoff"] == oficial["tradeoff"]
+    assert nosso["ordenacao"] == oficial["ordenacao"]
+    if "pares" in oficial:
+        assert nosso["pares"] == oficial["pares"]

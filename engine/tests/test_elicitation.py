@@ -91,6 +91,20 @@ def test_abertura_sai_da_lista_depois_de_respondida(clock):
     assert pares == [(0, 1), (1, 2)]
 
 
+def test_abertura_sai_mesmo_com_o_topo_estreito_demais(evaluator, clock):
+    """Topo variando 0,006 na sua unidade, abaixo de LARGURA_MINIMA: a abertura
+    ainda e perguntada (o sistema de referencia pergunta), e so depois o topo sai
+    do foco -- o par (0, 1) nao chega a ser perguntado."""
+    problem = make_problem([[0.766, 1.0, 1.0], [0.760, 3.0, 3.0]])
+    session = session_for(problem, evaluator, clock).rank_criteria([0, 1, 2])
+
+    abertura = session.next_question()
+    assert (abertura.criterion, abertura.rival) == (0, 2)
+
+    seguinte = session.answer(abertura, Preference.FIRST).next_question()
+    assert seguinte is not None and seguinte.criterion != 0
+
+
 def test_piso_da_abertura_alcanca_os_pares_consecutivos(clock):
     """A razao extrema e o produto das consecutivas: piso nela e piso em todas.
 

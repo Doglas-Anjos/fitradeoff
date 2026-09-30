@@ -32,7 +32,7 @@ uma suíte que está no repositório.
 | Curva de valor intra-critério elicitada | **pronto** — por bisseção, antes da ordenação |
 | Modelo de veto | **pronto** — escolha e ordenação, por envelope conservador |
 | Auditoria, desfazer, sensibilidade | **pronto** — sobre o limiar e sobre as consequências |
-| Servidor MCP (14 ferramentas) | **pronto** — stdio e HTTP remoto, com chave |
+| Servidor MCP (19 ferramentas) | **pronto** — stdio e HTTP remoto, com chave |
 | Superfície pública do MCP | **pronto** — imagem, composição e túnel |
 | Identidade vinda de outra aplicação | **pronto** — JWT assinado, um acervo por pessoa |
 | Autenticação de `/api` | **pronto** — atrás de quem autentica; local segue sem cadastro |
@@ -42,10 +42,10 @@ uma suíte que está no repositório.
 | Entrada manual + import de planilha | **pronto** — `.xlsx` e `.csv` |
 | Export (entrada + resultado + trilha) | **pronto** |
 | Ordenação de pesos nos dois modos | **pronto** — lista e avaliação global |
-| Paridade medida contra o sistema oficial | **17 casos**, versionados — ver abaixo |
+| Paridade medida contra o sistema oficial | **74 casos**, versionados — 63 batem de 73 comparáveis; ver abaixo |
 | Decisão em grupo | a fazer |
 
-**1108 testes**: 611 de motor e API, 44 do servidor MCP, 50 de paridade e 403 de interface.
+**1442 testes**: 736 de motor e API, 69 do servidor MCP, 125 de paridade e 512 de interface.
 Entre eles, um decisor-oráculo que verifica a invariante central do método (a alternativa
 verdadeiramente ótima nunca sai do conjunto de POAs), testes que auditam a própria
 arquitetura e testes de entrada não confiável.
@@ -146,9 +146,20 @@ aponta uma que não existe. Detalhe em [`AUDITORIA.md`](AUDITORIA.md) e em
 ## Validação contra o sistema oficial
 
 Os mesmos problemas rodados aqui e no FITradeoff oficial (CDSID/UFPE), pergunta a pergunta e
-resultado a resultado. Nos **16 casos** que ele completa, o número de perguntas bate nas duas fases
-e o resultado bate em todos. As duas contagens que divergiam (`ranking-20` e `bc-20`) fecharam por
-medição, em 28/09/2026: o critério de parada de cada uma está em
+resultado a resultado: **74 casos** nas quatro problemáticas que o oficial elicita em sessão, de 2 a
+30 alternativas e de 2 a 7 critérios, com curva de valor não linear, critério discreto, respostas A,
+B e misturadas, e casos de borda feitos para quebrar a equivalência.
+
+**63 batem de 73 comparáveis** — a mesma contagem nas duas fases, a mesma sequência de perguntas e
+o mesmo resultado (vencedor, ordem, classe de cada alternativa, carteira). Os 10 que não batem se
+resumem a três diferenças estreitas, cada uma presa num teste para que fechá-la também o quebre:
+
+- **abertura respondida B**: os valores das perguntas batem, a ordem dos pares não (4 casos);
+- **ordenar 7 critérios**: 15 comparações dele contra 14 nossas, chegando à mesma ordem (5 casos);
+- **um par a menos de 0,4% do limiar de 0,01**: uma pergunta a mais num caso, a menos no outro.
+
+Um caso o oficial não completa: com um critério de faixa zero, ele trava depois de salvar a
+matriz. O detalhe de cada medição, e o que foi corrigido por causa dela, está em
 [`paridade/EQUIVALENCIA.md`](paridade/EQUIVALENCIA.md).
 
 A medição do lado oficial está versionada, então a suíte roda sem rede e sem conta:
@@ -159,12 +170,13 @@ python -m pytest paridade/
 
 - [`paridade/README.md`](paridade/README.md) — como rodar cada modo e o que a suíte trava
 - [`PARIDADE.md`](PARIDADE.md) — comparação de **recursos**, levantada do guia do usuário oficial
-- [`paridade/EQUIVALENCIA.md`](paridade/EQUIVALENCIA.md) — comparação de **comportamento**, com as
-  três divergências de método que a comparação encontrou e corrigiu, e as duas que permanecem
+- [`paridade/EQUIVALENCIA.md`](paridade/EQUIVALENCIA.md) — comparação de **comportamento**: as
+  regras que a comparação encontrou e corrigiu, e as três diferenças que permanecem
 
-Rodar lado a lado é o que revelou essas três: nas três, as perguntas iniciais eram idênticas e a
-diferença estava em **quando cada sistema para**. É o tipo de coisa que nenhuma leitura do artigo
-entrega.
+Rodar lado a lado é o que revelou essas regras. Na maior parte delas as perguntas iniciais eram
+idênticas e a diferença estava em **quando cada sistema para** — a largura mínima de um par, a
+parada pelo orçamento no benefício-custo, a pergunta de abertura que sai mesmo com o critério do
+topo quase constante. É o tipo de coisa que nenhuma leitura do artigo entrega.
 
 ## A parte difícil: perguntar em texto
 

@@ -457,6 +457,47 @@ def test_carteira_por_razao_nunca_estoura_o_orcamento(evaluator):
     assert analysis.detail["carteira_mais_frequente"]["custo"] <= 12.0 + 1e-9
 
 
+def _orcamento_decide():
+    """P fica na frente com folga; Q e R custam 5 cada e se cruzam.
+
+    Com k0 em [0.5, 1]: P vai de 0.25 a 0.5; Q, (0.2 k0 + k1) / 5, de 0.04 a
+    0.12; R e 0.1 fixo. Q - R e (0.5 - 0.8 k0) / 5, que troca de sinal em
+    k0 = 0.625 -- a ordem entre Q e R ainda depende dos pesos.
+    """
+    return make_problem(
+        [[1.0, 0.0], [0.2, 1.0], [0.5, 0.5]], costs=[2.0, 5.0, 5.0], names=["P", "Q", "R"]
+    )
+
+
+@pytest.mark.parametrize("orcamento, fecha", [
+    (6.0, True),    # depois de P sobram 4: nem Q nem R cabem, em ordem nenhuma
+    (12.0, False),  # sobram 10: Q e R cabem juntos, mas o oficial fecha a ordem (fin-B2)
+    (9.0, False),   # sobram 7: cabe so um, e qual depende da ordem aberta
+])
+def test_orcamento_fecha_a_carteira_antes_da_ordem(evaluator, orcamento, fecha):
+    """A segunda parada do sistema de referencia: a ordem que falta nao muda a
+    carteira, entao nao ha o que perguntar."""
+    problem = _orcamento_decide()
+    analysis = beneficio_custo(evaluator, orcamento).analyse(
+        problem, space_for(problem, [0, 1])
+    )
+    assert analysis.resolved is fecha
+
+
+def test_orcamento_so_encerra_antes_do_primeiro_tradeoff(evaluator):
+    """Depois de uma resposta o sistema de referencia so para com a ordem
+    inteira (bc-20: carteira fechada na 11a pergunta, fim na 17a)."""
+    from fitradeoff.domain import LinearConstraint, Sense
+
+    problem = _orcamento_decide()
+    # uma declaracao que nao resolve Q x R (k0 >= 0.55)
+    space = space_for(problem, [0, 1]).with_constraints(
+        [LinearConstraint((0.45, -0.55), Sense.GE, 0.0, "tradeoff")]
+    )
+    analysis = beneficio_custo(evaluator, 6.0).analyse(problem, space)
+    assert analysis.resolved is False
+
+
 def test_beneficio_custo_separa_o_exato_do_amostrado_na_ressalva(evaluator):
     problem = make_problem([[1.0, 0.0], [0.0, 1.0]], costs=[1.0, 2.0])
     analysis = beneficio_custo(evaluator, 3.0).analyse(

@@ -245,6 +245,17 @@ conferível na tela. Já a carteira final é aproximada por amostragem de
 vértices, porque a seleção gulosa depende da ordem completa e a ordem depende
 do vetor de pesos. A ressalva diz isso ao decisor.
 
+**Quando ela para de perguntar, medido contra o oficial (28–29/09/2026).** A
+elicitação segue até a ordem das razões ficar fechada par a par, e não só até a
+carteira ficar única: é o que o oficial faz, e o que faz `bc-08` e `bc-20`
+terminarem com as mesmas 17 perguntas dos dois lados. Há uma segunda parada,
+antes da primeira pergunta de tradeoff: se o que entra na carteira já está em
+posição própria e o que ainda está sem ordem fica todo de fora do orçamento,
+ele encerra com *"Considering the budget value, this is the recommendation"*, e
+nós também. As medições que fixaram as duas regras, inclusive o caso que
+derrubou a primeira versão da segunda, estão em
+[`paridade/EQUIVALENCIA.md`](paridade/EQUIVALENCIA.md).
+
 **A problemática lá é um módulo escolhido antes de tudo.** O fluxo é: escolher
 módulo -> escolher entre importar planilha, cadastrar problema novo ou
 continuar um registrado -> só então o formulário. A interface atual segue a
@@ -311,5 +322,7 @@ sobre capacidade que o motor já tem.
 
 O maior vazio era o **bloco 4, visualizações** — que no FITradeoff não é enfeite:
 o apoio gráfico é parte do método, porque é como o decisor faz a avaliação
-holística. Depois vêm a **análise de sensibilidade sobre consequências** (7.1) e
-a **curva de valor intra-critério** (1.5), que hoje assumimos linear.
+holística. Depois vinham a **análise de sensibilidade sobre consequências** (7.1) e
+a **curva de valor intra-critério** (1.5), que na época assumíamos linear. As três
+estão feitas; a curva, inclusive, com as regras de elicitação conferidas pergunta a
+pergunta contra o oficial, em escala contínua e discreta.

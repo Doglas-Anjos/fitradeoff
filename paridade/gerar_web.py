@@ -44,6 +44,8 @@ export interface CasoParidade {
   nosso: { ordenacao: number; tradeoff: number };
   resumo: string;
   bate: boolean;
+  /** De onde vem o caso: os 16 lineares originais, ou os medidos depois. */
+  tipo: "linear" | "curva" | "discreto" | "estresse";
 }
 
 export const MEDIDO_EM = "%(data)s";
@@ -95,6 +97,33 @@ def main() -> None:
             "nosso": meu,
             "resumo": n.get("resumo", "")[:180],
             "bate": igual,
+            "tipo": "linear",
+        })
+
+    # Os medidos depois dos 16 lineares: curva, criterio discreto, estresse. O
+    # nosso lado e recalculado aqui, com o motor atual -- nao ha numero gravado
+    # que possa envelhecer. Bate quando as duas fases batem e, se a sequencia
+    # dele foi capturada, quando os pares sao os mesmos, um a um.
+    import medidos
+
+    for caso in medidos.carregar():
+        n = medidos.roda(caso)
+        o = caso["oficial"]
+        meu = {"ordenacao": n["ordenacao"], "tradeoff": n["tradeoff"]}
+        dele = {"ordenacao": o["ordenacao"], "tradeoff": o["tradeoff"]}
+        igual = dele == meu and ("pares" not in o or o["pares"] == n["pares"])
+        comparaveis += 1
+        bate += igual
+        linhas.append({
+            "chave": caso["chave"],
+            "problematica": caso["problematica"],
+            "alternativas": len(caso["alternativas"]),
+            "criterios": len(caso["criterios"]),
+            "oficial": dele,
+            "nosso": meu,
+            "resumo": n["analise"].get("resumo", "")[:180],
+            "bate": igual,
+            "tipo": caso["tipo"],
         })
 
     DESTINO.write_text(CABECALHO % {
@@ -103,7 +132,7 @@ def main() -> None:
         "bate": bate,
         "comparaveis": comparaveis,
         "travados": travados,
-        "maior": max(len(c["alternativas"]) for c in CASOS),
+        "maior": max(c["alternativas"] for c in linhas),
     }, encoding="utf-8")
     print("%s: %d casos (%d batem de %d comparáveis, %d travados no oficial)"
           % (DESTINO.name, len(linhas), bate, comparaveis, travados))

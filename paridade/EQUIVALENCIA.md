@@ -6,8 +6,13 @@ os mesmos problemas rodados nos dois sistemas, pergunta a pergunta, resultado a
 resultado.
 
 A distinção importa. Ter a mesma tela não é fazer a mesma coisa; e foi só ao
-rodar lado a lado que apareceram três divergências reais de método, todas
-corrigidas — e duas que permanecem, documentadas aqui.
+rodar lado a lado que apareceram as divergências reais de método — quando cada
+sistema abandona um par, quando para de perguntar, como trata curva não linear e
+critério discreto. As que foram entendidas estão corrigidas; as três que
+permanecem estão descritas em "O que permanece diferente".
+
+**O placar: 74 casos, 63 batem de 73 comparáveis**, e há um caso que o oficial não
+completa.
 
 O sistema de referência é o `FU-T3MMM-WF1a` do CDSID/UFPE, acessado pelo
 navegador, na conta do próprio usuário.
@@ -15,19 +20,22 @@ navegador, na conta do próprio usuário.
 ## Como a comparação é feita
 
 Cada caso é cadastrado nos dois sistemas com as mesmas alternativas, os mesmos
-critérios e a mesma matriz de desempenhos, e respondido com a **mesma política:
-sempre a opção A**.
+critérios e a mesma matriz de desempenhos, e respondido com a **mesma sequência
+de respostas** dos dois lados. Os 17 casos originais respondem sempre a opção A;
+os 57 medidos depois (`resultados/casos_medidos.json`) trazem sequências com A e
+B, e, quando há curva, as mesmas respostas na elicitação da curva.
 
 A política fixa não é a resposta de um decisor real. É a única forma de o
 percurso ser reproduzível dos dois lados — e o que se verifica não é "a
 recomendação está certa", que depende da preferência de quem responde, e sim que
 os dois sistemas **fazem as mesmas perguntas e chegam ao mesmo lugar**.
 
-Dois parâmetros são igualados de propósito: função de valor **linear** em todos
-os critérios (o oficial oferece "declare linear function for all criteria") e
-limiar de equivalência em **0,01**, que é o padrão dele.
+Dois parâmetros são igualados de propósito: o limiar de equivalência em
+**0,01**, que é o padrão dele, e a função de valor — **linear** nos 17 casos
+originais (o oficial oferece "declare linear function for all criteria"), e a
+curva elicitada nos dois sistemas com as mesmas respostas nos casos com curva.
 
-Os casos crescem até 20 alternativas por um motivo: com três ou quatro, duas
+Os casos crescem até 20 alternativas (30 no registro) por um motivo: com três ou quatro, duas
 implementações concordam por coincidência, porque há poucos caminhos possíveis.
 Com 20 são 190 pares para ordenar e 2²⁰ subconjuntos de carteira.
 
@@ -87,6 +95,13 @@ critério e marcamos o que é idêntico nas duas situações.
 
 **16 de 16 casos** que o sistema oficial completa batem em número de perguntas, nas duas fases — ordenação das constantes de escala e elicitação por decomposição. Em 1 caso o oficial não completa.
 <!-- fim:tabela -->
+
+Esta tabela são os **17 casos originais**, lineares e respondidos com A. Os outros
+57 — curva não linear, critério discreto, respostas B, estresse até 7 × 30 e a
+rodada final de casos de borda — estão no registro (`resultados/casos_medidos.json`),
+são conferidos um a um por `test_caso_medido_bate_com_o_oficial` e aparecem na tela
+`/paridade`. Somando os dois, **63 de 73 comparáveis batem**; os que não batem são as
+três diferenças descritas em "O que permanece diferente".
 
 ## O que a comparação encontrou
 
@@ -216,6 +231,30 @@ exatamente 17 perguntas, como o oficial.
 
 A carteira continua a mesma. A tela diz quando ela já está definida e a ordem
 ainda não.
+
+**E uma segunda parada, antes de qualquer pergunta.** Em `vol-bc-3x8` (três
+critérios, oito projetos, orçamento 50) o oficial não fez pergunta nenhuma de
+tradeoff e encerrou com *"Considering the budget value, this is the
+recommendation"*; nós fazíamos 10. Só com a ordem dos critérios, as faixas de
+razão já separam as posições 1, 2 e 3; os dois primeiros cabem juntos (34), o
+terceiro não cabe nos 16 que sobram, e nenhum dos outros cinco custa até 16.
+Qualquer ordem entre eles dá a mesma carteira. A regra: descendo as posições da
+ordem par a par já fechada, o que entra na carteira precisa estar em posição
+própria, e um grupo ainda sem ordem precisa ficar todo de fora — nenhum projeto
+dele cabe no que resta. As posições são as da ordem par a par, e não as das
+faixas disjuntas: pelas faixas, Alt 03 e Alt 02 ainda se sobrepõem.
+
+Caber inteiro não basta. A primeira versão da regra aceitava também um grupo sem
+ordem que coubesse todo, e o `fin-B2` a derrubou: dez projetos somando 227 num
+orçamento de 237, a carteira são todos, em qualquer ordem, e mesmo assim o
+oficial fez as 14 perguntas e fechou a ordem inteira. A parada pelo orçamento
+dele vale para o que fica de fora, não para um grupo sem ordem que entra junto.
+
+Ele só aplica isso **antes do primeiro tradeoff**. Em `bc-20` a carteira fica
+fechada pelo orçamento desde a 11ª resposta (sobram 17, e tudo o que fica de
+fora custa 19 ou mais), e ele segue até a 17ª, fechando a ordem inteira. Com a
+parada valendo a qualquer momento, `bc-20` cairia para 11; valendo só antes da
+primeira pergunta, os dois casos batem.
 
 ### Com curva não linear: o par se encerra na unidade do critério
 
@@ -352,7 +391,115 @@ a pergunta com as previsões, e uma resposta fantasma teria aparecido como
 divergência —, mas a condição agora é a pergunta mudar, ou o contador "Questions
 Answered" subir.
 
+### 29/09/2026: a rodada final, doze casos de borda
+
+A última rodada foi feita para tentar quebrar a equivalência: três escolhas,
+dois rankings, quatro sortings e cinco benefício-custo.
+Os casos incluem curva não linear com nota discreta, custo em milhões e em
+milhares, doze alternativas a 0,1% umas das outras, limites de classe nas
+pontas, orçamento apertado e folgado, razões iguais, 7 critérios por 30
+alternativas e respostas A, B e misturadas.
+
+| resultado | casos |
+|---|---|
+| batem por completo (contagem, sequência, desfecho) | `fin-E1`, `fin-E3`, `fin-R2`, `fin-S1` a `fin-S4`, `fin-B1` a `fin-B5` |
+| mesma contagem e mesmo desfecho, ordem diferente | `fin-E2` (abertura B, ver abaixo) |
+| o oficial não completa | `fin-R1` (nota constante, ver "Onde o oficial não completa") |
+
+O `fin-R2` é o mais longo da rodada: ranking com curva não linear em cinco
+critérios e uma nota de 4 níveis, com 31 perguntas de tradeoff. As curvas batem
+pergunta a pergunta, e as 31 perguntas também, até a mesma ordem completa.
+
+"Desfecho" quer dizer o vencedor na escolha, a classe de cada alternativa no
+sorting e a carteira no benefício-custo, conferidos item a item com a tela final
+dele.
+
+Dois casos derrubaram regras nossas, e as duas foram corrigidas:
+
+- **`fin-E3`**: a qualidade variava só de 0,7587 a 0,7650, abaixo da largura
+  mínima de 0,01. Nós pulávamos até a pergunta de abertura; ele faz a abertura e
+  só depois deixa a qualidade de lado. A abertura agora escapa da largura mínima.
+- **`fin-B2`**: derrubou a primeira versão da parada pelo orçamento (ver
+  "Benefício-custo" acima).
+
+No `fin-B3` os dois lados terminam com as perguntas esgotadas e quatro projetos
+empatados na 4ª posição. A carteira dele é a nossa carteira mais frequente
+(6 de 8 amostras). A diferença é que nós avisamos que a Alt 10 ainda pode entrar
+no lugar da Alt 07, e ele não mostra essa alternativa.
+
 ## O que permanece diferente
+
+### Abertura respondida com B: os valores batem, a escolha do par não
+
+Quando a primeira pergunta (o critério do topo contra o da base) é respondida
+**B**, o oficial às vezes repete o par que acabou de perguntar, e nós seguimos
+para o par mais largo. Quatro casos medidos:
+
+| caso | pares consecutivos | respostas | nós | oficial | sequência |
+|---|---|---|---|---|---|
+| `vol-escolha-5x25-b` | 4 | BBABBABBAB… | 3 | 6 | igual até a 2ª, depois difere |
+| `vol-ranking-5x12-b` | 4 | só B | 15 | 17 | difere da 3ª à 10ª, igual da 11ª em diante |
+| `vol-bc-6x12-b` | 5 | BBABBABBAB | 11 | 11 | igual até a 2ª, depois difere |
+| `fin-E2-escolha-min-milhoes` | 6 | só B | 23 | 23 | difere da 3ª à 14ª, igual da 15ª em diante |
+
+O que se sabe. Os **valores** de cada pergunta dele são exatamente o meio da
+faixa que o espaço de pesos inteiro admite para aquele par, com a propagação
+pelo produto das razões. Por exemplo, depois de Qualidade × Custo presa em
+[0,75; 0,875], o piso de Custo × Prazo vira 0,5 / 0,875 = 0,571, e ele pergunta
+10,87, o meio de [0,571; 1]. Nos dois casos em que a contagem difere, a
+diferença vem da ordem: com as mesmas perguntas em outra sequência, o espaço de
+pesos chega ao fim por outro caminho.
+
+O que muda é a **escolha do par**, e ela segue um roteiro que se repete nos
+quatro casos:
+
+1. na primeira volta, a metade de cima dos pares leva duas perguntas seguidas
+   cada uma, e a metade de baixo, uma (com 6 pares: 2+2+2+1+1+1; com 4 ou 5, os
+   dois primeiros levam duas);
+2. na segunda volta, o primeiro par é perguntado, os outros da metade de cima
+   são pulados, e a metade de baixo leva uma cada;
+3. dali em diante, rodízio simples entre todos os pares.
+
+Esse roteiro reproduz todas as escolhas dele nos quatro casos. Hipóteses de
+largura testadas contra as escolhas e descartadas: largura pela faixa dos
+pesos, faixa de razão pelas caixas de peso, "repete depois de B", e rodízio que
+pula o par abaixo da metade (ou da média) da maior largura. O roteiro não foi
+implementado: é um padrão tirado de quatro casos em que a abertura foi B, não
+uma regra entendida. Com a abertura respondida A, que é o caso de todos os
+outros casos medidos, as sequências batem com a nossa regra do par mais largo.
+
+### Ordenar 7 critérios: 15 comparações dele, 14 nossas
+
+Com 3, 4, 5 e 6 critérios, a ordenação dele pede 3, 5, 8 e 11 comparações, o
+mesmo que a nossa inserção binária. Com 7 ele pede 15, e nós 14. Foram cinco
+casos com 7 critérios, e a remedição dedicada, com o script corrigido, deu 15 de
+novo. A ordem a que ele chega é a mesma que a nossa, porque as perguntas de
+tradeoff seguintes batem par a par. Nenhuma variante padrão chega a 15 (inserção
+binária com o meio arredondado para baixo ou para cima, faixa inclusiva ou
+exclusiva, inserção na ordem da lista ou na inversa, merge sort com as duas
+divisões): as melhores dão 14. Para achar o procedimento dele é preciso capturar
+o par de cada comparação, e o script de medição por enquanto só as conta.
+
+### Ranking: um par a 0,4% do limiar, uma pergunta a mais ou a menos
+
+Dois rankings da rodada de volume terminam com uma pergunta de diferença —
+depois de sequências **idênticas** às dele, pergunta a pergunta e valor a valor:
+
+| caso | nós | oficial | par em aberto | quanto um ainda supera o outro |
+|---|---|---|---|---|
+| `vol-ranking-4x10-ab` | 16 | 15 | Alt 03 × Alt 06 | 0,010041 — ele dá por ordenado, nós não |
+| `vol-ranking-6x15` | 21 | 22 | Alt 02 × Alt 07 | 0,009962 — nós damos por ordenado, ele não |
+
+Nos dois, a diferença máxima que decide o par cai a menos de 0,00005 do limiar de
+0,01, uma vez de cada lado. Nenhum limiar explica os dois casos: subir o nosso
+para 0,01005 acerta o primeiro e erra o segundo, e o contrário também. Então o
+espaço de pesos dele difere do nosso na quarta casa. Duas causas foram testadas
+e descartadas: uma folga de preferência estrita entre os pesos (desmonta o
+segundo caso, que passa a parar na 13ª pergunta) e restrições montadas com o
+valor arredondado a duas casas, como aparece na tela (piora os dois: 17 e 25).
+É o tipo de borda estreita que fica registrado e não é perseguido: ajustar para
+um lado quebra o outro, e o par em jogo está, pela própria medida, dentro do que
+o método chama de indiferença.
 
 ### Portfólio combinatorial: não comparável em sessão
 
@@ -389,3 +536,12 @@ todo critério tem faixa zero, e a elicitação da função valor não tem o que
 Nós respondemos, e desde o limiar de equivalência respondemos bem: *"3
 alternativas ficaram equivalentes dentro do limiar de 0,01: qualquer uma delas
 serve; mais perguntas não separariam."*
+
+Basta **um critério** de faixa zero. No `fin-R1` (ranking, 7 critérios por 30
+alternativas) a nota de 7 níveis ficou em 4 para todas as alternativas, por
+descuido na geração do caso. O oficial parou na tela da matriz: em quatro
+tentativas, depois de esperar 10 minutos duas vezes em cada uma, a tela de
+Intra-Criteria Evaluation nunca veio. O `est-escolha-7x30`, do mesmo tamanho e
+sem coluna constante, passou por ali sem problema. Nós fazemos 11 perguntas e
+chegamos a uma pré-ordem completa, tratando a nota como o que ela é naquela
+matriz: um critério que não separa ninguém.

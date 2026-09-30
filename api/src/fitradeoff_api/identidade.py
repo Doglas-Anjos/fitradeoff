@@ -52,7 +52,18 @@ def acervo_de(settings: Settings, emissor: str, pessoa: str) -> Path:
     O emissor entra no resumo junto com o identificador: dois sistemas de
     identidade diferentes podem usar o mesmo ``sub`` para pessoas diferentes, e
     sem o emissor as duas cairiam no mesmo acervo.
+
+    O emissor usado aqui NUNCA pode mudar depois que houver acervos. Ele e parte
+    do nome do diretorio: trocar ``FITRADEOFF_JWT_ISSUER`` -- ate por uma barra
+    no fim -- faz toda pessoa cair num diretorio novo e vazio, e as decisoes
+    antigas ficam no disco sem que ninguem as alcance. Por isso a barra final e
+    tirada antes do resumo: ``https://x.org`` e ``https://x.org/`` sao o mesmo
+    emissor para qualquer pessoa, e escrever um ou outro na configuracao nao
+    pode decidir onde os dados de todo mundo vivem. Sem barra no fim o valor
+    fica identico ao de antes desta normalizacao, entao nenhum acervo existente
+    se move.
     """
+    emissor = emissor.rstrip("/")
     marca = hashlib.sha256(f"{emissor}\n{pessoa}".encode("utf-8")).hexdigest()[:32]
     return settings.storage.parent / "pessoas" / marca
 
@@ -65,9 +76,22 @@ def _verificar(settings: Settings, token: str) -> dict | None:
     legitimo, que so precisa saber que tem de se autenticar de novo. O motivo
     vai para o registro, onde o operador o alcanca.
     """
-    opcoes = {"require": ["exp", "sub"]}
+    opcoes: dict = {"require": ["exp", "sub"]}
     try:
         if settings.jwt_jwks_url:
+            # Com JWKS, `aud` e `iss` sao exigidos no token e conferidos
+            # sempre. `Settings` ja recusa partir sem os dois; a checagem aqui
+            # e a segunda tranca, para um `Settings` montado por fora dela (um
+            # `replace`, um teste) nao reabrir a porta: sem publico configurado,
+            # nenhum token passa, em vez de todos.
+            if not (settings.jwt_audience and settings.jwt_issuer):
+                logger.warning("token recusado: JWKS sem emissor ou publico")
+                return None
+            opcoes = {
+                "require": ["exp", "sub", "iss", "aud"],
+                "verify_aud": True,
+                "verify_iss": True,
+            }
             # O cliente do PyJWT guarda as chaves em memoria e so volta a buscar
             # quando aparece um `kid` que ele nao conhece -- ou seja, na rotacao.
             cliente = _jwks(settings.jwt_jwks_url)
@@ -87,7 +111,9 @@ def _verificar(settings: Settings, token: str) -> dict | None:
             issuer=settings.jwt_issuer,
             audience=settings.jwt_audience,
             leeway=FOLGA_DE_RELOGIO,
-            options={**opcoes, "verify_aud": settings.jwt_audience is not None},
+            # No caminho HS256, `aud` so e conferido se declarado; no JWKS,
+            # `opcoes` ja o tornou obrigatorio e sobrepoe este padrao.
+            options={"verify_aud": settings.jwt_audience is not None, **opcoes},
         )
     except jwt.PyJWTError as exc:
         logger.warning("token recusado: %s", type(exc).__name__)

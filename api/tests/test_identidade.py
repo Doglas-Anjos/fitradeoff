@@ -283,3 +283,97 @@ def test_a_folga_de_relogio_nao_derruba_o_token_no_limite(tmp_path):
     no_limite = int(time.time()) + settings.jwt_max_validade + 10
 
     assert identidade.resolver(settings)(token(exp=no_limite)) is not None
+
+
+# --- com JWKS, emissor e publico sao obrigatorios -----------------------------
+
+URL_JWKS = "https://principal.exemplo.org/jwks"
+
+
+def rs256(par_rsa, **mudancas) -> str:
+    corpo = {
+        "sub": "pessoa-1",
+        "iss": EMISSOR,
+        "aud": PUBLICO,
+        "exp": int(time.time()) + 300,
+    }
+    corpo.update(mudancas)
+    corpo = {k: v for k, v in corpo.items() if v is not None}
+    privada = par_rsa.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption(),
+    )
+    return jwt.encode(corpo, key=privada.decode("ascii"), algorithm="RS256")
+
+
+@pytest.mark.parametrize("faltando", ["jwt_audience", "jwt_issuer"])
+def test_jwks_sem_emissor_ou_publico_nao_parte(tmp_path, faltando):
+    """O estado perigoso e silencioso: tudo funciona, e os tokens errados entram.
+
+    Sem `aud`, o token que a aplicacao da frente emitiu para OUTRO servico dela,
+    com a mesma chave, valeria aqui. A partida para, com a variavel no texto.
+    """
+    with pytest.raises(ValueError, match="FITRADEOFF_JWT_"):
+        ajustes(tmp_path, jwt_secret=None, jwt_jwks_url=URL_JWKS, **{faltando: None})
+
+
+def test_jwks_sem_publico_derruba_a_criacao_do_mcp(tmp_path, monkeypatch):
+    """Pelo ambiente, que e como o container parte."""
+    from fitradeoff_api.mcp_remoto import create_mcp_app
+
+    monkeypatch.setenv("FITRADEOFF_DATA", str(tmp_path / "decisoes"))
+    monkeypatch.setenv("FITRADEOFF_JWT_JWKS_URL", URL_JWKS)
+    monkeypatch.setenv("FITRADEOFF_JWT_ISSUER", EMISSOR)
+    monkeypatch.delenv("FITRADEOFF_JWT_AUDIENCE", raising=False)
+
+    with pytest.raises(ValueError, match="FITRADEOFF_JWT_AUDIENCE"):
+        create_mcp_app()
+
+
+def test_hs256_sem_publico_continua_partindo(tmp_path):
+    """O segredo e so das duas pontas: ali o publico e opcional, como antes."""
+    ajustes(tmp_path, jwt_audience=None)
+
+
+def test_rs256_com_publico_errado_e_recusado(tmp_path, par_rsa, jwks):
+    settings = ajustes(tmp_path, jwt_secret=None, jwt_jwks_url=URL_JWKS)
+
+    assert identidade.resolver(settings)(rs256(par_rsa, aud="outro-servico")) is None
+
+
+def test_rs256_sem_publico_no_token_e_recusado(tmp_path, par_rsa, jwks):
+    settings = ajustes(tmp_path, jwt_secret=None, jwt_jwks_url=URL_JWKS)
+
+    assert identidade.resolver(settings)(rs256(par_rsa, aud=None)) is None
+
+
+def test_rs256_com_emissor_errado_e_recusado(tmp_path, par_rsa, jwks):
+    settings = ajustes(tmp_path, jwt_secret=None, jwt_jwks_url=URL_JWKS)
+
+    assert (
+        identidade.resolver(settings)(rs256(par_rsa, iss="https://outro.exemplo.org"))
+        is None
+    )
+
+
+def test_rs256_sem_publico_configurado_nao_aceita_nada(tmp_path, par_rsa, jwks):
+    """A segunda tranca: um Settings que escapou da checagem nao reabre a porta."""
+    import dataclasses
+
+    settings = ajustes(tmp_path, jwt_secret=None, jwt_jwks_url=URL_JWKS)
+    # `object.__setattr__` pula o `__post_init__`, como um objeto montado por
+    # fora do caminho normal faria.
+    object.__setattr__(settings, "jwt_audience", None)
+    assert dataclasses.is_dataclass(settings)
+
+    assert identidade.resolver(settings)(rs256(par_rsa)) is None
+
+
+def test_a_barra_no_fim_do_emissor_nao_muda_o_acervo(tmp_path):
+    """O emissor e parte do nome do diretorio, e nunca pode mudar por grafia."""
+    settings = ajustes(tmp_path)
+
+    assert identidade.acervo_de(settings, EMISSOR, "p") == identidade.acervo_de(
+        settings, EMISSOR + "/", "p"
+    )

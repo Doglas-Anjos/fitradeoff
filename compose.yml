@@ -45,6 +45,12 @@
 # Cada servico tambem tem teto de processos (`deploy.resources.limits.pids`): um
 # laco de fork nao derruba o hospedeiro inteiro. Fica no `deploy`, e nao aqui,
 # porque o compose recusa `pids_limit` ao lado de `deploy.resources.limits`.
+#
+# E teto de CPU nos dois que calculam (`mcp` e `api`). O solver e CPU pura: um
+# problema grande, ou varios ao mesmo tempo, ocupa todos os nucleos que achar, e
+# o hospedeiro e o mesmo da FasorX -- sem teto, uma rodada pesada aqui vira
+# lentidao la. Dois nucleos cabem as vagas de calculo padrao com folga; quem
+# precisar de mais sobe o numero junto com FITRADEOFF_VAGAS_NO_TOTAL.
 x-endurecido: &endurecido
   security_opt:
     - no-new-privileges:true
@@ -63,6 +69,7 @@ services:
     deploy:
       resources:
         limits:
+          cpus: "2"
           memory: 768M
           pids: 256
     environment:
@@ -74,6 +81,18 @@ services:
       # A asserção de identidade da aplicacao da frente. Vazias, nenhum token e
       # aceito e so as chaves do cofre entram -- que e o certo enquanto a
       # integracao nao existir.
+      #
+      # As tres de JWKS andam juntas, mas o `:-` e o mesmo nas tres: vazias sao
+      # um estado valido aqui, entao nao da para exigi-las com `:?` como no
+      # perfil `plataforma`. Quem amarra uma na outra e o `Settings` da API: com
+      # FITRADEOFF_JWT_JWKS_URL definida e ISSUER ou AUDIENCE vazia, o processo
+      # nao parte e o registro do container diz qual falta. Sem publico
+      # conferido, um token emitido pela mesma aplicacao para outro servico dela
+      # entraria aqui.
+      #
+      # ISSUER, uma vez em uso, nao muda mais: ele entra no nome do diretorio de
+      # cada pessoa (ver `identidade.acervo_de`), e troca-lo deixa todos os
+      # acervos para tras.
       FITRADEOFF_JWT_ISSUER: ${FITRADEOFF_JWT_ISSUER:-}
       FITRADEOFF_JWT_AUDIENCE: ${FITRADEOFF_JWT_AUDIENCE:-}
       FITRADEOFF_JWT_JWKS_URL: ${FITRADEOFF_JWT_JWKS_URL:-}
@@ -91,6 +110,14 @@ services:
     # esta porta direto nao serviria de qualquer forma.
     ports:
       - "127.0.0.1:8765:8765"
+    # O mesmo giro de registro dos outros dois. Sem ele o json-file cresce sem
+    # teto, e o MCP e justamente o servico que atende de fora -- o que mais
+    # escreve, e o primeiro a encher o disco que divide com a FasorX.
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # --- o aplicativo completo, so com --profile plataforma -------------------
 
@@ -164,6 +191,7 @@ services:
     deploy:
       resources:
         limits:
+          cpus: "2"
           memory: 768M
           pids: 256
     healthcheck:

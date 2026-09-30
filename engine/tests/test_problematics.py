@@ -471,7 +471,7 @@ def _orcamento_decide():
 
 @pytest.mark.parametrize("orcamento, fecha", [
     (6.0, True),    # depois de P sobram 4: nem Q nem R cabem, em ordem nenhuma
-    (12.0, True),   # sobram 10: Q e R cabem juntos, em qualquer ordem
+    (12.0, False),  # sobram 10: Q e R cabem juntos, mas o oficial fecha a ordem (fin-B2)
     (9.0, False),   # sobram 7: cabe so um, e qual depende da ordem aberta
 ])
 def test_orcamento_fecha_a_carteira_antes_da_ordem(evaluator, orcamento, fecha):

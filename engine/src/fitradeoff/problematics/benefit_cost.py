@@ -150,7 +150,9 @@ class BenefitCostProblematic(Problematic):
             bool(sem_ordem)
             and so_a_ordenacao
             and self._carteira_fechada_pelo_orcamento(
-                problem.n_alternatives, costs, razao_minima, razao_maxima
+                costs,
+                (problem.values @ np.mean(vertices, axis=0)) / costs,
+                set(sem_ordem),
             )
         )
         resolved = not sem_ordem or pelo_orcamento
@@ -287,44 +289,53 @@ class BenefitCostProblematic(Problematic):
 
     def _carteira_fechada_pelo_orcamento(
         self,
-        n: int,
         costs: np.ndarray,
-        razao_minima: np.ndarray,
-        razao_maxima: np.ndarray,
+        razao_no_centro: np.ndarray,
+        sem_ordem: set[tuple[int, int]],
     ) -> bool:
         """Se a ordem de razao ja conhecida basta para fixar a carteira gulosa.
 
         E a segunda parada do sistema de referencia ("Considering the budget
-        value, this is the recommendation"), medida em 29/09/2026: com oito
-        projetos e orcamento de 50, a ordem que a ordenacao dos criterios ja
-        impoe poe dois projetos na frente, que cabem juntos (34), o terceiro nao
-        cabe no que sobra, e nenhum dos outros custa ate 16 -- a ordem entre eles
-        nao muda a carteira, e ele encerra sem pergunta nenhuma. Nos seguiamos
-        dez perguntas ate fechar a ordem inteira.
+        value, this is the recommendation"), medida em 29/09/2026 no vol-bc-3x8:
+        oito projetos, orcamento de 50. So com a ordenacao dos criterios, as
+        razoes ja poem Alt 03 e Alt 02 nas posicoes 1 e 2 (cabem juntos, 34), a
+        Alt 04 na 3 (36, nao cabe no que sobra) e as outras cinco empatadas na 4,
+        nenhuma custando ate 16. Ele encerra sem pergunta nenhuma; nos faziamos
+        dez.
 
-        As posicoes sao blocos com corte limpo pelas faixas disjuntas: todo
-        projeto de um bloco supera todo projeto dos blocos de baixo. Descendo
-        os blocos, cada um precisa caber inteiro no que resta ou nao ter projeto
-        nenhum que caiba; um bloco em que uns cabem e outros nao deixa a
-        carteira depender da ordem interna, e as perguntas continuam.
+        As posicoes sao as da ordem par a par ja fechada (``_pares_sem_ordem``),
+        nao as das faixas disjuntas: pelas faixas, Alt 03 e Alt 02 ainda se
+        sobrepoem. Descendo as posicoes, o que entra na carteira precisa estar em
+        posicao propria, e um grupo ainda sem ordem precisa ficar todo de fora --
+        nenhum projeto dele cabe no que resta.
+
+        Caber inteiro nao basta. No fin-B2 tudo cabe (dez projetos, 227 num
+        orcamento de 237): a carteira sao todos, em qualquer ordem, e mesmo assim
+        ele fez as 14 perguntas e fechou a ordem inteira.
         """
-        # Ordenados pelo pior caso, o corte depois da k-esima posicao e limpo
-        # quando o pior caso de tudo acima supera o melhor caso de tudo abaixo.
-        ordem = sorted(range(n), key=lambda i: -razao_minima[i])
-        piso = np.minimum.accumulate(razao_minima[ordem])
-        teto = np.maximum.accumulate(razao_maxima[ordem][::-1])[::-1]
-        blocos, inicio = [], 0
-        for k in range(1, n + 1):
-            if k == n or piso[k - 1] > teto[k] + TOLERANCE:
-                blocos.append(ordem[inicio:k])
-                inicio = k
+        # Par ja ordenado tem o mesmo sentido em todo peso viavel, inclusive no
+        # centro das amostras: ordenar por ali deixa cada par fechado do lado
+        # certo, e o corte depois da k-esima posicao e limpo quando nenhum par
+        # ainda aberto o atravessa.
+        n = len(costs)
+        ordem = sorted(range(n), key=lambda i: -razao_no_centro[i])
+        posicao = {projeto: k for k, projeto in enumerate(ordem)}
+        alcance = list(range(n))  # ate onde cada posicao arrasta o seu grupo
+        for i, l in sem_ordem:
+            a, b = sorted((posicao[i], posicao[l]))
+            alcance[a] = max(alcance[a], b)
+        blocos, inicio, fim = [], 0, 0
+        for k in range(n):
+            fim = max(fim, alcance[k])
+            if k == fim:
+                blocos.append(ordem[inicio:k + 1])
+                inicio = k + 1
         restante = self._budget
         for bloco in blocos:
-            custo_do_bloco = float(costs[bloco].sum())
-            if custo_do_bloco <= restante + TOLERANCE:
-                restante -= custo_do_bloco
-            elif (costs[bloco] <= restante + TOLERANCE).any():
-                return False
+            if (costs[bloco] <= restante + TOLERANCE).any():
+                if len(bloco) > 1:
+                    return False  # algo dele entra, e a ordem interna ainda conta
+                restante -= float(costs[bloco[0]])
         return True
 
     def _dominancia_por_razao(

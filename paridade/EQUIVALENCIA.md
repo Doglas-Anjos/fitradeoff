@@ -223,10 +223,17 @@ tradeoff e encerrou com *"Considering the budget value, this is the
 recommendation"*; nós fazíamos 10. Só com a ordem dos critérios, as faixas de
 razão já separam as posições 1, 2 e 3; os dois primeiros cabem juntos (34), o
 terceiro não cabe nos 16 que sobram, e nenhum dos outros cinco custa até 16.
-Qualquer ordem entre eles dá a mesma carteira. A regra: descendo as posições que
-as faixas disjuntas separam, cada bloco cabe inteiro no que resta ou não tem
-projeto nenhum que caiba — um bloco em que uns cabem e outros não deixa a
-carteira depender da ordem interna.
+Qualquer ordem entre eles dá a mesma carteira. A regra: descendo as posições da
+ordem par a par já fechada, o que entra na carteira precisa estar em posição
+própria, e um grupo ainda sem ordem precisa ficar todo de fora — nenhum projeto
+dele cabe no que resta. As posições são as da ordem par a par, e não as das
+faixas disjuntas: pelas faixas, Alt 03 e Alt 02 ainda se sobrepõem.
+
+Caber inteiro não basta. A primeira versão da regra aceitava também um grupo sem
+ordem que coubesse todo, e o `fin-B2` a derrubou: dez projetos somando 227 num
+orçamento de 237, a carteira são todos, em qualquer ordem, e mesmo assim o
+oficial fez as 14 perguntas e fechou a ordem inteira. A parada pelo orçamento
+dele vale para o que fica de fora, não para um grupo sem ordem que entra junto.
 
 Ele só aplica isso **antes do primeiro tradeoff**. Em `bc-20` a carteira fica
 fechada pelo orçamento desde a 11ª resposta (sobram 17, e tudo o que fica de

@@ -26,6 +26,7 @@ const CHAVE = {
   prefixo: "fit_9xKw...2Qla",
   criada_em: "2026-09-26T03:36:08+00:00",
   ultimo_uso: null,
+  expira_em: null,
 };
 
 /** A área de transferência não existe no jsdom; sem isto, copiar estoura. */
@@ -114,6 +115,26 @@ describe("Tela de chaves", () => {
 
     expect(await screen.findByText("fit_9xKw...2Qla")).toBeInTheDocument();
     expect(screen.getByText(/Usada por último em/)).toBeInTheDocument();
+  });
+
+  it("mostra quando cada chave vence, e marca a vencida", async () => {
+    vi.spyOn(api, "chaves").mockResolvedValue({
+      ...VAZIA,
+      chaves: [
+        { ...CHAVE, id: "a", rotulo: "Viva", expira_em: "2999-01-01T00:00:00+00:00" },
+        {
+          ...CHAVE,
+          id: "b",
+          rotulo: "Velha",
+          prefixo: "fit_old...0000",
+          expira_em: "2000-01-01T00:00:00+00:00",
+        },
+      ],
+    });
+    render(<ChavesPage />);
+
+    expect(await screen.findByText(/vence em/)).toBeInTheDocument();
+    expect(screen.getByText(/· vencida/)).toBeInTheDocument();
   });
 
   it("revoga só depois de confirmar, e some com o bloco da chave revogada", async () => {

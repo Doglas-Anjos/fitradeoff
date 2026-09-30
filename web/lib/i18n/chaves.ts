@@ -191,6 +191,16 @@ export const CHAVES = registrar({
     en: "Never used",
     es: "Nunca usada",
   },
+  "tela.chaves.emitidas.vence": {
+    pt: "vence em {data}",
+    en: "expires on {data}",
+    es: "vence el {data}",
+  },
+  "tela.chaves.emitidas.vencida": {
+    pt: "vencida",
+    en: "expired",
+    es: "vencida",
+  },
   "tela.chaves.revogar": { pt: "Revogar", en: "Revoke", es: "Revocar" },
   "tela.chaves.revogar.confirma": {
     pt: "Revogar a chave {rotulo}? O cliente que usa esta chave para de funcionar na hora.",

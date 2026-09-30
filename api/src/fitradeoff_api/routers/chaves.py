@@ -31,6 +31,7 @@ cliente, e confiar nele seria pior do que nao ter checagem nenhuma.
 from __future__ import annotations
 
 import hmac
+import time
 from urllib.parse import urlsplit
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -98,6 +99,15 @@ def gestao_liberada(
         )
 
 
+def _portador(request: Request) -> str | None:
+    """O token do cabecalho Authorization, ou None."""
+    cabecalho = request.headers.get("authorization", "")
+    esquema, _, token = cabecalho.partition(" ")
+    if esquema.lower() == "bearer" and token.strip():
+        return token.strip()
+    return None
+
+
 def dono_da_gestao(
     request: Request, settings: Settings = Depends(get_settings)
 ) -> str | None:
@@ -114,10 +124,9 @@ def dono_da_gestao(
     ou o token de administracao. Devolve None.
     """
     if settings.jwt_configurado:
-        cabecalho = request.headers.get("authorization", "")
-        esquema, _, token = cabecalho.partition(" ")
-        if esquema.lower() == "bearer" and token.strip():
-            caminho = identidade.assercao(settings, token.strip())
+        token = _portador(request)
+        if token is not None:
+            caminho = identidade.assercao(settings, token)
             if caminho is None:
                 # Mesmo texto e mesmo codigo de deps.acervo: a tela trata o 401
                 # como sessao encerrada e manda entrar de novo.
@@ -129,6 +138,51 @@ def dono_da_gestao(
             return caminho.name
     gestao_liberada(request, settings)
     return None
+
+
+def dono_para_emitir(
+    request: Request,
+    settings: Settings = Depends(get_settings),
+    dono: str | None = Depends(dono_da_gestao),
+) -> str | None:
+    """Como ``dono_da_gestao``, mas a pessoa precisa ter entrado AGORA.
+
+    O token do FasorX vale 5 minutos; a chave que ele emite vale 90 dias. Sem
+    esta regra, qualquer token vazado nesses 5 minutos -- num log, numa
+    extensao do navegador -- viraria uma credencial de meses. Exigir ``iat``
+    recente obriga quem emite a ter a sessao do FasorX neste instante: a tela
+    busca um token novo logo antes de emitir (``identidade.obter({novo})``).
+
+    Token sem ``iat`` e recusado: sem a data de emissao nao ha como dizer que
+    ele e recente, e na duvida nao se emite.
+    """
+    if dono is None:
+        # Caminho do dono da plataforma: loopback ou token de administracao,
+        # que ja tem a porta propria em ``gestao_liberada``.
+        return None
+    token = _portador(request)
+    declaracoes = identidade.declaracoes(settings, token) if token else None
+    emitido = declaracoes.get("iat") if declaracoes else None
+    idade = (
+        time.time() - emitido
+        if isinstance(emitido, (int, float)) and not isinstance(emitido, bool)
+        else None
+    )
+    if idade is None or idade > settings.chave_token_recente_s:
+        # 403, e nao 401: a sessao esta valida para o resto da tela, e o 401
+        # faria a tela tratar como sessao encerrada.
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Entre de novo para emitir uma chave: a emissao exige uma sessao "
+            "confirmada agora pelo FasorX.",
+        )
+    return dono
+
+
+def _cofre_ilegivel(exc: cofre.CofreCorrompido) -> HTTPException:
+    # 503: o problema e do servidor, e nada foi gravado -- as chaves que o
+    # arquivo ainda guarda continuam la para quem for restaura-lo.
+    return HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(exc))
 
 
 def aviso_de_configuracao(settings: Settings) -> str | None:
@@ -173,13 +227,15 @@ def listar(
 def criar(
     dados: ChaveIn,
     settings: Settings = Depends(get_settings),
-    dono: str | None = Depends(dono_da_gestao),
+    dono: str | None = Depends(dono_para_emitir),
 ) -> dict[str, object]:
     """A unica resposta da API que contem o texto de uma chave."""
     try:
         chave, texto = cofre.criar(settings, dados.rotulo, dono)
     except ValueError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+    except cofre.CofreCorrompido as exc:
+        raise _cofre_ilegivel(exc) from exc
     return {"chave": chave.publica(), "texto": texto, "url": settings.mcp_url}
 
 
@@ -191,6 +247,10 @@ def revogar(
 ) -> dict[str, bool]:
     # So revoga chave do proprio dono. A de outra pessoa responde 404, igual a
     # uma que nao existe -- 403 confirmaria que o id e de alguem.
-    if not cofre.revogar(settings, id, dono):
+    try:
+        revogada = cofre.revogar(settings, id, dono)
+    except cofre.CofreCorrompido as exc:
+        raise _cofre_ilegivel(exc) from exc
+    if not revogada:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Chave nao encontrada.")
     return {"revogada": True}

@@ -139,6 +139,29 @@ describe("identidade nas chamadas", () => {
     expect((pedido![1].headers as Record<string, string>).Authorization).toBe("Bearer t1");
   });
 
+  it("emite a chave com um token buscado na hora, e nao o guardado", async () => {
+    // A API recusa emissao com token de mais de dois minutos. O token em
+    // memoria pode ter quatro -- entao emitir busca outro antes.
+    let emitidos = 0;
+    const chamadas: [string, RequestInit][] = [];
+    vi.stubGlobal("fetch", vi.fn(async (u: string, init: RequestInit) => {
+      chamadas.push([String(u), init]);
+      if (String(u).includes("/api/token/")) {
+        emitidos += 1;
+        return respostaFalsa(200, { token: `t${emitidos}`, validade: 300 });
+      }
+      return respostaFalsa(200, { chave: {}, texto: "fit_x", url: "u" });
+    }));
+
+    const { api: cliente } = await comIdentidade();
+    await cliente.chaves();
+    await cliente.emitirChave("Claude");
+
+    expect(emitidos).toBe(2);
+    const emissao = chamadas.find(([u, i]) => u === "/api/chaves" && i.method === "POST");
+    expect((emissao![1].headers as Record<string, string>).Authorization).toBe("Bearer t2");
+  });
+
   it("falha de rede no token vira ApiError com mensagem propria", async () => {
     vi.stubGlobal("fetch", vi.fn(async (u: string) => {
       if (String(u).includes("/api/token/")) return respostaFalsa(502, {});

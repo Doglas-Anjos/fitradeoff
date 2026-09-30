@@ -272,3 +272,23 @@ def test_fluxo_completo_pelo_agente(service):
     estado = service.state(criada_id["id"])
     assert estado["declaracoes"] == 2
     assert estado["consistente"]
+
+
+def test_criar_pelo_chat_respeita_o_teto_do_acervo(service):
+    """O chat e mais um caminho de criacao: passa pelo mesmo teto (injetado)."""
+    from fitradeoff_mcp.teto import AcervoCheio
+
+    def cheio():
+        raise AcervoCheio("Seu acervo chegou ao limite de 1 decisoes.")
+
+    agente = montar(service, [
+        RespostaFalsa(
+            content=[BlocoFerramenta("criar_problema", CRIAR)], stop_reason="tool_use"
+        ),
+        RespostaFalsa(content=[BlocoTexto("Acervo cheio.")]),
+    ])
+    agente._antes_de_criar = cheio  # noqa: SLF001
+    turno = agente.conversar([{"role": "user", "content": "x"}])
+
+    assert "limite" in turno.ferramentas[0]["resultado"]["erro"]
+    assert service.list() == []

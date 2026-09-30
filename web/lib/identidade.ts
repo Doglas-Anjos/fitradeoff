@@ -132,9 +132,15 @@ async function buscar(): Promise<string | null> {
   return token;
 }
 
-/** O token de agora, buscando ou renovando se preciso. `null` = sem sessao. */
-export async function obter(): Promise<string | null> {
+/** O token de agora, buscando ou renovando se preciso. `null` = sem sessao.
+ *
+ *  `novo: true` descarta o token em memoria e busca outro, mesmo valido. Serve
+ *  para a emissao de chave, que a API so aceita com token emitido ha pouco:
+ *  um token de 4 minutos ainda vale, mas ja nao prova que a pessoa acabou de
+ *  estar aqui. Uma busca ja em curso serve -- comecou agora. */
+export async function obter(opcoes?: { novo?: boolean }): Promise<string | null> {
   if (!identidadeLigada()) return null;
+  if (opcoes?.novo && !buscando) vence = 0;
   if (valido()) return token;
   if (buscando) return buscando;
 

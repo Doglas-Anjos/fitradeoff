@@ -236,8 +236,13 @@ class DecisionAgent:
         api_key: str,
         model: str,
         em_vaga: Callable[[Callable[[], Any]], Any] | None = None,
+        antes_de_criar: Callable[[], None] | None = None,
     ) -> None:
         self._service = service
+        # O teto de decisoes do acervo (deps.conferir_teto). Injetado, e nao
+        # calculado aqui, porque o agente nao sabe de quem e o acervo: quem o
+        # monta sabe. Sem ele (testes, uso direto), nao ha teto.
+        self._antes_de_criar = antes_de_criar or (lambda: None)
         self._client = anthropic.Anthropic(api_key=api_key)
         self._model = model
         # Roda cada ferramenta com uma vaga de calculo da pessoa. So a
@@ -248,9 +253,10 @@ class DecisionAgent:
     def _executar(self, nome: str, args: dict) -> Any:
         """Traduz a chamada da ferramenta para o caso de uso correspondente."""
         s = self._service
-        despacho = {
-            "listar_problematicas": lambda: s.problematics(),
-            "criar_problema": lambda: s.create(
+
+        def criar() -> Any:
+            self._antes_de_criar()
+            return s.create(
                 nome=args["nome"],
                 alternativas=args["alternativas"],
                 criterios=args["criterios"],
@@ -258,7 +264,11 @@ class DecisionAgent:
                 problematica=args.get("problematica") or "escolha",
                 configuracao=args.get("configuracao"),
                 custos=args.get("custos"),
-            ),
+            )
+
+        despacho = {
+            "listar_problematicas": lambda: s.problematics(),
+            "criar_problema": criar,
             "listar_problemas": lambda: {"decisoes": s.list()},
             "ver_problema": lambda: s.describe(args["id"]),
             "ordenar_criterios": lambda: s.rank_criteria(args["id"], args["ordem"]),

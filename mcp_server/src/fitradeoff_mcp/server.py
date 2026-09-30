@@ -31,6 +31,8 @@ from fitradeoff.solvers import HighsLinearSolver
 from fitradeoff.solvers.base import InfeasibleWeightSpace
 from mcp.server.mcpserver import MCPServer
 
+from . import teto
+
 INSTRUCTIONS = """\
 Multi-criteria decision support with the FITradeoff method (de Almeida et al.,
 2016). The person you are helping is "the decision maker" (DM).
@@ -417,7 +419,15 @@ def create_problem(
     custos: list[float] | None = None,
     limiar_de_equivalencia: float | None = None,
 ) -> dict:
-    return service().create(
+    servico = service()
+    # O mesmo teto da API (fitradeoff_mcp.teto): o assistente conectado por
+    # chave cria no acervo da pessoa por aqui, sem passar pelas rotas.
+    com_banco = bool(os.environ.get("FITRADEOFF_DATABASE_URL"))
+    teto.conferir(
+        storage_directory(),
+        contar=(lambda: len(servico.list())) if com_banco else None,
+    )
+    return servico.create(
         nome=nome,
         alternativas=alternativas,
         criterios=criterios,

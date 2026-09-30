@@ -84,6 +84,23 @@ describe("obter", () => {
     expect(buscar).toHaveBeenCalledTimes(1);
   });
 
+  it("com `novo`, busca outro token mesmo com o atual ainda valido", async () => {
+    // A emissao de chave exige token recem-emitido: o de 4 minutos atras ainda
+    // vale para o resto da tela, mas nao para isso.
+    const buscar = vi
+      .fn()
+      .mockResolvedValueOnce(resposta({ token: "t1", validade: 300 }))
+      .mockResolvedValueOnce(resposta({ token: "t2", validade: 300 }));
+    vi.stubGlobal("fetch", buscar);
+    const id = await carregar();
+
+    expect(await id.obter()).toBe("t1");
+    expect(await id.obter({ novo: true })).toBe("t2");
+    // E o novo passa a ser o de todo mundo, sem terceira busca.
+    expect(await id.obter()).toBe("t2");
+    expect(buscar).toHaveBeenCalledTimes(2);
+  });
+
   it("devolve null quando o FasorX diz que nao ha sessao", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => resposta({ erro: "sem sessao" }, 401)));
     const id = await carregar();

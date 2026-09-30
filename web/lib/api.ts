@@ -42,6 +42,8 @@ export interface Chave {
   prefixo: string;
   criada_em: string;
   ultimo_uso: string | null;
+  /** Quando deixa de abrir o acervo. `null`: chave do dono que nao vence. */
+  expira_em: string | null;
 }
 
 export interface Conexao {
@@ -382,8 +384,16 @@ export const api = {
   chaves: () => request<Conexao>("/api/chaves"),
 
   /** A única resposta da API que traz o texto de uma chave. */
-  emitirChave: (rotulo: string) =>
-    post<{ chave: Chave; texto: string; url: string }>("/api/chaves", { rotulo }),
+  // Token recem-buscado antes de emitir: a API so aceita emissao com token de
+  // ate dois minutos, para que um token vazado nos seus 5 minutos de vida nao
+  // vire credencial de 90 dias. A falha de rede daqui e ignorada de proposito --
+  // o `post` pede o token de novo e traduz o erro do jeito de sempre.
+  emitirChave: async (rotulo: string) => {
+    await identidade.obter({ novo: true }).catch(() => null);
+    return post<{ chave: Chave; texto: string; url: string }>("/api/chaves", {
+      rotulo,
+    });
+  },
 
   revogarChave: (id: string) =>
     request<{ revogada: boolean }>(`/api/chaves/${id}`, { method: "DELETE" }),

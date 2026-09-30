@@ -28,6 +28,7 @@ from fitradeoff.repositories import (
 )
 from fitradeoff.solvers import HighsLinearSolver
 from fitradeoff.solvers.base import InfeasibleWeightSpace
+from fitradeoff_mcp import teto
 from fitradeoff_mcp.vagas import Cheio, Ocupado
 
 from . import identidade
@@ -198,6 +199,20 @@ def get_service_leve(
     return montar_servico(caminho, settings)
 
 
+def conferir_teto(caminho: Path, settings: Settings, service: DecisionService) -> None:
+    """Recusa criar decisao num acervo de pessoa que ja chegou ao teto.
+
+    Com arquivos, conta os ``*.json`` do diretorio sem abrir nenhum. Com banco
+    o diretorio fica vazio -- ele so diz de quem sao as linhas --, entao a
+    contagem vem do repositorio. Ver ``fitradeoff_mcp.teto``.
+    """
+    teto.conferir(
+        caminho,
+        settings.max_decisoes_por_pessoa,
+        contar=(lambda: len(service.list())) if settings.database_url else None,
+    )
+
+
 #: Servico de uma rota que calcula. ``scope="function"``: a vaga e devolvida
 #: quando a rota termina, e nao depois de a resposta chegar ao cliente -- um
 #: cliente lento baixando a exportacao nao segura vaga de calculo.
@@ -221,6 +236,11 @@ def translate(exc: Exception) -> HTTPException:
     if isinstance(exc, ConcurrentModification):
         # 409 e nao 500: nada quebrou, outra janela chegou primeiro. A tela
         # rele a decisao e mostra o que mudou.
+        return HTTPException(status.HTTP_409_CONFLICT, str(exc))
+    if isinstance(exc, teto.AcervoCheio):
+        # Antes do LimitExceeded, de quem e filho: 413 diria que o PEDIDO e
+        # grande demais, e o que esta cheio e o acervo. 409, e nao 429: esperar
+        # e tentar de novo nao resolve.
         return HTTPException(status.HTTP_409_CONFLICT, str(exc))
     if isinstance(exc, LimitExceeded):
         return HTTPException(status.HTTP_413_CONTENT_TOO_LARGE, str(exc))

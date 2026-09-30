@@ -31,7 +31,7 @@ CABECALHOS = {
     "Content-Type": "application/json",
 }
 
-FERRAMENTAS_ESPERADAS = 14
+FERRAMENTAS_ESPERADAS = 19
 
 
 def pedido(metodo: str, **parametros) -> dict:

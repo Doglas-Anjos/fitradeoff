@@ -18,6 +18,7 @@ from ..solvers.base import InfeasibleWeightSpace
 from .dto import (
     AnalysisDTO,
     AuditDTO,
+    ConflitoDTO,
     CriterionDTO,
     ProblemDTO,
     QuestionDTO,
@@ -29,6 +30,10 @@ from .dto import (
 # Sem nome de ferramenta: o motor e usado pelo MCP (`rank_criteria`) e pelo chat
 # da tela (`ordenar_criterios`), e cada um ja diz nas proprias instrucoes qual
 # ferramenta registra a ordem. Um nome aqui estaria errado para um dos dois.
+#: As problematicas de carteira: nelas o custo entra na conta, e nem a dominancia
+#: nem a lideranca por criterio dizem quem cabe no orcamento.
+CARTEIRAS = frozenset({"portfolio", "beneficio_custo"})
+
 PROXIMO_PASSO = (
     "Peça ao decisor que ordene os critérios do mais para o menos importante e "
     "registre essa ordem."
@@ -89,6 +94,101 @@ def pareto_dominance(problem: Problem) -> list[dict]:
     return dominadas
 
 
+LEITURA_DO_CONFLITO = (
+    "Onde as alternativas disputam entre si, antes de qualquer peso. "
+    "`melhor_por_criterio` diz quem lidera cada critério; "
+    "`vantagens_por_alternativa`, em que cada uma é a melhor. Mostre isso ao "
+    "decisor como uma tabela critérios × alternativas: é onde estão os "
+    "trade-offs que as perguntas vão explorar. `sem_vantagem_propria` não "
+    "lidera critério nenhum e só vence como meio-termo, com os pesos "
+    "espalhados. `lider_amplo` é a melhor na maioria dos critérios que "
+    "diferenciam: com estes critérios haverá pouca disputa e poucas perguntas, "
+    "e o resultado sairá mais dos dados que das preferências do decisor. Diga "
+    "isso a ele e pergunte se faltam critérios em que ela perde, antes de "
+    "seguir. `criterios_que_nao_diferenciam` têm o mesmo desempenho em todas "
+    "as alternativas e não pesam em nada."
+)
+
+#: Numa matriz grande, as listas de nomes encheriam o contexto de quem le. O
+#: total vem sempre ao lado.
+NOMES_LISTADOS = 30
+
+
+def mapa_de_conflito(problem: Problem) -> ConflitoDTO:
+    """Em que criterio cada alternativa e a melhor, e onde nao ha disputa.
+
+    O metodo so pergunta onde ha conflito. Uma matriz em que a mesma alternativa
+    lidera quase tudo se resolve com uma ou duas perguntas -- e o decisor sai
+    com a impressao de que o metodo decidiu por ele, quando quem decidiu foi a
+    escolha dos criterios. Isto mostra essa situacao ANTES das perguntas, para
+    que a conversa aconteca quando ainda da para acrescentar criterio.
+
+    Sai da matriz de valor, como a dominancia: direcao, escala construida e
+    curva ja resolvidas, maior e sempre melhor. Empate no topo conta como
+    lideranca das duas.
+    """
+    valores = problem.values
+    n_alt, _ = valores.shape
+    topo = valores.max(axis=0)
+    lidera = np.isclose(valores, topo[None, :], rtol=0.0, atol=1e-9)
+    diferencia = ~np.isclose(topo, valores.min(axis=0), rtol=0.0, atol=1e-9)
+    nomes = [c.name for c in problem.criteria]
+
+    melhor_por_criterio = []
+    for j in np.flatnonzero(diferencia):
+        quem = np.flatnonzero(lidera[:, j])
+        melhor_por_criterio.append(
+            {
+                "criterio": nomes[j],
+                "melhores": problem.names_of(quem[:DOMINANTES_LISTADOS]),
+                "total_de_melhores": int(quem.size),
+            }
+        )
+
+    lideranca = lidera & diferencia[None, :]
+    contagem = lideranca.sum(axis=1)
+    com_vantagem = np.flatnonzero(contagem > 0)
+    sem_vantagem = np.flatnonzero(contagem == 0)
+
+    # Lider amplo: melhor em mais da metade dos criterios que diferenciam. Uma
+    # dominada nao entra -- ela empata no topo com quem a domina, e o aviso
+    # sobre ela ja vem em `dominadas`.
+    dominadas = {d["alternativa"] for d in pareto_dominance(problem)}
+    n_diferenciam = int(diferencia.sum())
+    lider_amplo = []
+    if n_diferenciam >= 3 and n_alt >= 3:
+        for a in np.flatnonzero(contagem * 2 > n_diferenciam):
+            if problem.alternatives[a] in dominadas:
+                continue
+            lider_amplo.append(
+                {
+                    "alternativa": problem.alternatives[a],
+                    "melhor_em": int(contagem[a]),
+                    "de": n_diferenciam,
+                    "perde_em": [
+                        nomes[j] for j in np.flatnonzero(diferencia & ~lidera[a])
+                    ],
+                }
+            )
+
+    return ConflitoDTO(
+        melhor_por_criterio=melhor_por_criterio,
+        vantagens_por_alternativa=[
+            {
+                "alternativa": problem.alternatives[a],
+                "melhor_em": [nomes[j] for j in np.flatnonzero(lideranca[a])],
+            }
+            for a in com_vantagem[:NOMES_LISTADOS]
+        ],
+        total_com_vantagem=int(com_vantagem.size),
+        sem_vantagem_propria=problem.names_of(sem_vantagem[:NOMES_LISTADOS]),
+        total_sem_vantagem=int(sem_vantagem.size),
+        criterios_que_nao_diferenciam=[nomes[j] for j in np.flatnonzero(~diferencia)],
+        lider_amplo=lider_amplo,
+        leitura=LEITURA_DO_CONFLITO,
+    )
+
+
 LEITURA_DA_TRILHA = (
     "Cada restrição saiu de uma declaração do decisor. Uma alternativa é "
     "descartada quando não existe nenhum conjunto de pesos compatível com todas "
@@ -140,6 +240,11 @@ def problem_dto(record: DecisionRecord) -> ProblemDTO:
         ),
         configuracao=record.settings,
         declaracoes_registradas=len(record.log),
+        conflito=(
+            None
+            if record.problematic_key in CARTEIRAS
+            else mapa_de_conflito(problem)
+        ),
     )
 
 

@@ -128,11 +128,35 @@ whatever layout, map its columns to criteria yourself, infer the direction
 where it is obvious (a cost goes down, a yield goes up) and ask only about the
 ambiguous ones; do not ask what is already written there.
 
+Do not narrow the alternatives yourself beyond the DM's hard constraints
+(budget, mandatory requirements, vetoes). Eliminating is the method's job, and
+it does so with the DM's preferences: register the candidates and, afterwards,
+say how many it eliminated and why. When the DM asks for more options, add
+them -- do not come back with fewer than they had.
+
+Choose criteria that DISCRIMINATE between the alternatives. A criterion only
+matters if the alternatives differ on it, and the questions only happen where
+alternatives trade one criterion for another. When you propose the criteria,
+include the ones on which the likely favourite is weak, not only the ones that
+describe what the DM asked for.
+
 When `create_problem` returns `dominadas`, those alternatives are worse than or
 equal to another on every criterion: no weights can make them win. Tell the DM
 right away, before any question, and offer to remove them. Removing means
 calling `create_problem` again without them; before the first question that
 costs the DM nothing, and it shrinks the problem.
+
+`create_problem` and `get_problem` also return `conflito` (except in the
+portfolio problematics, where cost decides what fits): where each alternative
+is the best, before any weight. Show it to the DM as a criteria ×
+alternatives table -- it is where the trade-offs are, and what the questions
+will explore. If `lider_amplo` is not empty, one alternative is the best on
+most criteria: with these criteria there will be little to ask, and the result
+will come from the data more than from the DM's preferences. Say so in plain
+words, name the criteria where it loses (`perde_em`), and ask whether criteria
+are missing on which it would be worse (for a car: engine, equipment, safety,
+maintenance). Adding them now costs nothing; after the questions it means
+starting over.
 
 ## Protocol, in this order
 
@@ -146,6 +170,13 @@ costs the DM nothing, and it shrinks the problem.
 3. Repeat `next_question` -> `answer` until the process ends, or until the depth
    the DM chose.
 4. `status` at any time; `explain` to justify the result.
+
+The order alone often eliminates many alternatives. When it leaves only one or
+two of several, tell the DM before any question: which were eliminated, and
+that their advantages (see `conflito`) were on criteria they ranked lower, so
+no weights consistent with their order make them win. If that surprises the
+DM, the criteria or the order may not say what they meant -- offer to review
+them before going on.
 
 When presenting a question, reproduce both options in full, with every
 criterion and its unit. Both situations are hypothetical and deliberately bad in
@@ -163,6 +194,20 @@ your own unless they asked for a quick answer.
 When showing the result, use tables for alternatives and ranges, never raw
 JSON, and never show internal ids unless the DM asks.
 
+## Other tools
+
+- Contradicting statements: when a result comes back with `consistente:
+  false`, call `diagnose_inconsistency`, show the DM the statements in
+  conflict and the exits, and apply the one they choose with
+  `resolve_inconsistency`.
+- Uncertain data (prices from ads, specs, forecasts): offer
+  `consequence_sensitivity` before the DM acts on the result, to check whether
+  it survives the error in the numbers.
+- Value that does not grow evenly with performance: `set_value_curve`, before
+  `rank_criteria`.
+- In `ranking`, pairs left incomparable: `max_differences` shows whether the
+  dispute is real or too small to matter.
+
 ## Starting over is a new decision
 
 If the DM asks to start again, or changes the alternatives or the constraints,
@@ -170,6 +215,13 @@ create another problem with `create_problem` and redo the understanding of the
 case to the extent that it changed. Nothing from the previous decision --
 alternatives, criteria, order of importance -- carries over without their
 confirmation.
+
+A registered problem cannot be edited: adding alternatives or criteria is a new
+`create_problem`. Keep everything the DM already accepted -- the alternatives
+from before plus the new ones, the criteria, and the order of importance -- and
+propose it for confirmation, asking only where the new criteria go in the
+order. Tell the DM that the trade-off answers do not carry over: they were
+given about a different set of alternatives.
 
 ## Approximate results
 
@@ -384,7 +436,8 @@ def list_problems() -> dict:
 
 @tool(
     "Shows the problem: criteria with their best and worst performance, the "
-    "consequence matrix and the configuration."
+    "consequence matrix, the configuration and, outside the portfolio "
+    "problematics, `conflito` -- where each alternative is the best."
 )
 def get_problem(id: str) -> dict:
     return service().describe(id)
@@ -490,6 +543,79 @@ def set_equivalence_threshold(id: str, limiar: float | None = None) -> dict:
 )
 def sensitivity_analysis(id: str, limiares: list[float]) -> dict:
     return service().sensitivity(id, limiares)
+
+
+@tool(
+    "What if the numbers in the matrix are somewhat wrong? Varies the "
+    "consequences of the chosen criteria within a percentage range and "
+    "reprocesses the decision in many scenarios, keeping every answer the "
+    "decision maker gave. Use it when the data are estimates -- prices from "
+    "ads, consumption from spec sheets, forecasts -- to show whether the "
+    "result survives the error. `variacoes` is a list of objects with "
+    "`criterio` (the criterion key), `para_baixo` and `para_cima` (percent, "
+    "default 10). `cenarios` defaults to 200. Requires the order of the "
+    "criteria. Not the same as `sensitivity_analysis`, which varies the slack "
+    "between weights, not the data."
+)
+def consequence_sensitivity(
+    id: str, variacoes: list[dict], cenarios: int = 200
+) -> dict:
+    return service().consequence_sensitivity(id, variacoes, cenarios=cenarios)
+
+
+@tool(
+    "Finds which statements of the decision maker contradict each other and "
+    "what can be done about it. Call it when a result comes back with "
+    "`consistente: false`: no weights satisfy everything that was said. "
+    "Present the conflicting statements and the exits (`saidas`) to the "
+    "decision maker in plain words, and let them choose -- never pick one "
+    "yourself."
+)
+def diagnose_inconsistency(id: str) -> dict:
+    return service().diagnose(id)
+
+
+@tool(
+    "Applies the exit the decision maker chose for an inconsistency: `acao` "
+    "is 'desfazer' (undo the last statement), 'inverter' (swap the last answer "
+    "for the opposite option) or 'remover' (drop the statement numbered "
+    "`sequencia`, as given in the chosen exit, and replay the others). Only "
+    "apply an exit the diagnosis offered. When it offers 'reordenar', the exit "
+    "is to call "
+    "`rank_criteria` again, which restarts the elicitation."
+)
+def resolve_inconsistency(
+    id: str, acao: str, sequencia: int | None = None
+) -> dict:
+    return service().resolve_inconsistency(id, acao, sequencia)
+
+
+@tool(
+    "Only in the `ranking` problematic: for pairs of alternatives still "
+    "incomparable, the largest difference in global value each could have "
+    "over the other under the weights still possible. Use it to show the "
+    "decision maker whether an unresolved pair is a real dispute or a "
+    "difference too small to matter."
+)
+def max_differences(id: str) -> dict:
+    return service().max_differences(id)
+
+
+@tool(
+    "Sets a non-linear value curve for one criterion, for when the decision "
+    "maker says value does not grow evenly with performance ('above 500 L the "
+    "extra space hardly matters', 'the first 10 km/l matter most'). `pontos` "
+    "are [consequence, value] pairs sorted by consequence, value from 0 to 1, "
+    "monotonic, including the worst performance (value 0) and the best (value "
+    "1); straight segments join the points. Null returns to the linear "
+    "scale. Only before `rank_criteria`: changing the scale afterwards would "
+    "invalidate the answers already given. Propose the curve from what the "
+    "decision maker said and ask for confirmation."
+)
+def set_value_curve(
+    id: str, criterio: str, pontos: list[list[float]] | None = None
+) -> dict:
+    return service().set_value_curve(id, criterio, pontos)
 
 
 def main() -> None:

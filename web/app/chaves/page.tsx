@@ -31,6 +31,7 @@ import {
   Trash,
   Warning,
 } from "@phosphor-icons/react";
+import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
 
 import { avisar } from "@/components/Avisos";
@@ -44,6 +45,65 @@ import { dataHoraLocal } from "@/lib/datas";
 type Cliente = "claude" | "code" | "editor";
 
 const CLIENTES: Cliente[] = ["claude", "code", "editor"];
+
+/** As telas do passo a passo no Claude. Largura e altura reais de cada captura:
+ *  o navegador reserva o espaco antes de a imagem chegar, e a pagina nao pula
+ *  enquanto elas carregam. */
+const PASSOS_CLAUDE = [
+  { n: 1, arquivo: "1-adicionar-conector", largura: 804, altura: 683 },
+  { n: 2, arquivo: "2-autenticacao", largura: 808, altura: 1378 },
+  { n: 3, arquivo: "3-permissoes", largura: 1231, altura: 1099 },
+  { n: 4, arquivo: "4-primeiro-uso", largura: 1297, altura: 920 },
+] as const;
+
+/** Passo a passo no Claude (web e aplicativo), com as telas.
+ *
+ *  Recolhido por padrao: quem ja conectou um conector antes so precisa da URL,
+ *  e quatro capturas grandes empurrariam o resto da pagina para baixo. Quem
+ *  nunca fez abre e segue. */
+function TutorialClaude() {
+  const { t } = useIdioma();
+  return (
+    <details
+      className="mt-4 rounded-[var(--raio-controle)] border"
+      style={{ borderColor: "var(--borda)" }}
+    >
+      <summary
+        className="tatil cursor-pointer select-none px-4 py-3 text-[13px] font-semibold"
+        style={{ color: "var(--tinta)" }}
+      >
+        {t("tela.chaves.claude.tutorial")}
+      </summary>
+      <ol className="space-y-7 px-4 pb-5 pt-2">
+        {PASSOS_CLAUDE.map((p) => (
+          <li key={p.n}>
+            <p className="text-sm font-semibold" style={{ color: "var(--tinta)" }}>
+              <span className="num mr-2" style={{ color: "var(--accent)" }}>
+                {p.n}.
+              </span>
+              {t(`tela.chaves.claude.passo${p.n}.titulo`)}
+            </p>
+            <p className="prosa mt-1 text-[13px]" style={{ color: "var(--tinta-2)" }}>
+              {t(`tela.chaves.claude.passo${p.n}.texto`)}
+            </p>
+            <Image
+              src={`/tutorial/claude/${p.arquivo}.webp`}
+              alt={t(`tela.chaves.claude.passo${p.n}.alt`)}
+              width={p.largura}
+              height={p.altura}
+              /* Teto de largura por imagem: a captura alta da autenticacao, em
+                 largura total, ocuparia duas telas de rolagem. */
+              className="mt-3 h-auto w-full max-w-[34rem] rounded-[var(--raio-controle)] border"
+              style={{ borderColor: "var(--borda)" }}
+              sizes="(max-width: 640px) 100vw, 34rem"
+              loading="lazy"
+            />
+          </li>
+        ))}
+      </ol>
+    </details>
+  );
+}
 
 
 function BotaoCopiar({ texto, rotuloAcessivel }: { texto: string; rotuloAcessivel: string }) {
@@ -340,6 +400,7 @@ export default function ChavesPage() {
             {t("tela.chaves.claude.nota")}
           </p>
         )}
+        {cliente === "claude" && <TutorialClaude />}
 
         <p className="prosa mt-4 text-[13px]" style={{ color: "var(--tinta-3)" }}>
           {t("tela.chaves.conectar.conferir")}

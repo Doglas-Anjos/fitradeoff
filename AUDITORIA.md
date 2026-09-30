@@ -21,7 +21,7 @@ tela são cascas que não tomam decisão de método nenhuma.
 | **Modelo aditivo, escala de valor intra-critério** | [`domain/scales.py`](engine/src/fitradeoff/domain/scales.py) | Convenção MAVT: `v = 1` na melhor consequência, `0` na pior. `ContinuousScale` é a normalização linear; `PiecewiseScale` é a curva elicitada, quando o decisor levantou uma |
 | **Ordenação das constantes de escala** | [`domain/preferences.py`](engine/src/fitradeoff/domain/preferences.py) (`CriteriaRanking`) → [`domain/weights.py`](engine/src/fitradeoff/domain/weights.py) (`ordering_constraints`) | Vira `k[i] − k[j] ≥ ε` para pares consecutivos na ordem declarada |
 | **Elicitação por decomposição** (a pergunta de tradeoff) | [`elicitation/questions.py`](engine/src/fitradeoff/elicitation/questions.py) | `TradeoffQuestion` é o par e o ponto; `Bracket` é a busca binária sobre a razão `k_rival / k_criterio`; `QuestionPresenter` traduz para reais e dias |
-| **Qual pergunta fazer em seguida** | [`elicitation/selectors.py`](engine/src/fitradeoff/elicitation/selectors.py) | `WidestBracketSelector` é o padrão: ataca o par de maior incerteza. Com a abertura respondida B, o oficial escolhe os pares em outra ordem — uma das três diferenças que restam (seção 6) |
+| **Qual pergunta fazer em seguida** | [`elicitation/selectors.py`](engine/src/fitradeoff/elicitation/selectors.py) | `WidestBracketSelector` é o padrão: ataca o par de maior incerteza. Com a abertura respondida B, o oficial escolhe os pares em outra ordem — uma das duas diferenças que restam (seção 6) |
 | **A resposta vira restrição** | `domain/preferences.py` (`TradeoffAnswer`) → `domain/weights.py` (`tradeoff_coefficients`) | A: `value·k[foco] ≥ k[rival]`; B: o contrário; indiferença: igualdade; "não sei": **nenhuma** restrição |
 | **Espaço de pesos** | [`domain/weights.py`](engine/src/fitradeoff/domain/weights.py) | Só as restrições vindas de declarações. Soma igual a 1 e não negatividade pertencem ao modelo e entram no solver ([`solvers/base.py::build_rows`](engine/src/fitradeoff/solvers/base.py)) |
 | **Teste de alternativa potencialmente ótima (POA), por LP** | [`problematics/evaluator.py`](engine/src/fitradeoff/problematics/evaluator.py) (`is_potentially_optimal`, `potentially_optimal`) | Um LP por alternativa: existe vetor de pesos viável que a coloque à frente de todas? |
@@ -148,9 +148,9 @@ os critérios).
 python -m venv engine/.venv
 engine/.venv/Scripts/python -m pip install -e engine[dev] -e mcp_server -e api
 
-engine/.venv/Scripts/python -m pytest engine/tests api/tests -q   # 736
-engine/.venv/Scripts/python -m pytest mcp_server/tests -q         # 69
-cd web && npm install && npm test -- --run                        # 512
+engine/.venv/Scripts/python -m pytest engine/tests api/tests -q   # 851
+engine/.venv/Scripts/python -m pytest mcp_server/tests -q         # 80
+cd web && npm install && npm test -- --run                        # 565
 ```
 
 Entre eles há um **decisor-oráculo** que verifica a invariante central do método — a
@@ -170,7 +170,7 @@ A suíte vive em [`paridade/`](paridade/) e **não** é reproduzida aqui: o
 armadilhas do sistema de referência. Em resumo:
 
 ```bash
-python -m pytest paridade/          # 125 testes; confere o motor contra a medição gravada
+python -m pytest paridade/          # 179 testes; confere o motor contra a medição gravada
 ```
 
 Isso roda sem rede e sem conta, porque o lado oficial está versionado em
@@ -197,12 +197,11 @@ O que um auditor deve saber que **não** está garantido:
   nos dois lados. Não foi esquecimento: o módulo Portfolio Combinatorial do oficial roda num
   deploy separado que não elicita em sessão — enumera as carteiras offline e avisa por
   e-mail. Não há percurso para percorrer lado a lado.
-- **Três diferenças de percurso permanecem**, em 10 dos 73 casos comparáveis, todas
+- **Duas diferenças de percurso permanecem**, em 6 dos 73 casos comparáveis, todas
   declaradas no registro de casos (`divergencia`, com o nosso número e o porquê) e presas
   em `paridade/test_paridade.py` — fechá-las quebra o teste de propósito:
   - **abertura respondida B**: os valores das perguntas batem, a ordem dos pares não; em
     dois dos quatro casos a contagem também muda;
-  - **ordenar 7 critérios**: 15 comparações dele contra 14 nossas, chegando à mesma ordem;
   - **um par a menos de 0,4% do limiar de 0,01**: uma pergunta a mais num caso, a menos no
     outro.
 

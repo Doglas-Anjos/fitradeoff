@@ -541,3 +541,28 @@ def test_caso_medido_bate_com_o_oficial(caso):
     assert nosso["ordenacao"] == oficial["ordenacao"]
     if "pares" in oficial:
         assert nosso["pares"] == oficial["pares"]
+
+
+@pytest.mark.parametrize(
+    "caso",
+    [c for c in _REGISTRO if c["oficial"].get("tela_final")],
+    ids=lambda c: c["chave"],
+)
+def test_caso_medido_chega_a_mesma_conclusao_do_oficial(caso):
+    """A contagem diz se o caminho e o mesmo; isto, se o lugar de chegada e.
+
+    O lado oficial sai da tela final guardada no registro, pelos leitores de
+    ``extrair.py``: o vencedor na escolha, o tipo de ordem no ranking, a classe
+    de cada alternativa no sorting, a carteira no beneficio-custo. Tela que nao
+    da para ler nao conta como acerto nem como erro. Um caso com divergencia
+    conhecida de caminho pode chegar a outro lugar; os demais, nao.
+    """
+    import desfecho
+
+    d = desfecho.desfecho(caso, caso["problematica"], _medidos.roda(caso)["analise"],
+                          caso["oficial"]["tela_final"])
+    if d["bate"] is None:
+        pytest.skip("tela final do oficial ilegivel neste caso")
+    if "divergencia" in caso:
+        return
+    assert d["bate"], "nosso: %s | oficial: %s" % (d["nosso"], d["oficial"])

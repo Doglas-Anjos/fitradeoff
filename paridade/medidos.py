@@ -11,10 +11,23 @@ velho. "entre-niveis" e a tela propria de criterio discreto do oficial.
 from __future__ import annotations
 
 import json
-import math
 import pathlib
 
 ARQUIVO = pathlib.Path(__file__).resolve().parent / "resultados" / "casos_medidos.json"
+
+
+def comparacoes_de_ordenacao(n_criterios: int) -> int:
+    """Quantas comparacoes a ordenacao par a par faz com as respostas sempre A.
+
+    A ordenacao vive no front (``web/lib/ordenacaoPorComparacao.ts``) e segue o
+    procedimento do oficial, lido nas telas dele em 30/09/2026: cada criterio
+    novo e comparado com o do meio da lista ja ordenada (posicao (n-1)//2) e,
+    se fica abaixo, desce um a um ate o fim. Com as respostas sempre A o novo
+    sempre fica abaixo de todos, entao inserir numa lista de n custa
+    ``n - (n-1)//2``. Da 1, 3, 5, 8, 11, 15 de 2 a 7 criterios -- igual a
+    insercao binaria ate 6 e uma a mais com 7, que era a diferenca medida.
+    """
+    return sum(n - (n - 1) // 2 for n in range(1, n_criterios))
 
 
 def carregar() -> list[dict]:
@@ -53,8 +66,7 @@ def roda(caso: dict) -> dict:
         servico.answer(d, respostas[len(pares) - 1])
     k = len(caso["criterios"])
     return {
-        # a ordenacao par a par vive no front (insercao com busca binaria)
-        "ordenacao": sum(math.ceil(math.log2(i + 1)) for i in range(1, k)),
+        "ordenacao": comparacoes_de_ordenacao(k),
         "tradeoff": len(pares),
         "pares": pares,
         "analise": servico.state(d).get("analise", {}),

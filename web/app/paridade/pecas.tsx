@@ -402,9 +402,11 @@ export function ParDeTelas({
   );
 }
 
-function Passos({ par }: { par: { ordenacao: number; tradeoff: number } | null }) {
+/** Uma contagem. A nossa sai em cor de aviso quando difere da do oficial —
+ *  a diferença tem de saltar aos olhos, e não depender de comparar de cabeça. */
+function Contagem({ valor, difere }: { valor: number | null; difere?: boolean }) {
   const { t } = useIdioma();
-  if (!par) {
+  if (valor === null) {
     return (
       <span className="text-[12px]" style={{ color: "var(--aviso)" }}>
         {t("paridade.tabela.trava")}
@@ -412,8 +414,15 @@ function Passos({ par }: { par: { ordenacao: number; tradeoff: number } | null }
     );
   }
   return (
-    <span className="num text-[13px]" style={{ color: "var(--tinta-2)" }}>
-      {par.ordenacao} / {par.tradeoff}
+    <span
+      className="num text-[13px]"
+      style={{
+        color: difere ? "var(--aviso)" : "var(--tinta-2)",
+        fontWeight: difere ? 600 : 400,
+      }}
+    >
+      {valor}
+      {difere && <span className="sr-only"> ({t("paridade.tabela.difere")})</span>}
     </span>
   );
 }
@@ -421,25 +430,31 @@ function Passos({ par }: { par: { ordenacao: number; tradeoff: number } | null }
 function Linha({ caso }: { caso: CasoParidade }) {
   const { t } = useIdioma();
   const naoCompleta = caso.oficial === null;
+  const o = caso.oficial;
+  const celula = "py-3 pr-4 align-top";
   return (
     <tr style={{ borderTop: "1px solid var(--borda)" }}>
-      <td className="py-2.5 pr-4">
-        <span className="text-[13px]" style={{ color: "var(--tinta)" }}>
+      <td className={`${celula} min-w-[16rem]`}>
+        <span className="num block text-[12px]" style={{ color: "var(--tinta)" }}>
           {caso.chave}
         </span>
-      </td>
-      <td className="py-2.5 pr-4">
-        <span className="num text-[12px]" style={{ color: "var(--tinta-fraca)" }}>
-          {caso.alternativas} × {caso.criterios}
+        <span className="mt-0.5 block text-[12px] leading-snug" style={{ color: "var(--tinta-fraca)" }}>
+          {caso.descricao}
         </span>
       </td>
-      <td className="py-2.5 pr-4">
-        <Passos par={caso.oficial} />
+      <td className={celula}>
+        <Contagem valor={o ? o.ordenacao : null} />
       </td>
-      <td className="py-2.5 pr-4">
-        <Passos par={caso.nosso} />
+      <td className={celula}>
+        <Contagem valor={caso.nosso.ordenacao} difere={!!o && o.ordenacao !== caso.nosso.ordenacao} />
       </td>
-      <td className="py-2.5 text-right">
+      <td className={celula} style={{ borderLeft: "1px solid var(--borda)", paddingLeft: "1rem" }}>
+        {o ? <Contagem valor={o.tradeoff} /> : <span aria-hidden>—</span>}
+      </td>
+      <td className={celula}>
+        <Contagem valor={caso.nosso.tradeoff} difere={!!o && o.tradeoff !== caso.nosso.tradeoff} />
+      </td>
+      <td className={`${celula} text-right`}>
         <Selo tom={naoCompleta ? "neutro" : caso.bate ? "accent" : "aviso"}>
           {/* Um travessao nao diz nada em leitor de tela: sai como "traco" ou
               como silencio, e a celula do veredicto fica sem veredicto. */}
@@ -459,35 +474,113 @@ function Linha({ caso }: { caso: CasoParidade }) {
   );
 }
 
-export function TabelaCasos({ casos }: { casos: CasoParidade[] }) {
+function Fase({ titulo, oficial, nosso }: { titulo: string; oficial: number | null; nosso: number }) {
   const { t } = useIdioma();
   return (
-    <>
-      <p className="mb-3 text-[12px]" style={{ color: "var(--tinta-fraca)" }}>
-        {t("paridade.tabela.legenda")}
+    <div>
+      <p className="text-[11px] leading-tight" style={{ color: "var(--tinta-3)" }}>
+        {titulo}
       </p>
+      <p className="mt-1 text-[12px]" style={{ color: "var(--tinta-fraca)" }}>
+        {t("paridade.tabela.oficial")} <Contagem valor={oficial} /> · {t("paridade.tabela.nosso")}{" "}
+        <Contagem valor={nosso} difere={oficial !== null && oficial !== nosso} />
+      </p>
+    </div>
+  );
+}
+
+function CartaoCaso({ caso }: { caso: CasoParidade }) {
+  const { t } = useIdioma();
+  const naoCompleta = caso.oficial === null;
+  return (
+    <li
+      className="rounded-[var(--raio-painel)] border px-4 py-3"
+      style={{ borderColor: "var(--borda)", background: "var(--painel)" }}
+    >
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="num text-[12px]" style={{ color: "var(--tinta)" }}>
+          {caso.chave}
+        </span>
+        <Selo tom={naoCompleta ? "neutro" : caso.bate ? "accent" : "aviso"}>
+          {naoCompleta
+            ? t("paridade.tabela.naoComparavel")
+            : caso.bate
+              ? t("paridade.tabela.bate")
+              : t("paridade.tabela.difere")}
+        </Selo>
+      </div>
+      <p className="mt-0.5 text-[12px] leading-snug" style={{ color: "var(--tinta-fraca)" }}>
+        {caso.descricao}
+      </p>
+      <div className="mt-2 grid grid-cols-2 gap-3">
+        <Fase
+          titulo={t("paridade.tabela.ordenar")}
+          oficial={caso.oficial ? caso.oficial.ordenacao : null}
+          nosso={caso.nosso.ordenacao}
+        />
+        <Fase
+          titulo={t("paridade.tabela.tradeoff")}
+          oficial={caso.oficial ? caso.oficial.tradeoff : null}
+          nosso={caso.nosso.tradeoff}
+        />
+      </div>
+    </li>
+  );
+}
+
+export function TabelaCasos({ casos }: { casos: CasoParidade[] }) {
+  const { t } = useIdioma();
+  const cabeca = "pb-2 pr-4 text-left text-[11px] font-medium uppercase tracking-wide";
+  return (
+    <>
+      <p className="prosa-editorial mb-3 text-[13px]" style={{ color: "var(--tinta-2)" }}>
+        {t("paridade.tabela.explica")}
+      </p>
+      {/* Na tela estreita a tabela de seis colunas escondia os numeros atras
+          de uma rolagem lateral: cada caso vira um cartao, com as duas fases
+          lado a lado. */}
+      <ul className="space-y-2 sm:hidden">
+        {casos.map((caso) => (
+          <CartaoCaso key={caso.chave} caso={caso} />
+        ))}
+      </ul>
       <div
-        className="overflow-x-auto rounded-[var(--raio-painel)] border px-5"
+        className="hidden overflow-x-auto rounded-[var(--raio-painel)] border px-5 sm:block"
         style={{ borderColor: "var(--borda)", background: "var(--painel)" }}
       >
         <table className="w-full">
           <thead>
             <tr>
-              {[
-                "paridade.tabela.caso",
-                "paridade.tabela.tamanho",
-                "paridade.tabela.oficial",
-                "paridade.tabela.nosso",
-              ].map((chave) => (
+              <th rowSpan={2} className={`${cabeca} pt-3 align-bottom`} style={{ color: "var(--tinta-3)" }}>
+                {t("paridade.tabela.caso")}
+              </th>
+              <th colSpan={2} className={`${cabeca} pt-3`} style={{ color: "var(--tinta-3)" }}>
+                {t("paridade.tabela.ordenar")}
+              </th>
+              <th
+                colSpan={2}
+                className={`${cabeca} pt-3`}
+                style={{ color: "var(--tinta-3)", borderLeft: "1px solid var(--borda)", paddingLeft: "1rem" }}
+              >
+                {t("paridade.tabela.tradeoff")}
+              </th>
+              <th rowSpan={2} className={`${cabeca} pt-3 text-right align-bottom`} style={{ color: "var(--tinta-3)" }}>
+                {t("paridade.tabela.resultado")}
+              </th>
+            </tr>
+            <tr>
+              {(["oficial", "nosso", "oficial", "nosso"] as const).map((lado, i) => (
                 <th
-                  key={chave}
-                  className="py-3 pr-4 text-left text-[11px] font-medium uppercase tracking-wide"
-                  style={{ color: "var(--tinta-3)" }}
+                  key={i}
+                  className="pb-3 pr-4 text-left text-[11px] font-normal"
+                  style={{
+                    color: "var(--tinta-fraca)",
+                    ...(i === 2 ? { borderLeft: "1px solid var(--borda)", paddingLeft: "1rem" } : {}),
+                  }}
                 >
-                  {t(chave)}
+                  {t(`paridade.tabela.${lado}`)}
                 </th>
               ))}
-              <th />
             </tr>
           </thead>
           <tbody>
@@ -497,6 +590,66 @@ export function TabelaCasos({ casos }: { casos: CasoParidade[] }) {
           </tbody>
         </table>
       </div>
+      <p className="mt-2 text-[12px]" style={{ color: "var(--tinta-fraca)" }}>
+        {t("paridade.tabela.legenda")}
+      </p>
     </>
+  );
+}
+
+/** O que cada lado concluiu, caso a caso: a contagem diz se os dois fizeram o
+ *  mesmo caminho; isto diz se chegaram ao mesmo lugar. */
+export function Desfechos({ casos }: { casos: CasoParidade[] }) {
+  const { t } = useIdioma();
+  return (
+    <ol className="space-y-3">
+      {casos.map((caso) => {
+        const d = caso.desfecho;
+        const tom = d.bate === null ? "neutro" : d.bate ? "accent" : "aviso";
+        const veredito =
+          d.bate === null
+            ? t("paridade.desfecho.semOficial")
+            : d.bate
+              ? t("paridade.desfecho.bate")
+              : t("paridade.desfecho.difere");
+        return (
+          <li
+            key={caso.chave}
+            className="rounded-[var(--raio-painel)] border px-4 py-3"
+            style={{ borderColor: "var(--borda)", background: "var(--painel)" }}
+          >
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <span className="num text-[12px] font-medium" style={{ color: "var(--tinta)" }}>
+                {caso.chave}
+              </span>
+              <Selo tom={tom}>{veredito}</Selo>
+            </div>
+            <p className="mt-0.5 text-[12px] leading-snug" style={{ color: "var(--tinta-fraca)" }}>
+              {caso.descricao}
+            </p>
+            <dl className="mt-2 grid gap-1.5 text-[13px] sm:grid-cols-[9rem_1fr]">
+              <dt style={{ color: "var(--tinta-3)" }}>{t("paridade.desfecho.oficial")}</dt>
+              <dd className="prosa-editorial" style={{ color: "var(--tinta-2)" }}>
+                {d.oficial ?? (
+                  <span style={{ color: "var(--tinta-fraca)" }}>{t("paridade.desfecho.naoCapturado")}</span>
+                )}
+              </dd>
+              <dt style={{ color: "var(--tinta-3)" }}>{t("paridade.desfecho.nosso")}</dt>
+              <dd className="prosa-editorial" style={{ color: "var(--tinta-2)" }}>
+                {d.nosso}
+              </dd>
+              {caso.porque && (
+                <>
+                  <dt style={{ color: "var(--aviso)" }}>{t("paridade.desfecho.porque")}</dt>
+                  <dd className="prosa-editorial" style={{ color: "var(--tinta-2)" }}>
+                    {caso.porque}
+                  </dd>
+                </>
+              )}
+            </dl>
+          </li>
+        );
+      })}
+    </ol>
   );
 }

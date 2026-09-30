@@ -7,6 +7,7 @@
 
 import { useIdioma } from "@/lib/i18n";
 import "@/lib/i18n/nucleo";
+import { AvisoNaoOficial } from "@/components/AvisoNaoOficial";
 import { MarcaFasorx } from "@/components/MarcaFasorx";
 
 const FASORX = process.env.NEXT_PUBLIC_FASORX_URL || "https://fasorx.com.br";
@@ -18,6 +19,10 @@ export function RodapeFasorx() {
       className="mt-16 border-t"
       style={{ borderColor: "var(--borda)" }}
     >
+      {/* Em toda tela, porque se chega a esta aplicacao por qualquer uma */}
+      <div className="mx-auto max-w-7xl px-5 pt-6">
+        <AvisoNaoOficial forma="rodape" />
+      </div>
       <div
         className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-5 py-6 text-xs"
         style={{ color: "var(--tinta-fraca)" }}

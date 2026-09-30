@@ -19,7 +19,7 @@ import { ArrowLeft } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
-import { ParDeTelas, Ponto, Secao, TabelaCasos } from "@/app/paridade/pecas";
+import { Desfechos, ParDeTelas, Ponto, Secao, TabelaCasos } from "@/app/paridade/pecas";
 import { TintaCabecalho } from "@/components/TintaCabecalho";
 import { casosDe, moduloPorRota, placarDe } from "@/app/paridade/modulos";
 import { useIdioma } from "@/lib/i18n";
@@ -179,24 +179,10 @@ export default function ModuloPage() {
 
       {casos.length > 0 && (
         <Secao id="resultados" titulo={t("paridade.modulo.resultados.titulo")}>
-          <p className="mb-4 text-[12px]" style={{ color: "var(--tinta-fraca)" }}>
+          <p className="prosa-editorial mb-4 text-[13px]" style={{ color: "var(--tinta-2)" }}>
             {t("paridade.modulo.resultados.legenda")}
           </p>
-          <dl className="space-y-4">
-            {casos.map((caso) => (
-              <div key={caso.chave}>
-                <dt
-                  className="text-[12px] font-medium"
-                  style={{ color: "var(--tinta-3)" }}
-                >
-                  {caso.chave}
-                </dt>
-                <dd className="prosa-editorial mt-0.5 text-[13px]" style={{ color: "var(--tinta-2)" }}>
-                  {caso.resumo}
-                </dd>
-              </div>
-            ))}
-          </dl>
+          <Desfechos casos={casos} />
         </Secao>
       )}
 

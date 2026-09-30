@@ -81,9 +81,9 @@ e `extrair.py` tira dela o que ele concluiu, conforme a problemática:
 Isso fecha um buraco real: antes, uma mudança no motor podia manter a contagem
 de perguntas e trocar o vencedor sem que nada reclamasse.
 
-O placar hoje: **74 casos, 63 batem de 73 comparáveis**. Os 10 que não batem se
-resumem a três diferenças estreitas — abertura respondida B, ordenação de 7
-critérios, um par colado no limiar — e há um caso que o oficial não completa.
+O placar hoje: **74 casos, 67 batem de 73 comparáveis**. Os 6 que não batem se
+resumem a duas diferenças estreitas — abertura respondida B e um par colado
+no limiar — e há um caso que o oficial não completa.
 Tudo descrito em `EQUIVALENCIA.md`.
 
 O leitor falha alto quando não entende a tela, em vez de devolver vazio. Não é

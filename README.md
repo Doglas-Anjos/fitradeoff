@@ -1,5 +1,19 @@
 # FITradeoff — plataforma de apoio à decisão multicritério
 
+> [!IMPORTANT]
+> **Este não é o FITradeoff original.** É uma implementação independente do método FITradeoff,
+> sem vínculo com o sistema do CDSID-UFPE ([fitradeoff.org](https://fitradeoff.org/)), e **pode
+> apresentar valores diferentes dos dele**.
+>
+> Foi construída a partir do guia do usuário publicado no site do FITradeoff (*Practical User
+> Guide — FITradeoff*, CDSID-UFPE) e dos artigos que descrevem o método. Para aproximar os dois
+> sistemas, fizemos várias rodadas de equivalência: os mesmos casos, rodados no original e aqui e
+> comparados pergunta a pergunta e resultado a resultado, em cada problemática que o original
+> permite comparar — escolha, ranking, sorting e benefício-custo; o portfólio combinatorial dele não
+> roda em sessão. O que bate e o que ainda difere está em [Validação contra o sistema
+> oficial](#validação-contra-o-sistema-oficial) e, em detalhe, em
+> [`paridade/EQUIVALENCIA.md`](paridade/EQUIVALENCIA.md).
+
 Implementação do método **FITradeoff** (Flexible and Interactive Tradeoff, De Almeida et al., 2016)
 para elicitação de constantes de escala em modelos aditivos no escopo da MAVT, a partir de
 **informação parcial** de preferência.
@@ -12,10 +26,6 @@ atalho por dentro, e não calcula nada por conta própria.
 O decisor nunca vê um espaço de pesos nem um problema de programação linear: responde a
 comparações entre situações concretas, em reais e dias, e recebe uma recomendação que sabe
 justificar.
-
-O método é público e está descrito na literatura; esta é uma implementação independente,
-sem vínculo com o sistema oficial do CDSID-UFPE — e **comparada com ele, caso a caso**, por
-uma suíte que está no repositório.
 
 > **Veio auditar?** [`AUDITORIA.md`](AUDITORIA.md) é a porta de entrada: em que arquivo mora
 > cada etapa do método, quais parâmetros mudam a conclusão, o que é exato e o que é
@@ -42,10 +52,10 @@ uma suíte que está no repositório.
 | Entrada manual + import de planilha | **pronto** — `.xlsx` e `.csv` |
 | Export (entrada + resultado + trilha) | **pronto** |
 | Ordenação de pesos nos dois modos | **pronto** — lista e avaliação global |
-| Paridade medida contra o sistema oficial | **74 casos**, versionados — 63 batem de 73 comparáveis; ver abaixo |
+| Paridade medida contra o sistema oficial | **74 casos**, versionados — 67 batem de 73 comparáveis; ver abaixo |
 | Decisão em grupo | a fazer |
 
-**1469 testes**: 756 de motor e API, 73 do servidor MCP, 125 de paridade e 515 de interface.
+**1675 testes**: 851 de motor e API, 80 do servidor MCP, 179 de paridade e 565 de interface.
 Entre eles, um decisor-oráculo que verifica a invariante central do método (a alternativa
 verdadeiramente ótima nunca sai do conjunto de POAs), testes que auditam a própria
 arquitetura e testes de entrada não confiável.
@@ -150,12 +160,11 @@ resultado a resultado: **74 casos** nas quatro problemáticas que o oficial elic
 30 alternativas e de 2 a 7 critérios, com curva de valor não linear, critério discreto, respostas A,
 B e misturadas, e casos de borda feitos para quebrar a equivalência.
 
-**63 batem de 73 comparáveis** — a mesma contagem nas duas fases, a mesma sequência de perguntas e
-o mesmo resultado (vencedor, ordem, classe de cada alternativa, carteira). Os 10 que não batem se
-resumem a três diferenças estreitas, cada uma presa num teste para que fechá-la também o quebre:
+**67 batem de 73 comparáveis** — a mesma contagem nas duas fases, a mesma sequência de perguntas e
+o mesmo resultado (vencedor, ordem, classe de cada alternativa, carteira). Os 6 que não batem se
+resumem a duas diferenças estreitas, cada uma presa num teste para que fechá-la também o quebre:
 
 - **abertura respondida B**: os valores das perguntas batem, a ordem dos pares não (4 casos);
-- **ordenar 7 critérios**: 15 comparações dele contra 14 nossas, chegando à mesma ordem (5 casos);
 - **um par a menos de 0,4% do limiar de 0,01**: uma pergunta a mais num caso, a menos no outro.
 
 Um caso o oficial não completa: com um critério de faixa zero, ele trava depois de salvar a
@@ -171,7 +180,7 @@ python -m pytest paridade/
 - [`paridade/README.md`](paridade/README.md) — como rodar cada modo e o que a suíte trava
 - [`PARIDADE.md`](PARIDADE.md) — comparação de **recursos**, levantada do guia do usuário oficial
 - [`paridade/EQUIVALENCIA.md`](paridade/EQUIVALENCIA.md) — comparação de **comportamento**: as
-  regras que a comparação encontrou e corrigiu, e as três diferenças que permanecem
+  regras que a comparação encontrou e corrigiu, e as duas diferenças que permanecem
 
 Rodar lado a lado é o que revelou essas regras. Na maior parte delas as perguntas iniciais eram
 idênticas e a diferença estava em **quando cada sistema para** — a largura mínima de um par, a

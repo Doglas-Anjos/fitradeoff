@@ -22,6 +22,7 @@
  * versionado, o dado é auditável — quem duvidar refaz e confere.
  */
 
+import { AvisoNaoOficial } from "@/components/AvisoNaoOficial";
 import { ArrowRight } from "@phosphor-icons/react";
 import Link from "next/link";
 
@@ -153,6 +154,12 @@ export default function ParidadePage() {
           {t("paridade.medidoEm", { data: MEDIDO_EM })}
         </p>
       </header>
+
+      {/* Antes do placar: e aqui que os numeros do oficial e os nossos aparecem
+          lado a lado, e quem chega precisa saber de saida qual e qual. */}
+      <div className="mt-7">
+        <AvisoNaoOficial forma="destaque" comLinkParidade={false} />
+      </div>
 
       {/* O placar primeiro: é a única coisa que alguém de fora precisa ler para
           saber se vale continuar lendo. */}

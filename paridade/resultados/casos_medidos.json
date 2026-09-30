@@ -220,7 +220,8 @@
   "respostas": "",
   "oficial": {
    "ordenacao": 3,
-   "tradeoff": 3
+   "tradeoff": 3,
+   "tela_final": "A Solution has been found. | Warning | Tabular Visualization | Tabular Visualization | Alternatives\tIndice de qualidade\tCusto unitario\tPrazo de entrega\tMax Overall Value\tMin Overall Value | Plano A\t0.95\t16\t40\t1.00\t0.57 | Questions Answered: | 3 | Scaling constants boundaries graph | Exporting Options | Sensitivity Analysis | FU-T3MMM-WF1a | Results | FITradeoff.org"
   }
  },
  {
@@ -348,7 +349,8 @@
   "respostas": "",
   "oficial": {
    "ordenacao": 3,
-   "tradeoff": 4
+   "tradeoff": 4,
+   "tela_final": "All the alternatives have been sorted into a unique category. This is the final result. | Warning | Alternatives\tCategory\tMin. Value\tMax. Value | Alt 01\tC2\t0.48\t0.63 | Alt 02\tC3\t0.88\t1 | Alt 03\tC1\t0\t0.21 | Alt 04\tC2\t0.42\t0.56 | FU-T3MMM-WF1a | C2 | C3 | C1 | Current Results | Sorted Alternatives (Global Value Graph): | Sorted Alternatives (Min. Values and Max. Values): | FITradeoff.org | Scaling constants boundaries graph | Sensitivity Analysis | Exporting Options"
   }
  },
  {
@@ -534,7 +536,8 @@
   "respostas": "",
   "oficial": {
    "ordenacao": 5,
-   "tradeoff": 21
+   "tradeoff": 21,
+   "tela_final": "$110.00 | $0.00 | Remaining budget: | Portfolio\tResources Utilization | [Alt 04, Alt 02, Alt 03, Alt 05]\t$110.00 | Total budget: | FU-TXMMO-WF1 | Ranking\tProjects\tCost\tCumulative Cost | 1\t[Alt 04]\t$20.00\t$20.00 | 2\t[Alt 02]\t$25.00\t$45.00 | 3\t[Alt 03]\t$35.00\t$80.00 | 4\t[Alt 05][Alt 08]\t$58.00\t$138.00 | 5\t[Alt 01]\t$40.00\t$178.00 | 6\t[Alt 06]\t$45.00\t$223.00 | 7\t[Alt 07]\t$18.00\t$241.00 | Current Results | There are no comparisons to be made in the elicitation by decomposition anymore. These are the current results. | Warning | Ranking | Recommendation | Scaling constants boundaries graph | FITradeoff.org | Exporting Options | Hasse Diagram | Sensitivity Analysis | View projects unitary costs"
   }
  },
  {
@@ -655,7 +658,8 @@
   "respostas": "",
   "oficial": {
    "ordenacao": 3,
-   "tradeoff": 6
+   "tradeoff": 6,
+   "tela_final": "A complete order has been found. | Warning | Hasse DiagramTabular Visualization | *The hasse diagram is being generated, please wait a few seconds. | Hasse Diagram | FU-T3MMM-WF1a | Results | FITradeoff.org | Exporting Options | Scaling constants boundaries graph | Sensitivity Analysis | Dominance Matrix"
   }
  },
  {
@@ -776,7 +780,8 @@
   "respostas": "",
   "oficial": {
    "ordenacao": 3,
-   "tradeoff": 6
+   "tradeoff": 6,
+   "tela_final": "You may perform holistic assessments: | Holistic Evaluation | There are no comparisons to be made in the elicitation by decomposition anymore. You can either continue the decision process though holistic evaluation or finalize the process considering these partial results. | Warning | Hasse DiagramTabular Visualization | *The hasse diagram is being generated, please wait a few seconds. | Hasse Diagram | FU-T3MMM-WF1a | Results | FITradeoff.org | Exporting Options | Scaling constants boundaries graph | Finalize decision process | Dominance Matrix"
   }
  },
  {
@@ -897,7 +902,8 @@
   "respostas": "AAAAAB",
   "oficial": {
    "ordenacao": 3,
-   "tradeoff": 6
+   "tradeoff": 6,
+   "tela_final": "You may perform holistic assessments: | Holistic Evaluation | There are no comparisons to be made in the elicitation by decomposition anymore. You can either continue the decision process though holistic evaluation or finalize the process considering these partial results. | Warning | Hasse DiagramTabular Visualization | *The hasse diagram is being generated, please wait a few seconds. | Hasse Diagram | FU-T3MMM-WF1a | Results | FITradeoff.org | Exporting Options | Scaling constants boundaries graph | Finalize decision process | Dominance Matrix"
   }
  },
  {
@@ -1018,7 +1024,8 @@
   "respostas": "AAAAB",
   "oficial": {
    "ordenacao": 3,
-   "tradeoff": 6
+   "tradeoff": 6,
+   "tela_final": "You may perform holistic assessments: | Holistic Evaluation | There are no comparisons to be made in the elicitation by decomposition anymore. You can either continue the decision process though holistic evaluation or finalize the process considering these partial results. | Warning | Hasse DiagramTabular Visualization | *The hasse diagram is being generated, please wait a few seconds. | Hasse Diagram | FU-T3MMM-WF1a | Results | FITradeoff.org | Exporting Options | Scaling constants boundaries graph | Finalize decision process | Dominance Matrix"
   }
  },
  {
@@ -1139,7 +1146,8 @@
   "respostas": "AABAAA",
   "oficial": {
    "ordenacao": 3,
-   "tradeoff": 7
+   "tradeoff": 7,
+   "tela_final": "You may perform holistic assessments: | Holistic Evaluation | There are no comparisons to be made in the elicitation by decomposition anymore. You can either continue the decision process though holistic evaluation or finalize the process considering these partial results. | Warning | Hasse DiagramTabular Visualization | *The hasse diagram is being generated, please wait a few seconds. | Hasse Diagram | FU-T3MMM-WF1a | Results | FITradeoff.org | Exporting Options | Scaling constants boundaries graph | Finalize decision process | Dominance Matrix"
   }
  },
  {
@@ -1260,7 +1268,8 @@
   "respostas": "AABAAB",
   "oficial": {
    "ordenacao": 3,
-   "tradeoff": 7
+   "tradeoff": 7,
+   "tela_final": "You may perform holistic assessments: | Holistic Evaluation | There are no comparisons to be made in the elicitation by decomposition anymore. You can either continue the decision process though holistic evaluation or finalize the process considering these partial results. | Warning | Hasse DiagramTabular Visualization | *The hasse diagram is being generated, please wait a few seconds. | Hasse Diagram | FU-T3MMM-WF1a | Results | FITradeoff.org | Exporting Options | Scaling constants boundaries graph | Finalize decision process | Dominance Matrix"
   }
  },
  {
@@ -1326,7 +1335,8 @@
   "respostas": "",
   "oficial": {
    "ordenacao": 3,
-   "tradeoff": 6
+   "tradeoff": 6,
+   "tela_final": "A complete order has been found. | Warning | Hasse DiagramTabular Visualization | *The hasse diagram is being generated, please wait a few seconds. | Hasse Diagram | FU-T3MMM-WF1a | Results | FITradeoff.org | Exporting Options | Scaling constants boundaries graph | Sensitivity Analysis | Dominance Matrix"
   }
  },
  {
@@ -1392,7 +1402,8 @@
   "respostas": "AAB",
   "oficial": {
    "ordenacao": 3,
-   "tradeoff": 6
+   "tradeoff": 6,
+   "tela_final": "A complete order has been found. | Warning | Hasse DiagramTabular Visualization | *The hasse diagram is being generated, please wait a few seconds. | Hasse Diagram | FU-T3MMM-WF1a | Results | FITradeoff.org | Exporting Options | Scaling constants boundaries graph | Sensitivity Analysis | Dominance Matrix"
   }
  },
  {
@@ -1513,7 +1524,8 @@
   "respostas": "",
   "oficial": {
    "ordenacao": 3,
-   "tradeoff": 3
+   "tradeoff": 3,
+   "tela_final": "A Solution has been found. | Warning | Tabular Visualization | Tabular Visualization | Alternatives\tIndice de qualidade\tNota\tCusto unitario\tMax Overall Value\tMin Overall Value | Alt 1\t0.95\t2\t16\t1.00\t0.71 | Questions Answered: | 3 | Scaling constants boundaries graph | Exporting Options | Sensitivity Analysis | FU-T3MMM-WF1a | Results | FITradeoff.org"
   }
  },
  {
@@ -1644,7 +1656,8 @@
   "respostas": "",
   "oficial": {
    "ordenacao": 3,
-   "tradeoff": 4
+   "tradeoff": 4,
+   "tela_final": "All the alternatives have been sorted into a unique category. This is the final result. | Warning | Alternatives\tCategory\tMin. Value\tMax. Value | Alt 1\tC3\t0.82\t1 | Alt 2\tC1\t0\t0.25 | Alt 3\tC2\t0.62\t0.7 | Alt 4\tC2\t0.52\t0.69 | FU-T3MMM-WF1a | C2 | C3 | C1 | Current Results | Sorted Alternatives (Global Value Graph): | Sorted Alternatives (Min. Values and Max. Values): | FITradeoff.org | Scaling constants boundaries graph | Sensitivity Analysis | Exporting Options"
   }
  },
  {
@@ -1770,7 +1783,8 @@
   "respostas": "",
   "oficial": {
    "ordenacao": 3,
-   "tradeoff": 4
+   "tradeoff": 4,
+   "tela_final": "$60.00 | $0.00 | Remaining budget: | Portfolio\tResources Utilization | [Alt 4, Alt 1]\t$60.00 | Total budget: | FU-TXMMO-WF1 | Ranking\tProjects\tCost\tCumulative Cost | 1\t[Alt 4]\t$20.00\t$20.00 | 2\t[Alt 1]\t$40.00\t$60.00 | 3\t[Alt 3]\t$35.00\t$95.00 | 4\t[Alt 2]\t$25.00\t$120.00 | Current Results | A complete order has been found. | Warning | Ranking | Recommendation | Scaling constants boundaries graph | FITradeoff.org | Exporting Options | Hasse Diagram | Sensitivity Analysis | View projects unitary costs"
   }
  },
  {
@@ -2441,7 +2455,8 @@
     ],
     "entre-niveis",
     "entre-niveis"
-   ]
+   ],
+   "tela_final": "There are no comparisons to be made in the elicitation by decomposition anymore. You can either continue the decision process though holistic evaluation or fina"
   }
  },
  {
@@ -2694,7 +2709,8 @@
     ],
     "entre-niveis",
     "entre-niveis"
-   ]
+   ],
+   "tela_final": "$110.00 | $0.00 | Remaining budget: | Portfolio\tResources Utilization | [Alt 04, Alt 02, Alt 03, Alt 05]\t$110.00 | Total budget: | FU-TXMMO-WF1 | Ranking\tProjec"
   }
  },
  {
@@ -2941,7 +2957,8 @@
      "Indice de qualidade",
      "Nota"
     ]
-   ]
+   ],
+   "tela_final": "All the alternatives have been sorted into a unique category. This is the final result. | Warning | FU-T3MMM-WF1a | Alternatives\tCategory\tMin. Value\tMax. Value "
   }
  },
  {
@@ -3071,7 +3088,8 @@
      "Indice de qualidade",
      "Custo unitario"
     ]
-   ]
+   ],
+   "tela_final": "A complete order has been found. | Warning | Hasse DiagramTabular Visualization | *The hasse diagram is being generated, please wait a few seconds. | Hasse Diag"
   }
  },
  {
@@ -3254,7 +3272,8 @@
      "Indice de qualidade",
      "Custo unitario"
     ]
-   ]
+   ],
+   "tela_final": "A complete order has been found. | Warning | Hasse DiagramTabular Visualization | *The hasse diagram is being generated, please wait a few seconds. | Hasse Diag"
   }
  },
  {
@@ -3437,7 +3456,8 @@
      "Indice de qualidade",
      "Nota"
     ]
-   ]
+   ],
+   "tela_final": "A complete order has been found. | Warning | Hasse DiagramTabular Visualization | *The hasse diagram is being generated, please wait a few seconds. | Hasse Diag"
   }
  },
  {
@@ -3636,7 +3656,8 @@
      "Indice de qualidade",
      "Custo unitario"
     ]
-   ]
+   ],
+   "tela_final": "A complete order has been found. | Warning | Hasse DiagramTabular Visualization | *The hasse diagram is being generated, please wait a few seconds. | Hasse Diagram | FU-T3MMM-WF1a | Results | FITradeoff.org | Exporting Options | Scaling constants boundaries graph | Sensitivity Analysis | Dominance Matrix"
   }
  },
  {
@@ -3938,6 +3959,7 @@
   "oficial": {
    "ordenacao": 11,
    "tradeoff": 24,
+   "tela_final": "$160.00 | $2.00 | Remaining budget: | Portfolio\tResources Utilization | [Alt 08, Alt 09, Alt 11, Alt 06, Alt 12, Alt 14, Alt 01]\t$158.00 | Total budget: | FU-TXMMO-WF1 | Ranking\tProjects\tCost\tCumulative Cost | 1\t[Alt 08]\t$22.00\t$22.00 | 2\t[Alt 09]\t$23.00\t$45.00 | 3\t[Alt 11]\t$23.00\t$68.00 | 4\t[Alt 06]\t$31.00\t$99.00 | 5\t[Alt 12]\t$24.00\t$123.00 | 6\t[Alt 14]\t$17.00\t$140.00 | 7\t[Alt 01]\t$18.00\t$158.00 | 8\t[Alt 05]\t$35.00\t$193.00 | 9\t[Alt 10]\t$38.00\t$231.00 | 10\t[Alt 07]\t$45.00\t$276.00 | 11\t[Alt 04]\t$39.00\t$315.00 | 12\t[Alt 25]\t$18.00\t$333.00 | 13\t[Alt 03]\t$37.00\t$370.00 | 14\t[Alt 02]\t$34.00\t$404.00 | 15\t[Alt 13]\t$38.00\t$442.00 | 16\t[Alt 15]\t$36.00\t$478.00 | 17\t[Alt 16]\t$29.00\t$507.00 | 18\t[Alt 24]\t$44.00\t$551.00 | 19\t[Alt 17]\t$24.00\t$575.00 | 20\t[Alt 23]\t$39.00\t$614.00 | 21\t[Alt 18]\t$29.00\t$643.00 | 22\t[Alt 22]\t$27.00\t$670.00 | 23\t[Alt 19]\t$36.00\t$706.00 | 24\t[Alt 20]\t$42.00\t$748.00 | 25\t[Alt 21]\t$27.00\t$775.00 | Current Results | A complete order has been found. | Warning | Ranking | Recommendation | Scaling constants boundaries graph | FITradeoff.org | Exporting Options | Hasse Diagram | Sensitivity Analysis | View projects unitary costs",
    "pares": [
     [
      "Indice de qualidade",
@@ -4391,6 +4413,7 @@
   "oficial": {
    "ordenacao": 15,
    "tradeoff": 14,
+   "tela_final": "A Solution has been found. | Warning | Tabular Visualization | Tabular Visualization | Alternatives\tIndice de qualidade\tCusto unitario\tPrazo de entrega\tDurabilidade\tSuporte tecnico\tConsumo\tEmissao\tMax Overall Value\tMin Overall Value | Alt 08\t0.96\t15.14\t13.75\t5.43\t7.77\t177.05\t0.37\t1.00\t0.92 | Questions Answered: | 14 | Scaling constants boundaries graph | Exporting Options | Sensitivity Analysis | FU-T3MMM-WF1a | Results | FITradeoff.org",
    "pares": [
     [
      "Indice de qualidade",
@@ -4449,12 +4472,6 @@
      "Custo unitario"
     ]
    ]
-  },
-  "divergencia": {
-   "nosso": {
-    "ordenacao": 14
-   },
-   "porque": "ordenar 7 criterios: ele compara 15 vezes, a nossa insercao 14"
   }
  },
  {
@@ -4760,6 +4777,7 @@
   "oficial": {
    "ordenacao": 15,
    "tradeoff": 24,
+   "tela_final": "A complete pre-order has been found. | Warning | Hasse DiagramTabular Visualization | *The hasse diagram is being generated, please wait a few seconds. | Hasse Diagram | FU-T3MMM-WF1a | Results | FITradeoff.org | Exporting Options | Scaling constants boundaries graph | Sensitivity Analysis | Dominance Matrix",
    "pares": [
     [
      "Indice de qualidade",
@@ -4858,12 +4876,6 @@
      "Custo unitario"
     ]
    ]
-  },
-  "divergencia": {
-   "nosso": {
-    "ordenacao": 14
-   },
-   "porque": "ordenar 7 criterios: ele compara 15 vezes, a nossa insercao 14"
   }
  },
  {
@@ -5196,6 +5208,7 @@
   "oficial": {
    "ordenacao": 11,
    "tradeoff": 24,
+   "tela_final": "All the alternatives have been sorted into a unique category. This is the final result. | Warning | FU-T3MMM-WF1a | Alternatives\tCategory\tMin. Value\tMax. Value | Alt 01\tC2\t0.48\t0.48 | Alt 02\tC3\t0.56\t0.57 | Alt 03\tC3\t0.67\t0.68 | Alt 04\tC3\t0.74\t0.75 | Alt 05\tC4\t0.89\t0.91 | Alt 06\tC4\t0.92\t0.93 | Alt 07\tC4\t0.99\t1 | Alt 08\tC4\t0.94\t0.95 | Alt 09\tC4\t0.96\t0.96 | Alt 10\tC4\t0.94\t0.94 | Alt 11\tC4\t0.97\t0.98 | Alt 12\tC4\t0.9\t0.91 | Alt 13\tC4\t0.84\t0.84 | Alt 14\tC3\t0.68\t0.68 | Alt 15\tC3\t0.63\t0.63 | Alt 16\tC2\t0.49\t0.5 | Alt 17\tC2\t0.42\t0.43 | Alt 18\tC1\t0.28\t0.3 | Alt 19\tC1\t0.2\t0.21 | Alt 20\tC1\t0.16\t0.17 | Alt 21\tC1\t0.06\t0.07 | Alt 22\tC1\t0.07\t0.08 | Alt 23\tC1\t0\t0.01 | Alt 24\tC1\t0.02\t0.03 | Alt 25\tC1\t0.02\t0.03 | Alt 26\tC1\t0.09\t0.09 | Alt 27\tC1\t0.11\t0.11 | Alt 28\tC1\t0.16\t0.16 | Alt 29\tC1\t0.23\t0.23 | Alt 30\tC2\t0.35\t0.35 | C3 | C4 | C2 | C1 | Current Results | Sorted Alternatives (Min. Values and Max. Values): | Sorted Alternatives (Global Value Graph): | FITradeoff.org | Scaling constants boundaries graph | Sensitivity Analysis | Exporting Options | View the ranking of C4 alternatives",
    "pares": [
     [
      "Indice de qualidade",
@@ -5431,6 +5444,7 @@
   "oficial": {
    "ordenacao": 5,
    "tradeoff": 17,
+   "tela_final": "$12.00 | $1.00 | Remaining budget: | Portfolio\tResources Utilization | [Alt 01]\t$11.00 | Total budget: | FU-TXMMO-WF1 | Ranking\tProjects\tCost\tCumulative Cost | 1\t[Alt 01]\t$11.00\t$11.00 | 2\t[Alt 02]\t$18.00\t$29.00 | 3\t[Alt 05]\t$24.00\t$53.00 | 4\t[Alt 04]\t$30.00\t$83.00 | 5\t[Alt 06]\t$23.00\t$106.00 | 6\t[Alt 03]\t$34.00\t$140.00 | 7\t[Alt 07]\t$29.00\t$169.00 | 8\t[Alt 12]\t$36.00\t$205.00 | 9\t[Alt 11]\t$28.00\t$233.00 | 10\t[Alt 08]\t$36.00\t$269.00 | 11\t[Alt 09]\t$39.00\t$308.00 | 12\t[Alt 10]\t$30.00\t$338.00 | Current Results | A complete order has been found. | Warning | Ranking | Recommendation | Scaling constants boundaries graph | FITradeoff.org | Exporting Options | Hasse Diagram | Sensitivity Analysis | View projects unitary costs",
    "pares": [
     [
      "Indice de qualidade",
@@ -5622,6 +5636,7 @@
   "oficial": {
    "ordenacao": 5,
    "tradeoff": 14,
+   "tela_final": "$237.00 | $0.00 | Remaining budget: | Portfolio\tResources Utilization | [Alt 04, Alt 05, Alt 02, Alt 03, Alt 01, Alt 10, Alt 06, Alt 07, Alt 09, Alt 08]\t$227.00 | Total budget: | FU-TXMMO-WF1 | Ranking\tProjects\tCost\tCumulative Cost | 1\t[Alt 04]\t$15.00\t$15.00 | 2\t[Alt 05]\t$14.00\t$29.00 | 3\t[Alt 02]\t$17.00\t$46.00 | 4\t[Alt 03]\t$24.00\t$70.00 | 5\t[Alt 01]\t$27.00\t$97.00 | 6\t[Alt 10]\t$20.00\t$117.00 | 7\t[Alt 06]\t$27.00\t$144.00 | 8\t[Alt 07]\t$27.00\t$171.00 | 9\t[Alt 09]\t$36.00\t$207.00 | 10\t[Alt 08]\t$20.00\t$227.00 | Current Results | A complete order has been found. | Warning | Ranking | Recommendation | Scaling constants boundaries graph | FITradeoff.org | Exporting Options | Hasse Diagram | Sensitivity Analysis | View projects unitary costs",
    "pares": [
     [
      "Indice de qualidade",
@@ -5926,6 +5941,7 @@
   "oficial": {
    "ordenacao": 8,
    "tradeoff": 33,
+   "tela_final": "$92.67 | $9.67 | Remaining budget: | Portfolio\tResources Utilization | [Alt 03, Alt 01, Alt 06, Alt 07]\t$83.00 | Total budget: | FU-TXMMO-WF1 | Ranking\tProjects\tCost\tCumulative Cost | 1\t[Alt 03]\t$24.00\t$24.00 | 2\t[Alt 01]\t$21.00\t$45.00 | 3\t[Alt 06]\t$23.00\t$68.00 | 4\t[Alt 04][Alt 07][Alt 09][Alt 10]\t$106.00\t$174.00 | 5\t[Alt 08]\t$16.00\t$190.00 | 6\t[Alt 05]\t$45.00\t$235.00 | 7\t[Alt 02]\t$43.00\t$278.00 | Current Results | There are no comparisons to be made in the elicitation by decomposition anymore. These are the current results. | Warning | Ranking | Recommendation | Scaling constants boundaries graph | FITradeoff.org | Exporting Options | Hasse Diagram | Sensitivity Analysis | View projects unitary costs",
    "pares": [
     [
      "Indice de qualidade",
@@ -6440,6 +6456,7 @@
   "oficial": {
    "ordenacao": 15,
    "tradeoff": 50,
+   "tela_final": "$210.25 | $3.25 | Remaining budget: | Portfolio\tResources Utilization | [Alt 16, Alt 12, Alt 03, Alt 13, Alt 07, Alt 08, Alt 21, Alt 10, Alt 09, Alt 24]\t$207.00 | Total budget: | FU-TXMMO-WF1 | Ranking\tProjects\tCost\tCumulative Cost | 1\t[Alt 16]\t$11.00\t$11.00 | 2\t[Alt 12]\t$14.00\t$25.00 | 3\t[Alt 03]\t$13.00\t$38.00 | 4\t[Alt 13]\t$26.00\t$64.00 | 5\t[Alt 07]\t$24.00\t$88.00 | 6\t[Alt 08]\t$26.00\t$114.00 | 7\t[Alt 21]\t$11.00\t$125.00 | 8\t[Alt 10]\t$33.00\t$158.00 | 9\t[Alt 09]\t$32.00\t$190.00 | 10\t[Alt 15]\t$34.00\t$224.00 | 11\t[Alt 11][Alt 14]\t$78.00\t$302.00 | 12\t[Alt 17]\t$34.00\t$336.00 | 13\t[Alt 19]\t$27.00\t$363.00 | 14\t[Alt 06]\t$40.00\t$403.00 | 15\t[Alt 18]\t$34.00\t$437.00 | 16\t[Alt 02]\t$26.00\t$463.00 | 17\t[Alt 20]\t$28.00\t$491.00 | 18\t[Alt 05]\t$42.00\t$533.00 | 19\t[Alt 04]\t$36.00\t$569.00 | 20\t[Alt 24]\t$17.00\t$586.00 | 21\t[Alt 01]\t$31.00\t$617.00 | 22\t[Alt 25]\t$17.00\t$634.00 | 23\t[Alt 22]\t$34.00\t$668.00 | 24\t[Alt 23]\t$29.00\t$697.00 | 25\t[Alt 29]\t$24.00\t$721.00 | 26\t[Alt 30]\t$37.00\t$758.00 | 27\t[Alt 28]\t$29.00\t$787.00 | 28\t[Alt 27]\t$25.00\t$812.00 | 29\t[Alt 26]\t$29.00\t$841.00 | Current Results | There are no comparisons to be made in the elicitation by decomposition anymore. These are the current results. | Warning | Ranking | Recommendation | Scaling constants boundaries graph | FITradeoff.org | Exporting Options | Hasse Diagram | Sensitivity Analysis | View projects unitary costs",
    "pares": [
     [
      "Indice de qualidade",
@@ -6642,12 +6659,6 @@
      "Durabilidade"
     ]
    ]
-  },
-  "divergencia": {
-   "nosso": {
-    "ordenacao": 14
-   },
-   "porque": "ordenar 7 criterios: ele compara 15 vezes, a nossa insercao 14"
   }
  },
  {
@@ -6785,6 +6796,7 @@
   "oficial": {
    "ordenacao": 5,
    "tradeoff": 11,
+   "tela_final": "$120.00 | $10.00 | Remaining budget: | Portfolio\tResources Utilization | [Alt 04, Alt 05, Alt 03, Alt 01]\t$110.00 | Total budget: | FU-TXMMO-WF1 | Ranking\tProjects\tCost\tCumulative Cost | 1\t[Alt 04]\t$20.00\t$20.00 | 2\t[Alt 05]\t$30.00\t$50.00 | 3\t[Alt 03]\t$40.00\t$90.00 | 4\t[Alt 01]\t$20.00\t$110.00 | 5\t[Alt 02]\t$30.00\t$140.00 | 6\t[Alt 07]\t$20.00\t$160.00 | 7\t[Alt 06]\t$40.00\t$200.00 | 8\t[Alt 12]\t$40.00\t$240.00 | 9\t[Alt 08]\t$30.00\t$270.00 | 10\t[Alt 11]\t$30.00\t$300.00 | 11\t[Alt 10]\t$20.00\t$320.00 | 12\t[Alt 09]\t$40.00\t$360.00 | Current Results | A complete order has been found. | Warning | Ranking | Recommendation | Scaling constants boundaries graph | FITradeoff.org | Exporting Options | Hasse Diagram | Sensitivity Analysis | View projects unitary costs",
    "pares": [
     [
      "Indice de qualidade",
@@ -7082,6 +7094,7 @@
   "oficial": {
    "ordenacao": 8,
    "tradeoff": 3,
+   "tela_final": "A Solution has been found. | Warning | Tabular Visualization | Tabular Visualization | Alternatives\tIndice de qualidade\tNota\tPrazo de entrega\tDurabilidade\tSuporte tecnico\tMax Overall Value\tMin Overall Value | Alt 04\t0.94\t5\t11.85\t5.60\t7.97\t1.00\t0.83 | Questions Answered: | 3 | Scaling constants boundaries graph | Exporting Options | Sensitivity Analysis | FU-T3MMM-WF1a | Results | FITradeoff.org",
    "pares": [
     [
      "Indice de qualidade",
@@ -7301,6 +7314,7 @@
   "oficial": {
    "ordenacao": 15,
    "tradeoff": 23,
+   "tela_final": "According to the equivalent distance, a solution with 3 alternatives has been found. | Warning | Tabular Visualization | Tabular Visualization | Alternatives\tIndice de qualidade\tCusto unitario\tPrazo de entrega\tDurabilidade\tSuporte tecnico\tConsumo\tEmissao\tMax Overall Value\tMin Overall Value | Alt 05\t0.96\t14279000\t11.53\t5.65\t8.10\t175.14\t0.34\t0.61\t0.60 | Alt 06\t0.91\t11983000\t9.90\t6.6\t8.64\t171.44\t0.27\t0.61\t0.60 | Alt 07\t0.88\t10370000\t11.77\t7.48\t9.17\t152.26\t0.23\t0.61\t0.60 | Questions Answered: | 23 | Scaling constants boundaries graph | Exporting Options | Sensitivity Analysis | FU-T3MMM-WF1a | Results | FITradeoff.org",
    "pares": [
     [
      "Indice de qualidade",
@@ -7397,10 +7411,8 @@
    ]
   },
   "divergencia": {
-   "nosso": {
-    "ordenacao": 14
-   },
-   "porque": "abertura B: mesmas 23 perguntas, ordem difere da 3a a 14a; e 7 criterios",
+   "nosso": {},
+   "porque": "A primeira resposta é B: as mesmas 23 perguntas, com os mesmos valores, em outra ordem da 3ª à 14ª.",
    "pares_ate": 2
   }
  },
@@ -7526,6 +7538,7 @@
   "oficial": {
    "ordenacao": 5,
    "tradeoff": 2,
+   "tela_final": "A Solution has been found. | Warning | Tabular Visualization | Tabular Visualization | Alternatives\tIndice de qualidade\tCusto unitario\tPrazo de entrega\tDurabilidade\tMax Overall Value\tMin Overall Value | Alt 04\t0.77\t18.01\t37.45\t5.59\t1.00\t0.87 | Questions Answered: | 2 | Scaling constants boundaries graph | Exporting Options | Sensitivity Analysis | FU-T3MMM-WF1a | Results | FITradeoff.org",
    "pares": [
     [
      "Indice de qualidade",
@@ -7770,6 +7783,7 @@
   "oficial": {
    "ordenacao": 8,
    "tradeoff": 31,
+   "tela_final": "A complete order has been found. | Warning | Hasse DiagramTabular Visualization | *The hasse diagram is being generated, please wait a few seconds. | Hasse Diagram | FU-T3MMM-WF1a | Results | FITradeoff.org | Exporting Options | Scaling constants boundaries graph | Sensitivity Analysis | Dominance Matrix",
    "pares": [
     [
      "Indice de qualidade",
@@ -8210,6 +8224,7 @@
   "oficial": {
    "ordenacao": 15,
    "tradeoff": 22,
+   "tela_final": "All the alternatives have been sorted into a unique category. This is the final result. | Warning | FU-T3MMM-WF1a | Alternatives\tCategory\tMin. Value\tMax. Value | Alt 01\tC1\t0.28\t0.29 | Alt 02\tC2\t0.34\t0.35 | Alt 03\tC2\t0.4\t0.42 | Alt 04\tC3\t0.5\t0.52 | Alt 05\tC3\t0.59\t0.61 | Alt 06\tC3\t0.68\t0.7 | Alt 07\tC4\t0.7\t0.72 | Alt 08\tC4\t0.79\t0.8 | Alt 09\tC4\t0.78\t0.79 | Alt 10\tC4\t0.81\t0.82 | Alt 11\tC4\t0.8\t0.81 | Alt 12\tC4\t0.81\t0.81 | Alt 13\tC4\t0.72\t0.73 | Alt 14\tC3\t0.66\t0.67 | Alt 15\tC3\t0.63\t0.64 | Alt 16\tC3\t0.53\t0.55 | Alt 17\tC2\t0.43\t0.45 | Alt 18\tC2\t0.36\t0.38 | Alt 19\tC1\t0.28\t0.3 | Alt 20\tC1\t0.23\t0.25 | Alt 21\tC1\t0.18\t0.2 | Alt 22\tC1\t0.17\t0.18 | Alt 23\tC1\t0.17\t0.17 | Alt 24\tC1\t0.17\t0.18 | Alt 25\tC1\t0.24\t0.24 | C3 | C4 | C2 | C1 | Current Results | Sorted Alternatives (Min. Values and Max. Values): | Sorted Alternatives (Global Value Graph): | FITradeoff.org | Scaling constants boundaries graph | Sensitivity Analysis | Exporting Options | View the ranking of C4 alternatives",
    "pares": [
     [
      "Indice de qualidade",
@@ -8300,12 +8315,6 @@
      "Durabilidade"
     ]
    ]
-  },
-  "divergencia": {
-   "nosso": {
-    "ordenacao": 14
-   },
-   "porque": "ordenar 7 criterios: ele compara 15 vezes, a nossa insercao 14"
   }
  },
  {
@@ -8481,6 +8490,7 @@
   "oficial": {
    "ordenacao": 8,
    "tradeoff": 18,
+   "tela_final": "All the alternatives have been sorted into a unique category. This is the final result. | Warning | FU-T3MMM-WF1a | Alternatives\tCategory\tMin. Value\tMax. Value | Alt 01\tC2\t0.54\t0.55 | Alt 02\tC2\t0.74\t0.76 | Alt 03\tC2\t0.84\t0.87 | Alt 04\tC3\t0.98\t1 | Alt 05\tC3\t0.97\t0.99 | Alt 06\tC3\t0.95\t0.96 | Alt 07\tC2\t0.83\t0.83 | Alt 08\tC2\t0.57\t0.58 | Alt 09\tC2\t0.39\t0.41 | Alt 10\tC2\t0.18\t0.2 | Alt 11\tC1\t0.08\t0.1 | Alt 12\tC1\t0\t0.02 | Alt 13\tC1\t0.04\t0.05 | Alt 14\tC2\t0.16\t0.16 | Alt 15\tC2\t0.35\t0.36 | C2 | C3 | C1 | Current Results | Sorted Alternatives (Min. Values and Max. Values): | Sorted Alternatives (Global Value Graph): | FITradeoff.org | Scaling constants boundaries graph | Sensitivity Analysis | Exporting Options | View the ranking of C3 alternatives",
    "pares": [
     [
      "Indice de qualidade",
@@ -8800,6 +8810,7 @@
   "oficial": {
    "ordenacao": 8,
    "tradeoff": 10,
+   "tela_final": "All the alternatives have been sorted into a unique category. This is the final result. | Warning | FU-T3MMM-WF1a | Alternatives\tCategory\tMin. Value\tMax. Value | Alt 01\tC2\t0.63\t0.65 | Alt 02\tC3\t0.7\t0.81 | Alt 03\tC3\t0.94\t1 | Alt 04\tC3\t0.93\t0.95 | Alt 05\tC3\t0.73\t0.74 | Alt 06\tC2\t0.62\t0.66 | Alt 07\tC2\t0.47\t0.52 | Alt 08\tC1\t0\t0.1 | Alt 09\tC2\t0.4\t0.44 | Alt 10\tC2\t0.55\t0.61 | C2 | C3 | C1 | Current Results | Sorted Alternatives (Min. Values and Max. Values): | Sorted Alternatives (Global Value Graph): | FITradeoff.org | Scaling constants boundaries graph | Sensitivity Analysis | Exporting Options | View the ranking of C3 alternatives",
    "pares": [
     [
      "Indice de qualidade",
@@ -8988,6 +8999,7 @@
   "oficial": {
    "ordenacao": 5,
    "tradeoff": 15,
+   "tela_final": "All the alternatives have been sorted into a unique category. This is the final result. | Warning | FU-T3MMM-WF1a | Alternatives\tCategory\tMin. Value\tMax. Value | Alt 01\tC1\t0.29\t0.3 | Alt 02\tC1\t0.44\t0.45 | Alt 03\tC2\t0.57\t0.58 | Alt 04\tC2\t0.74\t0.76 | Alt 05\tC2\t0.78\t0.78 | Alt 06\tC2\t0.81\t0.81 | Alt 07\tC2\t0.75\t0.76 | Alt 08\tC2\t0.64\t0.65 | Alt 09\tC1\t0.49\t0.5 | Alt 10\tC1\t0.34\t0.35 | Alt 11\tC1\t0.22\t0.24 | Alt 12\tC1\t0.14\t0.15 | Alt 13\tC1\t0.16\t0.16 | Alt 14\tC1\t0.21\t0.22 | C2 | C1 | Current Results | Sorted Alternatives (Min. Values and Max. Values): | Sorted Alternatives (Global Value Graph): | FITradeoff.org | Scaling constants boundaries graph | Sensitivity Analysis | Exporting Options | View the ranking of C2 alternatives",
    "pares": [
     [
      "Indice de qualidade",
@@ -9142,6 +9154,7 @@
   "oficial": {
    "ordenacao": 3,
    "tradeoff": 0,
+   "tela_final": "$50.00 | $16.00 | Remaining budget: | Portfolio\tResources Utilization | [Alt 03, Alt 02]\t$34.00 | Total budget: | FU-TXMMO-WF1 | Ranking\tProjects\tCost\tCumulative Cost | 1\t[Alt 03]\t$17.00\t$17.00 | 2\t[Alt 02]\t$17.00\t$34.00 | 3\t[Alt 04]\t$36.00\t$70.00 | 4\t[Alt 01][Alt 05][Alt 06][Alt 07][Alt 08]\t$149.00\t$219.00 | Current Results | Considering the budget value, this is the recommendation. | Warning | Ranking | Recommendation | Scaling constants boundaries graph | FITradeoff.org | Exporting Options | Hasse Diagram | Sensitivity Analysis | View projects unitary costs",
    "pares": []
   }
  },
@@ -9264,6 +9277,7 @@
   "oficial": {
    "ordenacao": 5,
    "tradeoff": 11,
+   "tela_final": "$80.00 | $2.00 | Remaining budget: | Portfolio\tResources Utilization | [Alt 02, Alt 01, Alt 03, Alt 05]\t$78.00 | Total budget: | FU-TXMMO-WF1 | Ranking\tProjects\tCost\tCumulative Cost | 1\t[Alt 02]\t$16.00\t$16.00 | 2\t[Alt 01]\t$12.00\t$28.00 | 3\t[Alt 03]\t$28.00\t$56.00 | 4\t[Alt 05]\t$22.00\t$78.00 | 5\t[Alt 04]\t$37.00\t$115.00 | 6\t[Alt 06]\t$30.00\t$145.00 | 7\t[Alt 10]\t$35.00\t$180.00 | 8\t[Alt 07]\t$39.00\t$219.00 | 9\t[Alt 09]\t$29.00\t$248.00 | 10\t[Alt 08]\t$15.00\t$263.00 | Current Results | A complete order has been found. | Warning | Ranking | Recommendation | Scaling constants boundaries graph | FITradeoff.org | Exporting Options | Hasse Diagram | Sensitivity Analysis | View projects unitary costs",
    "pares": [
     [
      "Indice de qualidade",
@@ -9511,6 +9525,7 @@
   "oficial": {
    "ordenacao": 5,
    "tradeoff": 23,
+   "tela_final": "$60.00 | $6.00 | Remaining budget: | Portfolio\tResources Utilization | [Alt 07, Alt 03, Alt 06, Alt 11]\t$54.00 | Total budget: | FU-TXMMO-WF1 | Ranking\tProjects\tCost\tCumulative Cost | 1\t[Alt 07]\t$13.00\t$13.00 | 2\t[Alt 03]\t$12.00\t$25.00 | 3\t[Alt 06]\t$18.00\t$43.00 | 4\t[Alt 11]\t$11.00\t$54.00 | 5\t[Alt 05]\t$23.00\t$77.00 | 6\t[Alt 01]\t$11.00\t$88.00 | 7\t[Alt 02]\t$18.00\t$106.00 | 8\t[Alt 20]\t$14.00\t$120.00 | 9\t[Alt 08]\t$36.00\t$156.00 | 10\t[Alt 04]\t$34.00\t$190.00 | 11\t[Alt 09]\t$38.00\t$228.00 | 12\t[Alt 10]\t$37.00\t$265.00 | 13\t[Alt 12][Alt 19]\t$37.00\t$302.00 | 14\t[Alt 18]\t$11.00\t$313.00 | 15\t[Alt 13]\t$27.00\t$340.00 | 16\t[Alt 14]\t$27.00\t$367.00 | 17\t[Alt 17]\t$37.00\t$404.00 | 18\t[Alt 15]\t$20.00\t$424.00 | 19\t[Alt 16]\t$20.00\t$444.00 | Current Results | There are no comparisons to be made in the elicitation by decomposition anymore. These are the current results. | Warning | Ranking | Recommendation | Scaling constants boundaries graph | FITradeoff.org | Exporting Options | Hasse Diagram | Sensitivity Analysis | View projects unitary costs",
    "pares": [
     [
      "Indice de qualidade",
@@ -9786,6 +9801,7 @@
   "oficial": {
    "ordenacao": 8,
    "tradeoff": 23,
+   "tela_final": "$120.00 | $13.00 | Remaining budget: | Portfolio\tResources Utilization | [Alt 08, Alt 05, Alt 10, Alt 02, Alt 06]\t$107.00 | Total budget: | FU-TXMMO-WF1 | Ranking\tProjects\tCost\tCumulative Cost | 1\t[Alt 08]\t$12.00\t$12.00 | 2\t[Alt 05]\t$19.00\t$31.00 | 3\t[Alt 10]\t$21.00\t$52.00 | 4\t[Alt 02]\t$16.00\t$68.00 | 5\t[Alt 06]\t$39.00\t$107.00 | 6\t[Alt 07]\t$39.00\t$146.00 | 7\t[Alt 09]\t$33.00\t$179.00 | 8\t[Alt 04]\t$37.00\t$216.00 | 9\t[Alt 12]\t$17.00\t$233.00 | 10\t[Alt 03]\t$29.00\t$262.00 | 11\t[Alt 11]\t$34.00\t$296.00 | 12\t[Alt 01]\t$26.00\t$322.00 | 13\t[Alt 13]\t$24.00\t$346.00 | 14\t[Alt 15]\t$31.00\t$377.00 | 15\t[Alt 14]\t$36.00\t$413.00 | Current Results | A complete order has been found. | Warning | Ranking | Recommendation | Scaling constants boundaries graph | FITradeoff.org | Exporting Options | Hasse Diagram | Sensitivity Analysis | View projects unitary costs",
    "pares": [
     [
      "Indice de qualidade",
@@ -10051,6 +10067,7 @@
   "oficial": {
    "ordenacao": 11,
    "tradeoff": 11,
+   "tela_final": "$100.00 | $5.00 | Remaining budget: | Portfolio\tResources Utilization | [Alt 04, Alt 08, Alt 05, Alt 09, Alt 10, Alt 02]\t$95.00 | Total budget: | FU-TXMMO-WF1 | Ranking\tProjects\tCost\tCumulative Cost | 1\t[Alt 04]\t$10.00\t$10.00 | 2\t[Alt 08]\t$11.00\t$21.00 | 3\t[Alt 05]\t$15.00\t$36.00 | 4\t[Alt 09]\t$23.00\t$59.00 | 5\t[Alt 10]\t$18.00\t$77.00 | 6\t[Alt 06]\t$40.00\t$117.00 | 7\t[Alt 07]\t$40.00\t$157.00 | 8\t[Alt 02]\t$18.00\t$175.00 | 9\t[Alt 03]\t$27.00\t$202.00 | 10\t[Alt 12]\t$21.00\t$223.00 | 11\t[Alt 11]\t$35.00\t$258.00 | 12\t[Alt 01]\t$40.00\t$298.00 | Current Results | A complete order has been found. | Warning | Ranking | Recommendation | Scaling constants boundaries graph | FITradeoff.org | Exporting Options | Hasse Diagram | Sensitivity Analysis | View projects unitary costs",
    "pares": [
     [
      "Indice de qualidade",
@@ -10100,7 +10117,7 @@
   },
   "divergencia": {
    "nosso": {},
-   "porque": "abertura B: mesma contagem, sequencia difere a partir da 3a",
+   "porque": "A primeira resposta é B: mesma contagem de perguntas, mas os pares vêm em outra ordem a partir da 3ª pergunta.",
    "pares_ate": 2
   }
  },
@@ -10212,6 +10229,7 @@
   "oficial": {
    "ordenacao": 5,
    "tradeoff": 8,
+   "tela_final": "A Solution has been found. | Warning | Tabular Visualization | Tabular Visualization | Alternatives\tIndice de qualidade\tCusto unitario\tPrazo de entrega\tDurabilidade\tMax Overall Value\tMin Overall Value | Alt 03\t0.94\t15.81\t15.02\t5.37\t1.00\t0.91 | Questions Answered: | 8 | Scaling constants boundaries graph | Exporting Options | Sensitivity Analysis | FU-T3MMM-WF1a | Results | FITradeoff.org",
    "pares": [
     [
      "Indice de qualidade",
@@ -10347,6 +10365,7 @@
   "oficial": {
    "ordenacao": 5,
    "tradeoff": 0,
+   "tela_final": "A Solution has been found. | Warning | Tabular Visualization | Tabular Visualization | Alternatives\tIndice de qualidade\tNota\tPrazo de entrega\tDurabilidade\tMax Overall Value\tMin Overall Value | Alt 03\t0.94\t3\t11.23\t5.80\t1.00\t0.81 | Questions Answered: | 0 | Scaling constants boundaries graph | Exporting Options | Sensitivity Analysis | FU-T3MMM-WF1a | Results | FITradeoff.org",
    "pares": []
   }
  },
@@ -10593,6 +10612,7 @@
   "oficial": {
    "ordenacao": 8,
    "tradeoff": 6,
+   "tela_final": "A Solution has been found. | Warning | Tabular Visualization | Tabular Visualization | Alternatives\tIndice de qualidade\tCusto unitario\tPrazo de entrega\tDurabilidade\tSuporte tecnico\tMax Overall Value\tMin Overall Value | Alt 11\t0.89\t10.83\t11.15\t7.23\t9.15\t0.84\t0.83 | Questions Answered: | 6 | Scaling constants boundaries graph | Exporting Options | Sensitivity Analysis | FU-T3MMM-WF1a | Results | FITradeoff.org",
    "pares": [
     [
      "Indice de qualidade",
@@ -10624,7 +10644,7 @@
    "nosso": {
     "tradeoff": 3
    },
-   "porque": "abertura B: ele repete o par em que a nossa largura manda seguir",
+   "porque": "A primeira resposta é B. Nesse caso o oficial escolhe os pares numa ordem diferente da nossa a partir da 3ª pergunta; os valores de cada pergunta são os mesmos, o caminho não.",
    "pares_ate": 2
   }
  },
@@ -10784,6 +10804,7 @@
   "oficial": {
    "ordenacao": 11,
    "tradeoff": 20,
+   "tela_final": "A Solution has been found. | Warning | Tabular Visualization | Tabular Visualization | Alternatives\tIndice de qualidade\tCusto unitario\tPrazo de entrega\tDurabilidade\tSuporte tecnico\tConsumo\tMax Overall Value\tMin Overall Value | Alt 05\t0.91\t12.06\t10.10\t6.65\t8.69\t164.33\t0.77\t0.76 | Questions Answered: | 20 | Scaling constants boundaries graph | Exporting Options | Sensitivity Analysis | FU-T3MMM-WF1a | Results | FITradeoff.org",
    "pares": [
     [
      "Indice de qualidade",
@@ -10976,6 +10997,7 @@
   "oficial": {
    "ordenacao": 5,
    "tradeoff": 15,
+   "tela_final": "A complete order has been found. | Warning | Hasse DiagramTabular Visualization | *The hasse diagram is being generated, please wait a few seconds. | Hasse Diagram | FU-T3MMM-WF1a | Results | FITradeoff.org | Exporting Options | Scaling constants boundaries graph | Sensitivity Analysis | Dominance Matrix",
    "pares": [
     [
      "Indice de qualidade",
@@ -11043,7 +11065,7 @@
    "nosso": {
     "tradeoff": 16
    },
-   "porque": "par a 0,010041 do limiar: ele da por ordenado, nos nao"
+   "porque": "Na última pergunta, um par fica a 0,010041 do limiar de equivalência de 0,01. O oficial o dá por ordenado; nós não, e fazemos uma pergunta a mais. Diferença na quarta casa decimal."
   }
  },
  {
@@ -11185,6 +11207,7 @@
   "oficial": {
    "ordenacao": 8,
    "tradeoff": 17,
+   "tela_final": "A complete pre-order has been found. | Warning | Hasse DiagramTabular Visualization | *The hasse diagram is being generated, please wait a few seconds. | Hasse Diagram | FU-T3MMM-WF1a | Results | FITradeoff.org | Exporting Options | Scaling constants boundaries graph | Sensitivity Analysis | Dominance Matrix",
    "pares": [
     [
      "Indice de qualidade",
@@ -11260,7 +11283,7 @@
    "nosso": {
     "tradeoff": 15
    },
-   "porque": "abertura B: ordem difere da 3a a 10a, e ele fecha com 2 perguntas a mais",
+   "porque": "A primeira resposta é B: os pares vêm em outra ordem da 3ª à 10ª pergunta, e o oficial termina com 2 perguntas a mais.",
    "pares_ate": 2
   }
  },
@@ -11447,6 +11470,7 @@
   "oficial": {
    "ordenacao": 11,
    "tradeoff": 22,
+   "tela_final": "A complete pre-order has been found. | Warning | Hasse DiagramTabular Visualization | *The hasse diagram is being generated, please wait a few seconds. | Hasse Diagram | FU-T3MMM-WF1a | Results | FITradeoff.org | Exporting Options | Scaling constants boundaries graph | Sensitivity Analysis | Dominance Matrix",
    "pares": [
     [
      "Indice de qualidade",
@@ -11542,7 +11566,7 @@
    "nosso": {
     "tradeoff": 21
    },
-   "porque": "par a 0,009962 do limiar: nos damos por ordenado, ele nao"
+   "porque": "Na última pergunta, um par fica a 0,009962 do limiar de equivalência de 0,01. Nós o damos por ordenado; o oficial não, e faz uma pergunta a mais. Diferença na quarta casa decimal."
   }
  },
  {
@@ -11646,6 +11670,7 @@
   "oficial": {
    "ordenacao": 3,
    "tradeoff": 2,
+   "tela_final": "All the alternatives have been sorted into a unique category. This is the final result. | Warning | FU-T3MMM-WF1a | Alternatives\tCategory\tMin. Value\tMax. Value | Alt 01\tC1\t0.24\t0.26 | Alt 02\tC1\t0.42\t0.47 | Alt 03\tC2\t0.66\t0.73 | Alt 04\tC2\t0.77\t0.81 | Alt 05\tC2\t0.81\t0.83 | Alt 06\tC2\t0.67\t0.71 | Alt 07\tC1\t0.43\t0.48 | Alt 08\tC1\t0.2\t0.26 | Alt 09\tC1\t0.14\t0.17 | Alt 10\tC1\t0.17\t0.2 | C2 | C1 | Current Results | Sorted Alternatives (Min. Values and Max. Values): | Sorted Alternatives (Global Value Graph): | FITradeoff.org | Scaling constants boundaries graph | Sensitivity Analysis | Exporting Options | View the ranking of C2 alternatives",
    "pares": [
     [
      "Indice de qualidade",
@@ -11790,6 +11815,7 @@
   "oficial": {
    "ordenacao": 5,
    "tradeoff": 11,
+   "tela_final": "All the alternatives have been sorted into a unique category. This is the final result. | Warning | FU-T3MMM-WF1a | Alternatives\tCategory\tMin. Value\tMax. Value | Alt 01\tC2\t0.49\t0.52 | Alt 02\tC3\t0.7\t0.75 | Alt 03\tC3\t0.9\t0.95 | Alt 04\tC3\t0.96\t1 | Alt 05\tC3\t0.95\t0.96 | Alt 06\tC3\t0.73\t0.74 | Alt 07\tC2\t0.45\t0.48 | Alt 08\tC1\t0.15\t0.2 | Alt 09\tC1\t0.02\t0.07 | Alt 10\tC1\t0\t0.03 | Alt 11\tC1\t0.1\t0.11 | Alt 12\tC1\t0.33\t0.35 | C2 | C3 | C1 | Current Results | Sorted Alternatives (Min. Values and Max. Values): | Sorted Alternatives (Global Value Graph): | FITradeoff.org | Scaling constants boundaries graph | Sensitivity Analysis | Exporting Options | View the ranking of C3 alternatives",
    "pares": [
     [
      "Indice de qualidade",
@@ -12053,6 +12079,7 @@
   "oficial": {
    "ordenacao": 8,
    "tradeoff": 20,
+   "tela_final": "All the alternatives have been sorted into a unique category. This is the final result. | Warning | FU-T3MMM-WF1a | Alternatives\tCategory\tMin. Value\tMax. Value | Alt 01\tC1\t0.24\t0.25 | Alt 02\tC2\t0.37\t0.37 | Alt 03\tC2\t0.46\t0.47 | Alt 04\tC3\t0.56\t0.57 | Alt 05\tC3\t0.68\t0.69 | Alt 06\tC4\t0.75\t0.76 | Alt 07\tC4\t0.8\t0.81 | Alt 08\tC4\t0.86\t0.86 | Alt 09\tC4\t0.85\t0.85 | Alt 10\tC4\t0.79\t0.79 | Alt 11\tC3\t0.73\t0.74 | Alt 12\tC3\t0.63\t0.64 | Alt 13\tC3\t0.53\t0.54 | Alt 14\tC2\t0.4\t0.41 | Alt 15\tC1\t0.29\t0.3 | Alt 16\tC1\t0.22\t0.23 | Alt 17\tC1\t0.16\t0.17 | Alt 18\tC1\t0.11\t0.12 | Alt 19\tC1\t0.15\t0.15 | Alt 20\tC1\t0.17\t0.17 | C3 | C4 | C2 | C1 | Current Results | Sorted Alternatives (Min. Values and Max. Values): | Sorted Alternatives (Global Value Graph): | FITradeoff.org | Scaling constants boundaries graph | Sensitivity Analysis | Exporting Options | View the ranking of C4 alternatives",
    "pares": [
     [
      "Indice de qualidade",
@@ -12330,6 +12357,7 @@
   "oficial": {
    "ordenacao": 11,
    "tradeoff": 21,
+   "tela_final": "All the alternatives have been sorted into a unique category. This is the final result. | Warning | FU-T3MMM-WF1a | Alternatives\tCategory\tMin. Value\tMax. Value | Alt 01\tC2\t0.45\t0.47 | Alt 02\tC3\t0.75\t0.77 | Alt 03\tC3\t0.88\t0.9 | Alt 04\tC3\t0.98\t1 | Alt 05\tC3\t0.98\t0.99 | Alt 06\tC3\t0.91\t0.92 | Alt 07\tC3\t0.76\t0.76 | Alt 08\tC2\t0.6\t0.61 | Alt 09\tC1\t0.33\t0.35 | Alt 10\tC1\t0.2\t0.22 | Alt 11\tC1\t0.05\t0.08 | Alt 12\tC1\t0\t0.02 | Alt 13\tC1\t0.05\t0.06 | Alt 14\tC1\t0.15\t0.16 | Alt 15\tC2\t0.36\t0.37 | C2 | C3 | C1 | Current Results | Sorted Alternatives (Min. Values and Max. Values): | Sorted Alternatives (Global Value Graph): | FITradeoff.org | Scaling constants boundaries graph | Sensitivity Analysis | Exporting Options | View the ranking of C3 alternatives",
    "pares": [
     [
      "Indice de qualidade",

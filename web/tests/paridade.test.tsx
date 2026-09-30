@@ -169,8 +169,10 @@ describe("a visão geral", () => {
 
   it("mostra todos os casos medidos, e não um recorte favorável", () => {
     const { container } = render(<ParidadePage />);
+    // cada caso sai duas vezes: no cartao da tela estreita e na linha da
+    // tabela; o CSS mostra um ou outro
     for (const caso of PARIDADE) {
-      expect(within(container).getByText(caso.chave)).toBeInTheDocument();
+      expect(within(container).getAllByText(caso.chave).length).toBeGreaterThan(0);
     }
   });
 });

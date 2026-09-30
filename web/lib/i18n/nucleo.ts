@@ -63,6 +63,32 @@ export const NUCLEO = registrar({
     es: "No fue posible confirmar su acceso. Verifique la conexión.",
   },
   "portao.tentar": { pt: "Tentar de novo", en: "Try again", es: "Intentar de nuevo" },
+  /* --- aviso: esta nao e a aplicacao original ---------------------------- */
+  "aviso.naoOficial.titulo": {
+    pt: "Este não é o FITradeoff original",
+    en: "This is not the original FITradeoff",
+    es: "Este no es el FITradeoff original",
+  },
+  "aviso.naoOficial.corpo": {
+    pt: "É uma implementação independente do método FITradeoff, construída a partir do guia do usuário publicado no site do FITradeoff (Practical User Guide, CDSID-UFPE) e dos artigos que descrevem o método. Não é o sistema do CDSID-UFPE e pode apresentar valores diferentes dos dele. Para aproximar os dois, fizemos várias rodadas de equivalência: os mesmos casos, rodados nos dois sistemas e comparados pergunta a pergunta e resultado a resultado, em cada problemática que o original permite comparar.",
+    en: "This is an independent implementation of the FITradeoff method, built from the user guide published on the FITradeoff website (Practical User Guide, CDSID-UFPE) and from the papers that describe the method. It is not the CDSID-UFPE system and may show values that differ from it. To bring the two closer, we ran several equivalence rounds: the same cases, run on both systems and compared question by question and result by result, in every problematic the original allows comparing.",
+    es: "Es una implementación independiente del método FITradeoff, construida a partir de la guía del usuario publicada en el sitio de FITradeoff (Practical User Guide, CDSID-UFPE) y de los artículos que describen el método. No es el sistema del CDSID-UFPE y puede presentar valores diferentes de los suyos. Para acercar los dos, hicimos varias rondas de equivalencia: los mismos casos, ejecutados en los dos sistemas y comparados pregunta por pregunta y resultado por resultado, en cada problemática que el original permite comparar.",
+  },
+  "aviso.naoOficial.curto": {
+    pt: "Implementação independente do método FITradeoff, feita a partir do guia do usuário do site fitradeoff.org. Não é o sistema original do CDSID-UFPE e pode apresentar valores diferentes dele.",
+    en: "Independent implementation of the FITradeoff method, built from the user guide on fitradeoff.org. It is not the original CDSID-UFPE system and may show values that differ from it.",
+    es: "Implementación independiente del método FITradeoff, hecha a partir de la guía del usuario del sitio fitradeoff.org. No es el sistema original del CDSID-UFPE y puede presentar valores diferentes de los suyos.",
+  },
+  "aviso.naoOficial.comparacao": {
+    pt: "Ver a comparação com o original",
+    en: "See the comparison with the original",
+    es: "Ver la comparación con el original",
+  },
+  "aviso.naoOficial.original": {
+    pt: "FITradeoff original",
+    en: "Original FITradeoff",
+    es: "FITradeoff original",
+  },
   "rodape.fasorx": {
     pt: "Uma aplicação",
     en: "An application by",

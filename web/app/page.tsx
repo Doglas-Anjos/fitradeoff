@@ -3,6 +3,8 @@
 import { ArrowRight, CheckCircle, Plugs } from "@phosphor-icons/react";
 import Link from "next/link";
 
+import { AvisoNaoOficial } from "@/components/AvisoNaoOficial";
+
 import { useIdioma } from "@/lib/i18n";
 import "@/lib/i18n/telas";
 
@@ -70,6 +72,12 @@ export default function Home() {
           <Demonstracao />
         </div>
       </section>
+
+      {/* Logo abaixo da chamada, antes de qualquer outra coisa: quem chega pela
+          primeira vez precisa saber que isto nao e o sistema do CDSID-UFPE. */}
+      <div className="mx-auto max-w-7xl px-5 pt-10">
+        <AvisoNaoOficial forma="destaque" />
+      </div>
 
       <section className="mx-auto max-w-7xl px-5 py-16 sm:py-20">
         <div className="max-w-2xl">

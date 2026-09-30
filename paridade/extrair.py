@@ -105,6 +105,40 @@ def extrai_vencedor(tela, alternativas):
     return resolve_alternativa(corpo[0][0], alternativas)
 
 
+#: Fim por esgotamento: nao ha mais pergunta de decomposicao, e o resultado e
+#: parcial. O oficial oferece seguir pela avaliacao holistica ou encerrar.
+PERGUNTAS_ESGOTADAS = "There are no comparisons to be made in the elicitation by decomposition anymore"
+
+
+def terminou_por_esgotamento(tela):
+    """O oficial encerrou porque as perguntas acabaram, sem conclusao completa?
+
+    Na escolha e no ranking essa tela vem sem a tabela final: o que ele afirma e
+    so que o resultado e parcial. (No beneficio-custo a mesma frase vem junto da
+    carteira, e ai quem vale e a carteira.)
+    """
+    return PERGUNTAS_ESGOTADAS in tela
+
+
+def extrai_escolhidas(tela, alternativas):
+    """Escolha: todas as alternativas que a tabela final do oficial lista.
+
+    Quase sempre e uma so, a recomendacao, e ``extrai_vencedor`` e o leitor
+    certo para travar isso. Mas quando a elicitacao para porque as restantes
+    ficaram equivalentes dentro do limiar, o oficial anuncia "a solution with 3
+    alternatives" e tabula as tres. Para mostrar o desfecho dos dois lados, e
+    esse conjunto que importa.
+    """
+    grade = _grade(tela)
+    i = _cabecalho(grade,
+                   lambda c: c[0] == "Alternatives" and "Max Overall Value" in c,
+                   "escolha")
+    corpo = _corpo(grade, i)
+    if not corpo:
+        raise TelaIlegivel("a tabela da escolha veio sem linhas")
+    return [resolve_alternativa(linha[0], alternativas) for linha in corpo]
+
+
 def extrai_desfecho_do_ranking(tela):
     """Ranking: ordem completa ou pré-ordem — é tudo o que a tela afirma em texto.
 

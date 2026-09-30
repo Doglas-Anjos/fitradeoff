@@ -32,7 +32,7 @@ uma suíte que está no repositório.
 | Curva de valor intra-critério elicitada | **pronto** — por bisseção, antes da ordenação |
 | Modelo de veto | **pronto** — escolha e ordenação, por envelope conservador |
 | Auditoria, desfazer, sensibilidade | **pronto** — sobre o limiar e sobre as consequências |
-| Servidor MCP (14 ferramentas) | **pronto** — stdio e HTTP remoto, com chave |
+| Servidor MCP (19 ferramentas) | **pronto** — stdio e HTTP remoto, com chave |
 | Superfície pública do MCP | **pronto** — imagem, composição e túnel |
 | Identidade vinda de outra aplicação | **pronto** — JWT assinado, um acervo por pessoa |
 | Autenticação de `/api` | **pronto** — atrás de quem autentica; local segue sem cadastro |
@@ -45,7 +45,7 @@ uma suíte que está no repositório.
 | Paridade medida contra o sistema oficial | **74 casos**, versionados — 63 batem de 73 comparáveis; ver abaixo |
 | Decisão em grupo | a fazer |
 
-**1426 testes**: 732 de motor e API, 58 do servidor MCP, 125 de paridade e 511 de interface.
+**1442 testes**: 736 de motor e API, 69 do servidor MCP, 125 de paridade e 512 de interface.
 Entre eles, um decisor-oráculo que verifica a invariante central do método (a alternativa
 verdadeiramente ótima nunca sai do conjunto de POAs), testes que auditam a própria
 arquitetura e testes de entrada não confiável.

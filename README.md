@@ -521,6 +521,20 @@ Há teste para isso.
 Sem `FITRADEOFF_JWT_JWKS_URL` nem `FITRADEOFF_JWT_SECRET`, nenhum token é aceito: só as chaves do
 cofre entram. Um verificador que aceitasse qualquer assinatura seria pior do que não existir.
 
+Com `FITRADEOFF_JWT_JWKS_URL`, **`FITRADEOFF_JWT_ISSUER` e `FITRADEOFF_JWT_AUDIENCE` são
+obrigatórias**: sem as duas o processo não parte, e o registro diz qual falta. A chave pública de
+um JWKS costuma assinar tudo o que aquele emissor emite; sem `aud` conferido, um token que a
+aplicação da frente emitiu para outro serviço dela entraria aqui. Os tokens, por sua vez, precisam
+trazer `iss` e `aud`. No HS256 o público continua opcional — o segredo é só das duas pontas.
+
+**O emissor não muda depois de publicado.** Ele entra no nome do diretório de cada pessoa; trocar
+`FITRADEOFF_JWT_ISSUER` deixa todos os acervos para trás. A barra no fim é ignorada
+(`https://x.org` e `https://x.org/` dão o mesmo diretório), mas qualquer outra diferença conta.
+
+Token assinado vai **só no cabeçalho** `Authorization`. Na URL (`/mcp/<credencial>`) só a chave
+do cofre (`fit_...`) é aceita: um JWT no caminho ficaria gravado em log de proxy, e não há como
+revogá-lo antes de expirar.
+
 **Cada `sub` abre o próprio acervo**, ao lado do acervo do dono da plataforma — e a identidade
 nunca vira componente de caminho: o diretório é o resumo de `iss` + `sub`. Um identificador cru
 traria junto o problema do `..` e deixaria a lista de quem usa a plataforma legível no disco.
@@ -566,7 +580,7 @@ assistente pelo servidor publicado.
 Se o encaminhamento dela acumular a resposta antes de repassar, a ferramenta parece travar sem
 erro nenhum. `FITRADEOFF_MCP_JSON=1` troca o fluxo de eventos por um JSON só, e aí não há o que
 acumular. Nada se perde: a troca custaria as perguntas do servidor de volta ao cliente, e nenhuma
-das catorze ferramentas faz isso.
+das ferramentas faz isso.
 
 Três coisas que costumam morder na integração:
 

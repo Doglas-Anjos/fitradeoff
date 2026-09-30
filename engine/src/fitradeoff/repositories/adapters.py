@@ -8,7 +8,9 @@ tocar em disco.
 from __future__ import annotations
 
 import json
+import os
 import re
+import tempfile
 from pathlib import Path
 
 from .base import DecisionRecord, DecisionRepository, RecordNotFound
@@ -96,11 +98,52 @@ class JsonFileDecisionRepository(DecisionRepository):
         return candidate
 
     def save(self, record: DecisionRecord) -> None:
+        """Grava por inteiro ou nao grava: nunca deixa meio arquivo no lugar.
+
+        ``write_text`` direto no destino trunca o arquivo antes de escrever. Se o
+        processo morrer no meio -- o container reiniciado, o disco cheio, o
+        limite de memoria -- sobra um JSON cortado, que ``get`` nao le e
+        ``list`` ignora em silencio: a decisao inteira, com todo o historico de
+        respostas da pessoa, some por causa de uma gravacao que so ia
+        acrescentar uma resposta.
+
+        Entao escreve ao lado, num arquivo temporario de nome unico, forca os
+        bytes ao disco e so entao troca um pelo outro com ``os.replace``, que e
+        atomico no mesmo sistema de arquivos -- por isso o temporario fica no
+        mesmo diretorio, e nao em ``/tmp``, que no container e outro sistema de
+        arquivos (um tmpfs). Quem ler durante a troca ve o arquivo velho ou o
+        novo, nunca um pedaco.
+
+        O nome unico importa: duas gravacoes da mesma decisao ao mesmo tempo nao
+        podem escrever no mesmo temporario. E ele nao termina em ``.json``, para
+        a listagem nunca o confundir com uma decisao.
+        """
+        destino = self._path(record.id)
         self._directory.mkdir(parents=True, exist_ok=True)
-        self._path(record.id).write_text(
-            json.dumps(record_to_dict(record), ensure_ascii=False, indent=2),
+        conteudo = json.dumps(record_to_dict(record), ensure_ascii=False, indent=2)
+
+        temporario = tempfile.NamedTemporaryFile(
+            mode="w",
             encoding="utf-8",
+            dir=self._directory,
+            prefix=f".{record.id}.",
+            suffix=".tmp",
+            delete=False,
         )
+        try:
+            with temporario:
+                temporario.write(conteudo)
+                temporario.flush()
+                os.fsync(temporario.fileno())
+            os.replace(temporario.name, destino)
+        except BaseException:
+            # Qualquer falha, inclusive interrupcao: o destino continua o que
+            # era, e o temporario nao fica acumulando no diretorio.
+            try:
+                os.unlink(temporario.name)
+            except OSError:
+                pass
+            raise
 
     def get(self, record_id: str) -> DecisionRecord:
         path = self._path(record_id)

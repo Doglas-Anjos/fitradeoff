@@ -11,7 +11,11 @@
 
 import { ArrowCounterClockwise, CheckCircle, Circle, DownloadSimple, XCircle } from "@phosphor-icons/react";
 
+import { useState } from "react";
+
+import { avisar } from "@/components/Avisos";
 import { Dica } from "@/components/ui";
+import { api, mensagemDeErro, salvarAnexo } from "@/lib/api";
 import { useIdioma } from "@/lib/i18n";
 import "@/lib/i18n/paineis";
 import type { Estado, Problema } from "@/lib/types";
@@ -28,6 +32,24 @@ export function PainelProgresso({
   podeDesfazer: boolean;
 }) {
   const { t } = useIdioma();
+  const [exportando, setExportando] = useState(false);
+
+  /* Botao, e nao link. Um `<a href>` nao leva o cabecalho de identidade, e com
+     o portao ligado a API recusa o pedido com 401: o navegador salvava o JSON
+     do erro com cara de planilha, ou abria uma pagina de erro. O download sai
+     por `api.exportar`, que manda o mesmo `Authorization` das outras chamadas,
+     e so no fim vira arquivo no disco. */
+  async function exportar() {
+    if (exportando) return;
+    setExportando(true);
+    try {
+      salvarAnexo(await api.exportar(problema.id));
+    } catch (e) {
+      avisar.erro(mensagemDeErro(e, t("progresso.exportar.falha")));
+    } finally {
+      setExportando(false);
+    }
+  }
   const total = Object.keys(problema.consequencias).length;
   const nomes = Object.keys(problema.consequencias);
   const analise = estado?.analise;
@@ -229,14 +251,17 @@ export function PainelProgresso({
       </div>
 
       <div className="mt-4 flex flex-col gap-2 px-1">
-        <a
-          href={`/api/decisoes/${problema.id}/exportar`}
-          className="tatil flex items-center gap-1.5 text-[13px]"
+        <button
+          type="button"
+          onClick={exportar}
+          disabled={exportando}
+          aria-busy={exportando}
+          className="tatil flex items-center gap-1.5 text-left text-[13px] disabled:opacity-60"
           style={{ color: "var(--tinta-3)" }}
         >
           <DownloadSimple size={14} />
           {t("progresso.exportar")}
-        </a>
+        </button>
       </div>
     </aside>
   );

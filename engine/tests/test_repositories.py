@@ -291,3 +291,56 @@ def test_arquivo_em_disco_sem_o_campo_continua_carregando(tmp_path, record):
 
     assert repo.get("abc123").favorite is False
     assert [r.favorite for r in repo.list()] == [False]
+
+
+# --- gravacao atomica ---------------------------------------------------------
+
+
+def test_falha_no_meio_da_gravacao_preserva_o_arquivo_anterior(tmp_path, record, monkeypatch):
+    """Um processo que morre gravando nao pode levar a decisao junto.
+
+    A falha e simulada no `os.replace`, depois que o novo conteudo ja foi
+    escrito e forcado ao disco: e o ponto mais tardio possivel, e mesmo assim o
+    arquivo antigo tem de estar intacto -- e nenhum temporario pode sobrar.
+    """
+    import dataclasses
+    import os
+
+    from fitradeoff.repositories import adapters
+
+    repo = JsonFileDecisionRepository(tmp_path)
+    repo.save(record)
+    antes = (tmp_path / "abc123.json").read_bytes()
+
+    def quebra(*_args, **_kwargs):
+        raise OSError("disco cheio")
+
+    monkeypatch.setattr(adapters.os, "replace", quebra)
+    alterado = dataclasses.replace(record, settings={"orcamento": 99.0})
+    with pytest.raises(OSError, match="disco cheio"):
+        repo.save(alterado)
+
+    assert (tmp_path / "abc123.json").read_bytes() == antes
+    assert repo.get("abc123").settings == {"orcamento": 10.0}
+    assert sorted(os.listdir(tmp_path)) == ["abc123.json"]
+
+
+def test_falha_escrevendo_o_conteudo_preserva_o_arquivo_anterior(tmp_path, record, monkeypatch):
+    """A serializacao pode falhar no meio; o arquivo no disco nao e tocado."""
+    import os
+
+    from fitradeoff.repositories import adapters
+
+    repo = JsonFileDecisionRepository(tmp_path)
+    repo.save(record)
+    antes = (tmp_path / "abc123.json").read_bytes()
+
+    def quebra(_fd):
+        raise OSError("falha de E/S")
+
+    monkeypatch.setattr(adapters.os, "fsync", quebra)
+    with pytest.raises(OSError, match="falha de E/S"):
+        repo.save(record)
+
+    assert (tmp_path / "abc123.json").read_bytes() == antes
+    assert sorted(os.listdir(tmp_path)) == ["abc123.json"]

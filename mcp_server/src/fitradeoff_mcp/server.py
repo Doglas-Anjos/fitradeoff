@@ -264,7 +264,7 @@ Em stdio nao ha pergunta a fazer: o processo e do proprio usuario, e o
 diretorio vem do ambiente. Por HTTP o processo atende varios clientes, e cada
 chamada chega com uma chave -- entao quem responde "de quem sao estes dados" e
 o transporte, nao o ambiente. A variavel de contexto e o unico lugar onde essa
-resposta caberia sem mexer na assinatura das catorze ferramentas.
+resposta caberia sem mexer na assinatura de cada ferramenta.
 
 Quem a preenche e ``remoto.EscopoDaChave``, no mesmo task que executa a
 ferramenta. Preenche-la de um middleware ASGI nao funcionaria: o transporte

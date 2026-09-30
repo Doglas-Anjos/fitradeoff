@@ -4449,12 +4449,6 @@
      "Custo unitario"
     ]
    ]
-  },
-  "divergencia": {
-   "nosso": {
-    "ordenacao": 14
-   },
-   "porque": "ordenar 7 criterios: ele compara 15 vezes, a nossa insercao 14"
   }
  },
  {
@@ -4858,12 +4852,6 @@
      "Custo unitario"
     ]
    ]
-  },
-  "divergencia": {
-   "nosso": {
-    "ordenacao": 14
-   },
-   "porque": "ordenar 7 criterios: ele compara 15 vezes, a nossa insercao 14"
   }
  },
  {
@@ -6642,12 +6630,6 @@
      "Durabilidade"
     ]
    ]
-  },
-  "divergencia": {
-   "nosso": {
-    "ordenacao": 14
-   },
-   "porque": "ordenar 7 criterios: ele compara 15 vezes, a nossa insercao 14"
   }
  },
  {
@@ -7397,10 +7379,8 @@
    ]
   },
   "divergencia": {
-   "nosso": {
-    "ordenacao": 14
-   },
-   "porque": "abertura B: mesmas 23 perguntas, ordem difere da 3a a 14a; e 7 criterios",
+   "nosso": {},
+   "porque": "abertura B: mesmas 23 perguntas, ordem difere da 3a a 14a",
    "pares_ate": 2
   }
  },
@@ -8300,12 +8280,6 @@
      "Durabilidade"
     ]
    ]
-  },
-  "divergencia": {
-   "nosso": {
-    "ordenacao": 14
-   },
-   "porque": "ordenar 7 criterios: ele compara 15 vezes, a nossa insercao 14"
   }
  },
  {

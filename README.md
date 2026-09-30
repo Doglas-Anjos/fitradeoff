@@ -42,7 +42,7 @@ uma suíte que está no repositório.
 | Entrada manual + import de planilha | **pronto** — `.xlsx` e `.csv` |
 | Export (entrada + resultado + trilha) | **pronto** |
 | Ordenação de pesos nos dois modos | **pronto** — lista e avaliação global |
-| Paridade medida contra o sistema oficial | **74 casos**, versionados — 63 batem de 73 comparáveis; ver abaixo |
+| Paridade medida contra o sistema oficial | **74 casos**, versionados — 67 batem de 73 comparáveis; ver abaixo |
 | Decisão em grupo | a fazer |
 
 **1442 testes**: 736 de motor e API, 69 do servidor MCP, 125 de paridade e 512 de interface.
@@ -150,12 +150,11 @@ resultado a resultado: **74 casos** nas quatro problemáticas que o oficial elic
 30 alternativas e de 2 a 7 critérios, com curva de valor não linear, critério discreto, respostas A,
 B e misturadas, e casos de borda feitos para quebrar a equivalência.
 
-**63 batem de 73 comparáveis** — a mesma contagem nas duas fases, a mesma sequência de perguntas e
-o mesmo resultado (vencedor, ordem, classe de cada alternativa, carteira). Os 10 que não batem se
-resumem a três diferenças estreitas, cada uma presa num teste para que fechá-la também o quebre:
+**67 batem de 73 comparáveis** — a mesma contagem nas duas fases, a mesma sequência de perguntas e
+o mesmo resultado (vencedor, ordem, classe de cada alternativa, carteira). Os 6 que não batem se
+resumem a duas diferenças estreitas, cada uma presa num teste para que fechá-la também o quebre:
 
 - **abertura respondida B**: os valores das perguntas batem, a ordem dos pares não (4 casos);
-- **ordenar 7 critérios**: 15 comparações dele contra 14 nossas, chegando à mesma ordem (5 casos);
 - **um par a menos de 0,4% do limiar de 0,01**: uma pergunta a mais num caso, a menos no outro.
 
 Um caso o oficial não completa: com um critério de faixa zero, ele trava depois de salvar a
@@ -171,7 +170,7 @@ python -m pytest paridade/
 - [`paridade/README.md`](paridade/README.md) — como rodar cada modo e o que a suíte trava
 - [`PARIDADE.md`](PARIDADE.md) — comparação de **recursos**, levantada do guia do usuário oficial
 - [`paridade/EQUIVALENCIA.md`](paridade/EQUIVALENCIA.md) — comparação de **comportamento**: as
-  regras que a comparação encontrou e corrigiu, e as três diferenças que permanecem
+  regras que a comparação encontrou e corrigiu, e as duas diferenças que permanecem
 
 Rodar lado a lado é o que revelou essas regras. Na maior parte delas as perguntas iniciais eram
 idênticas e a diferença estava em **quando cada sistema para** — a largura mínima de um par, a

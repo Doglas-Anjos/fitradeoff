@@ -8,10 +8,10 @@ resultado.
 A distinção importa. Ter a mesma tela não é fazer a mesma coisa; e foi só ao
 rodar lado a lado que apareceram as divergências reais de método — quando cada
 sistema abandona um par, quando para de perguntar, como trata curva não linear e
-critério discreto. As que foram entendidas estão corrigidas; as três que
+critério discreto. As que foram entendidas estão corrigidas; as duas que
 permanecem estão descritas em "O que permanece diferente".
 
-**O placar: 74 casos, 63 batem de 73 comparáveis**, e há um caso que o oficial não
+**O placar: 74 casos, 67 batem de 73 comparáveis**, e há um caso que o oficial não
 completa.
 
 O sistema de referência é o `FU-T3MMM-WF1a` do CDSID/UFPE, acessado pelo
@@ -100,8 +100,8 @@ Esta tabela são os **17 casos originais**, lineares e respondidos com A. Os out
 57 — curva não linear, critério discreto, respostas B, estresse até 7 × 30 e a
 rodada final de casos de borda — estão no registro (`resultados/casos_medidos.json`),
 são conferidos um a um por `test_caso_medido_bate_com_o_oficial` e aparecem na tela
-`/paridade`. Somando os dois, **63 de 73 comparáveis batem**; os que não batem são as
-três diferenças descritas em "O que permanece diferente".
+`/paridade`. Somando os dois, **67 de 73 comparáveis batem**; os que não batem são as
+duas diferenças descritas em "O que permanece diferente".
 
 ## O que a comparação encontrou
 
@@ -427,6 +427,43 @@ empatados na 4ª posição. A carteira dele é a nossa carteira mais frequente
 (6 de 8 amostras). A diferença é que nós avisamos que a Alt 10 ainda pode entrar
 no lugar da Alt 07, e ele não mostra essa alternativa.
 
+### 30/09/2026: a ordenação dos critérios é meio e depois um a um
+
+Com 3 a 6 critérios, a ordenação dele pedia o mesmo número de comparações que a
+nossa inserção binária; com 7, uma a mais (15 contra 14), em cinco casos e numa
+remedição dedicada. Nenhuma variante de inserção binária ou de merge sort chegava
+a 15. A resposta estava nas telas, que a remedição tinha guardado: o par de cada
+comparação.
+
+| inserindo | já ordenados | comparações dele |
+|---|---|---|
+| Custo | Q | Q |
+| Prazo | Q, C | Q, C |
+| Durabilidade | Q, C, P | **C**, P |
+| Suporte | Q, C, P, D | **C**, P, D |
+| Consumo | Q, C, P, D, S | **P**, D, S |
+| Emissão | Q, C, P, D, S, Co | **P**, D, S, Co |
+
+Cada critério novo é comparado primeiro com o do **meio** da lista já ordenada
+(posição ⌊(n−1)/2⌋) e depois percorre **um a um** a metade em que caiu. Com as
+respostas sempre A o novo desce até o fim, e inserir numa lista de n custa
+n − ⌊(n−1)/2⌋: 1, 2, 2, 3, 3, 4 — a mesma soma da busca binária até 6 critérios,
+por coincidência, e uma a mais com 7.
+
+Faltava o outro sentido, que as respostas sempre A nunca mostram. Uma medição
+curta respondeu B na comparação do meio: com 6 critérios, o Consumo venceu o
+Prazo (o meio) e o oficial comparou em seguida com o Custo, o de **logo acima**.
+Ou seja, acima do meio ele sobe um a um, e não recomeça do topo.
+
+Há ainda uma diferença que a contagem escondia: o meio dele é ⌊(n−1)/2⌋, o nosso
+era ⌊n/2⌋. Com dois critérios ordenados ele compara primeiro com o 1º, nós com o
+2º — mesma contagem, perguntas diferentes.
+
+A ordenação da nossa tela (`web/lib/ordenacaoPorComparacao.ts`) passou a seguir
+esse procedimento, com as duas sequências medidas presas em teste, e a conta da
+suíte de paridade (`medidos.comparacoes_de_ordenacao`) também. Os cinco casos de
+7 critérios passam a bater.
+
 ## O que permanece diferente
 
 ### Abertura respondida com B: os valores batem, a escolha do par não
@@ -467,18 +504,6 @@ pula o par abaixo da metade (ou da média) da maior largura. O roteiro não foi
 implementado: é um padrão tirado de quatro casos em que a abertura foi B, não
 uma regra entendida. Com a abertura respondida A, que é o caso de todos os
 outros casos medidos, as sequências batem com a nossa regra do par mais largo.
-
-### Ordenar 7 critérios: 15 comparações dele, 14 nossas
-
-Com 3, 4, 5 e 6 critérios, a ordenação dele pede 3, 5, 8 e 11 comparações, o
-mesmo que a nossa inserção binária. Com 7 ele pede 15, e nós 14. Foram cinco
-casos com 7 critérios, e a remedição dedicada, com o script corrigido, deu 15 de
-novo. A ordem a que ele chega é a mesma que a nossa, porque as perguntas de
-tradeoff seguintes batem par a par. Nenhuma variante padrão chega a 15 (inserção
-binária com o meio arredondado para baixo ou para cima, faixa inclusiva ou
-exclusiva, inserção na ordem da lista ou na inversa, merge sort com as duas
-divisões): as melhores dão 14. Para achar o procedimento dele é preciso capturar
-o par de cada comparação, e o script de medição por enquanto só as conta.
 
 ### Ranking: um par a 0,4% do limiar, uma pergunta a mais ou a menos
 

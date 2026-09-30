@@ -48,6 +48,8 @@ def _criterios(caso):
 
 
 def roda_nosso(caso):
+    from medidos import comparacoes_de_ordenacao
+
     from fitradeoff import DecisionService, build_container
 
     crits = _criterios(caso)
@@ -76,12 +78,9 @@ def roda_nosso(caso):
     analise = servico.state(decisao)["analise"]
     return {
         "chave": caso["chave"],
-        # a ordenacao par a par vive no front (insercao com busca binaria);
-        # aqui ela e derivada, para comparar com o que o oficial pergunta
-        "steps_ordenacao": sum(
-            __import__("math").ceil(__import__("math").log2(k + 1))
-            for k in range(1, len(crits))
-        ),
+        # a ordenacao par a par vive no front; aqui ela e derivada, pela mesma
+        # regra, para comparar com o que o oficial pergunta
+        "steps_ordenacao": comparacoes_de_ordenacao(len(crits)),
         "steps_tradeoff": n,
         "resumo": analise.get("resumo", ""),
         "analise": analise,

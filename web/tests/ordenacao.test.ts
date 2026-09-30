@@ -70,6 +70,62 @@ describe("ordenacao por comparacao", () => {
     expect(perguntas).toBeLessThanOrEqual(15);
   });
 
+  /* As duas sequências abaixo foram lidas nas telas do FITradeoff oficial
+     (30/09/2026). Cada par é [já ordenado, novo], como ele os mostra. */
+  function sequencia(criterios: string[], verdadeira: string[]): string[][] {
+    let estado = iniciar(criterios);
+    const pares: string[][] = [];
+    while (!terminou(estado)) {
+      const c = proxima(estado)!;
+      pares.push([c.b, c.a]);
+      estado = responder(
+        estado,
+        verdadeira.indexOf(c.a) < verdadeira.indexOf(c.b) ? "A" : "B",
+      );
+    }
+    return pares;
+  }
+
+  it("com sete criterios ja na ordem, faz as 15 comparacoes do oficial", () => {
+    const c = ["Q", "C", "P", "D", "S", "Co", "E"];
+    expect(sequencia(c, c)).toEqual([
+      ["Q", "C"],
+      ["Q", "P"], ["C", "P"],
+      ["C", "D"], ["P", "D"],
+      ["C", "S"], ["P", "S"], ["D", "S"],
+      ["P", "Co"], ["D", "Co"], ["S", "Co"],
+      ["P", "E"], ["D", "E"], ["S", "E"], ["Co", "E"],
+    ]);
+  });
+
+  it("quem fica acima do meio sobe um a um, como no oficial", () => {
+    // Consumo vence Prazo (o meio) e perde para Custo: 10 comparacoes
+    const c = ["Q", "C", "P", "D", "S", "Co"];
+    expect(sequencia(c, ["Q", "C", "Co", "P", "D", "S"])).toEqual([
+      ["Q", "C"],
+      ["Q", "P"], ["C", "P"],
+      ["C", "D"], ["P", "D"],
+      ["C", "S"], ["P", "S"], ["D", "S"],
+      ["P", "Co"], ["C", "Co"],
+    ]);
+  });
+
+  it("a estimativa de restantes nunca fica abaixo do que de fato falta", () => {
+    const c = ["a", "b", "c", "d", "e", "f", "g"];
+    const verdadeira = ["d", "b", "f", "a", "g", "c", "e"];
+    let estado = iniciar(c);
+    let feitas = 0;
+    const estimativas: number[] = [];
+    while (!terminou(estado)) {
+      estimativas.push(restantes(estado));
+      const p = proxima(estado)!;
+      estado = responder(estado, verdadeira.indexOf(p.a) < verdadeira.indexOf(p.b) ? "A" : "B");
+      feitas++;
+    }
+    estimativas.forEach((e, i) => expect(e).toBeGreaterThanOrEqual(feitas - i));
+    expect(restantes(estado)).toBe(0);
+  });
+
   it("o empate posiciona sem afirmar ordem, e fica registrado", () => {
     let estado = iniciar(["a", "b"]);
     estado = responder(estado, "indiferente");

@@ -746,11 +746,11 @@ export const PARIDADE: CasoParidade[] = [
       "tradeoff": 14
     },
     "nosso": {
-      "ordenacao": 14,
+      "ordenacao": 15,
       "tradeoff": 14
     },
     "resumo": "Recomendação: Alt 08.",
-    "bate": false,
+    "bate": true,
     "tipo": "estresse"
   },
   {
@@ -763,11 +763,11 @@ export const PARIDADE: CasoParidade[] = [
       "tradeoff": 24
     },
     "nosso": {
-      "ordenacao": 14,
+      "ordenacao": 15,
       "tradeoff": 24
     },
     "resumo": "Pré-ordem completa: Alt 08 > Alt 07 > Alt 06 > Alt 10 > Alt 05 > Alt 09 > Alt 11 > Alt 04 > Alt 03 > Alt 12 > Alt 02 > Alt 13 > Alt 01 > Alt 14 > Alt 25 > Alt 15 > Alt 24 > Alt 16 ",
-    "bate": false,
+    "bate": true,
     "tipo": "estresse"
   },
   {
@@ -848,11 +848,11 @@ export const PARIDADE: CasoParidade[] = [
       "tradeoff": 50
     },
     "nosso": {
-      "ordenacao": 14,
+      "ordenacao": 15,
       "tradeoff": 50
     },
     "resumo": "A carteira já está definida pela razão benefício-custo: Alt 03, Alt 07, Alt 08, Alt 09, Alt 10, Alt 12, Alt 13, Alt 16, Alt 21, Alt 24 (custo 207.00 de 210.25). 1 par de projetos a",
-    "bate": false,
+    "bate": true,
     "tipo": "estresse"
   },
   {
@@ -899,7 +899,7 @@ export const PARIDADE: CasoParidade[] = [
       "tradeoff": 23
     },
     "nosso": {
-      "ordenacao": 14,
+      "ordenacao": 15,
       "tradeoff": 23
     },
     "resumo": "3 alternativas ficaram equivalentes dentro do limiar de 0.01: Alt 05, Alt 06, Alt 07. Qualquer uma delas serve; mais perguntas não separariam.",
@@ -950,11 +950,11 @@ export const PARIDADE: CasoParidade[] = [
       "tradeoff": 22
     },
     "nosso": {
-      "ordenacao": 14,
+      "ordenacao": 15,
       "tradeoff": 22
     },
     "resumo": "Todas as alternativas foram classificadas.",
-    "bate": false,
+    "bate": true,
     "tipo": "estresse"
   },
   {
@@ -1283,7 +1283,7 @@ export const PARIDADE: CasoParidade[] = [
 ];
 
 export const RESUMO = {
-  bate: 63,
+  bate: 67,
   comparaveis: 73,
   travados: 1,
   maiorProblema: 30,

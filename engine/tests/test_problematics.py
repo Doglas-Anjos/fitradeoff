@@ -68,6 +68,30 @@ def test_dominancia_restrita_ao_subconjunto_coincide_com_a_completa(evaluator):
             assert restrita[i, l] == completa[i, l]
 
 
+def test_dominancia_de_poucas_poas_nao_paga_a_faixa_de_todas(solver):
+    """A escolha pede a matriz so das POAs. As faixas de valor, atalho que se
+    paga na matriz completa do ranking, custavam 2n LPs aqui e dobraram os LPs
+    por pergunta da escolha (30/09/2026). Com ate tres alternativas pedidas, o LP
+    direto sai mais barato, e nenhuma faixa e calculada."""
+    faixas = []
+
+    class Contando(type(solver)):
+        def bounds_of(self, space, objective):
+            faixas.append(1)
+            return super().bounds_of(space, objective)
+
+    avaliador = Evaluator(Contando())
+    rng = np.random.default_rng(3)
+    problem = make_problem(rng.random((30, 4)), names=[f"a{i}" for i in range(30)])
+    space = space_for(problem, range(4))
+
+    avaliador.dominance_matrix(problem, space, subset=(0, 1, 2))
+    assert faixas == []
+
+    avaliador.dominance_matrix(problem, space, subset=tuple(range(6)))
+    assert len(faixas) == 6  # so as pedidas, nunca as 30
+
+
 def test_limiar_de_equivalencia_resolve_empate(evaluator):
     problem = make_problem([[1.0, 0.0], [0.0, 1.0], [0.5, 0.5]])
     # k0 >= k1 nao estrito admite k0 = k1 = 0.5, onde as tres empatam

@@ -191,7 +191,18 @@ class Evaluator:
         # alternativas e 10 criterios (28/09/2026): 55% na primeira pergunta, 86%
         # na oitava. So confirma dominancia que o LP tambem confirmaria, entao a
         # matriz nao muda.
-        faixas = self.value_bounds(problem, space)
+        #
+        # So das alternativas pedidas, e so quando compensa. Com ``subset`` a
+        # escolha pede apenas as POAs; calcular a faixa das n custava 2n LPs para
+        # decidir meia duzia de pares, e dobrou os LPs por pergunta da escolha
+        # (medido em 30/09/2026: 292 -> 532 com 30 alternativas). Com k
+        # alternativas sao k(k-1) pares contra 2k LPs de faixa: ate k = 3 o LP
+        # direto sai mais barato.
+        faixas = (
+            {i: self._solver.bounds_of(space, problem.values[i]) for i in indices}
+            if len(indices) > 3
+            else None
+        )
 
         # a mesma folga dos tres atalhos e do LP: se divergissem, a matriz
         # afirmaria uma dominancia que `dominates` nega, ou o contrario
@@ -206,7 +217,7 @@ class Evaluator:
                     matrix[i, l] = True  # dominancia de Pareto: dispensa o LP
                 elif np.any(scores[l] > scores[i] + folga):
                     continue  # refutada por um vertice: dispensa o LP
-                elif faixas[i].lower >= faixas[l].upper - folga:
+                elif faixas is not None and faixas[i].lower >= faixas[l].upper - folga:
                     matrix[i, l] = True  # faixas separadas: dispensa o LP
                 else:
                     matrix[i, l] = self.dominates(problem, space, i, l)

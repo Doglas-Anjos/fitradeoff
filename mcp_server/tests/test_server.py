@@ -440,3 +440,11 @@ def test_criterio_igual_em_todas_nao_diferencia():
     matriz = [linha + [12] for linha in CONSEQUENCIAS]
     criada = srv.create_problem("Garantia igual", ALTERNATIVAS, criterios, matriz)
     assert criada["conflito"]["criterios_que_nao_diferenciam"] == ["Garantia"]
+
+
+def test_saida_de_inconsistencia_e_aplicada(problema):
+    """O caminho inteiro atravessa o MCP: a saida escolhida vira estado novo."""
+    srv.rank_criteria(problema["id"], ["qualidade", "custo", "prazo"])
+    depois = srv.resolve_inconsistency(problema["id"], "desfazer")
+    assert "erro" not in depois
+    assert srv.get_problem(problema["id"])["declaracoes_registradas"] == 0

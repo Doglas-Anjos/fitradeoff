@@ -52,3 +52,21 @@ def test_poucos_criterios_nao_acusam_lider(service):
         consequencias=[[20, 510], [26, 480], [15, 420]],
     )
     assert criada["conflito"]["lider_amplo"] == []
+
+
+def test_vetada_nao_e_lider_amplo(service):
+    """Abaixo do veto, o valor global e penalizado: liderar o resto nao diz que
+    ela vence, e o aviso de `lider_amplo` enganaria o decisor."""
+    matriz = [[15, 510, 2005], [20, 480, 2013], [26, 420, 2011]]
+    sem_veto = service.create(
+        nome="Sem veto", alternativas=["Forte", "B", "C"],
+        criterios=CRITERIOS, consequencias=matriz,
+    )
+    assert [l["alternativa"] for l in sem_veto["conflito"]["lider_amplo"]] == ["Forte"]
+
+    com_veto = service.create(
+        nome="Com veto", alternativas=["Forte", "B", "C"],
+        criterios=[*CRITERIOS[:2], {**CRITERIOS[2], "veto_inferior": 2010}],
+        consequencias=matriz,
+    )
+    assert com_veto["conflito"]["lider_amplo"] == []

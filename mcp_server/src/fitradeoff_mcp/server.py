@@ -146,8 +146,9 @@ right away, before any question, and offer to remove them. Removing means
 calling `create_problem` again without them; before the first question that
 costs the DM nothing, and it shrinks the problem.
 
-`create_problem` and `get_problem` also return `conflito`: where each
-alternative is the best, before any weight. Show it to the DM as a criteria ×
+`create_problem` and `get_problem` also return `conflito` (except in the
+portfolio problematics, where cost decides what fits): where each alternative
+is the best, before any weight. Show it to the DM as a criteria ×
 alternatives table -- it is where the trade-offs are, and what the questions
 will explore. If `lider_amplo` is not empty, one alternative is the best on
 most criteria: with these criteria there will be little to ask, and the result
@@ -435,7 +436,8 @@ def list_problems() -> dict:
 
 @tool(
     "Shows the problem: criteria with their best and worst performance, the "
-    "consequence matrix and the configuration."
+    "consequence matrix, the configuration and, outside the portfolio "
+    "problematics, `conflito` -- where each alternative is the best."
 )
 def get_problem(id: str) -> dict:
     return service().describe(id)
@@ -576,8 +578,10 @@ def diagnose_inconsistency(id: str) -> dict:
 @tool(
     "Applies the exit the decision maker chose for an inconsistency: `acao` "
     "is 'desfazer' (undo the last statement), 'inverter' (swap the last answer "
-    "for the opposite option) or 'remover' (drop the older statement given in "
-    "`sequencia`). When the diagnosis offers 'reordenar', the exit is to call "
+    "for the opposite option) or 'remover' (drop the statement numbered "
+    "`sequencia`, as given in the chosen exit, and replay the others). Only "
+    "apply an exit the diagnosis offered. When it offers 'reordenar', the exit "
+    "is to call "
     "`rank_criteria` again, which restarts the elicitation."
 )
 def resolve_inconsistency(

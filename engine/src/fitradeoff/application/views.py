@@ -30,14 +30,14 @@ from .dto import (
 # Sem nome de ferramenta: o motor e usado pelo MCP (`rank_criteria`) e pelo chat
 # da tela (`ordenar_criterios`), e cada um ja diz nas proprias instrucoes qual
 # ferramenta registra a ordem. Um nome aqui estaria errado para um dos dois.
-#: As problematicas de carteira: nelas o custo entra na conta, e nem a dominancia
-#: nem a lideranca por criterio dizem quem cabe no orcamento.
-CARTEIRAS = frozenset({"portfolio", "beneficio_custo"})
-
 PROXIMO_PASSO = (
     "Peça ao decisor que ordene os critérios do mais para o menos importante e "
     "registre essa ordem."
 )
+
+#: As problematicas de carteira: nelas o custo entra na conta, e nem a dominancia
+#: nem a lideranca por criterio dizem quem cabe no orcamento.
+CARTEIRAS = frozenset({"portfolio", "beneficio_custo"})
 
 LEITURA_DAS_DOMINADAS = (
     "Cada alternativa listada é pior ou igual, em todos os critérios, a cada uma "
@@ -102,10 +102,11 @@ LEITURA_DO_CONFLITO = (
     "trade-offs que as perguntas vão explorar. `sem_vantagem_propria` não "
     "lidera critério nenhum e só vence como meio-termo, com os pesos "
     "espalhados. `lider_amplo` é a melhor na maioria dos critérios que "
-    "diferenciam: com estes critérios haverá pouca disputa e poucas perguntas, "
-    "e o resultado sairá mais dos dados que das preferências do decisor. Diga "
-    "isso a ele e pergunte se faltam critérios em que ela perde, antes de "
-    "seguir. `criterios_que_nao_diferenciam` têm o mesmo desempenho em todas "
+    "diferenciam: as outras só a superam nos critérios de `perde_em`, e se o "
+    "decisor os puser abaixo dos demais na ordem, o resultado sairá mais dos "
+    "dados que das preferências dele. Diga isso a ele e pergunte se faltam "
+    "critérios em que ela perde, antes de seguir. "
+    "`criterios_que_nao_diferenciam` têm o mesmo desempenho em todas "
     "as alternativas e não pesam em nada."
 )
 
@@ -152,13 +153,16 @@ def mapa_de_conflito(problem: Problem) -> ConflitoDTO:
 
     # Lider amplo: melhor em mais da metade dos criterios que diferenciam. Uma
     # dominada nao entra -- ela empata no topo com quem a domina, e o aviso
-    # sobre ela ja vem em `dominadas`.
+    # sobre ela ja vem em `dominadas`. Nem uma vetada: abaixo do limite de veto
+    # em algum criterio, o valor global dela e penalizado, e liderar os outros
+    # nao diz que ela vence.
     dominadas = {d["alternativa"] for d in pareto_dominance(problem)}
+    vetada = (problem.veto_factors < 1.0).any(axis=1)
     n_diferenciam = int(diferencia.sum())
     lider_amplo = []
     if n_diferenciam >= 3 and n_alt >= 3:
         for a in np.flatnonzero(contagem * 2 > n_diferenciam):
-            if problem.alternatives[a] in dominadas:
+            if problem.alternatives[a] in dominadas or vetada[a]:
                 continue
             lider_amplo.append(
                 {

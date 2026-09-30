@@ -175,10 +175,41 @@ export const PARIDADE_TEXTOS = registrar({
   "paridade.tabela.tamanho": { pt: "Alt × Crit", en: "Alt × Crit", es: "Alt × Crit" },
   "paridade.tabela.oficial": { pt: "Oficial", en: "Official", es: "Oficial" },
   "paridade.tabela.nosso": { pt: "Nosso", en: "Ours", es: "Nuestro" },
+  "paridade.tabela.explica": {
+    pt: "Cada caso roda nos dois sistemas com as mesmas alternativas, os mesmos critérios e as mesmas respostas. A comparação olha as duas fases do método: quantas comparações par a par foram precisas para ordenar os critérios por importância, e quantas perguntas de tradeoff até o método parar. \"Bate\" quer dizer três coisas ao mesmo tempo: as duas contagens coincidem, as perguntas de tradeoff foram as mesmas, uma a uma, e a conclusão final é a mesma.",
+    en: "Each case runs on both systems with the same alternatives, the same criteria and the same answers. The comparison looks at the method's two phases: how many pairwise comparisons it took to rank the criteria by importance, and how many tradeoff questions until the method stopped. \"Match\" means three things at once: both counts coincide, the tradeoff questions were the same, one by one, and the final conclusion is the same.",
+    es: "Cada caso corre en los dos sistemas con las mismas alternativas, los mismos criterios y las mismas respuestas. La comparación mira las dos fases del método: cuántas comparaciones par a par hicieron falta para ordenar los criterios por importancia, y cuántas preguntas de tradeoff hasta que el método se detuvo. \"Coincide\" quiere decir tres cosas a la vez: los dos conteos coinciden, las preguntas de tradeoff fueron las mismas, una a una, y la conclusión final es la misma.",
+  },
+  "paridade.tabela.ordenar": {
+    pt: "Comparações para ordenar os critérios",
+    en: "Comparisons to rank the criteria",
+    es: "Comparaciones para ordenar los criterios",
+  },
+  "paridade.tabela.tradeoff": {
+    pt: "Perguntas de tradeoff",
+    en: "Tradeoff questions",
+    es: "Preguntas de tradeoff",
+  },
+  "paridade.tabela.resultado": { pt: "Resultado", en: "Result", es: "Resultado" },
   "paridade.tabela.legenda": {
-    pt: "Ordenação / tradeoff — o número de perguntas em cada fase.",
-    en: "Ranking / tradeoff — the number of questions in each phase.",
-    es: "Ordenación / tradeoff — el número de preguntas en cada fase.",
+    pt: "Em cor de aviso, a contagem nossa que difere da do oficial. O que cada caso concluiu, dos dois lados, está logo abaixo, na página de cada módulo.",
+    en: "In warning color, our count where it differs from the official one. What each case concluded, on both sides, is further down, on each module's page.",
+    es: "En color de aviso, nuestro conteo cuando difiere del oficial. Lo que concluyó cada caso, de los dos lados, está más abajo, en la página de cada módulo.",
+  },
+  "paridade.desfecho.oficial": { pt: "O oficial concluiu", en: "The official concluded", es: "El oficial concluyó" },
+  "paridade.desfecho.nosso": { pt: "O nosso concluiu", en: "Ours concluded", es: "El nuestro concluyó" },
+  "paridade.desfecho.porque": { pt: "Por que o caminho difere", en: "Why the path differs", es: "Por qué el camino difiere" },
+  "paridade.desfecho.bate": { pt: "mesma conclusão", en: "same conclusion", es: "misma conclusión" },
+  "paridade.desfecho.difere": { pt: "conclusão diferente", en: "different conclusion", es: "conclusión diferente" },
+  "paridade.desfecho.semOficial": {
+    pt: "conclusão do oficial não capturada",
+    en: "official conclusion not captured",
+    es: "conclusión del oficial no capturada",
+  },
+  "paridade.desfecho.naoCapturado": {
+    pt: "A tela final do oficial não foi guardada nesta medição, ou saiu incompleta.",
+    en: "The official's final screen was not saved in this measurement, or came out incomplete.",
+    es: "La pantalla final del oficial no se guardó en esta medición, o salió incompleta.",
   },
   "paridade.tabela.bate": { pt: "bate", en: "match", es: "coincide" },
   "paridade.tabela.difere": { pt: "difere", en: "differs", es: "difiere" },
@@ -513,9 +544,9 @@ export const PARIDADE_TEXTOS = registrar({
     es: "Qué devolvió cada caso",
   },
   "paridade.modulo.resultados.legenda": {
-    pt: "A recomendação que o nosso motor produziu em cada caso, com a política de resposta fixa. Nos casos marcados como iguais, o sistema oficial chegou à mesma recomendação.",
-    en: "The recommendation our engine produced for each case, under the fixed answering policy. In the cases marked as matching, the official system reached the same recommendation.",
-    es: "La recomendación que produjo nuestro motor en cada caso, con la política de respuesta fija. En los casos marcados como iguales, el sistema oficial llegó a la misma recomendación.",
+    pt: "A contagem de perguntas diz se os dois sistemas fizeram o mesmo caminho; aqui está onde cada um chegou. O lado oficial é lido da tela final que ele deixou: quem venceu na escolha, o tipo de ordem no ranking (o oficial desenha a ordem num diagrama e não a escreve), a classe de cada alternativa no sorting, a carteira no benefício-custo.",
+    en: "The question count says whether both systems took the same path; here is where each one arrived. The official side is read from the final screen it left: who won in choice, the kind of order in ranking (the official draws the order as a diagram and does not write it), each alternative's class in sorting, the portfolio in benefit-cost.",
+    es: "El conteo de preguntas dice si los dos sistemas hicieron el mismo camino; aquí está adónde llegó cada uno. El lado oficial se lee de la pantalla final que dejó: quién ganó en la elección, el tipo de orden en el ranking (el oficial dibuja el orden en un diagrama y no lo escribe), la clase de cada alternativa en el sorting, la cartera en beneficio-costo.",
   },
   "paridade.modulo.nomeOficial": { pt: "Lá se chama", en: "Called there", es: "Allá se llama" },
 
@@ -544,9 +575,9 @@ export const PARIDADE_TEXTOS = registrar({
     es: "Exacto. Cada alternativa entra o sale del conjunto por un programa lineal, no por muestreo — la respuesta es la misma que se obtendría recorriendo todo el espacio de constantes de escala.",
   },
   "paridade.mod.escolha.testado": {
-    pt: "É o módulo com mais casos, e o que mais variou de forma: de duas alternativas e dois critérios, que é o mínimo que o motor aceita, até vinte por cinco. Tem um caso com alternativa dominante, para ver se os dois encerram cedo do mesmo jeito, e um caso degenerado com três alternativas idênticas — que é onde o oficial trava e nós respondemos.",
-    en: "It is the module with the most cases, and the one that varied most in shape: from two alternatives and two criteria, the minimum the engine accepts, up to twenty by five. It includes a case with a dominant alternative, to see whether both finish early in the same way, and a degenerate case with three identical alternatives — which is where the official hangs and we answer.",
-    es: "Es el módulo con más casos, y el que más varió de forma: de dos alternativas y dos criterios, que es el mínimo que acepta el motor, hasta veinte por cinco. Tiene un caso con alternativa dominante, para ver si los dos terminan pronto de la misma manera, y un caso degenerado con tres alternativas idénticas — que es donde el oficial se traba y nosotros respondemos.",
+    pt: "O módulo varia de forma de propósito: de duas alternativas e dois critérios, o mínimo que o motor aceita, até trinta por sete, com curva de valor não linear, nota discreta, custo em milhões e doze alternativas quase empatadas. Tem um caso com alternativa dominante, para ver se os dois encerram cedo do mesmo jeito, e um caso degenerado com três alternativas idênticas — que é onde o oficial trava e nós respondemos.",
+    en: "The module varies in shape on purpose: from two alternatives and two criteria, the minimum the engine accepts, up to thirty by seven, with non-linear value curves, a discrete grade, costs in millions and twelve almost tied alternatives. It includes a case with a dominant alternative, to see whether both finish early in the same way, and a degenerate case with three identical alternatives — which is where the official hangs and we answer.",
+    es: "El módulo varía de forma a propósito: de dos alternativas y dos criterios, el mínimo que acepta el motor, hasta treinta por siete, con curva de valor no lineal, nota discreta, costo en millones y doce alternativas casi empatadas. Tiene un caso con alternativa dominante, para ver si los dos terminan pronto de la misma manera, y un caso degenerado con tres alternativas idénticas — que es donde el oficial se traba y nosotros respondemos.",
   },
 
   /* --- ordenação ------------------------------------------------------------ */
@@ -574,9 +605,9 @@ export const PARIDADE_TEXTOS = registrar({
     es: "Exacto, por el mismo motivo que la elección: cada par se decide por programa lineal.",
   },
   "paridade.mod.ordenacao.testado": {
-    pt: "Cinco casos, de três a vinte alternativas. O de três tem preferências cruzadas de propósito — nenhuma alternativa domina outra por Pareto, então a ordem só sai da elicitação. É neste módulo que mora a divergência de uma pergunta que ainda não foi explicada.",
-    en: "Five cases, from three to twenty alternatives. The three-alternative one has deliberately crossed preferences — no alternative Pareto-dominates another, so the order can only come out of the elicitation. This is the module where the one unexplained question of divergence lives.",
-    es: "Cinco casos, de tres a veinte alternativas. El de tres tiene preferencias cruzadas a propósito — ninguna alternativa domina a otra por Pareto, así que el orden solo puede salir de la elicitación. Es en este módulo donde vive la divergencia de una pregunta que todavía no fue explicada.",
+    pt: "Os casos vão de três a vinte e cinco alternativas e até sete critérios, com curva de valor não linear, notas discretas e respostas A e B. O de três tem preferências cruzadas de propósito — nenhuma alternativa domina outra por Pareto, então a ordem só sai da elicitação. Os casos que não batem dizem por quê, logo abaixo, no que cada caso devolveu.",
+    en: "The cases range from three to twenty-five alternatives and up to seven criteria, with non-linear value curves, discrete grades and A and B answers. The three-alternative one has deliberately crossed preferences — no alternative Pareto-dominates another, so the order can only come out of the elicitation. The cases that do not match say why, further down, in what each case returned.",
+    es: "Los casos van de tres a veinticinco alternativas y hasta siete criterios, con curva de valor no lineal, notas discretas y respuestas A y B. El de tres tiene preferencias cruzadas a propósito — ninguna alternativa domina a otra por Pareto, así que el orden solo puede salir de la elicitación. Los casos que no coinciden dicen por qué, más abajo, en lo que devolvió cada caso.",
   },
 
   /* --- classificação -------------------------------------------------------- */
@@ -604,9 +635,9 @@ export const PARIDADE_TEXTOS = registrar({
     es: "Exacto. Los extremos de la franja de valor salen de programas lineales, y la comparación con los cortes es aritmética.",
   },
   "paridade.mod.classificacao.testado": {
-    pt: "Três casos, de quatro a vinte alternativas, todos com três classes e dois cortes. Foi aqui que apareceu a divergência mais difícil de fechar: a regra certa não é sobre quanto a faixa atravessa o corte, e sim sobre quão estreita ela já é. Levou duas medições a mais para acertar — a primeira tentativa foi por analogia, sem medir, e errou por muito.",
-    en: "Three cases, from four to twenty alternatives, all with three classes and two cuts. This is where the hardest divergence to close appeared: the right rule is not about how far the range crosses the cut, but about how narrow it already is. It took two extra measurements to get right — the first attempt was by analogy, without measuring, and missed badly.",
-    es: "Tres casos, de cuatro a veinte alternativas, todos con tres clases y dos cortes. Fue aquí donde apareció la divergencia más difícil de cerrar: la regla correcta no es sobre cuánto la franja atraviesa el corte, sino sobre cuán estrecha ya es. Tomó dos mediciones adicionales acertar — el primer intento fue por analogía, sin medir, y falló bastante.",
+    pt: "Os casos vão de quatro a trinta alternativas, com duas, três e quatro classes, limites entre classes perto das pontas, curva de valor não linear e nota discreta. Foi aqui que apareceu a divergência mais difícil de fechar: a regra certa não é sobre quanto a faixa atravessa o corte, e sim sobre quão estreita ela já é. Levou duas medições a mais para acertar — a primeira tentativa foi por analogia, sem medir, e errou por muito.",
+    en: "The cases range from four to thirty alternatives, with two, three and four classes, class limits near the ends, non-linear value curves and a discrete grade. This is where the hardest divergence to close appeared: the right rule is not about how far the range crosses the cut, but about how narrow it already is. It took two extra measurements to get right — the first attempt was by analogy, without measuring, and missed badly.",
+    es: "Los casos van de cuatro a treinta alternativas, con dos, tres y cuatro clases, límites entre clases cerca de los extremos, curva de valor no lineal y nota discreta. Fue aquí donde apareció la divergencia más difícil de cerrar: la regla correcta no es sobre cuánto la franja atraviesa el corte, sino sobre cuán estrecha ya es. Tomó dos mediciones adicionales acertar — el primer intento fue por analogía, sin medir, y falló bastante.",
   },
 
   /* --- portfólio combinatorial ---------------------------------------------- */
@@ -685,8 +716,8 @@ export const PARIDADE_TEXTOS = registrar({
     es: "Mixto, y la distinción importa lo suficiente como para estar en la pantalla del resultado. Las franjas de razón y la dominancia entre franjas disjuntas son exactas, por programación lineal. La cartera final es aproximada por muestreo, por el mismo motivo que la combinatorial: la selección voraz depende del orden completo, y el orden depende del vector de constantes de escala.",
   },
   "paridade.mod.beneficio-custo.testado": {
-    pt: "Dois casos, de oito e vinte projetos. Nos dois a carteira é idêntica à do sistema oficial, conferida projeto a projeto — e no de vinte isso significa concordar sobre um subconjunto entre mais de um milhão. O que diverge é quantas perguntas cada um faz antes de parar, e não o que cada um responde.",
-    en: "Two cases, of eight and twenty projects. In both the portfolio is identical to the official system's, checked project by project — and in the twenty-project one that means agreeing on one subset out of more than a million. What differs is how many questions each asks before stopping, not what each answers.",
-    es: "Dos casos, de ocho y veinte proyectos. En los dos la cartera es idéntica a la del sistema oficial, verificada proyecto por proyecto — y en el de veinte eso significa concordar en un subconjunto entre más de un millón. Lo que diverge es cuántas preguntas hace cada uno antes de detenerse, no lo que cada uno responde.",
+    pt: "Os casos vão de quatro a trinta projetos, com orçamento apertado e folgado, projetos de razão igual, curva de valor não linear e respostas misturadas. Em todos em que a tela final do oficial foi guardada, a carteira é a mesma, conferida projeto a projeto — no maior, isso é concordar sobre um subconjunto entre mais de um bilhão. É aqui também que mora a parada pelo orçamento: há casos em que o oficial encerra sem pergunta nenhuma, e nós também.",
+    en: "The cases range from four to thirty projects, with tight and loose budgets, projects with equal ratios, non-linear value curves and mixed answers. In every case where the official's final screen was saved, the portfolio is the same, checked project by project — in the largest, that means agreeing on one subset out of more than a billion. This is also where the budget stop lives: there are cases where the official finishes without any question, and so do we.",
+    es: "Los casos van de cuatro a treinta proyectos, con presupuesto ajustado y holgado, proyectos de razón igual, curva de valor no lineal y respuestas mezcladas. En todos en que se guardó la pantalla final del oficial, la cartera es la misma, verificada proyecto por proyecto — en el mayor, eso es concordar en un subconjunto entre más de mil millones. Es aquí también donde vive la parada por el presupuesto: hay casos en que el oficial termina sin ninguna pregunta, y nosotros también.",
   },
 });

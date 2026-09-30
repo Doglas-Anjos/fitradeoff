@@ -43,6 +43,15 @@ export interface CasoParidade {
   oficial: { ordenacao: number; tradeoff: number } | null;
   nosso: { ordenacao: number; tradeoff: number };
   resumo: string;
+  /** O que o caso e e o que ele testa, numa linha. */
+  descricao: string;
+  /** O que cada lado concluiu. `oficial` e `bate` sao `null` quando a tela
+   *  final dele nao foi guardada ou nao pode ser lida. */
+  desfecho: { nosso: string; oficial: string | null; bate: boolean | null };
+  /** Por que nao bate, quando a diferenca e conhecida. */
+  porque: string | null;
+  /** Mesmo caminho (as duas contagens e, se capturada, a sequencia de pares)
+   *  e nenhuma conclusao divergente. */
   bate: boolean;
   /** De onde vem o caso: os 16 lineares originais, ou os medidos depois. */
   tipo: "linear" | "curva" | "discreto" | "estresse";
@@ -63,7 +72,6 @@ export const RESUMO = {
 
 def main() -> None:
     pasta = RAIZ / "resultados"
-    nosso = json.loads((pasta / "nosso.json").read_text(encoding="utf-8"))
     # Sem o lado oficial o modulo ainda e gerado, com tudo marcado como nao
     # comparavel: assim a tela existe e diz a verdade -- "nao medido" -- em vez
     # de quebrar o build ou, pior, exibir numero antigo como se fosse atual.
@@ -72,13 +80,18 @@ def main() -> None:
     if not oficial:
         print("aviso: resultados/oficial.json ausente; nada sera marcado como comparado")
 
+    import desfecho as D
+    from comparar import roda_nosso
+
     linhas, bate, comparaveis, travados = [], 0, 0, 0
     for caso in CASOS:
         chave = caso["chave"]
-        o, n = oficial.get(chave, {}), nosso.get(chave, {})
-        if not n:
-            continue
+        o = oficial.get(chave, {})
+        # o nosso lado recalculado com o motor atual, como no registro: o
+        # `nosso.json` gravado pode ter envelhecido
+        n = roda_nosso(caso)
         meu = {"ordenacao": n["steps_ordenacao"], "tradeoff": n["steps_tradeoff"]}
+        des = D.desfecho(caso, caso["modulo"], n["analise"], o.get("tela_final") or None)
         travou = (not o) or bool(o.get("erro"))
         if travou:
             travados += 1
@@ -86,7 +99,7 @@ def main() -> None:
         else:
             comparaveis += 1
             dele = {"ordenacao": o["steps_ordenacao"], "tradeoff": o["steps_tradeoff"]}
-            igual = dele == meu
+            igual = dele == meu and des["bate"] is not False
             bate += igual
         linhas.append({
             "chave": chave,
@@ -96,6 +109,9 @@ def main() -> None:
             "oficial": dele,
             "nosso": meu,
             "resumo": n.get("resumo", "")[:180],
+            "descricao": D.descricao(caso),
+            "desfecho": des,
+            "porque": None if igual else ("o oficial nao completa o caso" if travou else None),
             "bate": igual,
             "tipo": "linear",
         })
@@ -111,7 +127,9 @@ def main() -> None:
         o = caso["oficial"]
         meu = {"ordenacao": n["ordenacao"], "tradeoff": n["tradeoff"]}
         dele = {"ordenacao": o["ordenacao"], "tradeoff": o["tradeoff"]}
-        igual = dele == meu and ("pares" not in o or o["pares"] == n["pares"])
+        des = D.desfecho(caso, caso["problematica"], n["analise"], o.get("tela_final") or None)
+        igual = (dele == meu and ("pares" not in o or o["pares"] == n["pares"])
+                 and des["bate"] is not False)
         comparaveis += 1
         bate += igual
         linhas.append({
@@ -122,6 +140,9 @@ def main() -> None:
             "oficial": dele,
             "nosso": meu,
             "resumo": n["analise"].get("resumo", "")[:180],
+            "descricao": D.descricao(caso),
+            "desfecho": des,
+            "porque": (caso.get("divergencia") or {}).get("porque") if not igual else None,
             "bate": igual,
             "tipo": caso["tipo"],
         })

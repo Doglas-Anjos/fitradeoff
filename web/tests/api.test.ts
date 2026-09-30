@@ -84,6 +84,14 @@ describe("chamadas", () => {
     expect(JSON.parse(init.body as string)).toEqual({ preferencia: "indiferente" });
   });
 
+  it("com a pergunta identificada, manda o pergunta_id junto", async () => {
+    const espiao = vi.fn(async () => respostaFalsa(200, {}));
+    vi.stubGlobal("fetch", espiao);
+    await api.responder("d1", "A", "abc123");
+    const [, init] = espiao.mock.calls[0] as unknown as [string, RequestInit];
+    expect(JSON.parse(init.body as string)).toEqual({ preferencia: "A", pergunta_id: "abc123" });
+  });
+
   it("manda o estado desejado da favorita, e nao um 'inverta'", async () => {
     const espiao = vi.fn(async () => respostaFalsa(200, { id: "d1", favorita: true }));
     vi.stubGlobal("fetch", espiao);

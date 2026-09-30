@@ -121,7 +121,12 @@ export interface Estado {
 }
 
 export interface Pergunta {
+  /** O id da decisão, e não o da pergunta. */
   id: string;
+  /** O que identifica esta pergunta neste estado. Volta com a resposta, e o
+   *  servidor a recusa (409) se a pergunta pendente já for outra -- outra aba
+   *  respondeu antes, ou a resposta é um reenvio. */
+  pergunta_id?: string;
   enunciado: string;
   criterio_em_foco: string;
   criterio_rival: string;

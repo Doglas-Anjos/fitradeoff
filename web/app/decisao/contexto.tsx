@@ -234,7 +234,21 @@ export function DecisaoProvider({ children }: { children: React.ReactNode }) {
   const responder = (escolha: Escolha) =>
     executar(async () => {
       if (!problema) return;
-      await sincronizar(problema.id, await api.responder(problema.id, escolha));
+      try {
+        await sincronizar(
+          problema.id,
+          await api.responder(problema.id, escolha, pergunta?.pergunta_id),
+        );
+      } catch (e) {
+        /* 409 com a pergunta identificada: a pendente ja nao e a da tela --
+           outra aba respondeu antes, ou isto e um reenvio. Nada foi gravado;
+           a tela passa a mostrar a pergunta atual, e a mensagem do servidor diz
+           por que. */
+        if (e instanceof ApiError && e.status === 409 && pergunta?.pergunta_id) {
+          await sincronizar(problema.id);
+        }
+        throw e;
+      }
     });
 
   const julgar = (preferida: string, sobre: string) =>

@@ -11,7 +11,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DecisaoProvider, useDecisao } from "@/app/decisao/contexto";
-import { api } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 import type { Estado, Pergunta, Problema } from "@/lib/types";
 
 const push = vi.fn();
@@ -109,13 +109,48 @@ describe("DecisaoProvider", () => {
 
     await act(() => result.current.actions.responder("A"));
 
-    expect(responder).toHaveBeenCalledWith("d1", "A");
+    // a pergunta deste teste nao traz pergunta_id: a resposta vai sem ele
+    expect(responder).toHaveBeenCalledWith("d1", "A", undefined);
     // o estado veio na resposta: nada de um segundo GET /estado
     expect(estado).toHaveBeenCalledTimes(1);
     expect(pergunta).toHaveBeenCalledTimes(2);
     expect(result.current.state.estado?.declaracoes).toBe(2);
     expect(result.current.state.pergunta?.id).toBe("p2");
     expect(result.current.state.ocupado).toBe(false);
+  });
+
+  it("responde com o pergunta_id da pergunta que está na tela", async () => {
+    vi.spyOn(api, "ver").mockResolvedValue(PROBLEMA);
+    vi.spyOn(api, "estado").mockResolvedValue(estadoCom({}));
+    vi.spyOn(api, "pergunta")
+      .mockResolvedValueOnce({ ...perguntaNumero(1), pergunta_id: "q1" } as never)
+      .mockResolvedValueOnce(perguntaNumero(2) as never);
+    const responder = vi.spyOn(api, "responder").mockResolvedValue(estadoCom({ declaracoes: 2 }));
+
+    const { result } = renderHook(() => useDecisao(), { wrapper: envolver });
+    await waitFor(() => expect(result.current.state.pergunta?.id).toBe("p1"));
+    await act(() => result.current.actions.responder("B"));
+
+    expect(responder).toHaveBeenCalledWith("d1", "B", "q1");
+  });
+
+  it("se a pergunta mudou (409), recarrega e mostra a atual, com o aviso", async () => {
+    vi.spyOn(api, "ver").mockResolvedValue(PROBLEMA);
+    const estado = vi.spyOn(api, "estado").mockResolvedValue(estadoCom({}));
+    vi.spyOn(api, "pergunta")
+      .mockResolvedValueOnce({ ...perguntaNumero(1), pergunta_id: "q1" } as never)
+      .mockResolvedValueOnce({ ...perguntaNumero(2), pergunta_id: "q2" } as never);
+    vi.spyOn(api, "responder").mockRejectedValue(
+      new ApiError(409, "A pergunta mudou desde que foi exibida; recarregue e responda a pergunta atual."),
+    );
+
+    const { result } = renderHook(() => useDecisao(), { wrapper: envolver });
+    await waitFor(() => expect(result.current.state.pergunta?.id).toBe("p1"));
+    await act(() => result.current.actions.responder("A"));
+
+    expect(estado).toHaveBeenCalledTimes(2); // o estado foi relido
+    expect(result.current.state.pergunta?.id).toBe("p2");
+    expect(result.current.state.erro).toMatch(/A pergunta mudou/);
   });
 
   it("uma etapa na URL ainda não alcançada abre na etapa natural", async () => {

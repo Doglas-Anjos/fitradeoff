@@ -14,11 +14,13 @@ import { Coins } from "@phosphor-icons/react";
 import { useEffect } from "react";
 
 import { avisar } from "@/components/Avisos";
+import { useRascunho } from "@/components/entrada/contextoRascunho";
 import { Rodape } from "@/components/Etapas";
 import { Botao, Entrada, estiloControle } from "@/components/ui";
 import { useIdioma } from "@/lib/i18n";
 import "@/lib/i18n/estrutura";
 import "@/lib/i18n/nucleo";
+import { rolagem } from "@/lib/movimento";
 import {
   colarNaMatriz,
   definirCusto,
@@ -33,24 +35,23 @@ import {
 const mostrar = (v: number): string =>
   Number.isInteger(v) ? String(v) : String(Number(v.toPrecision(6)));
 
+/**
+ * Lê o rascunho do provedor acima; só o que vem depois dela -- a ação e o seu
+ * nome -- chega por props, porque é a sequência quem sabe qual é.
+ */
 export function MatrizConsequencias({
-  rascunho,
-  onAlterar,
-  onVoltar,
   onContinuar,
   rotuloAcao,
-  ocupado = false,
-  campoComErro,
 }: {
-  rascunho: Rascunho;
-  onAlterar: (r: Rascunho) => void;
-  onVoltar: () => void;
   onContinuar: () => void;
   rotuloAcao: string;
-  ocupado?: boolean;
-  campoComErro?: string | null;
 }) {
   const { t } = useIdioma();
+  const {
+    estado: rascunho,
+    acoes: { atualizar },
+    meta: { campoComErro, ocupado },
+  } = useRascunho();
 
   /* A tabela rola na horizontal quando não cabe, e num celular a coluna do erro
      pode estar fora da tela: a mensagem apareceria sem o campo a que se refere.
@@ -58,7 +59,7 @@ export function MatrizConsequencias({
   useEffect(() => {
     if (!campoComErro) return;
     const alvo = document.querySelector<HTMLElement>(`[data-campo="${campoComErro}"]`);
-    alvo?.scrollIntoView?.({ behavior: "smooth", block: "center", inline: "center" });
+    alvo?.scrollIntoView?.({ behavior: rolagem(), block: "center", inline: "center" });
     alvo?.focus({ preventScroll: true });
   }, [campoComErro]);
 
@@ -97,7 +98,7 @@ export function MatrizConsequencias({
     }
 
     const anterior = rascunho;
-    onAlterar(r.rascunho);
+    atualizar(() => r.rascunho);
 
     const partes = [
       r.preenchidas === 1
@@ -111,7 +112,11 @@ export function MatrizConsequencias({
 
     /* Desfazível porque colar acerta muitas células de uma vez: se a origem
        estava errada, refazer à mão seria pior do que nunca ter colado. */
-    avisar.desfazivel(partes.join(" "), () => onAlterar(anterior));
+    avisar.desfazivel(
+      partes.join(" "),
+      () => atualizar(() => anterior),
+      t("acao.desfazer"),
+    );
   }
 
   return (
@@ -213,7 +218,10 @@ export function MatrizConsequencias({
                         <select
                           value={valor}
                           data-campo={`celula-${i}-${j}`}
-                          onChange={(e) => onAlterar(definirValor(rascunho, i, j, e.target.value))}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            atualizar((r) => definirValor(r, i, j, v));
+                          }}
                           aria-label={rotulo}
                           className="tatil num w-full rounded-[var(--raio-controle)] border px-2 py-1.5 text-right text-[13px] outline-none"
                           style={{
@@ -233,7 +241,10 @@ export function MatrizConsequencias({
                           value={valor}
                           invalido={invalido}
                           data-campo={`celula-${i}-${j}`}
-                          onChange={(e) => onAlterar(definirValor(rascunho, i, j, e.target.value))}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            atualizar((r) => definirValor(r, i, j, v));
+                          }}
                           inputMode={criterio.inteiro ? "numeric" : "decimal"}
                           placeholder="0"
                           aria-label={rotulo}
@@ -249,7 +260,10 @@ export function MatrizConsequencias({
                       value={linha.custo}
                       invalido={campoComErro === `custo-${i}`}
                       data-campo={`custo-${i}`}
-                      onChange={(e) => onAlterar(definirCusto(rascunho, i, e.target.value))}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        atualizar((r) => definirCusto(r, i, v));
+                      }}
                       inputMode="decimal"
                       placeholder="0"
                       aria-label={t("estrutura.matriz.custoDe", { nome: linha.nome })}
@@ -263,11 +277,12 @@ export function MatrizConsequencias({
         </table>
       </div>
 
-
       <Rodape>
-        <Botao onClick={onContinuar} disabled={ocupado}>
-          {rotuloAcao}
-        </Botao>
+        <Rodape.Acoes>
+          <Botao onClick={onContinuar} disabled={ocupado}>
+            {rotuloAcao}
+          </Botao>
+        </Rodape.Acoes>
       </Rodape>
     </div>
   );

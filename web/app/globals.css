@@ -71,6 +71,8 @@
   --sucesso: #15803d;
   --aviso: #a16207;
   --erro: #b91c1c;
+  /* texto sobre --erro cheio (botão destrutivo) */
+  --erro-tinta: #ffffff;
   --erro-suave: #fef2f2;
   --veu: rgba(7, 29, 56, 0.56);
 
@@ -175,6 +177,8 @@
   --sucesso: #4ade80;
   --aviso: #fbbf24;
   --erro: #f87171;
+  /* branco sobre este vermelho claro dá ~2,8:1; escuro dá mais de 7:1 */
+  --erro-tinta: #1f0a0a;
   --erro-suave: #2a1618;
   --veu: rgba(3, 9, 17, 0.68);
 
@@ -217,6 +221,34 @@
 
 html {
   scroll-behavior: smooth;
+  /* A barra de navegação é fixa (64px): sem esta folga, o que recebe foco ou
+     é rolado até a vista para debaixo dela. */
+  scroll-padding-top: 80px;
+}
+
+/* Pular a navegação: invisível até receber o foco do teclado. */
+.pular-para-conteudo {
+  position: absolute;
+  left: 12px;
+  top: -48px;
+  z-index: 60;
+  padding: 8px 14px;
+  border-radius: var(--raio-controle);
+  background: var(--painel);
+  color: var(--tinta);
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: var(--sombra);
+}
+.pular-para-conteudo:focus-visible {
+  top: 12px;
+}
+/* O alvo recebe o foco só para o próximo Tab partir dali; não é controle. */
+#conteudo:focus,
+#conteudo:focus-visible,
+.foco-programatico:focus,
+.foco-programatico:focus-visible {
+  outline: none;
 }
 
 body {
@@ -362,6 +394,25 @@ textarea:hover {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: 3px;
+}
+
+/* Sobre o navy o anel no --accent some: no tema claro são dois azuis-escuros,
+   perto de 1,3:1. Ali o anel é da cor do texto da barra. */
+:where(.superficie-navy, .cabecalho-escuro)
+  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible,
+.superficie-navy .botao:focus-visible,
+.cabecalho-escuro .botao:focus-visible {
+  outline-color: var(--navy-tinta);
+}
+
+/* Cartões de opção com o input escondido (`sr-only`): o anel iria para um
+   quadrado de 1px invisível. Quem mostra o foco é o cartão inteiro. */
+label:has(> input.sr-only:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+input.sr-only:focus-visible {
+  outline: none;
 }
 
 /* Retorno tatil: o controle afunda ao ser pressionado. */

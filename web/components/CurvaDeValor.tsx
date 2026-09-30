@@ -26,6 +26,7 @@
 import { ArrowCounterClockwise, Check, TrendUp } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
 
+import { avisar } from "@/components/Avisos";
 import { Botao, Dica } from "@/components/ui";
 import { useIdioma } from "@/lib/i18n";
 import "@/lib/i18n/visualizacoes";
@@ -293,8 +294,13 @@ export function CurvaDeValor({
                 </div>
               </div>
 
+              {/* Cada opção responde na hora: são botões de ação, não uma
+                  escolha que fica marcada. O papel de rádio prometia setas e
+                  estado marcado, e o `aria-checked` ficava sempre falso. O
+                  `aria-live` lê a pergunta nova de cada ciclo. */}
               <div
-                role="radiogroup"
+                role="group"
+                aria-live="polite"
                 aria-label={t(chavePergunta, { de: f(a), meio: f(meio), ate: f(b) })}
                 className="mt-3 grid gap-1.5"
               >
@@ -316,8 +322,6 @@ export function CurvaDeValor({
                   <button
                     key={chave}
                     type="button"
-                    role="radio"
-                    aria-checked={false}
                     onClick={() => responder(chave)}
                     className="opcao-curva tatil flex items-center gap-2.5 rounded-[var(--raio-controle)] border px-3 py-2 text-left text-[13px]"
                   >
@@ -407,14 +411,25 @@ export function CurvaDeValor({
             {(elicitados > 0 || ciclos.length > 0) && (
               <button
                 onClick={() => {
+                  // apaga todos os ciclos respondidos: sai na hora, com volta
+                  const antes = { pontos, busca, ciclos };
                   setPontos(extremos);
                   setBusca(null);
                   setCiclos([]);
+                  avisar.desfazivel(
+                    t("elicitacao.curva.recomecada"),
+                    () => {
+                      setPontos(antes.pontos);
+                      setBusca(antes.busca);
+                      setCiclos(antes.ciclos);
+                    },
+                    t("acao.desfazer"),
+                  );
                 }}
                 className="tatil flex items-center gap-1.5 text-[13px]"
                 style={{ color: "var(--tinta-3)" }}
               >
-                <ArrowCounterClockwise size={13} weight="bold" />
+                <ArrowCounterClockwise size={13} weight="bold" aria-hidden />
                 {t("elicitacao.curva.recomecar")}
               </button>
             )}

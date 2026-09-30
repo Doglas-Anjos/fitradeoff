@@ -13,11 +13,17 @@
 
 import { Translate } from "@phosphor-icons/react";
 
+import { tecladoDeRadio } from "@/components/ui";
 import { IDIOMAS, useIdioma } from "@/lib/i18n";
 import "@/lib/i18n/nucleo";
 
 export function SeletorIdioma() {
   const { idioma, definir, t } = useIdioma();
+  const teclado = tecladoDeRadio(
+    IDIOMAS.map((i) => i.chave),
+    idioma,
+    definir,
+  );
 
   return (
     <div className="flex items-center gap-1.5">
@@ -30,6 +36,7 @@ export function SeletorIdioma() {
       <div
         role="radiogroup"
         aria-label={t("nav.idioma")}
+        {...teclado.grupo}
         className="grupo-tema flex overflow-hidden rounded-[var(--raio-controle)] border"
       >
         {IDIOMAS.map(({ chave, rotulo, bandeira }) => {
@@ -40,6 +47,7 @@ export function SeletorIdioma() {
               type="button"
               role="radio"
               aria-checked={ativo}
+              {...teclado.item(chave)}
               onClick={() => definir(chave)}
               title={rotulo}
               data-ativo={ativo}

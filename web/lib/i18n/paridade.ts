@@ -21,8 +21,6 @@ import { registrar } from "./index";
 import "./nucleo";
 
 export const PARIDADE_TEXTOS = registrar({
-  "nav.paridade": { pt: "Paridade", en: "Parity", es: "Paridad" },
-
   "paridade.editorial": {
     pt: "Evidência e validação",
     en: "Evidence and validation",

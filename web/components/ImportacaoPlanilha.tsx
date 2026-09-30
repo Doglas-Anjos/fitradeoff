@@ -100,6 +100,10 @@ export function ImportacaoPlanilha({
               ref={inputArquivo}
               type="file"
               accept=".xlsx,.xlsm,.csv,.txt"
+              /* O botão "Escolher" é quem abre; este input é só o mecanismo.
+                 Fora da ordem do Tab, senão era uma parada invisível. */
+              tabIndex={-1}
+              aria-hidden="true"
               className="sr-only"
               onChange={(e) => {
                 const arquivo = e.target.files?.[0];

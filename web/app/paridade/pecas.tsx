@@ -17,6 +17,7 @@ import { Selo } from "@/components/ui";
 
 import { useIdioma } from "@/lib/i18n";
 import "@/lib/i18n/paridade";
+import { useMovimentoReduzido } from "@/lib/movimento";
 import type { CasoParidade } from "@/lib/paridade";
 
 /**
@@ -239,22 +240,6 @@ export function Ponto({ titulo, corpo }: { titulo: string; corpo: string }) {
 }
 
 /** Um par de capturas, a nossa ao lado da dele. */
-/** A pessoa pediu para o sistema não animar? */
-function usaMovimentoReduzido(): boolean {
-  const [reduzido, setReduzido] = useState(false);
-  useEffect(() => {
-    /* Nem todo ambiente tem `matchMedia` -- jsdom não tem, e sem esta guarda o
-       componente derruba a página inteira em teste. */
-    if (typeof window.matchMedia !== "function") return;
-    const consulta = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReduzido(consulta.matches);
-    const aoMudar = () => setReduzido(consulta.matches);
-    consulta.addEventListener("change", aoMudar);
-    return () => consulta.removeEventListener("change", aoMudar);
-  }, []);
-  return reduzido;
-}
-
 const INTERVALO = 5200;
 
 /**
@@ -291,7 +276,7 @@ export function ParDeTelas({
   nosso: string;
 }) {
   const { t } = useIdioma();
-  const reduzido = usaMovimentoReduzido();
+  const reduzido = useMovimentoReduzido();
   const [atual, setAtual] = useState(0);
   const [pausado, setPausado] = useState(false);
   const [dentro, setDentro] = useState(false);

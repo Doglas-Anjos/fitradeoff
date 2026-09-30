@@ -33,7 +33,7 @@ export function RangeChart({
   dica,
   faixas,
   maximoEixo = 1,
-  formatar = (v: number) => v.toFixed(3),
+  formatar: formatarDado,
 }: {
   titulo: string;
   dica?: React.ReactNode;
@@ -41,7 +41,8 @@ export function RangeChart({
   maximoEixo?: number;
   formatar?: (valor: number) => string;
 }) {
-  const { t } = useIdioma();
+  const { t, n } = useIdioma();
+  const formatar = formatarDado ?? ((v: number) => n(v, 3));
   const [ativo, setAtivo] = useState<string | null>(null);
 
   return (

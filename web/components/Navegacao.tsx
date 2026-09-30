@@ -16,7 +16,6 @@ import { SeletorIdioma } from "@/components/SeletorIdioma";
 import { SeletorTema } from "@/components/SeletorTema";
 import { useIdioma } from "@/lib/i18n";
 import "@/lib/i18n/nucleo";
-import "@/lib/i18n/paridade";
 import { usePathname } from "next/navigation";
 
 const DESTINOS = [
@@ -67,8 +66,12 @@ export function Navegacao() {
   }, [menuAberto]);
 
   return (
+    <>
+    <a href="#conteudo" className="pular-para-conteudo">
+      {t("nav.pularParaConteudo")}
+    </a>
     <header
-      className="sticky top-0 z-20 border-b backdrop-blur"
+      className="superficie-navy sticky top-0 z-20 border-b backdrop-blur"
       style={{
         borderColor: "rgba(255,255,255,.12)",
         background: "color-mix(in srgb, var(--navy) 96%, transparent)",
@@ -215,5 +218,6 @@ export function Navegacao() {
         </div>
       </nav>
     </header>
+    </>
   );
 }

@@ -98,3 +98,52 @@ if(t!=="claro"&&t!=="escuro"&&t!=="sistema"){t=${JSON.stringify(TEMA_PADRAO)};}
 var d=t==="escuro"||(t==="sistema"&&window.matchMedia("(prefers-color-scheme: dark)").matches);
 var r=document.documentElement;r.dataset.theme=d?"dark":"light";r.style.colorScheme=d?"dark":"light";
 }catch(e){}})();`;
+
+/* --- uma escolha só para a página inteira ---------------------------------
+   A barra e o menu do celular mostram o mesmo controle. Com um estado em cada,
+   os dois discordavam: o da barra ficava em "sistema" e, na próxima troca do
+   sistema operacional, desfazia o "escuro" escolhido no menu. E cada um, ao
+   montar, aplicava "sistema" antes de ler o que estava guardado -- um lampejo
+   do tema errado a cada carregamento. Agora há uma fonte, e montar não aplica
+   nada: o script de `layout.tsx` já pintou antes de o React existir. */
+
+/** A escolha desta sessão, para quando o armazenamento não guarda nada. */
+let escolhidoAgora: Tema | null = null;
+const ouvintes = new Set<() => void>();
+let largarSistema: (() => void) | null = null;
+
+export function temaEscolhido(): Tema {
+  return escolhidoAgora ?? lerTema();
+}
+
+export function escolherTema(novo: Tema): void {
+  escolhidoAgora = novo;
+  gravarTema(novo);
+  aplicar(novo);
+  ouvintes.forEach((f) => f());
+}
+
+/** Para `useSyncExternalStore`. Enquanto houver alguém ouvindo, em "sistema"
+ *  a troca do sistema operacional com a página aberta repinta na hora. */
+export function assinarTema(aoMudar: () => void): () => void {
+  ouvintes.add(aoMudar);
+  if (!largarSistema) {
+    try {
+      const consulta = window.matchMedia("(prefers-color-scheme: dark)");
+      const aoMudarSistema = () => {
+        if (temaEscolhido() === "sistema") aplicar("sistema");
+      };
+      consulta.addEventListener("change", aoMudarSistema);
+      largarSistema = () => consulta.removeEventListener("change", aoMudarSistema);
+    } catch {
+      /* sem matchMedia, "sistema" fica no que o script resolveu ao abrir */
+    }
+  }
+  return () => {
+    ouvintes.delete(aoMudar);
+    if (ouvintes.size === 0 && largarSistema) {
+      largarSistema();
+      largarSistema = null;
+    }
+  };
+}

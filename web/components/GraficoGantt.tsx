@@ -37,7 +37,7 @@ export function GraficoGantt({
   perfis: number[];
   classes: string[];
 }) {
-  const { t } = useIdioma();
+  const { t, n } = useIdioma();
   const itens = Object.entries(alocacao).sort(
     (a, b) => b[1].faixa_de_valor[0] - a[1].faixa_de_valor[0],
   );
@@ -76,8 +76,8 @@ export function GraficoGantt({
               }}
               title={t("viz.gantt.classeFaixa", {
                 classe,
-                de: limites[i].toFixed(2),
-                ate: limites[i + 1].toFixed(2),
+                de: n(limites[i], 2),
+                ate: n(limites[i + 1], 2),
               })}
             >
               {classe}
@@ -128,8 +128,8 @@ export function GraficoGantt({
                     className="absolute top-1/2 h-2.5 -translate-y-1/2 rounded-[3px]"
                     title={t("viz.gantt.barra", {
                       nome,
-                      de: lo.toFixed(3),
-                      ate: hi.toFixed(3),
+                      de: n(lo, 3),
+                      ate: n(hi, 3),
                     })}
                     style={{
                       left: `${lo * 100}%`,
@@ -172,7 +172,7 @@ export function GraficoGantt({
                   color: "var(--tinta-fraca)",
                 }}
               >
-                {v.toFixed(2)}
+                {n(v, 2)}
               </span>
             ))}
           </div>

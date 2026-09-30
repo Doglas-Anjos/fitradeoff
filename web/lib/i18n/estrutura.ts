@@ -68,11 +68,6 @@ export const ESTRUTURA = registrar({
     en: "Back to the goal",
     es: "Volver al objetivo",
   },
-  "estrutura.exemplo": {
-    pt: "ou preencher com um caso de exemplo",
-    en: "or fill it in with an example case",
-    es: "o completar con un caso de ejemplo",
-  },
   "estrutura.continuar": {
     pt: "Continuar para os desempenhos",
     en: "Continue to the consequence matrix",
@@ -159,6 +154,11 @@ export const ESTRUTURA = registrar({
     pt: "Escreva o nome da alternativa.",
     en: "Type the name of the alternative.",
     es: "Escriba el nombre de la alternativa.",
+  },
+  "estrutura.alternativa.excluida": {
+    pt: "Alternativa “{nome}” excluída.",
+    en: "Alternative “{nome}” deleted.",
+    es: "Alternativa «{nome}» eliminada.",
   },
   "estrutura.alternativa.erro.nomeVazio": {
     pt: "O nome não pode ficar vazio.",
@@ -462,6 +462,11 @@ export const ESTRUTURA = registrar({
     es: "Guardar cambios",
   },
   "estrutura.criterio.cancelar": { pt: "cancelar", en: "cancel", es: "cancelar" },
+  "estrutura.criterio.excluido": {
+    pt: "Critério “{nome}” excluído, com a coluna de desempenhos.",
+    en: "Criterion “{nome}” deleted, with its column of performances.",
+    es: "Criterio «{nome}» eliminado, con su columna de desempeños.",
+  },
   "estrutura.criterio.erro.repetido": {
     pt: 'Já existe um critério "{nome}".',
     en: 'There is already a criterion called "{nome}".',

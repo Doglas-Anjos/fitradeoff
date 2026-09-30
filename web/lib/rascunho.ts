@@ -246,6 +246,50 @@ export function removerCriterio(r: Rascunho, i: number): Rascunho {
   };
 }
 
+/* --- desfazer uma exclusão ------------------------------------------------------
+   Excluir é imediato e o aviso oferece desfazer. O desfazer não pode
+   restaurar a fotografia de antes: nos segundos do aviso a pessoa pode ter
+   continuado a editar, e a fotografia apagaria isso. Então devolve só o que
+   saiu, no lugar de onde saiu, sobre o rascunho de agora. */
+
+/** Devolve a alternativa excluída à posição `i` (ou ao fim, se a lista encolheu). */
+export function restaurarAlternativa(
+  r: Rascunho,
+  i: number,
+  linha: AlternativaRascunho,
+): Rascunho {
+  // se entrou ou saiu critério nesse meio-tempo, a linha acompanha as colunas
+  const valores = r.colunas.map((_, j) => linha.valores[j] ?? "");
+  const linhas = [...r.linhas];
+  linhas.splice(Math.min(i, linhas.length), 0, { ...linha, valores });
+  return { ...r, linhas };
+}
+
+/**
+ * Devolve o critério excluído à posição `i`, com os desempenhos que cada
+ * alternativa tinha nele. As alternativas são reconhecidas pelo nome: se a
+ * lista mudou nesse meio-tempo, quem é nova recebe a célula em branco.
+ */
+export function restaurarCriterio(
+  r: Rascunho,
+  i: number,
+  criterio: CriterioRascunho,
+  valoresPorAlternativa: Map<string, string>,
+): Rascunho {
+  const onde = Math.min(i, r.colunas.length);
+  const colunas = [...r.colunas];
+  colunas.splice(onde, 0, criterio);
+  return {
+    ...r,
+    colunas,
+    linhas: r.linhas.map((l) => {
+      const valores = [...l.valores];
+      valores.splice(onde, 0, valoresPorAlternativa.get(l.nome) ?? "");
+      return { ...l, valores };
+    }),
+  };
+}
+
 export function definirValor(
   r: Rascunho,
   linha: number,

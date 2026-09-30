@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -497,5 +497,58 @@ describe("PainelSalvas: favoritas", () => {
 
     await waitFor(() => expect(estrela).toHaveAttribute("aria-pressed", "false"));
     expect(screen.getByRole("alert")).toHaveTextContent(/favorita/i);
+  });
+});
+
+describe("PainelSalvas: pedido da lista", () => {
+  /* O painel está sempre montado, fechado no canto, e remonta a cada decisão
+     aberta. Pedir a lista na montagem era uma ida ao servidor por troca de
+     decisão, para uma lista que quase ninguém abria. */
+  it("só pede a lista quando o painel abre, e uma vez só", async () => {
+    const listar = vi
+      .spyOn(api, "listar")
+      .mockResolvedValue({ decisoes: RESUMOS });
+    render(<PainelSalvas onAbrir={() => {}} />);
+
+    expect(listar).not.toHaveBeenCalled();
+
+    await abrirPainel();
+    expect(listar).toHaveBeenCalledTimes(1);
+    await screen.findByText("Seleção de fornecedor");
+
+    await userEvent.keyboard("{Escape}");
+    await abrirPainel();
+    expect(listar).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("PainelSalvas: arrasto da largura", () => {
+  /* O arrasto não passa pelo estado do React nem pelo armazenamento a cada
+     movimento: escreve na variável CSS do painel, e só grava quando solta. */
+  it("move a variável CSS durante o arrasto e só grava ao soltar", async () => {
+    vi.spyOn(api, "listar").mockResolvedValue({ decisoes: RESUMOS });
+    render(<PainelSalvas onAbrir={() => {}} />);
+    await abrirPainel();
+
+    const painel = screen.getByRole("complementary", { name: /decisões salvas/i });
+    const alca = screen.getByRole("separator", { name: /largura/i });
+    const gravar = vi.spyOn(Storage.prototype, "setItem");
+
+    fireEvent.pointerDown(alca, { pointerId: 1 });
+    const mover = (x: number) =>
+      alca.dispatchEvent(new MouseEvent("pointermove", { clientX: x }));
+    mover(window.innerWidth - 400);
+    mover(window.innerWidth - 450);
+
+    expect(painel.style.getPropertyValue("--largura-painel")).toBe("450px");
+    expect(alca).toHaveAttribute("aria-valuenow", "450");
+    expect(gravar).not.toHaveBeenCalled();
+
+    alca.dispatchEvent(new MouseEvent("pointerup"));
+    await waitFor(() =>
+      expect(window.localStorage.getItem(CHAVE_LARGURA)).toBe("450"),
+    );
+    expect(gravar).toHaveBeenCalledTimes(1);
+    expect(alca).toHaveAttribute("aria-valuenow", "450");
   });
 });

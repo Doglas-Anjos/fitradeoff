@@ -23,7 +23,7 @@
  */
 
 import { CaretDown, CaretRight, Scales } from "@phosphor-icons/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Botao, Dica } from "@/components/ui";
 import { api, mensagemDeErro } from "@/lib/api";
@@ -46,34 +46,50 @@ function agrupar(fontes: string[]): { texto: string; vezes: number }[] {
   return [...contagem].map(([texto, vezes]) => ({ texto, vezes }));
 }
 
-export function TrilhaAuditoria({ decisaoId }: { decisaoId: string }) {
+export function TrilhaAuditoria({
+  decisaoId,
+  versao,
+}: {
+  decisaoId: string;
+  /** Muda a cada declaração nova ou desfeita: com o painel aberto, pede de novo. */
+  versao?: number;
+}) {
   const { t, idioma } = useIdioma();
   const [aberta, setAberta] = useState(false);
   const [trilha, setTrilha] = useState<Auditoria | null>(null);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [tentativa, setTentativa] = useState(0);
 
-  async function buscar() {
+  /* Busca a cada abertura e a cada mudança do log com o painel aberto. A
+     trilha é derivada do log, e o log muda a cada resposta e a cada "voltar um
+     passo": guardá-la mostraria declarações antigas ao lado de uma
+     recomendação que elas já não explicam — que é exatamente o contrário do
+     que uma auditoria é. Fechado, não busca nada. */
+  useEffect(() => {
+    if (!aberta) return;
+    let valido = true;
     setCarregando(true);
     setErro(null);
-    try {
-      setTrilha(await api.auditoria(decisaoId));
-    } catch (e) {
-      setErro(mensagemDeErro(e, t("auditoria.erro")));
-    } finally {
-      setCarregando(false);
-    }
-  }
+    api
+      .auditoria(decisaoId)
+      .then((lida) => {
+        if (valido) setTrilha(lida);
+      })
+      .catch((e) => {
+        if (valido) setErro(mensagemDeErro(e, t("auditoria.erro")));
+      })
+      .finally(() => {
+        if (valido) setCarregando(false);
+      });
+    return () => {
+      valido = false;
+    };
+    // `t` fica de fora: trocar de idioma não muda a trilha
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aberta, decisaoId, versao, tentativa]);
 
-  function alternar() {
-    const abrindo = !aberta;
-    setAberta(abrindo);
-    /* Busca a cada abertura, e não só na primeira. A trilha é derivada do log,
-       e o log muda a cada resposta e a cada "voltar um passo": guardá-la em
-       cache mostraria declarações antigas ao lado de uma recomendação que elas
-       já não explicam — que é exatamente o contrário do que uma auditoria é. */
-    if (abrindo && !carregando) void buscar();
-  }
+  const alternar = () => setAberta((a) => !a);
 
   const declaracoes = trilha?.declaracoes ?? [];
   /* A contagem é de restrições, a lista é de origens: uma origem pode ter
@@ -126,7 +142,7 @@ export function TrilhaAuditoria({ decisaoId }: { decisaoId: string }) {
                 {erro}
               </p>
               <button
-                onClick={() => void buscar()}
+                onClick={() => setTentativa((n) => n + 1)}
                 className="tatil mt-2 text-[12px] underline underline-offset-2"
                 style={{ color: "var(--tinta-3)" }}
               >

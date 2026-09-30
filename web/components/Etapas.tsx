@@ -22,6 +22,120 @@ import "@/lib/i18n/nucleo";
 
 export type Etapa = "problema" | "ordem" | "perguntas" | "resultado";
 
+/* --- a trilha, peça comum às duas barras ------------------------------------- */
+
+/**
+ * As peças de uma trilha de passos: a lista, o passo, o conector entre dois
+ * passos, o botão de cada um e a marca que ele leva.
+ *
+ * As duas barras desta tela -- as etapas da decisão e os passos do cadastro --
+ * repetiam a mesma marcação `ol > li > conector > botão`, com o mesmo
+ * `aria-current` e a mesma troca entre o número e o visto. Cada uma diverge só
+ * no desenho e no nome do estado que o CSS lê (`data-etapa` numa, `data-passo`
+ * na outra), e é só isso que cada variante passa.
+ */
+const Trilha = {
+  /** A lista ordenada: a ordem dos passos é a informação, não um detalhe. */
+  Lista({ className, children, ...resto }: React.OlHTMLAttributes<HTMLOListElement>) {
+    return (
+      <ol className={className} {...resto}>
+        {children}
+      </ol>
+    );
+  },
+
+  /** Um passo, com o conector que o liga ao anterior -- menos no primeiro. */
+  Passo({
+    indice,
+    className,
+    conector,
+    children,
+  }: {
+    indice: number;
+    className: string;
+    /** As classes do traço; decorativo, porque a ordem já está na lista. */
+    conector: string;
+    children: React.ReactNode;
+  }) {
+    return (
+      <li className={className}>
+        {indice > 0 && (
+          <span
+            aria-hidden
+            className={conector}
+            style={{ background: "var(--borda-forte)" }}
+          />
+        )}
+        {children}
+      </li>
+    );
+  },
+
+  /**
+   * O botão de um passo. Só se clica no que já foi alcançado e não é o atual;
+   * o resto fica desabilitado, e não escondido, para a trilha inteira continuar
+   * dizendo quantos passos há.
+   */
+  Botao({
+    ativo,
+    clicavel,
+    onIr,
+    className,
+    children,
+    ...dados
+  }: {
+    ativo: boolean;
+    clicavel: boolean;
+    onIr: () => void;
+    className: string;
+    children: React.ReactNode;
+  } & { [atributo: `data-${string}`]: string }) {
+    return (
+      <button
+        type="button"
+        onClick={() => clicavel && onIr()}
+        disabled={!clicavel}
+        aria-current={ativo ? "step" : undefined}
+        className={className}
+        {...dados}
+      >
+        {children}
+      </button>
+    );
+  },
+
+  /** O visto num passo concluído; o número nos demais. */
+  Marca({
+    numero,
+    concluido,
+    ativo,
+    realce,
+  }: {
+    numero: number;
+    concluido: boolean;
+    ativo: boolean;
+    /** O fundo e a tinta do número no passo atual, que cada barra desenha. */
+    realce: { background: string; color: string };
+  }) {
+    if (concluido) return <Check size={13} weight="bold" />;
+    return (
+      <span
+        aria-hidden
+        className="num inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px]"
+        style={{
+          background: ativo ? realce.background : "transparent",
+          color: ativo ? realce.color : "inherit",
+          border: ativo ? "none" : "1px solid currentColor",
+        }}
+      >
+        {numero}
+      </span>
+    );
+  },
+};
+
+/* --- as etapas da decisão ----------------------------------------------------- */
+
 /* A etapa guarda a chave do rótulo, não o rótulo: a sequência é constante do
    módulo e não tem como saber em que idioma a tela está. */
 const SEQUENCIA: { id: Etapa; chave: string }[] = [
@@ -59,28 +173,27 @@ export function Etapas({
 
   return (
     <div>
-      <nav aria-label={t("estrutura.etapas.rotulo")} className="rounded-[var(--raio-painel)] border border-[var(--borda)] bg-[var(--painel-fundo)] p-2">
-        <ol className="grid grid-cols-4 items-start gap-1 sm:flex sm:flex-nowrap sm:items-center">
+      <nav
+        aria-label={t("estrutura.etapas.rotulo")}
+        className="rounded-[var(--raio-painel)] border border-[var(--borda)] bg-[var(--painel-fundo)] p-2"
+      >
+        <Trilha.Lista className="grid grid-cols-4 items-start gap-1 sm:flex sm:flex-nowrap sm:items-center">
           {SEQUENCIA.map((etapa, i) => {
             const alcancada = alcancadas.includes(etapa.id);
             const ativa = etapa.id === atual;
             const concluida = alcancada && i < indiceAtual;
-            const clicavel = alcancada && !ativa;
 
             return (
-              <li key={etapa.id} className="flex min-w-0 items-center">
-                {i > 0 && (
-                  <span
-                    aria-hidden
-                    className="mx-1 hidden h-px flex-1 sm:block"
-                    style={{ background: "var(--borda-forte)" }}
-                  />
-                )}
-                <button
-                  type="button"
-                  onClick={() => clicavel && tentar(etapa.id)}
-                  disabled={!clicavel}
-                  aria-current={ativa ? "step" : undefined}
+              <Trilha.Passo
+                key={etapa.id}
+                indice={i}
+                className="flex min-w-0 items-center"
+                conector="mx-1 hidden h-px flex-1 sm:block"
+              >
+                <Trilha.Botao
+                  ativo={ativa}
+                  clicavel={alcancada && !ativa}
+                  onIr={() => tentar(etapa.id)}
                   className="passo-etapa tatil flex min-h-10 w-full min-w-0 flex-col items-center justify-center gap-1 rounded-[var(--raio-controle)] px-1 py-1.5 text-[11px] disabled:cursor-default sm:w-auto sm:flex-row sm:gap-2 sm:px-3.5 sm:text-[13px]"
                   data-etapa={
                     ativa
@@ -92,27 +205,18 @@ export function Etapas({
                           : "adiante"
                   }
                 >
-                  {concluida ? (
-                    <Check size={13} weight="bold" />
-                  ) : (
-                    <span
-                      aria-hidden
-                      className="num inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px]"
-                      style={{
-                        background: ativa ? "rgba(255,255,255,.18)" : "transparent",
-                        color: "inherit",
-                        border: ativa ? "none" : "1px solid currentColor",
-                      }}
-                    >
-                      {i + 1}
-                    </span>
-                  )}
+                  <Trilha.Marca
+                    numero={i + 1}
+                    concluido={concluida}
+                    ativo={ativa}
+                    realce={{ background: "rgba(255,255,255,.18)", color: "inherit" }}
+                  />
                   {t(etapa.chave)}
-                </button>
-              </li>
+                </Trilha.Botao>
+              </Trilha.Passo>
             );
           })}
-        </ol>
+        </Trilha.Lista>
       </nav>
 
       {confirmando && (
@@ -123,7 +227,12 @@ export function Etapas({
           style={{ borderColor: "var(--borda-forte)", background: "var(--painel)" }}
         >
           <p className="flex items-start gap-2 text-sm" style={{ color: "var(--tinta)" }}>
-            <Warning size={16} weight="fill" style={{ color: "var(--erro)" }} className="mt-0.5 shrink-0" />
+            <Warning
+              size={16}
+              weight="fill"
+              style={{ color: "var(--erro)" }}
+              className="mt-0.5 shrink-0"
+            />
             <span>
               {comNos(t("estrutura.etapas.descarte"), {
                 respostas: (
@@ -139,24 +248,34 @@ export function Etapas({
               })}
             </span>
           </p>
-          <div className="mt-3 flex gap-2">
+          {/* Cancelar primeiro, e com o foco: um Enter distraído não pode
+              descartar respostas. Esc também cancela. */}
+          <div
+            className="mt-3 flex gap-2"
+            onKeyDown={(e) => {
+              if (e.key === "Escape") setConfirmando(null);
+            }}
+          >
             <button
+              type="button"
+              autoFocus
+              onClick={() => setConfirmando(null)}
+              className="tatil rounded-[var(--raio-controle)] border px-3 py-1.5 text-[13px]"
+              style={{ borderColor: "var(--borda-forte)", color: "var(--tinta)" }}
+            >
+              {t("acao.cancelar")}
+            </button>
+            <button
+              type="button"
               onClick={() => {
                 const destino = confirmando;
                 setConfirmando(null);
                 onIr(destino);
               }}
               className="tatil rounded-[var(--raio-controle)] px-3 py-1.5 text-[13px] font-medium"
-              style={{ background: "var(--erro)", color: "#fff" }}
+              style={{ background: "var(--erro)", color: "var(--erro-tinta)" }}
             >
               {t("estrutura.etapas.descartar")}
-            </button>
-            <button
-              onClick={() => setConfirmando(null)}
-              className="tatil rounded-[var(--raio-controle)] border px-3 py-1.5 text-[13px]"
-              style={{ borderColor: "var(--borda-forte)", color: "var(--tinta)" }}
-            >
-              {t("acao.cancelar")}
             </button>
           </div>
         </div>
@@ -214,7 +333,7 @@ export function Passos({
           {" · "}
           <strong style={{ color: "var(--tinta)" }}>{passos[posicao]?.rotulo}</strong>
         </p>
-        <ol className="mt-2 flex gap-1" aria-hidden>
+        <Trilha.Lista className="mt-2 flex gap-1" aria-hidden>
           {passos.map((passo, i) => (
             <li
               key={passo.id}
@@ -224,92 +343,51 @@ export function Passos({
               }}
             />
           ))}
-        </ol>
+        </Trilha.Lista>
       </div>
 
-      <ol className="hidden flex-wrap items-center gap-1 sm:flex">
+      <Trilha.Lista className="hidden flex-wrap items-center gap-1 sm:flex">
         {passos.map((passo, i) => {
           const ativo = i === indiceAtual;
           const concluido = i < indiceAtual;
-          const clicavel = concluido && !!onIr;
 
           return (
-            <li key={passo.id} className="flex items-center">
-              {i > 0 && (
-                <span
-                  aria-hidden
-                  className="mx-1 h-px w-5"
-                  style={{ background: "var(--borda-forte)" }}
-                />
-              )}
-              <button
-                type="button"
-                onClick={() => clicavel && onIr!(passo.id)}
-                disabled={!clicavel}
-                aria-current={ativo ? "step" : undefined}
+            <Trilha.Passo
+              key={passo.id}
+              indice={i}
+              className="flex items-center"
+              conector="mx-1 h-px w-5"
+            >
+              <Trilha.Botao
+                ativo={ativo}
+                clicavel={concluido && !!onIr}
+                onIr={() => onIr?.(passo.id)}
                 className="passo-trilha tatil flex items-center gap-1.5 rounded-[var(--raio-controle)] px-2.5 py-1.5 text-[13px] disabled:cursor-default"
                 data-passo={ativo ? "atual" : concluido ? "concluido" : "adiante"}
               >
-                {concluido ? (
-                  <Check size={13} weight="bold" />
-                ) : (
-                  <span
-                    aria-hidden
-                    className="num inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px]"
-                    style={{
-                      background: ativo ? "var(--accent)" : "transparent",
-                      color: ativo ? "var(--accent-tinta)" : "inherit",
-                      border: ativo ? "none" : "1px solid currentColor",
-                    }}
-                  >
-                    {i + 1}
-                  </span>
-                )}
+                <Trilha.Marca
+                  numero={i + 1}
+                  concluido={concluido}
+                  ativo={ativo}
+                  realce={{ background: "var(--accent)", color: "var(--accent-tinta)" }}
+                />
                 {passo.rotulo}
-              </button>
-            </li>
+              </Trilha.Botao>
+            </Trilha.Passo>
           );
         })}
-      </ol>
+      </Trilha.Lista>
     </nav>
   );
 }
 
-/**
- * O rodapé de um passo: sair pela esquerda, avançar pela direita.
- *
- * Fica no mesmo lugar em todas as telas do cadastro. Um "Continuar" que muda
- * de posição a cada passo obriga a procurá-lo de novo toda vez.
- */
-export function Rodape({
-  onVoltar,
-  rotuloVoltar,
-  children,
-}: {
-  onVoltar?: () => void;
-  rotuloVoltar?: string;
-  children: React.ReactNode;
-}) {
-  const { t } = useIdioma();
-
-  return (
-    <div
-      className="barra-acoes mt-8 flex flex-wrap-reverse items-center justify-between gap-4 rounded-[var(--raio-controle)] px-4 py-4"
-    >
-      {onVoltar ? (
-        <Voltar rotulo={rotuloVoltar ?? t("acao.voltar")} onClick={onVoltar} />
-      ) : (
-        <span aria-hidden />
-      )}
-      <div className="flex flex-wrap items-center gap-4">{children}</div>
-    </div>
-  );
-}
+/* --- o rodapé de um passo ----------------------------------------------------- */
 
 /** Botão de voltar para a etapa anterior, sem sair do fluxo. */
 export function Voltar({ rotulo, onClick }: { rotulo: string; onClick: () => void }) {
   return (
     <button
+      type="button"
       onClick={onClick}
       className="tatil flex items-center gap-1.5 text-[13px]"
       style={{ color: "var(--tinta-3)" }}
@@ -319,3 +397,33 @@ export function Voltar({ rotulo, onClick }: { rotulo: string; onClick: () => voi
     </button>
   );
 }
+
+/**
+ * O rodapé de um passo: sair pela esquerda, avançar pela direita.
+ *
+ * Fica no mesmo lugar em todas as telas do cadastro. Um "Continuar" que muda
+ * de posição a cada passo obriga a procurá-lo de novo toda vez.
+ *
+ * Os dois lados são peças, e cada um é opcional: `Rodape.Voltar` à esquerda,
+ * `Rodape.Acoes` à direita. Antes a saída vinha por props e as ações por um
+ * `children` obrigatório, e quem só queria a saída tinha de passar um
+ * `<span />` vazio para satisfazer o tipo.
+ */
+function RodapeRaiz({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="barra-acoes mt-8 flex flex-wrap-reverse items-center justify-between gap-4 rounded-[var(--raio-controle)] px-4 py-4">
+      {children}
+    </div>
+  );
+}
+
+/* `ml-auto` em vez de um espaçador vazio: sem a saída à esquerda, as ações
+   continuam à direita, onde o olho já as procura. */
+function RodapeAcoes({ children }: { children: React.ReactNode }) {
+  return <div className="ml-auto flex flex-wrap items-center gap-4">{children}</div>;
+}
+
+export const Rodape = Object.assign(RodapeRaiz, {
+  Voltar,
+  Acoes: RodapeAcoes,
+});

@@ -66,3 +66,38 @@ describe("ComparacaoPares em tabela", () => {
     });
   }
 });
+
+describe("ComparacaoPares: pausa de confirmação", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  /* Na pausa os botões continuam focáveis -- `disabled` nativo tiraria o foco
+     de quem respondeu pelo teclado -- e só recusam o segundo clique. */
+  it("na pausa, marca aria-disabled sem desabilitar, e acende o escolhido", () => {
+    render(<ComparacaoPares criterios={[QUALIDADE, CUSTO]} ocupado={false} onConfirmar={vi.fn()} />);
+    const escolher = screen.getByRole("button", {
+      name: `Prefiro esta melhora: ${QUALIDADE.nome}`,
+    });
+    const meio = screen.getByRole("button", { name: "as duas valem o mesmo" });
+
+    fireEvent.click(escolher);
+    expect(escolher).toBeEnabled();
+    expect(escolher).toHaveAttribute("aria-disabled", "true");
+    expect(meio).toBeEnabled();
+    expect(meio).toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByRole("group", { name: QUALIDADE.nome })).toHaveAttribute("data-estado", "escolhido");
+    expect(screen.getByRole("group", { name: CUSTO.nome })).toHaveAttribute("data-estado", "preterido");
+
+    act(() => vi.advanceTimersByTime(ESPERA_CONFIRMACAO + 10));
+    expect(screen.queryByRole("group", { name: QUALIDADE.nome })).not.toBeInTheDocument();
+  });
+
+  it("no empate, os cartões ficam neutros e só o botão do meio acende", () => {
+    render(<ComparacaoPares criterios={[QUALIDADE, CUSTO]} ocupado={false} onConfirmar={vi.fn()} />);
+    const meio = screen.getByRole("button", { name: "as duas valem o mesmo" });
+    fireEvent.click(meio);
+    expect(meio).toHaveAttribute("data-estado", "escolhido");
+    expect(screen.getByRole("group", { name: QUALIDADE.nome })).toHaveAttribute("data-estado", "neutro");
+    expect(screen.getByRole("group", { name: CUSTO.nome })).toHaveAttribute("data-estado", "neutro");
+  });
+});

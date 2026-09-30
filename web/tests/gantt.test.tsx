@@ -64,6 +64,6 @@ describe("o titulo da aba", () => {
     render(
       <GraficoGantt alocacao={ALOCACAO} perfis={[0.35, 0.7]} classes={["Baixa", "Média", "Alta"]} />,
     );
-    expect(screen.getByTitle(/Forn A: 0\.720 a 0\.900/)).toBeInTheDocument();
+    expect(screen.getByTitle(/Forn A: 0,720 a 0,900/)).toBeInTheDocument();
   });
 });

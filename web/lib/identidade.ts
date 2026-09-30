@@ -144,6 +144,14 @@ export async function obter(): Promise<string | null> {
   return buscando;
 }
 
+/** O token que ja esta em maos, sem buscar nada.
+ *
+ *  Para quem nao pode esperar uma promessa: a gravacao feita enquanto a aba
+ *  fecha. Sem margem de folga -- se ainda nao venceu, vale a tentativa. */
+export function tokenEmMaos(): string | null {
+  return token !== null && Date.now() < vence ? token : null;
+}
+
 /** Manda para o FasorX -- e pede para voltar para ca depois.
  *
  *  `?volta=fitradeoff` e um NOME, que o FasorX confere contra a lista fixa de

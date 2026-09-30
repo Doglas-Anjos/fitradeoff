@@ -27,8 +27,8 @@ import {
   Botao,
   BotaoEntreCartoes,
   Dica,
-  ESPERA_CONFIRMACAO,
   Segmentado,
+  type EstadoResposta,
 } from "@/components/ui";
 import { useIdioma } from "@/lib/i18n";
 import "@/lib/i18n/visualizacoes";
@@ -40,6 +40,10 @@ import {
   type RespostaComparacao,
 } from "@/lib/ordenacaoPorComparacao";
 import type { CriterioOut } from "@/lib/types";
+import {
+  recuperarFoco,
+  useRespostaComConfirmacao,
+} from "@/lib/useRespostaComConfirmacao";
 
 function Cartao({
   criterio,
@@ -47,6 +51,7 @@ function Cartao({
   rotulo,
   onEscolher,
   desabilitado,
+  pausado,
   estado,
 }: {
   criterio: CriterioOut;
@@ -54,12 +59,13 @@ function Cartao({
   rotulo: string;
   onEscolher: () => void;
   desabilitado: boolean;
+  /** Na pausa de confirmação: continua focável, mas não aceita outro clique. */
+  pausado: boolean;
   /** Depois do clique, um cartão é o escolhido e o outro é o preterido. */
-  estado: "neutro" | "escolhido" | "preterido";
+  estado: EstadoResposta;
 }) {
   const { t } = useIdioma();
   const escolhido = estado === "escolhido";
-  const preterido = estado === "preterido";
   return (
     <div
       /* Conjunto de informação sobre um critério, não um botão: ver a seção
@@ -95,6 +101,7 @@ function Cartao({
         type="button"
         onClick={onEscolher}
         disabled={desabilitado}
+        aria-disabled={pausado || undefined}
         aria-label={`${t("elicitacao.par.prefiro")}: ${criterio.nome}`}
         data-escolhido={escolhido}
         className="botao-escolha tatil mt-auto flex items-center justify-center gap-1.5 rounded-[var(--raio-controle)] border px-3 py-2 text-center text-[13px] font-medium"
@@ -106,6 +113,10 @@ function Cartao({
     </div>
   );
 }
+
+/** Respostas em que nenhum cartão recua. Fora do componente: é a mesma lista
+    em toda renderização. */
+const NEUTRAS: readonly RespostaComparacao[] = ["indiferente"];
 
 function formatar(v: number): string {
   return Number.isInteger(v) ? String(v) : v.toPrecision(4).replace(/\.?0+$/, "");
@@ -232,35 +243,25 @@ export function ComparacaoPares({
      seguinte aparecia no mesmo quadro do clique, sem nem sequer uma ida ao
      servidor para marcar a passagem, e a pessoa não via qual critério tinha
      escolhido. */
-  const [escolhida, setEscolhida] = useState<RespostaComparacao | null>(null);
-  const relogio = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { escolhida, responder, pausado, estadoDe } =
+    useRespostaComConfirmacao<RespostaComparacao>(
+      (r) => setRespostas((atuais) => [...atuais, r]),
+      /* No empate nenhum dos dois cartões perdeu: quem acende é o do meio, e
+         os lados ficam como estavam. */
+      { bloqueado: ocupado, neutrasEm: NEUTRAS },
+    );
   const [vista, setVista] = useState<"cartoes" | "tabela">("cartoes");
 
-  useEffect(
-    () => () => {
-      if (relogio.current) clearTimeout(relogio.current);
-    },
-    [],
-  );
-
-  const responder = (r: RespostaComparacao) => {
-    if (escolhida || ocupado) return;
-    setEscolhida(r);
-    relogio.current = setTimeout(() => {
-      setRespostas((atuais) => [...atuais, r]);
-      setEscolhida(null);
-    }, ESPERA_CONFIRMACAO);
-  };
-
-  const estadoDe = (lado: RespostaComparacao) =>
-    escolhida === null || escolhida === "indiferente"
-      ? "neutro"
-      : escolhida === lado
-        ? "escolhido"
-        : "preterido";
+  /* Ao terminar, os cartões saem e o foco iria para o topo da página; ele fica
+     aqui, onde está o botão de confirmar a ordem. */
+  const quadro = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (respostas.length === 0) return;
+    recuperarFoco(quadro.current);
+  }, [respostas.length]);
 
   return (
-    <div>
+    <div ref={quadro} tabIndex={-1} className="foco-programatico">
       <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
         <span className="flex items-center gap-1.5">
           <span className="text-[13px] font-medium" style={{ color: "var(--tinta)" }}>
@@ -278,7 +279,12 @@ export function ComparacaoPares({
           </Dica>
         </span>
         {!pronto && (
-          <span className="num text-[12px]" style={{ color: "var(--tinta-3)" }}>
+          <span
+            /* anuncia o avanço: o par muda no mesmo lugar, sem outro sinal */
+            aria-live="polite"
+            className="num text-[12px]"
+            style={{ color: "var(--tinta-3)" }}
+          >
             {t(
               respostas.length === 1
                 ? "elicitacao.par.respondidas.um"
@@ -314,13 +320,14 @@ export function ComparacaoPares({
               <TabelaConsequencias
                 a={porChave(comparacao.a)}
                 b={porChave(comparacao.b)}
-                desabilitado={ocupado || escolhida !== null}
+                desabilitado={ocupado}
                 escolhida={escolhida}
                 onEscolher={responder}
               />
               <Botao
                 variante="texto"
-                disabled={ocupado || escolhida !== null}
+                disabled={ocupado}
+                aria-disabled={pausado || undefined}
                 onClick={() => responder("indiferente")}
               >
                 {t("elicitacao.par.indiferente")}
@@ -332,7 +339,8 @@ export function ComparacaoPares({
               criterio={porChave(comparacao.a)}
               cor="var(--dado-a)"
               rotulo={t("elicitacao.par.melhorarIsto")}
-              desabilitado={ocupado || escolhida !== null}
+              desabilitado={ocupado}
+              pausado={pausado}
               estado={estadoDe("A")}
               onEscolher={() => responder("A")}
             />
@@ -342,8 +350,9 @@ export function ComparacaoPares({
             <BotaoEntreCartoes
               rotulo={t("elicitacao.par.indiferente")}
               icone={<CaboDeGuerra />}
-              desabilitado={ocupado || escolhida !== null}
-              confirmado={escolhida === "indiferente"}
+              desabilitado={ocupado}
+              pausado={pausado}
+              estado={estadoDe("indiferente")}
               onClick={() => responder("indiferente")}
               dica={
                 <Dica titulo={t("elicitacao.par.indiferente.dica.titulo")}>
@@ -357,7 +366,8 @@ export function ComparacaoPares({
               criterio={porChave(comparacao.b)}
               cor="var(--dado-b)"
               rotulo={t("elicitacao.par.ouMelhorarIsto")}
-              desabilitado={ocupado || escolhida !== null}
+              desabilitado={ocupado}
+              pausado={pausado}
               estado={estadoDe("B")}
               onEscolher={() => responder("B")}
             />
@@ -398,7 +408,7 @@ export function ComparacaoPares({
             {respostas.length > 0 && (
               <button
                 onClick={() => setRespostas(respostas.slice(0, -1))}
-                disabled={ocupado || escolhida !== null}
+                disabled={ocupado || pausado}
                 className="tatil flex items-center gap-1.5 text-sm disabled:opacity-40"
                 style={{ color: "var(--tinta-fraca)" }}
               >

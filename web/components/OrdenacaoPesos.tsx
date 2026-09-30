@@ -22,7 +22,7 @@
  */
 
 import { CheckCircle } from "@phosphor-icons/react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { ComparacaoPares } from "@/components/ComparacaoPares";
 import { FaixaCriterio } from "@/components/FaixaCriterio";
@@ -45,13 +45,10 @@ export function OrdenacaoPesos({
 }) {
   const { t } = useIdioma();
   const [modo, setModo] = useState<"pares" | "lista" | "global">("pares");
+  /* Quem usa remonta este componente por decisão (`key`). Zerar num efeito
+     sobre `criterios` apagava a ordenação pela metade a cada curva de valor
+     salva, porque salvar a curva devolve um problema com outro array. */
   const [ordem, setOrdem] = useState<string[]>(criterios.map((c) => c.chave));
-
-  // trocar de decisão sem remontar o componente deixaria a ordem antiga
-  useEffect(() => {
-    setOrdem(criterios.map((c) => c.chave));
-    setEscolhidos([]);
-  }, [criterios]);
   const [escolhidos, setEscolhidos] = useState<string[]>([]);
 
   const porChave = (chave: string) => criterios.find((c) => c.chave === chave)!;

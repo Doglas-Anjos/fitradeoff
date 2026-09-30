@@ -26,15 +26,19 @@
  */
 
 import { Check } from "@phosphor-icons/react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 
 import { CaboDeGuerra } from "@/components/Animacoes";
-import { BotaoEntreCartoes, Dica, ESPERA_CONFIRMACAO } from "@/components/ui";
+import { BotaoEntreCartoes, Dica, type EstadoResposta } from "@/components/ui";
 import { useIdioma } from "@/lib/i18n";
 import { comNos } from "@/lib/i18n/estrutura";
 import "@/lib/i18n/telas";
 import "@/lib/i18n/visualizacoes";
 import type { Pergunta } from "@/lib/types";
+import {
+  recuperarFoco,
+  useRespostaComConfirmacao,
+} from "@/lib/useRespostaComConfirmacao";
 
 export interface Linha {
   criterio: string;
@@ -166,7 +170,7 @@ function Painel({
   cor: string;
   desabilitado: boolean;
   /** Depois do clique, um painel é o escolhido e o outro é o preterido. */
-  estado: "neutro" | "escolhido" | "preterido";
+  estado: EstadoResposta;
   onSelect: () => void;
 }) {
   const { t } = useIdioma();
@@ -174,7 +178,6 @@ function Painel({
   const identicos = pares.filter((p) => p.identico);
 
   const escolhido = estado === "escolhido";
-  const preterido = estado === "preterido";
 
   return (
     <div
@@ -228,7 +231,10 @@ function Painel({
       <button
         type="button"
         onClick={onSelect}
+        /* Na pausa de confirmação o botão continua focável (senão o foco caía
+           no topo da página), mas já não aceita outro clique. */
         disabled={desabilitado}
+        aria-disabled={estado !== "neutro" || undefined}
         data-escolhido={escolhido}
         className="botao-escolha tatil mt-6 flex items-center justify-center gap-1.5 rounded-[var(--raio-controle)] border px-3 py-2 text-center text-[13px] font-medium"
       >
@@ -240,6 +246,11 @@ function Painel({
     </div>
   );
 }
+
+/* Houve resposta nesta visita? A primeira pergunta aparece sem roubar o foco
+   de ninguém; as seguintes o recebem quando o anterior se perdeu. Fica no
+   módulo porque cada pergunta é uma montagem nova (`key` por declaração). */
+let respondeuNestaVisita = false;
 
 export function TradeoffChart({
   pergunta,
@@ -262,24 +273,32 @@ export function TradeoffChart({
      era registrada e a pessoa não chegava a ver qual tinha dado -- o que, numa
      sequência de perguntas parecidas entre si, é o suficiente para perder a
      conta de onde se está. */
-  const [escolhida, setEscolhida] = useState<"A" | "B" | "indiferente" | null>(
-    null,
+  const { escolhida, responder, pausado, estadoDe } = useRespostaComConfirmacao<
+    "A" | "B" | "indiferente"
+  >(
+    (lado) => (lado === "indiferente" ? onIndiferente?.() : onSelect(lado)),
+    /* A escolha fica acesa até a pergunta seguinte chegar: é ela que desmonta
+       esta, e apagar antes reabriria os botões durante a ida ao servidor.
+       Na indiferença nenhum dos dois é o escolhido, mas os dois recuam: quem
+       acende é o botão do meio. */
+    { bloqueado: desabilitado, manterEscolha: true },
   );
-  const relogio = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const quadro = useRef<HTMLDivElement>(null);
+  const idPergunta = useId();
 
-  useEffect(
-    () => () => {
-      /* Sair da tela no meio da pausa não pode registrar a resposta: seria uma
-         declaração que a pessoa não viu acontecer. */
-      if (relogio.current) clearTimeout(relogio.current);
-    },
-    [],
-  );
+  /* A resposta desmonta a pergunta inteira, e com ela o botão que tinha o
+     foco: quem usa teclado ou leitor de tela caía no topo da página a cada
+     resposta. A pergunta nova recebe o foco -- e o leitor lê o enunciado. Só
+     quando o foco se perdeu, para não arrancá-lo de quem já está em outro
+     lugar. */
+  useEffect(() => {
+    if (!respondeuNestaVisita) return;
+    recuperarFoco(quadro.current);
+  }, []);
 
-  const escolher = (lado: "A" | "B" | "indiferente", aplicar: () => void) => {
-    if (escolhida || desabilitado) return; // um clique por pergunta
-    setEscolhida(lado);
-    relogio.current = setTimeout(aplicar, ESPERA_CONFIRMACAO);
+  // um clique por pergunta: a guarda mora no gancho
+  const escolher = (lado: "A" | "B" | "indiferente") => {
+    if (responder(lado)) respondeuNestaVisita = true;
   };
 
   const a = pergunta.opcao_a.map((l) => parseLinha(l, pergunta.posicao_na_escala));
@@ -290,15 +309,6 @@ export function TradeoffChart({
   const ganhoB = b.find((l) => l.destaque);
   const rotuloA = t("elicitacao.tradeoff.situacaoA");
   const rotuloB = t("elicitacao.tradeoff.situacaoB");
-
-  const estadoDe = (lado: "A" | "B") =>
-    escolhida === null
-      ? "neutro"
-      : escolhida === lado
-        ? "escolhido"
-        /* Na indiferença nenhum dos dois é o escolhido, mas os dois recuam:
-           quem acende é o botão do meio. */
-        : "preterido";
 
   const ganho = (linha: Linha | undefined, cor: string) =>
     linha ? (
@@ -311,11 +321,17 @@ export function TradeoffChart({
     ) : null;
 
   return (
-    <div>
+    <div
+      ref={quadro}
+      tabIndex={-1}
+      role="group"
+      aria-labelledby={ganhoA && ganhoB ? idPergunta : undefined}
+      className="foco-programatico"
+    >
       {/* A pergunta em uma frase. Sem ela, descobrir o que esta sendo comparado
           exigia diferenciar duas tabelas de quatro linhas com o olho. */}
       {ganhoA && ganhoB && (
-        <p className="prosa text-[15px]" style={{ color: "var(--tinta-2)" }}>
+        <p id={idPergunta} className="prosa text-[15px]" style={{ color: "var(--tinta-2)" }}>
           {comNos(t("elicitacao.tradeoff.pergunta.direta"), {
             a: ganho(ganhoA, "var(--dado-a)"),
             b: ganho(ganhoB, "var(--dado-b)"),
@@ -342,9 +358,9 @@ export function TradeoffChart({
           lado="a"
           pares={pares}
           cor="var(--dado-a)"
-          desabilitado={desabilitado || escolhida !== null}
+          desabilitado={desabilitado}
           estado={estadoDe("A")}
-          onSelect={() => escolher("A", () => onSelect("A"))}
+          onSelect={() => escolher("A")}
         />
 
         {/* A terceira resposta fica no caminho entre as duas situações, que é
@@ -359,9 +375,10 @@ export function TradeoffChart({
               </Dica>
             }
             icone={<CaboDeGuerra />}
-            desabilitado={desabilitado || escolhida !== null}
-            confirmado={escolhida === "indiferente"}
-            onClick={() => escolher("indiferente", onIndiferente)}
+            desabilitado={desabilitado}
+            pausado={pausado}
+            estado={estadoDe("indiferente")}
+            onClick={() => escolher("indiferente")}
           />
         )}
 
@@ -370,9 +387,9 @@ export function TradeoffChart({
           lado="b"
           pares={pares}
           cor="var(--dado-b)"
-          desabilitado={desabilitado || escolhida !== null}
+          desabilitado={desabilitado}
           estado={estadoDe("B")}
-          onSelect={() => escolher("B", () => onSelect("B"))}
+          onSelect={() => escolher("B")}
         />
       </div>
 

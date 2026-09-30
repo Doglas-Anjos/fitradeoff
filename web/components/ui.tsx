@@ -15,7 +15,21 @@ import { Check, Info, Warning, X } from "@phosphor-icons/react";
 
 import { useIdioma } from "@/lib/i18n";
 import "@/lib/i18n/nucleo";
-import { useEffect, useId, useRef, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from "react";
+
+import type { EstadoResposta } from "@/lib/useRespostaComConfirmacao";
+
+export {
+  ESPERA_CONFIRMACAO,
+  type EstadoResposta,
+} from "@/lib/useRespostaComConfirmacao";
 
 export const PESO_ICONE = 1.5;
 
@@ -263,6 +277,51 @@ export interface OpcaoSegmentada<T extends string> {
   descricao?: string;
 }
 
+/**
+ * O teclado de um grupo de rádio, como o ARIA descreve: o grupo é uma parada só
+ * do Tab (a opção marcada), e as setas trocam de opção -- e já escolhem.
+ *
+ * Sem isto, `role="radio"` prometia ao leitor de tela um controle que as setas
+ * não moviam, e cada opção era uma parada de Tab à parte.
+ */
+export function tecladoDeRadio<T>(
+  valores: readonly T[],
+  atual: T,
+  escolher: (v: T) => void,
+) {
+  const indice = valores.indexOf(atual);
+  return {
+    grupo: {
+      onKeyDown: (e: React.KeyboardEvent<HTMLElement>) => {
+        const passo =
+          e.key === "ArrowRight" || e.key === "ArrowDown"
+            ? 1
+            : e.key === "ArrowLeft" || e.key === "ArrowUp"
+              ? -1
+              : 0;
+        let destino: number;
+        if (passo !== 0) {
+          destino = (Math.max(indice, 0) + passo + valores.length) % valores.length;
+        } else if (e.key === "Home") {
+          destino = 0;
+        } else if (e.key === "End") {
+          destino = valores.length - 1;
+        } else {
+          return;
+        }
+        e.preventDefault();
+        escolher(valores[destino]);
+        e.currentTarget
+          .querySelectorAll<HTMLElement>('[role="radio"]')
+          [destino]?.focus();
+      },
+    },
+    item: (v: T) => ({
+      tabIndex: v === atual || (indice < 0 && v === valores[0]) ? 0 : -1,
+    }),
+  };
+}
+
 export function Segmentado<T extends string>({
   opcoes,
   valor,
@@ -279,10 +338,16 @@ export function Segmentado<T extends string>({
   desabilitado?: boolean;
   className?: string;
 }) {
+  const teclado = tecladoDeRadio(
+    opcoes.map((o) => o.valor),
+    valor,
+    (v) => !desabilitado && onEscolher(v),
+  );
   return (
     <div
       role="radiogroup"
       aria-label={etiqueta}
+      {...teclado.grupo}
       className={`inline-flex gap-1 rounded-[var(--raio-controle)] border p-1 ${className}`}
       style={{ borderColor: "var(--borda)", background: "var(--painel-fundo)" }}
     >
@@ -294,6 +359,7 @@ export function Segmentado<T extends string>({
             type="button"
             role="radio"
             aria-checked={ativa}
+            {...teclado.item(v)}
             disabled={desabilitado}
             onClick={() => onEscolher(v)}
             title={descricao}
@@ -348,15 +414,187 @@ export function Selo({
   );
 }
 
-/* --- modal --------------------------------------------------------------------
+/* --- confirmacao --------------------------------------------------------------
 
    Usado para confirmar o que nao da para desfazer. Fecha por Esc, por clique
    fora e pelo botao de cancelar -- tres saidas, porque quem abriu sem querer
    precisa sair sem pensar.
 
    O foco vai para o botao de cancelar, nao para o de confirmar: um Enter
-   distraido nao deve apagar nada. */
+   distraido nao deve apagar nada.
 
+   Em pecas, e nao um componente fechado: o `Modal` antigo so sabia "cancelar e
+   uma confirmacao", com `perigo` como chave de cor. A tela que precisar de
+   duas saidas (salvar e sair, descartar e sair) ou de um corpo que nao e texto
+   monta a sua com as mesmas pecas, sem que cada caso novo vire mais uma
+   propriedade booleana aqui. */
+
+interface ContextoConfirmacao {
+  idTitulo: string;
+  cancelar: React.RefObject<HTMLButtonElement | null>;
+  fechar: () => void;
+}
+
+const Contexto = createContext<ContextoConfirmacao | null>(null);
+
+function useConfirmacao(): ContextoConfirmacao {
+  const ctx = useContext(Contexto);
+  if (!ctx) throw new Error("Confirmacao.* fora de <Confirmacao.Raiz>");
+  return ctx;
+}
+
+const FOCAVEIS =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+function Raiz({
+  onFechar,
+  children,
+}: {
+  onFechar: () => void;
+  children: React.ReactNode;
+}) {
+  const id = useId();
+  const cancelar = useRef<HTMLButtonElement>(null);
+  const caixa = useRef<HTMLDivElement>(null);
+  /* Quem chama costuma passar uma arrow nova a cada renderização. Com ela nas
+     dependências do efeito, toda renderização do pai devolvia o foco ao
+     cancelar -- no meio do que a pessoa estivesse fazendo dentro do modal. */
+  const fecharAtual = useRef(onFechar);
+  useEffect(() => {
+    fecharAtual.current = onFechar;
+  });
+  const [ctx] = useState<ContextoConfirmacao>(() => ({
+    idTitulo: id,
+    cancelar,
+    fechar: () => fecharAtual.current(),
+  }));
+
+  useEffect(() => {
+    // ao fechar, o foco volta para quem abriu, e não para o topo da página
+    const origem = document.activeElement as HTMLElement | null;
+    /* Sem botão de cancelar o foco fica na própria caixa: fora dela, o Tab
+       começaria no véu que cobre a página. */
+    (cancelar.current ?? caixa.current)?.focus();
+    const aoTeclar = (e: KeyboardEvent) => {
+      if (e.key === "Escape") return fecharAtual.current();
+      if (e.key !== "Tab" || !caixa.current) return;
+      // o Tab fica dentro do modal: atrás dele a página está coberta pelo véu
+      const focaveis = caixa.current.querySelectorAll<HTMLElement>(FOCAVEIS);
+      if (focaveis.length === 0) return;
+      const primeiro = focaveis[0];
+      const ultimo = focaveis[focaveis.length - 1];
+      if (e.shiftKey && document.activeElement === primeiro) {
+        e.preventDefault();
+        ultimo.focus();
+      } else if (!e.shiftKey && document.activeElement === ultimo) {
+        e.preventDefault();
+        primeiro.focus();
+      }
+    };
+    document.addEventListener("keydown", aoTeclar);
+    return () => {
+      document.removeEventListener("keydown", aoTeclar);
+      if (origem?.isConnected) origem.focus();
+    };
+  }, []);
+
+  return (
+    <Contexto.Provider value={ctx}>
+      <div
+        className="entra-desvanecendo fixed inset-0 z-50 flex items-center justify-center p-4"
+        style={{ background: "var(--veu)" }}
+        onClick={() => fecharAtual.current()}
+        role="presentation"
+      >
+        <div
+          ref={caixa}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={id}
+          tabIndex={-1}
+          onClick={(e) => e.stopPropagation()}
+          className="entra-subindo w-full max-w-md rounded-[var(--raio-painel)] border p-5 shadow-lg outline-none"
+          style={{ borderColor: "var(--borda)", background: "var(--painel)" }}
+        >
+          {children}
+        </div>
+      </div>
+    </Contexto.Provider>
+  );
+}
+
+function Titulo({ children }: { children: React.ReactNode }) {
+  const { idTitulo } = useConfirmacao();
+  return (
+    <h2
+      id={idTitulo}
+      className="text-[15px] font-semibold"
+      style={{ color: "var(--tinta)" }}
+    >
+      {children}
+    </h2>
+  );
+}
+
+function Corpo({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      className="prosa mt-2 space-y-2 text-[13px]"
+      style={{ color: "var(--tinta-2)" }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function Acoes({ children }: { children: React.ReactNode }) {
+  return <div className="mt-5 flex flex-wrap justify-end gap-3">{children}</div>;
+}
+
+/** A saída sem consequência. Recebe o foco ao abrir. */
+function Cancelar({ children }: { children?: React.ReactNode }) {
+  const { cancelar, fechar } = useConfirmacao();
+  const { t } = useIdioma();
+  return (
+    <button
+      ref={cancelar}
+      type="button"
+      onClick={fechar}
+      className="tatil rounded-[var(--raio-controle)] border px-4 py-2 text-sm font-medium"
+      style={{ borderColor: "var(--borda-forte)", color: "var(--tinta)" }}
+    >
+      {children ?? t("acao.cancelar")}
+    </button>
+  );
+}
+
+type PropsAcao = Omit<React.ComponentProps<typeof Botao>, "variante">;
+
+function Confirmar(props: PropsAcao) {
+  return <Botao {...props} />;
+}
+
+/** A ação que não se desfaz, na cor de erro -- o aviso não depende só do texto. */
+function Destrutiva({ style, ...props }: PropsAcao) {
+  return (
+    <Botao
+      {...props}
+      style={{ background: "var(--erro)", color: "var(--erro-tinta)", ...style }}
+    />
+  );
+}
+
+export const Confirmacao = {
+  Raiz,
+  Titulo,
+  Corpo,
+  Acoes,
+  Cancelar,
+  Confirmar,
+  Destrutiva,
+};
+
+/** A confirmação de sempre: cancelar e uma ação. */
 export function Modal({
   titulo,
   children,
@@ -372,70 +610,16 @@ export function Modal({
   onFechar: () => void;
   perigo?: boolean;
 }) {
-  const cancelar = useRef<HTMLButtonElement>(null);
-  const id = useId();
-  const { t } = useIdioma();
-
-  useEffect(() => {
-    cancelar.current?.focus();
-    const aoTeclar = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onFechar();
-    };
-    document.addEventListener("keydown", aoTeclar);
-    return () => document.removeEventListener("keydown", aoTeclar);
-  }, [onFechar]);
-
+  const Acao = perigo ? Destrutiva : Confirmar;
   return (
-    <div
-      className="entra-desvanecendo fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: "var(--veu)" }}
-      onClick={onFechar}
-      role="presentation"
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={id}
-        onClick={(e) => e.stopPropagation()}
-        className="entra-subindo w-full max-w-md rounded-[var(--raio-painel)] border p-5 shadow-lg"
-        style={{ borderColor: "var(--borda)", background: "var(--painel)" }}
-      >
-        <h2
-          id={id}
-          className="text-[15px] font-semibold"
-          style={{ color: "var(--tinta)" }}
-        >
-          {titulo}
-        </h2>
-        <div
-          className="prosa mt-2 space-y-2 text-[13px]"
-          style={{ color: "var(--tinta-2)" }}
-        >
-          {children}
-        </div>
-        <div className="mt-5 flex flex-wrap justify-end gap-3">
-          <button
-            ref={cancelar}
-            type="button"
-            onClick={onFechar}
-            className="tatil rounded-[var(--raio-controle)] border px-4 py-2 text-sm font-medium"
-            style={{ borderColor: "var(--borda-forte)", color: "var(--tinta)" }}
-          >
-            {t("acao.cancelar")}
-          </button>
-          <Botao
-            onClick={onConfirmar}
-            style={
-              perigo
-                ? { background: "var(--erro)", color: "#ffffff" }
-                : undefined
-            }
-          >
-            {confirmar}
-          </Botao>
-        </div>
-      </div>
-    </div>
+    <Raiz onFechar={onFechar}>
+      <Titulo>{titulo}</Titulo>
+      <Corpo>{children}</Corpo>
+      <Acoes>
+        <Cancelar />
+        <Acao onClick={onConfirmar}>{confirmar}</Acao>
+      </Acoes>
+    </Raiz>
   );
 }
 
@@ -700,19 +884,6 @@ export function CartaoOpcaoDupla({
   );
 }
 
-/**
- * Quanto tempo uma escolha fica visível antes de a tela trocar.
- *
- * Sem esta pausa, clicar numa das situações trocava a pergunta no mesmo quadro:
- * a resposta saía e a pessoa não via qual tinha dado. Não é enfeite nem atraso
- * artificial -- é o tempo de ler a confirmação, e é o mesmo em toda escolha que
- * avança de tela, para o produto ter um ritmo só.
- *
- * 380ms: abaixo de ~250ms a confirmação vira um piscar que não se lê; acima de
- * ~500ms a interface começa a parecer lenta em vez de atenciosa.
- */
-export const ESPERA_CONFIRMACAO = 380;
-
 /* Um atalho entre dois cartões.
  *
  * A terceira resposta -- "as duas valem o mesmo" -- é uma resposta como as
@@ -731,15 +902,24 @@ export function BotaoEntreCartoes({
   onClick,
   desabilitado = false,
   confirmado = false,
+  estado,
+  pausado = false,
   dica,
 }: {
   /** Vira o nome acessível e a legenda sob o ícone. */
   rotulo: string;
   icone: React.ReactNode;
   onClick: () => void;
+  /** A página está ocupada. É o único caso de `disabled` nativo. */
   desabilitado?: boolean;
-  /** A resposta foi dada e está no ar, aguardando a tela trocar. */
+  /** A resposta foi dada e está no ar, aguardando a tela trocar.
+   *  Equivale a `estado="escolhido"`; fica para quem já o passava. */
   confirmado?: boolean;
+  /** O mesmo estado dos cartões ao lado, vindo de `useRespostaComConfirmacao`. */
+  estado?: EstadoResposta;
+  /** Na pausa de confirmação: continua focável, mas não aceita outro clique.
+   *  `disabled` aqui tiraria o foco de quem acabou de responder pelo teclado. */
+  pausado?: boolean;
   /** Explicação do que esta resposta significa. Fica **ao lado** do botão, e
    *  não dentro: uma dica é um controle próprio, e aninhá-la aqui faria um
    *  botão dentro de outro — o clique viraria loteria e o leitor de tela
@@ -751,10 +931,11 @@ export function BotaoEntreCartoes({
       type="button"
       onClick={onClick}
       disabled={desabilitado}
+      aria-disabled={pausado || undefined}
       /* Sem `title`: o rótulo já está visível logo abaixo do ícone, e a bolha
          nativa do navegador cobria o cartão da direita justamente enquanto a
          pessoa comparava os dois. Quem quiser mais que o rótulo tem a dica. */
-      data-estado={confirmado ? "escolhido" : "neutro"}
+      data-estado={estado ?? (confirmado ? "escolhido" : "neutro")}
       className="botao-entre-cartoes tatil group flex shrink-0 flex-col items-center gap-1.5 disabled:opacity-40"
     >
       {/* Cor, fundo e realce vêm do CSS, não daqui: ver "a terceira resposta"

@@ -1,55 +1,48 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CadastroEstrutural } from "@/components/CadastroEstrutural";
+import { RascunhoEmMemoria } from "@/components/entrada/contextoRascunho";
 import { criterioVazio, RASCUNHO_VAZIO, type Rascunho } from "@/lib/rascunho";
 
 /* O aviso de acao virou toast, e o Sonner nao roda no jsdom. O que o teste
    precisa saber e que a acao foi recusada e com que texto -- nao como o toast
    se desenha, que e trabalho da biblioteca. */
 const avisos: string[] = [];
+/* O "desfazer" de cada aviso desfazível, para o teste clicar nele depois. */
+const desfazeres: (() => void)[] = [];
 vi.mock("@/components/Avisos", () => ({
   avisar: {
     erro: (m: string) => avisos.push(m),
     feito: () => {},
-    desfazivel: () => {},
+    desfazivel: (_m: string, desfazer: () => void) => desfazeres.push(desfazer),
   },
 }));
 const ultimoAviso = () => avisos[avisos.length - 1] ?? "";
 beforeEach(() => {
   avisos.length = 0;
+  desfazeres.length = 0;
 });
 
-/** O cadastro é controlado; o teste segura o estado como a tela real segura. */
+/** O cadastro lê o rascunho de um provedor; o teste o provê em memória, com o
+    mesmo contrato que a sequência de cadastro cumpre com o rascunho
+    sincronizado, e espia cada gravação. */
 function Tela({
   inicial = RASCUNHO_VAZIO,
   onSalvar = () => {},
-  onVoltar = () => {},
   espiar,
-  erro,
   campoComErro,
 }: {
   inicial?: Rascunho;
   onSalvar?: () => void;
-  onVoltar?: () => void;
   espiar?: (r: Rascunho) => void;
-  erro?: string | null;
   campoComErro?: string | null;
 }) {
-  const [rascunho, setRascunho] = useState(inicial);
   return (
-    <CadastroEstrutural
-      rascunho={rascunho}
-      onAlterar={(r) => {
-        espiar?.(r);
-        setRascunho(r);
-      }}
-      onVoltar={onVoltar}
-      onSalvar={onSalvar}
-      campoComErro={campoComErro}
-    />
+    <RascunhoEmMemoria inicial={inicial} onAlterar={espiar} campoComErro={campoComErro}>
+      <CadastroEstrutural onSalvar={onSalvar} />
+    </RascunhoEmMemoria>
   );
 }
 
@@ -395,5 +388,86 @@ describe("a tela inteira", () => {
     expect(
       within(blocoAlternativas()).getByLabelText("Nome da nova alternativa"),
     ).toHaveFocus();
+  });
+});
+
+describe("desfazer uma exclusão", () => {
+  /* O aviso vive segundos, e o clique em "desfazer" chega depois de outras
+     gravações. Ele tem de restaurar sobre o rascunho de então: partir do
+     rascunho do momento da exclusão apagaria o que foi feito no meio. */
+  it("devolve a alternativa sem apagar a que entrou depois", async () => {
+    render(<Tela />);
+    await adicionarAlternativa("Fornecedor A");
+    await adicionarAlternativa("Fornecedor B");
+
+    await userEvent.click(screen.getByRole("button", { name: "Excluir Fornecedor A" }));
+    await adicionarAlternativa("Fornecedor C");
+    act(() => desfazeres[desfazeres.length - 1]());
+
+    const nomes = within(blocoAlternativas())
+      .getAllByRole("listitem")
+      .map((li) => li.textContent);
+    expect(nomes[0]).toContain("Fornecedor A");
+    expect(nomes.join(" ")).toContain("Fornecedor B");
+    expect(nomes.join(" ")).toContain("Fornecedor C");
+  });
+
+  it("devolve o critério sem apagar o que entrou depois", async () => {
+    render(<Tela />);
+    await adicionarCriterio("Custo");
+    await adicionarCriterio("Prazo");
+
+    await userEvent.click(screen.getByRole("button", { name: "Excluir Custo" }));
+    await adicionarCriterio("Qualidade");
+    act(() => desfazeres[desfazeres.length - 1]());
+
+    const bloco = blocoCriterios();
+    for (const nome of ["Custo", "Prazo", "Qualidade"]) {
+      expect(within(bloco).getByText(nome)).toBeInTheDocument();
+    }
+    expect(within(bloco).getByText(/3 critérios/)).toBeInTheDocument();
+  });
+});
+
+describe("o formulário do critério em edição", () => {
+  const comDois: Rascunho = {
+    ...RASCUNHO_VAZIO,
+    colunas: [
+      { ...criterioVazio(), nome: "Custo" },
+      { ...criterioVazio(), nome: "Prazo" },
+    ],
+  };
+
+  it("reordenar a lista não perde o que está sendo digitado", async () => {
+    render(<Tela inicial={comDois} />);
+    await userEvent.click(screen.getByRole("button", { name: "Editar Custo" }));
+    const campo = within(blocoCriterios()).getByLabelText("Nome do critério");
+    await userEvent.type(campo, " unitário");
+
+    await userEvent.click(screen.getByLabelText("Mover Prazo para cima"));
+
+    expect(within(blocoCriterios()).getByLabelText("Nome do critério")).toHaveValue(
+      "Custo unitário",
+    );
+    await userEvent.click(
+      within(blocoCriterios()).getByRole("button", { name: "Salvar alterações" }),
+    );
+    // salvou no critério que estava em edição, na posição nova dele
+    const nomes = within(blocoCriterios())
+      .getAllByRole("listitem")
+      .map((li) => li.textContent);
+    expect(nomes[0]).toContain("Prazo");
+    expect(nomes[1]).toContain("Custo unitário");
+  });
+
+  it("excluir o critério em edição devolve o formulário em branco", async () => {
+    render(<Tela inicial={comDois} />);
+    await userEvent.click(screen.getByRole("button", { name: "Editar Custo" }));
+
+    await userEvent.click(screen.getByRole("button", { name: "Excluir Custo" }));
+
+    const bloco = blocoCriterios();
+    expect(within(bloco).getByLabelText("Nome do critério")).toHaveValue("");
+    expect(within(bloco).getByRole("button", { name: "Adicionar" })).toBeInTheDocument();
   });
 });

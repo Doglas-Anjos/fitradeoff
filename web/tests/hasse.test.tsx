@@ -139,10 +139,10 @@ describe("DiagramaHasse", () => {
     fireEvent.click(screen.getByText("Mostrar diferenças máximas"));
 
     const destacadas = [...container.querySelectorAll("td[data-maior]")].map((c) => c.textContent);
-    expect(destacadas).toEqual(["0.603"]);
+    expect(destacadas).toEqual(["0,603"]);
     // par sem relação a mostrar fica com traço
     expect(screen.getAllByText("–").length).toBeGreaterThan(0);
-    expect(screen.getByText("0.012")).toBeInTheDocument();
+    expect(screen.getByText("0,012")).toBeInTheDocument();
   });
 
   it("diferenças sob demanda: só pede ao abrir o painel", async () => {
@@ -161,7 +161,7 @@ describe("DiagramaHasse", () => {
     expect(carregar).not.toHaveBeenCalled();
     fireEvent.click(screen.getByText("Mostrar diferenças máximas"));
     expect(carregar).toHaveBeenCalledTimes(1);
-    expect(await screen.findByText("0.200")).toBeInTheDocument();
+    expect(await screen.findByText("0,200")).toBeInTheDocument();
     // fechar e abrir de novo não pede outra vez
     fireEvent.click(screen.getByText("Ocultar diferenças máximas"));
     fireEvent.click(screen.getByText("Mostrar diferenças máximas"));

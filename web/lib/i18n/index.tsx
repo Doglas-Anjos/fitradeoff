@@ -19,7 +19,7 @@
  * literatura do método, e quem é da área lê o errado como amadorismo.
  */
 
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, use, useCallback, useEffect, useMemo, useState } from "react";
 
 export const IDIOMAS = [
   { chave: "pt", rotulo: "Português", bandeira: "PT" },
@@ -67,6 +67,37 @@ interface Contexto {
   definir: (i: Idioma) => void;
   /** Texto pela chave. Sem tradução no idioma atual, cai no português. */
   t: (chave: string, valores?: Record<string, string | number>) => string;
+  /** Número para exibir, com `casas` decimais fixas e o separador do idioma
+   *  (`0,412` em pt e es, `0.412` em en). Só para a tela: o que vai para a API
+   *  ou para um campo editável continua com ponto. */
+  n: (valor: number, casas: number) => string;
+}
+
+const LOCALIDADE: Record<Idioma, string> = { pt: "pt-BR", en: "en-US", es: "es" };
+
+/* Um `Intl.NumberFormat` por (idioma, casas): construí-lo custa, e a mesma
+   tabela pede o mesmo formato centenas de vezes. */
+const formatos = new Map<string, Intl.NumberFormat>();
+function formatarNumero(idioma: Idioma, valor: number, casas: number): string {
+  const chave = `${idioma}:${casas}`;
+  let formato = formatos.get(chave);
+  if (!formato) {
+    formato = new Intl.NumberFormat(LOCALIDADE[idioma], {
+      minimumFractionDigits: casas,
+      maximumFractionDigits: casas,
+      useGrouping: false,
+    });
+    formatos.set(chave, formato);
+  }
+  return formato.format(valor);
+}
+
+function interpolar(texto: string, valores?: Record<string, string | number>) {
+  if (!valores) return texto;
+  for (const [nome, valor] of Object.entries(valores)) {
+    texto = texto.replaceAll(`{${nome}}`, String(valor));
+  }
+  return texto;
 }
 
 const Ctx = createContext<Contexto | null>(null);
@@ -113,40 +144,30 @@ export function ProvedorIdioma({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const t = useCallback(
-    (chave: string, valores?: Record<string, string | number>) => {
-      let texto = buscar(chave, idioma);
-      if (valores) {
-        for (const [nome, valor] of Object.entries(valores)) {
-          texto = texto.replaceAll(`{${nome}}`, String(valor));
-        }
-      }
-      return texto;
-    },
-    [idioma],
+  const valor = useMemo<Contexto>(
+    () => ({
+      idioma,
+      definir,
+      t: (chave, valores) => interpolar(buscar(chave, idioma), valores),
+      n: (v, casas) => formatarNumero(idioma, v, casas),
+    }),
+    [idioma, definir],
   );
 
-  return <Ctx.Provider value={{ idioma, definir, t }}>{children}</Ctx.Provider>;
+  return <Ctx value={valor}>{children}</Ctx>;
 }
 
 /**
  * Fora do provedor devolve o português, em vez de explodir: assim um componente
  * isolado num teste continua renderizando sem precisar do provedor inteiro.
  */
+const FORA_DO_PROVEDOR: Contexto = {
+  idioma: IDIOMA_PADRAO,
+  definir: () => {},
+  t: (chave, valores) => interpolar(buscar(chave, IDIOMA_PADRAO), valores),
+  n: (v, casas) => formatarNumero(IDIOMA_PADRAO, v, casas),
+};
+
 export function useIdioma(): Contexto {
-  const ctx = useContext(Ctx);
-  if (ctx) return ctx;
-  return {
-    idioma: IDIOMA_PADRAO,
-    definir: () => {},
-    t: (chave, valores) => {
-      let texto = buscar(chave, IDIOMA_PADRAO);
-      if (valores) {
-        for (const [nome, valor] of Object.entries(valores)) {
-          texto = texto.replaceAll(`{${nome}}`, String(valor));
-        }
-      }
-      return texto;
-    },
-  };
+  return use(Ctx) ?? FORA_DO_PROVEDOR;
 }

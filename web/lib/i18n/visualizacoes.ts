@@ -76,6 +76,11 @@ export const VISUALIZACOES = registrar({
     es: "mostrar el valor normalizado (0 a 1) en vez de la unidad original",
   },
 
+  "viz.abas.rotulo": {
+    pt: "Tipo de gráfico",
+    en: "Chart type",
+    es: "Tipo de gráfico",
+  },
   "viz.dica.titulo": { pt: "Para que servem", en: "What these are for", es: "Para qué sirven" },
   "viz.dica.corpo1.antes": {
     pt: "É com estes gráficos que você faz a ",
@@ -724,6 +729,11 @@ export const VISUALIZACOES = registrar({
     pt: "Resposta",
     en: "Answer",
     es: "Respuesta",
+  },
+  "elicitacao.curva.recomecada": {
+    pt: "Curva recomeçada: os ciclos respondidos foram apagados.",
+    en: "Curve restarted: the answered cycles were cleared.",
+    es: "Curva reiniciada: se borraron los ciclos respondidos.",
   },
   "elicitacao.curva.recomecar": { pt: "recomeçar", en: "start over", es: "reiniciar" },
   "elicitacao.curva.cancelar": { pt: "cancelar", en: "cancel", es: "cancelar" },

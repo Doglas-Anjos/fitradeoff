@@ -788,6 +788,210 @@ export const PARIDADE: CasoParidade[] = [
     "tipo": "estresse"
   },
   {
+    "chave": "fin-B1-bc-orcamento-apertado",
+    "problematica": "beneficio_custo",
+    "alternativas": 12,
+    "criterios": 4,
+    "oficial": {
+      "ordenacao": 5,
+      "tradeoff": 17
+    },
+    "nosso": {
+      "ordenacao": 5,
+      "tradeoff": 17
+    },
+    "resumo": "Carteira única pela razão benefício-custo: Alt 01 (custo 11.00 de 12.00).",
+    "bate": true,
+    "tipo": "estresse"
+  },
+  {
+    "chave": "fin-B2-bc-orcamento-folgado",
+    "problematica": "beneficio_custo",
+    "alternativas": 10,
+    "criterios": 4,
+    "oficial": {
+      "ordenacao": 5,
+      "tradeoff": 14
+    },
+    "nosso": {
+      "ordenacao": 5,
+      "tradeoff": 14
+    },
+    "resumo": "Carteira única pela razão benefício-custo: Alt 01, Alt 02, Alt 03, Alt 04, Alt 05, Alt 06, Alt 07, Alt 08, Alt 09, Alt 10 (custo 227.00 de 237.00).",
+    "bate": true,
+    "tipo": "estresse"
+  },
+  {
+    "chave": "fin-B3-bc-curva-nota",
+    "problematica": "beneficio_custo",
+    "alternativas": 10,
+    "criterios": 5,
+    "oficial": {
+      "ordenacao": 8,
+      "tradeoff": 33
+    },
+    "nosso": {
+      "ordenacao": 8,
+      "tradeoff": 33
+    },
+    "resumo": "2 carteiras distintas saíram da ordenação por razão nas 8 amostras de pesos; 2 projetos ainda oscilam. A mais frequente aparece em 6 delas.",
+    "bate": true,
+    "tipo": "estresse"
+  },
+  {
+    "chave": "fin-B4-bc-7x30-misto",
+    "problematica": "beneficio_custo",
+    "alternativas": 30,
+    "criterios": 7,
+    "oficial": {
+      "ordenacao": 15,
+      "tradeoff": 50
+    },
+    "nosso": {
+      "ordenacao": 14,
+      "tradeoff": 50
+    },
+    "resumo": "A carteira já está definida pela razão benefício-custo: Alt 03, Alt 07, Alt 08, Alt 09, Alt 10, Alt 12, Alt 13, Alt 16, Alt 21, Alt 24 (custo 207.00 de 210.25). 1 par de projetos a",
+    "bate": false,
+    "tipo": "estresse"
+  },
+  {
+    "chave": "fin-B5-bc-razoes-iguais",
+    "problematica": "beneficio_custo",
+    "alternativas": 12,
+    "criterios": 4,
+    "oficial": {
+      "ordenacao": 5,
+      "tradeoff": 11
+    },
+    "nosso": {
+      "ordenacao": 5,
+      "tradeoff": 11
+    },
+    "resumo": "Carteira única pela razão benefício-custo: Alt 01, Alt 03, Alt 04, Alt 05 (custo 110.00 de 120.00).",
+    "bate": true,
+    "tipo": "estresse"
+  },
+  {
+    "chave": "fin-E1-escolha-curva-nota",
+    "problematica": "escolha",
+    "alternativas": 12,
+    "criterios": 5,
+    "oficial": {
+      "ordenacao": 8,
+      "tradeoff": 3
+    },
+    "nosso": {
+      "ordenacao": 8,
+      "tradeoff": 3
+    },
+    "resumo": "Recomendação: Alt 04.",
+    "bate": true,
+    "tipo": "estresse"
+  },
+  {
+    "chave": "fin-E2-escolha-min-milhoes",
+    "problematica": "escolha",
+    "alternativas": 15,
+    "criterios": 7,
+    "oficial": {
+      "ordenacao": 15,
+      "tradeoff": 23
+    },
+    "nosso": {
+      "ordenacao": 14,
+      "tradeoff": 23
+    },
+    "resumo": "3 alternativas ficaram equivalentes dentro do limiar de 0.01: Alt 05, Alt 06, Alt 07. Qualquer uma delas serve; mais perguntas não separariam.",
+    "bate": false,
+    "tipo": "estresse"
+  },
+  {
+    "chave": "fin-E3-escolha-quase-empate",
+    "problematica": "escolha",
+    "alternativas": 12,
+    "criterios": 4,
+    "oficial": {
+      "ordenacao": 5,
+      "tradeoff": 2
+    },
+    "nosso": {
+      "ordenacao": 5,
+      "tradeoff": 2
+    },
+    "resumo": "Recomendação: Alt 04.",
+    "bate": true,
+    "tipo": "estresse"
+  },
+  {
+    "chave": "fin-S1-sorting-7x25-4c",
+    "problematica": "sorting",
+    "alternativas": 25,
+    "criterios": 7,
+    "oficial": {
+      "ordenacao": 15,
+      "tradeoff": 22
+    },
+    "nosso": {
+      "ordenacao": 14,
+      "tradeoff": 22
+    },
+    "resumo": "Todas as alternativas foram classificadas.",
+    "bate": false,
+    "tipo": "estresse"
+  },
+  {
+    "chave": "fin-S2-sorting-perfis-pontas",
+    "problematica": "sorting",
+    "alternativas": 15,
+    "criterios": 5,
+    "oficial": {
+      "ordenacao": 8,
+      "tradeoff": 18
+    },
+    "nosso": {
+      "ordenacao": 8,
+      "tradeoff": 18
+    },
+    "resumo": "Todas as alternativas foram classificadas.",
+    "bate": true,
+    "tipo": "estresse"
+  },
+  {
+    "chave": "fin-S3-sorting-curva-nota",
+    "problematica": "sorting",
+    "alternativas": 10,
+    "criterios": 5,
+    "oficial": {
+      "ordenacao": 8,
+      "tradeoff": 10
+    },
+    "nosso": {
+      "ordenacao": 8,
+      "tradeoff": 10
+    },
+    "resumo": "Todas as alternativas foram classificadas.",
+    "bate": true,
+    "tipo": "estresse"
+  },
+  {
+    "chave": "fin-S4-sorting-2c-milhares",
+    "problematica": "sorting",
+    "alternativas": 14,
+    "criterios": 4,
+    "oficial": {
+      "ordenacao": 5,
+      "tradeoff": 15
+    },
+    "nosso": {
+      "ordenacao": 5,
+      "tradeoff": 15
+    },
+    "resumo": "Todas as alternativas foram classificadas.",
+    "bate": true,
+    "tipo": "estresse"
+  },
+  {
     "chave": "vol-bc-3x8",
     "problematica": "beneficio_custo",
     "alternativas": 8,
@@ -958,6 +1162,23 @@ export const PARIDADE: CasoParidade[] = [
     "tipo": "estresse"
   },
   {
+    "chave": "vol-ranking-5x12-b",
+    "problematica": "ranking",
+    "alternativas": 12,
+    "criterios": 5,
+    "oficial": {
+      "ordenacao": 8,
+      "tradeoff": 17
+    },
+    "nosso": {
+      "ordenacao": 8,
+      "tradeoff": 15
+    },
+    "resumo": "Pré-ordem completa: Alt 06 > Alt 05 > Alt 07 > Alt 04 > Alt 08 > Alt 03 > Alt 09 > Alt 02 > Alt 10 > Alt 01 > Alt 11 > Alt 12. 2 par(es) empatam dentro do limiar de 0.01.",
+    "bate": false,
+    "tipo": "estresse"
+  },
+  {
     "chave": "vol-ranking-6x15",
     "problematica": "ranking",
     "alternativas": 15,
@@ -1045,8 +1266,8 @@ export const PARIDADE: CasoParidade[] = [
 ];
 
 export const RESUMO = {
-  bate: 53,
-  comparaveis: 59,
+  bate: 62,
+  comparaveis: 72,
   travados: 1,
   maiorProblema: 30,
 };

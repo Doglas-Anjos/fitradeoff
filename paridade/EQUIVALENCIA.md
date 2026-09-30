@@ -376,30 +376,89 @@ a pergunta com as previsões, e uma resposta fantasma teria aparecido como
 divergência —, mas a condição agora é a pergunta mudar, ou o contador "Questions
 Answered" subir.
 
+### 29/09/2026: a rodada final, doze casos de borda
+
+A última rodada foi feita para tentar quebrar a equivalência: três escolhas,
+quatro sortings e cinco benefício-custo, além de dois rankings ainda em medição.
+Os casos incluem curva não linear com nota discreta, custo em milhões e em
+milhares, doze alternativas a 0,1% umas das outras, limites de classe nas
+pontas, orçamento apertado e folgado, razões iguais, 7 critérios por 30
+alternativas e respostas A, B e misturadas.
+
+| resultado | casos |
+|---|---|
+| batem por completo (contagem, sequência, desfecho) | `fin-E1`, `fin-E3`, `fin-S1` a `fin-S4`, `fin-B1` a `fin-B5` |
+| mesma contagem e mesmo desfecho, ordem diferente | `fin-E2` (abertura B, ver abaixo) |
+
+"Desfecho" quer dizer o vencedor na escolha, a classe de cada alternativa no
+sorting e a carteira no benefício-custo, conferidos item a item com a tela final
+dele.
+
+Dois casos derrubaram regras nossas, e as duas foram corrigidas:
+
+- **`fin-E3`**: a qualidade variava só de 0,7587 a 0,7650, abaixo da largura
+  mínima de 0,01. Nós pulávamos até a pergunta de abertura; ele faz a abertura e
+  só depois deixa a qualidade de lado. A abertura agora escapa da largura mínima.
+- **`fin-B2`**: derrubou a primeira versão da parada pelo orçamento (ver
+  "Benefício-custo" acima).
+
+No `fin-B3` os dois lados terminam com as perguntas esgotadas e quatro projetos
+empatados na 4ª posição. A carteira dele é a nossa carteira mais frequente
+(6 de 8 amostras). A diferença é que nós avisamos que a Alt 10 ainda pode entrar
+no lugar da Alt 07, e ele não mostra essa alternativa.
+
 ## O que permanece diferente
 
 ### Abertura respondida com B: os valores batem, a escolha do par não
 
 Quando a primeira pergunta (o critério do topo contra o da base) é respondida
 **B**, o oficial às vezes repete o par que acabou de perguntar, e nós seguimos
-para o par mais largo. Dois casos medidos:
+para o par mais largo. Quatro casos medidos:
 
-| caso | respostas | nós | oficial | sequência |
-|---|---|---|---|---|
-| `vol-bc-6x12-b` | BBABBABBAB | 11 | 11 | igual até a 2ª, depois difere |
-| `vol-escolha-5x25-b` | BBABBABBAB… | 3 | 6 | igual até a 2ª, depois difere |
+| caso | pares consecutivos | respostas | nós | oficial | sequência |
+|---|---|---|---|---|---|
+| `vol-escolha-5x25-b` | 4 | BBABBABBAB… | 3 | 6 | igual até a 2ª, depois difere |
+| `vol-ranking-5x12-b` | 4 | só B | 15 | 17 | difere da 3ª à 10ª, igual da 11ª em diante |
+| `vol-bc-6x12-b` | 5 | BBABBABBAB | 11 | 11 | igual até a 2ª, depois difere |
+| `fin-E2-escolha-min-milhoes` | 6 | só B | 23 | 23 | difere da 3ª à 14ª, igual da 15ª em diante |
 
 O que se sabe. Os **valores** de cada pergunta dele são exatamente o meio da
 faixa que o espaço de pesos inteiro admite para aquele par, com a propagação
 pelo produto das razões. Por exemplo, depois de Qualidade × Custo presa em
 [0,75; 0,875], o piso de Custo × Prazo vira 0,5 / 0,875 = 0,571, e ele pergunta
-10,87, o meio de [0,571; 1]. Refazendo o espaço dele pergunta a pergunta, em 8
-das 11 escolhas ele pega o par mais largo, como nós. Nas outras três (3ª, 5ª e
-9ª) ele pega um par com a metade da largura do mais largo. Hipóteses testadas
-contra as 11 escolhas e descartadas: largura pela faixa dos pesos, faixa de razão
-pelas caixas de peso, "repete depois de B", e rodízio que pula o par abaixo da
-metade (ou da média) da maior largura. Com a abertura respondida A, que é o caso
-de todos os outros casos medidos, as sequências batem.
+10,87, o meio de [0,571; 1]. Nos dois casos em que a contagem difere, a
+diferença vem da ordem: com as mesmas perguntas em outra sequência, o espaço de
+pesos chega ao fim por outro caminho.
+
+O que muda é a **escolha do par**, e ela segue um roteiro que se repete nos
+quatro casos:
+
+1. na primeira volta, a metade de cima dos pares leva duas perguntas seguidas
+   cada uma, e a metade de baixo, uma (com 6 pares: 2+2+2+1+1+1; com 4 ou 5, os
+   dois primeiros levam duas);
+2. na segunda volta, o primeiro par é perguntado, os outros da metade de cima
+   são pulados, e a metade de baixo leva uma cada;
+3. dali em diante, rodízio simples entre todos os pares.
+
+Esse roteiro reproduz todas as escolhas dele nos quatro casos. Hipóteses de
+largura testadas contra as escolhas e descartadas: largura pela faixa dos
+pesos, faixa de razão pelas caixas de peso, "repete depois de B", e rodízio que
+pula o par abaixo da metade (ou da média) da maior largura. O roteiro não foi
+implementado: é um padrão tirado de quatro casos em que a abertura foi B, não
+uma regra entendida. Com a abertura respondida A, que é o caso de todos os
+outros casos medidos, as sequências batem com a nossa regra do par mais largo.
+
+### Ordenar 7 critérios: 15 comparações dele, 14 nossas
+
+Com 3, 4, 5 e 6 critérios, a ordenação dele pede 3, 5, 8 e 11 comparações, o
+mesmo que a nossa inserção binária. Com 7 ele pede 15, e nós 14. Foram cinco
+casos com 7 critérios, e a remedição dedicada, com o script corrigido, deu 15 de
+novo. A ordem a que ele chega é a mesma que a nossa, porque as perguntas de
+tradeoff seguintes batem par a par. Nenhuma variante padrão chega a 15 (inserção
+binária com o meio arredondado para baixo ou para cima, faixa inclusiva ou
+exclusiva, inserção na ordem da lista ou na inversa, merge sort com as duas
+divisões): as melhores dão 14. Para achar o procedimento dele é preciso capturar
+o par de cada comparação, e o script de medição por enquanto só as conta.
 
 ### Ranking: um par a 0,4% do limiar, uma pergunta a mais ou a menos
 

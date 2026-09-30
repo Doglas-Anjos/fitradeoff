@@ -5297,6 +5297,3405 @@
   }
  },
  {
+  "chave": "fin-B1-bc-orcamento-apertado",
+  "tipo": "estresse",
+  "problematica": "beneficio_custo",
+  "alternativas": [
+   "Alt 01",
+   "Alt 02",
+   "Alt 03",
+   "Alt 04",
+   "Alt 05",
+   "Alt 06",
+   "Alt 07",
+   "Alt 08",
+   "Alt 09",
+   "Alt 10",
+   "Alt 11",
+   "Alt 12"
+  ],
+  "criterios": [
+   {
+    "chave": "c0",
+    "nome": "Indice de qualidade",
+    "direcao": "max"
+   },
+   {
+    "chave": "c1",
+    "nome": "Custo unitario",
+    "direcao": "min"
+   },
+   {
+    "chave": "c2",
+    "nome": "Prazo de entrega",
+    "direcao": "min"
+   },
+   {
+    "chave": "c3",
+    "nome": "Durabilidade",
+    "direcao": "max"
+   }
+  ],
+  "consequencias": [
+   [
+    0.786,
+    18.166,
+    37.76,
+    5.706
+   ],
+   [
+    0.883,
+    18.012,
+    28.401,
+    5.016
+   ],
+   [
+    0.941,
+    16.616,
+    18.46,
+    5.068
+   ],
+   [
+    0.943,
+    14.674,
+    12.128,
+    5.595
+   ],
+   [
+    0.924,
+    11.817,
+    9.891,
+    6.697
+   ],
+   [
+    0.858,
+    9.953,
+    13.177,
+    7.631
+   ],
+   [
+    0.738,
+    9.154,
+    21.176,
+    8.619
+   ],
+   [
+    0.654,
+    9.347,
+    31.018,
+    8.821
+   ],
+   [
+    0.615,
+    10.9,
+    39.786,
+    8.899
+   ],
+   [
+    0.6,
+    13.093,
+    44.49,
+    8.031
+   ],
+   [
+    0.654,
+    15.546,
+    46.353,
+    7.177
+   ],
+   [
+    0.712,
+    17.42,
+    40.915,
+    6.056
+   ]
+  ],
+  "custos": [
+   11.0,
+   18.0,
+   34.0,
+   30.0,
+   24.0,
+   23.0,
+   29.0,
+   36.0,
+   39.0,
+   30.0,
+   28.0,
+   36.0
+  ],
+  "orcamento": 12.0,
+  "configuracao": null,
+  "curvas": null,
+  "respostas": "",
+  "oficial": {
+   "ordenacao": 5,
+   "tradeoff": 17,
+   "pares": [
+    [
+     "Indice de qualidade",
+     "Durabilidade"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ]
+   ]
+  }
+ },
+ {
+  "chave": "fin-B2-bc-orcamento-folgado",
+  "tipo": "estresse",
+  "problematica": "beneficio_custo",
+  "alternativas": [
+   "Alt 01",
+   "Alt 02",
+   "Alt 03",
+   "Alt 04",
+   "Alt 05",
+   "Alt 06",
+   "Alt 07",
+   "Alt 08",
+   "Alt 09",
+   "Alt 10"
+  ],
+  "criterios": [
+   {
+    "chave": "c0",
+    "nome": "Indice de qualidade",
+    "direcao": "max"
+   },
+   {
+    "chave": "c1",
+    "nome": "Custo unitario",
+    "direcao": "min"
+   },
+   {
+    "chave": "c2",
+    "nome": "Prazo de entrega",
+    "direcao": "min"
+   },
+   {
+    "chave": "c3",
+    "nome": "Durabilidade",
+    "direcao": "max"
+   }
+  ],
+  "consequencias": [
+   [
+    0.768,
+    17.646,
+    36.653,
+    5.704
+   ],
+   [
+    0.875,
+    17.497,
+    26.21,
+    5.005
+   ],
+   [
+    0.945,
+    15.453,
+    15.052,
+    5.236
+   ],
+   [
+    0.918,
+    12.653,
+    10.092,
+    6.329
+   ],
+   [
+    0.86,
+    10.061,
+    12.754,
+    7.706
+   ],
+   [
+    0.747,
+    9.049,
+    21.453,
+    8.48
+   ],
+   [
+    0.634,
+    9.741,
+    33.418,
+    9.163
+   ],
+   [
+    0.592,
+    12.126,
+    42.57,
+    8.413
+   ],
+   [
+    0.645,
+    15.218,
+    45.043,
+    7.239
+   ],
+   [
+    0.721,
+    17.123,
+    41.819,
+    5.971
+   ]
+  ],
+  "custos": [
+   27.0,
+   17.0,
+   24.0,
+   15.0,
+   14.0,
+   27.0,
+   27.0,
+   20.0,
+   36.0,
+   20.0
+  ],
+  "orcamento": 237.0,
+  "configuracao": null,
+  "curvas": null,
+  "respostas": "",
+  "oficial": {
+   "ordenacao": 5,
+   "tradeoff": 14,
+   "pares": [
+    [
+     "Indice de qualidade",
+     "Durabilidade"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ]
+   ]
+  }
+ },
+ {
+  "chave": "fin-B3-bc-curva-nota",
+  "tipo": "estresse",
+  "problematica": "beneficio_custo",
+  "alternativas": [
+   "Alt 01",
+   "Alt 02",
+   "Alt 03",
+   "Alt 04",
+   "Alt 05",
+   "Alt 06",
+   "Alt 07",
+   "Alt 08",
+   "Alt 09",
+   "Alt 10"
+  ],
+  "criterios": [
+   {
+    "chave": "c0",
+    "nome": "Indice de qualidade",
+    "direcao": "max"
+   },
+   {
+    "chave": "c1",
+    "nome": "Nota",
+    "direcao": "max",
+    "niveis": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ]
+   },
+   {
+    "chave": "c2",
+    "nome": "Prazo de entrega",
+    "direcao": "min"
+   },
+   {
+    "chave": "c3",
+    "nome": "Durabilidade",
+    "direcao": "max"
+   },
+   {
+    "chave": "c4",
+    "nome": "Suporte tecnico",
+    "direcao": "max"
+   }
+  ],
+  "consequencias": [
+   [
+    0.781,
+    4,
+    37.317,
+    5.692,
+    5.23
+   ],
+   [
+    0.873,
+    1,
+    25.516,
+    5.06,
+    6.244
+   ],
+   [
+    0.929,
+    3,
+    15.483,
+    5.308,
+    7.413
+   ],
+   [
+    0.926,
+    5,
+    10.0,
+    6.332,
+    8.516
+   ],
+   [
+    0.856,
+    2,
+    12.751,
+    7.509,
+    9.176
+   ],
+   [
+    0.742,
+    4,
+    21.753,
+    8.467,
+    8.636
+   ],
+   [
+    0.631,
+    1,
+    33.962,
+    8.895,
+    7.402
+   ],
+   [
+    0.596,
+    3,
+    43.017,
+    8.388,
+    6.028
+   ],
+   [
+    0.641,
+    5,
+    45.662,
+    7.471,
+    5.127
+   ],
+   [
+    0.714,
+    2,
+    41.041,
+    6.179,
+    5.139
+   ]
+  ],
+  "custos": [
+   21.0,
+   43.0,
+   24.0,
+   40.0,
+   45.0,
+   23.0,
+   15.0,
+   16.0,
+   27.0,
+   24.0
+  ],
+  "orcamento": 92.66666666666667,
+  "configuracao": null,
+  "curvas": {
+   "c0": [
+    [
+     0.596,
+     0
+    ],
+    [
+     0.6168125,
+     0.5
+    ],
+    [
+     0.850953125,
+     0.75
+    ],
+    [
+     0.929,
+     1
+    ]
+   ],
+   "c1": [
+    [
+     1,
+     0.0
+    ],
+    [
+     2,
+     0.5
+    ],
+    [
+     3,
+     0.75
+    ],
+    [
+     5,
+     1.0
+    ]
+   ],
+   "c2": [
+    [
+     10.0,
+     1
+    ],
+    [
+     21.144375,
+     0.75
+    ],
+    [
+     32.28875,
+     0.5
+    ],
+    [
+     38.975375,
+     0.25
+    ],
+    [
+     45.662,
+     0
+    ]
+   ],
+   "c3": [
+    [
+     5.06,
+     0
+    ],
+    [
+     6.258437499999999,
+     0.25
+    ],
+    [
+     7.456875,
+     0.5
+    ],
+    [
+     8.1759375,
+     0.75
+    ],
+    [
+     8.895,
+     1
+    ]
+   ],
+   "c4": [
+    [
+     5.127,
+     0
+    ],
+    [
+     5.3800625,
+     0.25
+    ],
+    [
+     7.1515,
+     0.5
+    ],
+    [
+     8.16375,
+     0.75
+    ],
+    [
+     9.176,
+     1
+    ]
+   ]
+  },
+  "respostas": "ABAB",
+  "oficial": {
+   "ordenacao": 8,
+   "tradeoff": 33,
+   "pares": [
+    [
+     "Indice de qualidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Indice de qualidade",
+     "Nota"
+    ],
+    [
+     "Nota",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Durabilidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Indice de qualidade",
+     "Nota"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Durabilidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Indice de qualidade",
+     "Nota"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Durabilidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Indice de qualidade",
+     "Nota"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Durabilidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Indice de qualidade",
+     "Nota"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Durabilidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Indice de qualidade",
+     "Nota"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Durabilidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Indice de qualidade",
+     "Nota"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Durabilidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Durabilidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Durabilidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    "entre-niveis",
+    "entre-niveis"
+   ]
+  }
+ },
+ {
+  "chave": "fin-B4-bc-7x30-misto",
+  "tipo": "estresse",
+  "problematica": "beneficio_custo",
+  "alternativas": [
+   "Alt 01",
+   "Alt 02",
+   "Alt 03",
+   "Alt 04",
+   "Alt 05",
+   "Alt 06",
+   "Alt 07",
+   "Alt 08",
+   "Alt 09",
+   "Alt 10",
+   "Alt 11",
+   "Alt 12",
+   "Alt 13",
+   "Alt 14",
+   "Alt 15",
+   "Alt 16",
+   "Alt 17",
+   "Alt 18",
+   "Alt 19",
+   "Alt 20",
+   "Alt 21",
+   "Alt 22",
+   "Alt 23",
+   "Alt 24",
+   "Alt 25",
+   "Alt 26",
+   "Alt 27",
+   "Alt 28",
+   "Alt 29",
+   "Alt 30"
+  ],
+  "criterios": [
+   {
+    "chave": "c0",
+    "nome": "Indice de qualidade",
+    "direcao": "max"
+   },
+   {
+    "chave": "c1",
+    "nome": "Custo unitario",
+    "direcao": "min"
+   },
+   {
+    "chave": "c2",
+    "nome": "Prazo de entrega",
+    "direcao": "min"
+   },
+   {
+    "chave": "c3",
+    "nome": "Durabilidade",
+    "direcao": "max"
+   },
+   {
+    "chave": "c4",
+    "nome": "Suporte tecnico",
+    "direcao": "max"
+   },
+   {
+    "chave": "c5",
+    "nome": "Consumo",
+    "direcao": "min"
+   },
+   {
+    "chave": "c6",
+    "nome": "Emissao",
+    "direcao": "min"
+   }
+  ],
+  "consequencias": [
+   [
+    0.77,
+    18.097,
+    37.813,
+    5.72,
+    5.234,
+    148.489,
+    0.508
+   ],
+   [
+    0.826,
+    18.328,
+    33.705,
+    5.354,
+    5.546,
+    154.975,
+    0.496
+   ],
+   [
+    0.852,
+    17.874,
+    30.159,
+    5.111,
+    5.709,
+    160.432,
+    0.488
+   ],
+   [
+    0.863,
+    17.866,
+    26.671,
+    5.087,
+    6.045,
+    167.909,
+    0.483
+   ],
+   [
+    0.908,
+    17.55,
+    22.857,
+    5.091,
+    6.438,
+    177.92,
+    0.459
+   ],
+   [
+    0.931,
+    17.017,
+    19.578,
+    5.01,
+    6.933,
+    174.436,
+    0.431
+   ],
+   [
+    0.956,
+    15.785,
+    16.549,
+    5.196,
+    7.211,
+    176.521,
+    0.399
+   ],
+   [
+    0.954,
+    14.992,
+    13.642,
+    5.295,
+    7.684,
+    181.174,
+    0.37
+   ],
+   [
+    0.941,
+    14.282,
+    12.085,
+    5.672,
+    8.103,
+    174.647,
+    0.339
+   ],
+   [
+    0.957,
+    13.598,
+    10.559,
+    5.909,
+    8.426,
+    176.725,
+    0.309
+   ],
+   [
+    0.942,
+    12.615,
+    10.083,
+    6.398,
+    8.75,
+    173.192,
+    0.282
+   ],
+   [
+    0.922,
+    11.476,
+    10.429,
+    6.669,
+    8.928,
+    163.743,
+    0.26
+   ],
+   [
+    0.893,
+    11.011,
+    11.255,
+    7.267,
+    9.05,
+    156.607,
+    0.237
+   ],
+   [
+    0.844,
+    9.94,
+    13.121,
+    7.523,
+    9.096,
+    147.229,
+    0.216
+   ],
+   [
+    0.81,
+    9.472,
+    15.012,
+    8.08,
+    8.932,
+    140.092,
+    0.208
+   ],
+   [
+    0.796,
+    9.077,
+    18.147,
+    8.321,
+    8.795,
+    134.456,
+    0.202
+   ],
+   [
+    0.739,
+    9.016,
+    21.689,
+    8.464,
+    8.589,
+    122.738,
+    0.2
+   ],
+   [
+    0.718,
+    9.053,
+    24.907,
+    8.872,
+    8.223,
+    116.614,
+    0.205
+   ],
+   [
+    0.676,
+    9.387,
+    29.056,
+    9.063,
+    8.116,
+    111.716,
+    0.217
+   ],
+   [
+    0.66,
+    9.782,
+    32.02,
+    8.983,
+    7.446,
+    104.234,
+    0.24
+   ],
+   [
+    0.624,
+    9.966,
+    36.358,
+    8.932,
+    7.276,
+    103.802,
+    0.266
+   ],
+   [
+    0.61,
+    10.669,
+    38.3,
+    8.877,
+    6.663,
+    101.453,
+    0.292
+   ],
+   [
+    0.611,
+    11.43,
+    42.571,
+    8.77,
+    6.389,
+    101.528,
+    0.319
+   ],
+   [
+    0.608,
+    12.525,
+    44.551,
+    8.536,
+    5.97,
+    101.421,
+    0.347
+   ],
+   [
+    0.601,
+    13.678,
+    44.473,
+    7.998,
+    5.633,
+    106.04,
+    0.385
+   ],
+   [
+    0.625,
+    14.412,
+    46.538,
+    7.836,
+    5.274,
+    110.691,
+    0.417
+   ],
+   [
+    0.645,
+    15.37,
+    46.492,
+    7.238,
+    5.125,
+    115.942,
+    0.441
+   ],
+   [
+    0.672,
+    16.35,
+    44.151,
+    6.841,
+    4.993,
+    123.195,
+    0.468
+   ],
+   [
+    0.69,
+    17.086,
+    42.596,
+    6.576,
+    5.086,
+    127.97,
+    0.474
+   ],
+   [
+    0.726,
+    17.639,
+    40.593,
+    6.138,
+    4.962,
+    138.155,
+    0.489
+   ]
+  ],
+  "custos": [
+   31.0,
+   26.0,
+   13.0,
+   36.0,
+   42.0,
+   40.0,
+   24.0,
+   26.0,
+   32.0,
+   33.0,
+   41.0,
+   14.0,
+   26.0,
+   37.0,
+   34.0,
+   11.0,
+   34.0,
+   34.0,
+   27.0,
+   28.0,
+   11.0,
+   34.0,
+   29.0,
+   17.0,
+   17.0,
+   29.0,
+   25.0,
+   29.0,
+   24.0,
+   37.0
+  ],
+  "orcamento": 210.25,
+  "configuracao": null,
+  "curvas": null,
+  "respostas": "ABBAABBABA",
+  "oficial": {
+   "ordenacao": 15,
+   "tradeoff": 50,
+   "pares": [
+    [
+     "Indice de qualidade",
+     "Emissao"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Durabilidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Suporte tecnico",
+     "Consumo"
+    ],
+    [
+     "Consumo",
+     "Emissao"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Durabilidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Suporte tecnico",
+     "Consumo"
+    ],
+    [
+     "Consumo",
+     "Emissao"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Durabilidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Suporte tecnico",
+     "Consumo"
+    ],
+    [
+     "Consumo",
+     "Emissao"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Durabilidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Suporte tecnico",
+     "Consumo"
+    ],
+    [
+     "Consumo",
+     "Emissao"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Durabilidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Suporte tecnico",
+     "Consumo"
+    ],
+    [
+     "Consumo",
+     "Emissao"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Durabilidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Suporte tecnico",
+     "Consumo"
+    ],
+    [
+     "Consumo",
+     "Emissao"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Durabilidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Suporte tecnico",
+     "Consumo"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Durabilidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ]
+   ]
+  },
+  "divergencia": {
+   "nosso": {
+    "ordenacao": 14
+   },
+   "porque": "ordenar 7 criterios: ele compara 15 vezes, a nossa insercao 14"
+  }
+ },
+ {
+  "chave": "fin-B5-bc-razoes-iguais",
+  "tipo": "estresse",
+  "problematica": "beneficio_custo",
+  "alternativas": [
+   "Alt 01",
+   "Alt 02",
+   "Alt 03",
+   "Alt 04",
+   "Alt 05",
+   "Alt 06",
+   "Alt 07",
+   "Alt 08",
+   "Alt 09",
+   "Alt 10",
+   "Alt 11",
+   "Alt 12"
+  ],
+  "criterios": [
+   {
+    "chave": "c0",
+    "nome": "Indice de qualidade",
+    "direcao": "max"
+   },
+   {
+    "chave": "c1",
+    "nome": "Custo unitario",
+    "direcao": "min"
+   },
+   {
+    "chave": "c2",
+    "nome": "Prazo de entrega",
+    "direcao": "min"
+   },
+   {
+    "chave": "c3",
+    "nome": "Durabilidade",
+    "direcao": "max"
+   }
+  ],
+  "consequencias": [
+   [
+    0.77,
+    17.847,
+    36.589,
+    5.529
+   ],
+   [
+    0.849,
+    18.105,
+    27.433,
+    4.982
+   ],
+   [
+    0.943,
+    16.348,
+    18.361,
+    5.133
+   ],
+   [
+    0.942,
+    14.591,
+    12.111,
+    5.701
+   ],
+   [
+    0.927,
+    11.799,
+    10.18,
+    6.592
+   ],
+   [
+    0.854,
+    10.001,
+    13.448,
+    7.662
+   ],
+   [
+    0.739,
+    8.896,
+    21.107,
+    8.524
+   ],
+   [
+    0.662,
+    9.304,
+    30.231,
+    8.891
+   ],
+   [
+    0.599,
+    10.689,
+    39.772,
+    8.969
+   ],
+   [
+    0.609,
+    13.226,
+    45.59,
+    8.201
+   ],
+   [
+    0.655,
+    15.692,
+    45.444,
+    7.071
+   ],
+   [
+    0.728,
+    17.413,
+    41.546,
+    6.056
+   ]
+  ],
+  "custos": [
+   20,
+   30,
+   40,
+   20,
+   30,
+   40,
+   20,
+   30,
+   40,
+   20,
+   30,
+   40
+  ],
+  "orcamento": 120.0,
+  "configuracao": null,
+  "curvas": null,
+  "respostas": "",
+  "oficial": {
+   "ordenacao": 5,
+   "tradeoff": 11,
+   "pares": [
+    [
+     "Indice de qualidade",
+     "Durabilidade"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ]
+   ]
+  }
+ },
+ {
+  "chave": "fin-E1-escolha-curva-nota",
+  "tipo": "estresse",
+  "problematica": "escolha",
+  "alternativas": [
+   "Alt 01",
+   "Alt 02",
+   "Alt 03",
+   "Alt 04",
+   "Alt 05",
+   "Alt 06",
+   "Alt 07",
+   "Alt 08",
+   "Alt 09",
+   "Alt 10",
+   "Alt 11",
+   "Alt 12"
+  ],
+  "criterios": [
+   {
+    "chave": "c0",
+    "nome": "Indice de qualidade",
+    "direcao": "max"
+   },
+   {
+    "chave": "c1",
+    "nome": "Nota",
+    "direcao": "max",
+    "niveis": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ]
+   },
+   {
+    "chave": "c2",
+    "nome": "Prazo de entrega",
+    "direcao": "min"
+   },
+   {
+    "chave": "c3",
+    "nome": "Durabilidade",
+    "direcao": "max"
+   },
+   {
+    "chave": "c4",
+    "nome": "Suporte tecnico",
+    "direcao": "max"
+   }
+  ],
+  "consequencias": [
+   [
+    0.762,
+    4,
+    36.539,
+    5.576,
+    5.286
+   ],
+   [
+    0.873,
+    1,
+    28.214,
+    5.061,
+    6.063
+   ],
+   [
+    0.934,
+    3,
+    18.652,
+    5.072,
+    7.025
+   ],
+   [
+    0.939,
+    5,
+    11.852,
+    5.596,
+    7.967
+   ],
+   [
+    0.91,
+    2,
+    10.145,
+    6.644,
+    8.616
+   ],
+   [
+    0.848,
+    4,
+    13.373,
+    7.646,
+    9.009
+   ],
+   [
+    0.76,
+    1,
+    20.97,
+    8.483,
+    8.489
+   ],
+   [
+    0.668,
+    3,
+    30.901,
+    9.119,
+    7.694
+   ],
+   [
+    0.608,
+    5,
+    39.197,
+    8.999,
+    6.592
+   ],
+   [
+    0.601,
+    2,
+    45.746,
+    8.157,
+    5.679
+   ],
+   [
+    0.648,
+    4,
+    45.998,
+    7.095,
+    5.052
+   ],
+   [
+    0.729,
+    1,
+    41.203,
+    6.108,
+    5.056
+   ]
+  ],
+  "custos": null,
+  "orcamento": null,
+  "configuracao": null,
+  "curvas": {
+   "c0": [
+    [
+     0.601,
+     0
+    ],
+    [
+     0.6221249999999999,
+     0.5
+    ],
+    [
+     0.8597812499999999,
+     0.75
+    ],
+    [
+     0.939,
+     1
+    ]
+   ],
+   "c1": [
+    [
+     1,
+     0.0
+    ],
+    [
+     2,
+     0.5
+    ],
+    [
+     3,
+     0.75
+    ],
+    [
+     5,
+     1.0
+    ]
+   ],
+   "c2": [
+    [
+     10.145,
+     1
+    ],
+    [
+     21.349062500000002,
+     0.75
+    ],
+    [
+     32.553125,
+     0.5
+    ],
+    [
+     39.2755625,
+     0.25
+    ],
+    [
+     45.998,
+     0
+    ]
+   ],
+   "c3": [
+    [
+     5.061,
+     0
+    ],
+    [
+     6.3291249999999994,
+     0.25
+    ],
+    [
+     7.59725,
+     0.5
+    ],
+    [
+     8.358125,
+     0.75
+    ],
+    [
+     9.119,
+     1
+    ]
+   ],
+   "c4": [
+    [
+     5.052,
+     0
+    ],
+    [
+     5.299312499999999,
+     0.25
+    ],
+    [
+     7.0305,
+     0.5
+    ],
+    [
+     8.01975,
+     0.75
+    ],
+    [
+     9.009,
+     1
+    ]
+   ]
+  },
+  "respostas": "ABABBAABAB",
+  "oficial": {
+   "ordenacao": 8,
+   "tradeoff": 3,
+   "pares": [
+    [
+     "Indice de qualidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Indice de qualidade",
+     "Nota"
+    ],
+    [
+     "Nota",
+     "Prazo de entrega"
+    ]
+   ]
+  }
+ },
+ {
+  "chave": "fin-E2-escolha-min-milhoes",
+  "tipo": "estresse",
+  "problematica": "escolha",
+  "alternativas": [
+   "Alt 01",
+   "Alt 02",
+   "Alt 03",
+   "Alt 04",
+   "Alt 05",
+   "Alt 06",
+   "Alt 07",
+   "Alt 08",
+   "Alt 09",
+   "Alt 10",
+   "Alt 11",
+   "Alt 12",
+   "Alt 13",
+   "Alt 14",
+   "Alt 15"
+  ],
+  "criterios": [
+   {
+    "chave": "c0",
+    "nome": "Indice de qualidade",
+    "direcao": "max"
+   },
+   {
+    "chave": "c1",
+    "nome": "Custo unitario",
+    "direcao": "min"
+   },
+   {
+    "chave": "c2",
+    "nome": "Prazo de entrega",
+    "direcao": "min"
+   },
+   {
+    "chave": "c3",
+    "nome": "Durabilidade",
+    "direcao": "min"
+   },
+   {
+    "chave": "c4",
+    "nome": "Suporte tecnico",
+    "direcao": "min"
+   },
+   {
+    "chave": "c5",
+    "nome": "Consumo",
+    "direcao": "min"
+   },
+   {
+    "chave": "c6",
+    "nome": "Emissao",
+    "direcao": "min"
+   }
+  ],
+  "consequencias": [
+   [
+    0.783,
+    17939000.0,
+    37.144,
+    5.557,
+    5.27,
+    151.394,
+    0.498
+   ],
+   [
+    0.86,
+    17611000.0,
+    30.063,
+    5.084,
+    5.781,
+    164.79,
+    0.497
+   ],
+   [
+    0.908,
+    17503000.0,
+    22.259,
+    4.928,
+    6.543,
+    176.672,
+    0.458
+   ],
+   [
+    0.925,
+    15715000.0,
+    15.653,
+    5.214,
+    7.509,
+    178.258,
+    0.393
+   ],
+   [
+    0.963,
+    14279000.0,
+    11.531,
+    5.653,
+    8.102,
+    175.138,
+    0.342
+   ],
+   [
+    0.908,
+    11983000.0,
+    9.897,
+    6.6,
+    8.639,
+    171.438,
+    0.274
+   ],
+   [
+    0.875,
+    10370000.0,
+    11.765,
+    7.482,
+    9.172,
+    152.256,
+    0.227
+   ],
+   [
+    0.786,
+    9263000.0,
+    16.56,
+    8.164,
+    8.907,
+    136.169,
+    0.2
+   ],
+   [
+    0.727,
+    8946000.0,
+    23.321,
+    8.895,
+    8.459,
+    118.349,
+    0.208
+   ],
+   [
+    0.673,
+    9396000.0,
+    31.712,
+    8.849,
+    7.848,
+    106.45,
+    0.235
+   ],
+   [
+    0.62,
+    10804000.0,
+    37.899,
+    8.946,
+    6.999,
+    99.38,
+    0.277
+   ],
+   [
+    0.601,
+    12124000.0,
+    42.668,
+    8.286,
+    6.023,
+    101.558,
+    0.342
+   ],
+   [
+    0.619,
+    13946000.0,
+    45.157,
+    7.766,
+    5.337,
+    105.985,
+    0.398
+   ],
+   [
+    0.665,
+    16291000.0,
+    45.094,
+    6.77,
+    4.988,
+    121.878,
+    0.463
+   ],
+   [
+    0.718,
+    17304000.0,
+    40.455,
+    6.095,
+    5.093,
+    137.345,
+    0.497
+   ]
+  ],
+  "custos": null,
+  "orcamento": null,
+  "configuracao": null,
+  "curvas": null,
+  "respostas": "BBBBBBBBBBBBBBBB",
+  "oficial": {
+   "ordenacao": 15,
+   "tradeoff": 23,
+   "pares": [
+    [
+     "Indice de qualidade",
+     "Emissao"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Durabilidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Suporte tecnico",
+     "Consumo"
+    ],
+    [
+     "Consumo",
+     "Emissao"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Durabilidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Suporte tecnico",
+     "Consumo"
+    ],
+    [
+     "Consumo",
+     "Emissao"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Durabilidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Suporte tecnico",
+     "Consumo"
+    ],
+    [
+     "Consumo",
+     "Emissao"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Durabilidade",
+     "Suporte tecnico"
+    ]
+   ]
+  },
+  "divergencia": {
+   "nosso": {
+    "ordenacao": 14
+   },
+   "porque": "abertura B: mesmas 23 perguntas, ordem difere da 3a a 14a; e 7 criterios",
+   "pares_ate": 2
+  }
+ },
+ {
+  "chave": "fin-E3-escolha-quase-empate",
+  "tipo": "estresse",
+  "problematica": "escolha",
+  "alternativas": [
+   "Alt 01",
+   "Alt 02",
+   "Alt 03",
+   "Alt 04",
+   "Alt 05",
+   "Alt 06",
+   "Alt 07",
+   "Alt 08",
+   "Alt 09",
+   "Alt 10",
+   "Alt 11",
+   "Alt 12"
+  ],
+  "criterios": [
+   {
+    "chave": "c0",
+    "nome": "Indice de qualidade",
+    "direcao": "max"
+   },
+   {
+    "chave": "c1",
+    "nome": "Custo unitario",
+    "direcao": "min"
+   },
+   {
+    "chave": "c2",
+    "nome": "Prazo de entrega",
+    "direcao": "min"
+   },
+   {
+    "chave": "c3",
+    "nome": "Durabilidade",
+    "direcao": "max"
+   }
+  ],
+  "consequencias": [
+   [
+    0.7589,
+    18.1419,
+    37.4666,
+    5.544
+   ],
+   [
+    0.7641,
+    18.0971,
+    37.5518,
+    5.5662
+   ],
+   [
+    0.7637,
+    18.1297,
+    37.3707,
+    5.5375
+   ],
+   [
+    0.765,
+    18.0108,
+    37.4503,
+    5.5873
+   ],
+   [
+    0.7609,
+    18.0369,
+    37.385,
+    5.5434
+   ],
+   [
+    0.7639,
+    18.0435,
+    37.2693,
+    5.5653
+   ],
+   [
+    0.7602,
+    18.022,
+    37.2481,
+    5.5788
+   ],
+   [
+    0.7611,
+    18.0981,
+    37.4218,
+    5.5805
+   ],
+   [
+    0.7587,
+    18.1042,
+    37.5524,
+    5.5479
+   ],
+   [
+    0.7615,
+    18.0505,
+    37.3631,
+    5.5848
+   ],
+   [
+    0.7599,
+    18.123,
+    37.2584,
+    5.5757
+   ],
+   [
+    0.7588,
+    18.1323,
+    37.2665,
+    5.5442
+   ]
+  ],
+  "custos": null,
+  "orcamento": null,
+  "configuracao": null,
+  "curvas": null,
+  "respostas": "",
+  "oficial": {
+   "ordenacao": 5,
+   "tradeoff": 2,
+   "pares": [
+    [
+     "Indice de qualidade",
+     "Durabilidade"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ]
+   ]
+  }
+ },
+ {
+  "chave": "fin-S1-sorting-7x25-4c",
+  "tipo": "estresse",
+  "problematica": "sorting",
+  "alternativas": [
+   "Alt 01",
+   "Alt 02",
+   "Alt 03",
+   "Alt 04",
+   "Alt 05",
+   "Alt 06",
+   "Alt 07",
+   "Alt 08",
+   "Alt 09",
+   "Alt 10",
+   "Alt 11",
+   "Alt 12",
+   "Alt 13",
+   "Alt 14",
+   "Alt 15",
+   "Alt 16",
+   "Alt 17",
+   "Alt 18",
+   "Alt 19",
+   "Alt 20",
+   "Alt 21",
+   "Alt 22",
+   "Alt 23",
+   "Alt 24",
+   "Alt 25"
+  ],
+  "criterios": [
+   {
+    "chave": "c0",
+    "nome": "Indice de qualidade",
+    "direcao": "max"
+   },
+   {
+    "chave": "c1",
+    "nome": "Custo unitario",
+    "direcao": "min"
+   },
+   {
+    "chave": "c2",
+    "nome": "Prazo de entrega",
+    "direcao": "min"
+   },
+   {
+    "chave": "c3",
+    "nome": "Durabilidade",
+    "direcao": "max"
+   },
+   {
+    "chave": "c4",
+    "nome": "Suporte tecnico",
+    "direcao": "max"
+   },
+   {
+    "chave": "c5",
+    "nome": "Consumo",
+    "direcao": "min"
+   },
+   {
+    "chave": "c6",
+    "nome": "Emissao",
+    "direcao": "min"
+   }
+  ],
+  "consequencias": [
+   [
+    0.767,
+    17.546,
+    36.952,
+    5.697,
+    5.177,
+    150.169,
+    0.497
+   ],
+   [
+    0.817,
+    18.145,
+    32.597,
+    5.384,
+    5.548,
+    156.468,
+    0.491
+   ],
+   [
+    0.859,
+    18.104,
+    29.236,
+    5.013,
+    5.863,
+    169.174,
+    0.481
+   ],
+   [
+    0.903,
+    17.573,
+    24.464,
+    5.036,
+    6.247,
+    176.304,
+    0.471
+   ],
+   [
+    0.936,
+    16.983,
+    20.354,
+    5.039,
+    6.722,
+    176.057,
+    0.434
+   ],
+   [
+    0.959,
+    15.825,
+    15.989,
+    5.27,
+    7.421,
+    180.48,
+    0.403
+   ],
+   [
+    0.938,
+    15.02,
+    13.413,
+    5.525,
+    7.676,
+    179.637,
+    0.362
+   ],
+   [
+    0.964,
+    14.051,
+    10.969,
+    5.924,
+    8.133,
+    177.865,
+    0.329
+   ],
+   [
+    0.918,
+    12.869,
+    10.223,
+    6.168,
+    8.732,
+    171.912,
+    0.289
+   ],
+   [
+    0.899,
+    11.484,
+    10.355,
+    6.702,
+    8.731,
+    161.793,
+    0.263
+   ],
+   [
+    0.869,
+    10.691,
+    11.317,
+    7.159,
+    9.037,
+    156.759,
+    0.233
+   ],
+   [
+    0.858,
+    9.946,
+    13.613,
+    7.6,
+    8.95,
+    149.503,
+    0.219
+   ],
+   [
+    0.791,
+    9.534,
+    16.541,
+    8.225,
+    8.861,
+    138.741,
+    0.203
+   ],
+   [
+    0.743,
+    9.208,
+    20.251,
+    8.614,
+    8.698,
+    126.845,
+    0.197
+   ],
+   [
+    0.728,
+    8.901,
+    24.833,
+    8.841,
+    8.413,
+    118.808,
+    0.209
+   ],
+   [
+    0.677,
+    9.119,
+    28.867,
+    8.909,
+    7.96,
+    111.278,
+    0.221
+   ],
+   [
+    0.631,
+    9.789,
+    33.244,
+    9.107,
+    7.528,
+    103.898,
+    0.25
+   ],
+   [
+    0.622,
+    10.601,
+    37.483,
+    8.833,
+    7.078,
+    100.257,
+    0.278
+   ],
+   [
+    0.602,
+    11.506,
+    41.499,
+    8.87,
+    6.344,
+    100.609,
+    0.312
+   ],
+   [
+    0.598,
+    12.584,
+    43.332,
+    8.547,
+    5.991,
+    100.475,
+    0.349
+   ],
+   [
+    0.601,
+    13.561,
+    45.88,
+    8.127,
+    5.646,
+    105.813,
+    0.389
+   ],
+   [
+    0.626,
+    14.499,
+    46.738,
+    7.483,
+    5.276,
+    109.079,
+    0.414
+   ],
+   [
+    0.651,
+    15.641,
+    45.786,
+    6.914,
+    5.107,
+    117.159,
+    0.446
+   ],
+   [
+    0.683,
+    16.803,
+    43.284,
+    6.584,
+    4.948,
+    126.068,
+    0.473
+   ],
+   [
+    0.735,
+    17.095,
+    40.961,
+    6.2,
+    5.013,
+    137.377,
+    0.486
+   ]
+  ],
+  "custos": null,
+  "orcamento": null,
+  "configuracao": {
+   "perfis": [
+    0.3,
+    0.5,
+    0.7
+   ],
+   "classes": [
+    "C1",
+    "C2",
+    "C3",
+    "C4"
+   ]
+  },
+  "curvas": null,
+  "respostas": "ABBABAAB",
+  "oficial": {
+   "ordenacao": 15,
+   "tradeoff": 22,
+   "pares": [
+    [
+     "Indice de qualidade",
+     "Emissao"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Durabilidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Suporte tecnico",
+     "Consumo"
+    ],
+    [
+     "Consumo",
+     "Emissao"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Durabilidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Suporte tecnico",
+     "Consumo"
+    ],
+    [
+     "Consumo",
+     "Emissao"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Durabilidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Suporte tecnico",
+     "Consumo"
+    ],
+    [
+     "Consumo",
+     "Emissao"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ]
+   ]
+  },
+  "divergencia": {
+   "nosso": {
+    "ordenacao": 14
+   },
+   "porque": "ordenar 7 criterios: ele compara 15 vezes, a nossa insercao 14"
+  }
+ },
+ {
+  "chave": "fin-S2-sorting-perfis-pontas",
+  "tipo": "estresse",
+  "problematica": "sorting",
+  "alternativas": [
+   "Alt 01",
+   "Alt 02",
+   "Alt 03",
+   "Alt 04",
+   "Alt 05",
+   "Alt 06",
+   "Alt 07",
+   "Alt 08",
+   "Alt 09",
+   "Alt 10",
+   "Alt 11",
+   "Alt 12",
+   "Alt 13",
+   "Alt 14",
+   "Alt 15"
+  ],
+  "criterios": [
+   {
+    "chave": "c0",
+    "nome": "Indice de qualidade",
+    "direcao": "max"
+   },
+   {
+    "chave": "c1",
+    "nome": "Custo unitario",
+    "direcao": "min"
+   },
+   {
+    "chave": "c2",
+    "nome": "Prazo de entrega",
+    "direcao": "min"
+   },
+   {
+    "chave": "c3",
+    "nome": "Durabilidade",
+    "direcao": "max"
+   },
+   {
+    "chave": "c4",
+    "nome": "Suporte tecnico",
+    "direcao": "max"
+   }
+  ],
+  "consequencias": [
+   [
+    0.784,
+    17.647,
+    36.99,
+    5.519,
+    5.175
+   ],
+   [
+    0.856,
+    17.902,
+    29.52,
+    5.046,
+    5.883
+   ],
+   [
+    0.892,
+    17.242,
+    22.428,
+    4.975,
+    6.486
+   ],
+   [
+    0.937,
+    15.836,
+    15.771,
+    5.303,
+    7.521
+   ],
+   [
+    0.932,
+    13.945,
+    11.19,
+    5.762,
+    8.233
+   ],
+   [
+    0.922,
+    11.965,
+    9.937,
+    6.44,
+    8.83
+   ],
+   [
+    0.88,
+    10.551,
+    11.873,
+    7.493,
+    9.035
+   ],
+   [
+    0.79,
+    9.531,
+    16.716,
+    8.283,
+    8.835
+   ],
+   [
+    0.727,
+    9.052,
+    23.506,
+    8.584,
+    8.328
+   ],
+   [
+    0.656,
+    9.257,
+    30.532,
+    9.058,
+    7.826
+   ],
+   [
+    0.622,
+    10.569,
+    38.765,
+    8.859,
+    6.758
+   ],
+   [
+    0.595,
+    12.495,
+    44.106,
+    8.559,
+    6.032
+   ],
+   [
+    0.608,
+    14.165,
+    45.937,
+    7.699,
+    5.327
+   ],
+   [
+    0.65,
+    16.088,
+    44.254,
+    6.831,
+    4.997
+   ],
+   [
+    0.717,
+    17.104,
+    41.744,
+    6.08,
+    4.991
+   ]
+  ],
+  "custos": null,
+  "orcamento": null,
+  "configuracao": {
+   "perfis": [
+    0.1,
+    0.9
+   ],
+   "classes": [
+    "C1",
+    "C2",
+    "C3"
+   ]
+  },
+  "curvas": null,
+  "respostas": "",
+  "oficial": {
+   "ordenacao": 8,
+   "tradeoff": 18,
+   "pares": [
+    [
+     "Indice de qualidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Durabilidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Durabilidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Durabilidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Durabilidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ]
+   ]
+  }
+ },
+ {
+  "chave": "fin-S3-sorting-curva-nota",
+  "tipo": "estresse",
+  "problematica": "sorting",
+  "alternativas": [
+   "Alt 01",
+   "Alt 02",
+   "Alt 03",
+   "Alt 04",
+   "Alt 05",
+   "Alt 06",
+   "Alt 07",
+   "Alt 08",
+   "Alt 09",
+   "Alt 10"
+  ],
+  "criterios": [
+   {
+    "chave": "c0",
+    "nome": "Indice de qualidade",
+    "direcao": "max"
+   },
+   {
+    "chave": "c1",
+    "nome": "Nota",
+    "direcao": "max",
+    "niveis": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ]
+   },
+   {
+    "chave": "c2",
+    "nome": "Prazo de entrega",
+    "direcao": "min"
+   },
+   {
+    "chave": "c3",
+    "nome": "Durabilidade",
+    "direcao": "max"
+   },
+   {
+    "chave": "c4",
+    "nome": "Suporte tecnico",
+    "direcao": "max"
+   }
+  ],
+  "consequencias": [
+   [
+    0.77,
+    4,
+    37.118,
+    5.632,
+    5.234
+   ],
+   [
+    0.889,
+    1,
+    25.79,
+    5.054,
+    6.259
+   ],
+   [
+    0.95,
+    3,
+    15.289,
+    5.352,
+    7.38
+   ],
+   [
+    0.929,
+    5,
+    10.072,
+    6.144,
+    8.648
+   ],
+   [
+    0.863,
+    2,
+    12.643,
+    7.657,
+    9.112
+   ],
+   [
+    0.744,
+    4,
+    21.558,
+    8.733,
+    8.426
+   ],
+   [
+    0.651,
+    1,
+    33.01,
+    8.945,
+    7.46
+   ],
+   [
+    0.607,
+    3,
+    43.337,
+    8.63,
+    6.159
+   ],
+   [
+    0.624,
+    5,
+    46.407,
+    7.38,
+    5.225
+   ],
+   [
+    0.737,
+    2,
+    41.913,
+    5.965,
+    5.061
+   ]
+  ],
+  "custos": null,
+  "orcamento": null,
+  "configuracao": {
+   "perfis": [
+    0.35,
+    0.7
+   ],
+   "classes": [
+    "C1",
+    "C2",
+    "C3"
+   ]
+  },
+  "curvas": {
+   "c0": [
+    [
+     0.607,
+     0
+    ],
+    [
+     0.6284375,
+     0.5
+    ],
+    [
+     0.869609375,
+     0.75
+    ],
+    [
+     0.95,
+     1
+    ]
+   ],
+   "c1": [
+    [
+     1,
+     0.0
+    ],
+    [
+     2,
+     0.5
+    ],
+    [
+     3,
+     0.75
+    ],
+    [
+     5,
+     1.0
+    ]
+   ],
+   "c2": [
+    [
+     10.072,
+     1
+    ],
+    [
+     21.4266875,
+     0.75
+    ],
+    [
+     32.781375,
+     0.5
+    ],
+    [
+     39.5941875,
+     0.25
+    ],
+    [
+     46.407,
+     0
+    ]
+   ],
+   "c3": [
+    [
+     5.054,
+     0
+    ],
+    [
+     6.2699375,
+     0.25
+    ],
+    [
+     7.485875,
+     0.5
+    ],
+    [
+     8.2154375,
+     0.75
+    ],
+    [
+     8.945,
+     1
+    ]
+   ],
+   "c4": [
+    [
+     5.061,
+     0
+    ],
+    [
+     5.3141875,
+     0.25
+    ],
+    [
+     7.0865,
+     0.5
+    ],
+    [
+     8.09925,
+     0.75
+    ],
+    [
+     9.112,
+     1
+    ]
+   ]
+  },
+  "respostas": "AABAB",
+  "oficial": {
+   "ordenacao": 8,
+   "tradeoff": 10,
+   "pares": [
+    [
+     "Indice de qualidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Indice de qualidade",
+     "Nota"
+    ],
+    [
+     "Nota",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Durabilidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Indice de qualidade",
+     "Nota"
+    ],
+    [
+     "Nota",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Durabilidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Indice de qualidade",
+     "Nota"
+    ]
+   ]
+  }
+ },
+ {
+  "chave": "fin-S4-sorting-2c-milhares",
+  "tipo": "estresse",
+  "problematica": "sorting",
+  "alternativas": [
+   "Alt 01",
+   "Alt 02",
+   "Alt 03",
+   "Alt 04",
+   "Alt 05",
+   "Alt 06",
+   "Alt 07",
+   "Alt 08",
+   "Alt 09",
+   "Alt 10",
+   "Alt 11",
+   "Alt 12",
+   "Alt 13",
+   "Alt 14"
+  ],
+  "criterios": [
+   {
+    "chave": "c0",
+    "nome": "Indice de qualidade",
+    "direcao": "max"
+   },
+   {
+    "chave": "c1",
+    "nome": "Custo unitario",
+    "direcao": "min"
+   },
+   {
+    "chave": "c2",
+    "nome": "Prazo de entrega",
+    "direcao": "min"
+   },
+   {
+    "chave": "c3",
+    "nome": "Durabilidade",
+    "direcao": "max"
+   }
+  ],
+  "consequencias": [
+   [
+    0.761,
+    17615.0,
+    36.648,
+    5.632
+   ],
+   [
+    0.844,
+    17866.0,
+    29.944,
+    5.128
+   ],
+   [
+    0.897,
+    16959.0,
+    21.336,
+    4.933
+   ],
+   [
+    0.959,
+    15435.0,
+    14.475,
+    5.302
+   ],
+   [
+    0.934,
+    13423.0,
+    10.724,
+    6.03
+   ],
+   [
+    0.913,
+    11665.0,
+    10.301,
+    6.883
+   ],
+   [
+    0.849,
+    9962.0,
+    13.52,
+    7.89
+   ],
+   [
+    0.769,
+    8912.0,
+    20.052,
+    8.359
+   ],
+   [
+    0.695,
+    9153.0,
+    28.248,
+    8.931
+   ],
+   [
+    0.637,
+    10320.0,
+    35.98,
+    8.973
+   ],
+   [
+    0.611,
+    11976.0,
+    42.855,
+    8.726
+   ],
+   [
+    0.608,
+    14041.0,
+    45.618,
+    7.782
+   ],
+   [
+    0.656,
+    15964.0,
+    46.096,
+    6.961
+   ],
+   [
+    0.719,
+    17644.0,
+    41.758,
+    6.177
+   ]
+  ],
+  "custos": null,
+  "orcamento": null,
+  "configuracao": {
+   "perfis": [
+    0.5
+   ],
+   "classes": [
+    "C1",
+    "C2"
+   ]
+  },
+  "curvas": null,
+  "respostas": "ABAB",
+  "oficial": {
+   "ordenacao": 5,
+   "tradeoff": 15,
+   "pares": [
+    [
+     "Indice de qualidade",
+     "Durabilidade"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ]
+   ]
+  }
+ },
+ {
   "chave": "vol-bc-3x8",
   "tipo": "estresse",
   "problematica": "beneficio_custo",
@@ -7288,6 +10687,224 @@
     "tradeoff": 16
    },
    "porque": "par a 0,010041 do limiar: ele da por ordenado, nos nao"
+  }
+ },
+ {
+  "chave": "vol-ranking-5x12-b",
+  "tipo": "estresse",
+  "problematica": "ranking",
+  "alternativas": [
+   "Alt 01",
+   "Alt 02",
+   "Alt 03",
+   "Alt 04",
+   "Alt 05",
+   "Alt 06",
+   "Alt 07",
+   "Alt 08",
+   "Alt 09",
+   "Alt 10",
+   "Alt 11",
+   "Alt 12"
+  ],
+  "criterios": [
+   {
+    "chave": "c0",
+    "nome": "Indice de qualidade",
+    "direcao": "max"
+   },
+   {
+    "chave": "c1",
+    "nome": "Custo unitario",
+    "direcao": "min"
+   },
+   {
+    "chave": "c2",
+    "nome": "Prazo de entrega",
+    "direcao": "min"
+   },
+   {
+    "chave": "c3",
+    "nome": "Durabilidade",
+    "direcao": "max"
+   },
+   {
+    "chave": "c4",
+    "nome": "Suporte tecnico",
+    "direcao": "max"
+   }
+  ],
+  "consequencias": [
+   [
+    0.775,
+    17.823,
+    37.68,
+    5.694,
+    5.199
+   ],
+   [
+    0.867,
+    17.918,
+    28.164,
+    5.162,
+    6.034
+   ],
+   [
+    0.944,
+    16.678,
+    18.426,
+    5.034,
+    6.877
+   ],
+   [
+    0.95,
+    14.22,
+    11.898,
+    5.562,
+    7.892
+   ],
+   [
+    0.928,
+    11.914,
+    10.105,
+    6.707,
+    8.708
+   ],
+   [
+    0.848,
+    9.867,
+    13.093,
+    7.737,
+    8.845
+   ],
+   [
+    0.767,
+    8.955,
+    21.132,
+    8.713,
+    8.481
+   ],
+   [
+    0.663,
+    9.364,
+    30.096,
+    8.893,
+    7.757
+   ],
+   [
+    0.61,
+    10.786,
+    39.49,
+    8.85,
+    6.736
+   ],
+   [
+    0.592,
+    13.383,
+    44.753,
+    8.123,
+    5.662
+   ],
+   [
+    0.64,
+    15.602,
+    45.503,
+    7.262,
+    5.109
+   ],
+   [
+    0.722,
+    17.562,
+    41.736,
+    6.198,
+    5.113
+   ]
+  ],
+  "custos": null,
+  "orcamento": null,
+  "configuracao": null,
+  "curvas": null,
+  "respostas": "BBBBBBBBBBBB",
+  "oficial": {
+   "ordenacao": 8,
+   "tradeoff": 17,
+   "pares": [
+    [
+     "Indice de qualidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Durabilidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Durabilidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Durabilidade",
+     "Suporte tecnico"
+    ],
+    [
+     "Indice de qualidade",
+     "Custo unitario"
+    ],
+    [
+     "Custo unitario",
+     "Prazo de entrega"
+    ],
+    [
+     "Prazo de entrega",
+     "Durabilidade"
+    ],
+    [
+     "Durabilidade",
+     "Suporte tecnico"
+    ]
+   ]
+  },
+  "divergencia": {
+   "nosso": {
+    "tradeoff": 15
+   },
+   "porque": "abertura B: ordem difere da 3a a 10a, e ele fecha com 2 perguntas a mais",
+   "pares_ate": 2
   }
  },
  {

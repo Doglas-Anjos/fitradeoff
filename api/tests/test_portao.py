@@ -42,6 +42,7 @@ def token(pessoa: str) -> str:
             "iss": EMISSOR,
             "aud": PUBLICO,
             "exp": int(time.time()) + 300,
+            "iat": int(time.time()),
         },
         SEGREDO,
         algorithm="HS256",
@@ -233,3 +234,50 @@ def test_atras_da_aplicacao_a_chave_de_cada_um_abre_so_o_proprio_acervo(tmp_path
     assert abre != identidade.acervo_de(settings, EMISSOR, "bia")
     assert sem_token.status_code == 503
     assert "FITRADEOFF_ADMIN_TOKEN" in sem_token.json()["detail"]
+
+
+# --- teto de decisoes por pessoa ----------------------------------------------
+
+
+@pytest.fixture
+def com_teto(tmp_path):
+    settings = Settings(
+        storage=tmp_path / "decisoes",
+        jwt_secret=SEGREDO,
+        jwt_issuer=EMISSOR,
+        jwt_audience=PUBLICO,
+        max_decisoes_por_pessoa=2,
+    )
+    from fitradeoff_api import deps
+
+    deps.get_settings.cache_clear()
+    app = create_app(settings)
+    app.dependency_overrides[deps.get_settings] = lambda: settings
+    with TestClient(app, base_url="http://127.0.0.1:8000") as c:
+        yield c
+
+
+def test_acervo_de_pessoa_tem_teto_de_decisoes(com_teto):
+    """Sem teto, um laco de criacao numa conta enche o disco de todo mundo."""
+    for _ in range(2):
+        assert com_teto.post("/api/decisoes", json=PROBLEMA, headers=como("ana")).status_code == 201
+
+    cheia = com_teto.post("/api/decisoes", json=PROBLEMA, headers=como("ana"))
+    assert cheia.status_code == 409
+    assert "limite de 2 decisoes" in cheia.json()["detail"]
+    assert len(com_teto.get("/api/decisoes", headers=como("ana")).json()["decisoes"]) == 2
+
+    # O teto e de cada um: a Bia ainda cria.
+    assert com_teto.post("/api/decisoes", json=PROBLEMA, headers=como("bia")).status_code == 201
+
+
+def test_acervo_do_dono_nao_tem_teto(tmp_path):
+    from fitradeoff_api import deps
+
+    settings = Settings(storage=tmp_path / "decisoes", max_decisoes_por_pessoa=1)
+    deps.get_settings.cache_clear()
+    app = create_app(settings)
+    app.dependency_overrides[deps.get_settings] = lambda: settings
+    with TestClient(app, base_url="http://127.0.0.1:8000") as c:
+        for _ in range(3):
+            assert c.post("/api/decisoes", json=PROBLEMA).status_code == 201

@@ -231,6 +231,11 @@ export const PAINEIS = registrar({
   },
   "progresso.desfazer": { pt: "Voltar um passo", en: "Back one step", es: "Retroceder un paso" },
   "progresso.exportar": { pt: "Exportar planilha", en: "Export spreadsheet", es: "Exportar hoja de cálculo" },
+  "progresso.exportar.falha": {
+    pt: "Não foi possível exportar a planilha.",
+    en: "Could not export the spreadsheet.",
+    es: "No fue posible exportar la hoja de cálculo.",
+  },
 
   // --- resultado: ranking ---------------------------------------------------
   "resultado.ranking.titulo": {

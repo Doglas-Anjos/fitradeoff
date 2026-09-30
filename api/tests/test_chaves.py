@@ -114,25 +114,6 @@ def test_teto_de_chaves(local):
         cofre.criar(local, "A que passa do teto")
 
 
-def test_cofre_corrompido_recusa_toda_chave_e_nao_e_sobrescrito(local, cliente):
-    """Fechar, e nao ler como vazio: vazio, a gravacao seguinte apagaria o resto."""
-    _, texto = cofre.criar(local, "Antes da queda de energia")
-    corrompido = '{"chaves": [{"id"'
-    cofre.caminho(local).write_text(corrompido, encoding="utf-8")
-
-    assert cofre.resolver(local)(texto) is None
-    with pytest.raises(cofre.CofreIlegivel):
-        cofre.listar(local)
-    with pytest.raises(cofre.CofreIlegivel):
-        cofre.criar(local, "Nova")
-    with pytest.raises(cofre.CofreIlegivel):
-        cofre.revogar(local, "qualquer")
-    assert cliente.get("/api/chaves").status_code == 503
-    assert cliente.post("/api/chaves", json={"rotulo": "x"}).status_code == 503
-    # Nada foi gravado por cima: o arquivo continua o que era, para o operador.
-    assert cofre.caminho(local).read_text(encoding="utf-8") == corrompido
-
-
 def test_marcar_uso_nao_ressuscita_chave_revogada_no_meio(local, monkeypatch):
     """A revogacao que chega entre a leitura e a gravacao do uso fica valendo."""
     import threading
@@ -142,8 +123,8 @@ def test_marcar_uso_nao_ressuscita_chave_revogada_no_meio(local, monkeypatch):
     original = cofre._ler
     revogacao: list[threading.Thread] = []
 
-    def lendo_e_deixando_revogar(settings):
-        lidas = original(settings)
+    def lendo_e_deixando_revogar(settings, estrito=False):
+        lidas = original(settings, estrito=estrito)
         if not revogacao and threading.current_thread() is threading.main_thread():
             # Dentro da marcacao de uso: outra thread revoga agora, enquanto a
             # lista lida ainda contem a chave.
@@ -410,13 +391,20 @@ def com_identidade(tmp_path, **mudancas) -> Settings:
     )
 
 
-def portador(settings: Settings, pessoa: str) -> dict[str, str]:
+def portador(settings: Settings, pessoa: str, idade: int = 0) -> dict[str, str]:
     import time
 
     import jwt
 
     assinado = jwt.encode(
-        {"sub": pessoa, "iss": EMISSOR, "aud": "fitradeoff-mcp", "exp": int(time.time()) + 300},
+        {
+            "sub": pessoa,
+            "iss": EMISSOR,
+            "aud": "fitradeoff-mcp",
+            "exp": int(time.time()) + 300,
+            # O FasorX sempre manda iat; a emissao de chave exige que seja recente.
+            "iat": int(time.time()) - idade,
+        },
         settings.jwt_secret,
         algorithm="HS256",
     )
@@ -565,3 +553,348 @@ def test_endereco_do_mcp_vem_do_dominio_publico_quando_a_url_nao_foi_declarada(m
     monkeypatch.delenv("FITRADEOFF_MCP_URL")
     monkeypatch.setenv("FITRADEOFF_MCP_HOSTS", "127.0.0.1:8765,localhost")
     assert _mcp_url() == "http://127.0.0.1:8000/mcp"
+
+
+# --- validade -------------------------------------------------------------------
+
+
+def _reescrever(settings, mudar) -> None:
+    """Altera o cofre gravado registro a registro, como um arquivo antigo estaria."""
+    arquivo = cofre.caminho(settings)
+    bruto = json.loads(arquivo.read_text(encoding="utf-8"))
+    for registro in bruto["chaves"]:
+        mudar(registro)
+    arquivo.write_text(json.dumps(bruto), encoding="utf-8")
+
+
+def test_toda_chave_nasce_com_validade(local):
+    from datetime import datetime, timedelta, timezone
+
+    chave, _ = cofre.criar(local, "Claude na web", "a" * 32)
+    vence = datetime.fromisoformat(chave.expira_em)
+    esperado = datetime.now(timezone.utc) + timedelta(days=local.chave_dias)
+    assert abs((vence - esperado).total_seconds()) < 60
+    assert chave.publica()["expira_em"] == chave.expira_em
+
+    # A do dono tambem vence por padrao...
+    do_dono, _ = cofre.criar(local, "linha de comando")
+    assert do_dono.expira_em is not None
+    # ...e so deixa de vencer quando ele pede, explicitamente.
+    eterna, _ = cofre.criar(local, "CI", dias=0)
+    assert eterna.expira_em is None
+    assert eterna.publica()["expira_em"] is None
+
+
+def test_chave_de_pessoa_nao_pode_ser_eterna(local):
+    with pytest.raises(ValueError, match="validade"):
+        cofre.criar(local, "x", "a" * 32, dias=0)
+    with pytest.raises(ValueError):
+        cofre.criar(local, "x", dias=-1)
+
+
+def test_chave_vencida_nao_abre_e_nao_ganha_carimbo(local):
+    _, texto = cofre.criar(local, "Notebook", "a" * 32)
+    _reescrever(local, lambda r: r.update(expira_em="2000-01-01T00:00:00+00:00"))
+
+    assert cofre.resolver(local)(texto) is None
+    [chave] = cofre.listar(local, "a" * 32)
+    assert chave.ultimo_uso is None, "recusada nao pode aparecer como em uso"
+    assert chave.vencida()
+
+
+def test_chave_de_pessoa_antiga_vence_90_dias_depois_de_criada(local):
+    """Regra das chaves gravadas antes de ``expira_em`` existir."""
+    from datetime import datetime, timedelta, timezone
+
+    _, recente = cofre.criar(local, "recente", "a" * 32)
+    _, velha = cofre.criar(local, "velha", "b" * 32)
+    agora = datetime.now(timezone.utc)
+    ha_89 = (agora - timedelta(days=89)).isoformat(timespec="seconds")
+    ha_91 = (agora - timedelta(days=91)).isoformat(timespec="seconds")
+
+    def legado(registro):
+        registro.pop("expira_em", None)
+        registro["criada_em"] = ha_89 if registro["rotulo"] == "recente" else ha_91
+
+    _reescrever(local, legado)
+    resolve = cofre.resolver(local)
+    assert resolve(recente) is not None
+    assert resolve(velha) is None
+
+    [antiga] = cofre.listar(local, "b" * 32)
+    esperado = datetime.fromisoformat(ha_91) + timedelta(days=90)
+    assert antiga.publica()["expira_em"] == esperado.isoformat(timespec="seconds")
+
+
+def test_chave_antiga_do_dono_continua_sem_prazo(local):
+    _, texto = cofre.criar(local, "linha de comando")
+
+    def legado(registro):
+        registro.pop("expira_em", None)
+        registro["criada_em"] = "2020-01-01T00:00:00+00:00"
+
+    _reescrever(local, legado)
+    assert cofre.resolver(local)(texto) == local.storage
+    assert cofre.listar(local)[0].publica()["expira_em"] is None
+
+
+def test_a_lista_da_rota_mostra_o_vencimento(cliente):
+    cliente.post("/api/chaves", json={"rotulo": "Claude"})
+    [chave] = cliente.get("/api/chaves").json()["chaves"]
+    assert chave["expira_em"]
+
+
+def test_vencida_nao_conta_no_teto_e_some_depois_da_purga(local):
+    from datetime import datetime, timedelta, timezone
+
+    dono = "a" * 32
+    for i in range(cofre.LIMITE_POR_PESSOA):
+        cofre.criar(local, f"chave {i}", dono)
+    agora = datetime.now(timezone.utc)
+    ontem = (agora - timedelta(days=1)).isoformat(timespec="seconds")
+    _reescrever(local, lambda r: r.update(expira_em=ontem))
+
+    # As dez vencidas nao ocupam vaga, e continuam listadas como vencidas.
+    cofre.criar(local, "nova", dono)
+    assert len(cofre.listar(local, dono)) == cofre.LIMITE_POR_PESSOA + 1
+
+    velho = (agora - cofre.PURGA - timedelta(days=1)).isoformat(timespec="seconds")
+
+    def envelhecer(registro):
+        if registro["rotulo"] != "nova":
+            registro["expira_em"] = velho
+
+    _reescrever(local, envelhecer)
+    cofre.criar(local, "mais uma", dono)
+    assert {c.rotulo for c in cofre.listar(local, dono)} == {"nova", "mais uma"}
+
+
+def test_cli_aceita_dias(local, monkeypatch, capsys):
+    monkeypatch.setattr("fitradeoff_api.config.load_settings", lambda: local)
+    assert cofre._cli(["criar", "CI", "--dias", "0"]) == 0
+    assert "sem prazo" in capsys.readouterr().out
+    assert cofre._cli(["criar", "Notebook", "--dias", "7"]) == 0
+    assert cofre._cli(["listar"]) == 0
+    saida = capsys.readouterr().out
+    assert "sem prazo" in saida and "vence " in saida
+
+
+# --- emissao com token recente -------------------------------------------------
+
+
+def test_token_velho_nao_emite_chave(tmp_path):
+    """Um token de 5 minutos vazado nao pode virar uma chave de 90 dias."""
+    s = com_identidade(tmp_path)
+    with cliente_de(s, client=DE_FORA) as c:
+        velho = portador(s, "fasorx:1", idade=s.chave_token_recente_s + 30)
+        r = c.post("/api/chaves", json={"rotulo": "Claude"}, headers=velho)
+        assert r.status_code == 403
+        assert "Entre de novo para emitir uma chave" in r.json()["detail"]
+        # O mesmo token segue valendo para listar e revogar: so a emissao exige
+        # sessao confirmada agora.
+        assert c.get("/api/chaves", headers=velho).status_code == 200
+
+        novo = portador(s, "fasorx:1")
+        assert c.post("/api/chaves", json={"rotulo": "Claude"}, headers=novo).status_code == 201
+    assert cofre.listar(s) == []  # nada foi parar no acervo do dono
+
+
+def test_token_sem_iat_nao_emite_chave(tmp_path):
+    import time
+
+    import jwt
+
+    s = com_identidade(tmp_path)
+    sem_iat = jwt.encode(
+        {
+            "sub": "fasorx:1",
+            "iss": EMISSOR,
+            "aud": "fitradeoff-mcp",
+            "exp": int(time.time()) + 300,
+        },
+        s.jwt_secret,
+        algorithm="HS256",
+    )
+    with cliente_de(s, client=DE_FORA) as c:
+        r = c.post(
+            "/api/chaves", json={"rotulo": "x"}, headers={"Authorization": f"Bearer {sem_iat}"}
+        )
+    assert r.status_code == 403
+
+
+# --- o arquivo compartilhado ---------------------------------------------------
+
+
+def test_revogar_durante_o_carimbo_nao_ressuscita_a_chave(local, monkeypatch):
+    """A corrida real: o MCP resolve a chave e, antes de carimbar o uso, a tela
+    revoga. Sem a trava e a releitura, o carimbo regravava a lista antiga --
+    com a chave revogada dentro."""
+    chave, texto = cofre.criar(local, "Claude")
+    original = cofre._marcar_uso
+
+    def revoga_no_meio(settings, id, quando):
+        # A revogacao chega entre a resolucao (que ja achou a chave) e o
+        # carimbo -- exatamente a janela da corrida.
+        assert cofre.revogar(settings, chave.id) is True
+        original(settings, id, quando)
+
+    monkeypatch.setattr(cofre, "_marcar_uso", revoga_no_meio)
+    cofre.resolver(local)(texto)
+
+    assert cofre.listar(local) == []
+    monkeypatch.setattr(cofre, "_marcar_uso", original)
+    assert cofre.resolver(local)(texto) is None
+
+
+def test_revogacao_espera_o_carimbo_que_esta_gravando(local, monkeypatch):
+    """A outra ordem da corrida: o carimbo ja releu a lista quando a revogacao
+    chega. A trava faz a revogacao esperar, e ela ganha no fim."""
+    import threading
+
+    chave, texto = cofre.criar(local, "Claude")
+    releu = threading.Event()
+    pode_gravar = threading.Event()
+    gravar_original = cofre._gravar
+
+    def gravar_devagar(settings, chaves):
+        if any(c.ultimo_uso for c in chaves) and not pode_gravar.is_set():
+            releu.set()
+            pode_gravar.wait(5)
+        gravar_original(settings, chaves)
+
+    monkeypatch.setattr(cofre, "_gravar", gravar_devagar)
+    uso = threading.Thread(target=lambda: cofre.resolver(local)(texto))
+    uso.start()
+    assert releu.wait(5)
+
+    resultado: list[bool] = []
+    revoga = threading.Thread(target=lambda: resultado.append(cofre.revogar(local, chave.id)))
+    revoga.start()
+    revoga.join(0.3)
+    assert revoga.is_alive(), "a revogacao devia esperar a trava do carimbo"
+
+    pode_gravar.set()
+    uso.join(5)
+    revoga.join(5)
+    assert resultado == [True]
+    assert cofre.listar(local) == []
+    assert cofre.resolver(local)(texto) is None
+
+
+def test_gravacoes_concorrentes_nao_perdem_chave(local):
+    """Varias threads emitindo e carimbando juntas: nenhuma emissao se perde."""
+    import threading
+
+    _, texto = cofre.criar(local, "a que sera usada")
+    resolve = cofre.resolver(local)
+    erros: list[BaseException] = []
+
+    def emitir(i):
+        try:
+            cofre.criar(local, f"t{i}")
+        except BaseException as exc:  # noqa: BLE001
+            erros.append(exc)
+
+    def usar():
+        try:
+            for _ in range(5):
+                resolve(texto)
+        except BaseException as exc:  # noqa: BLE001
+            erros.append(exc)
+
+    threads = [threading.Thread(target=emitir, args=(i,)) for i in range(12)]
+    threads += [threading.Thread(target=usar) for _ in range(4)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    assert not erros
+    assert len(cofre.listar(local)) == 13
+    # E nenhum provisorio ficou para tras.
+    assert not list(cofre.caminho(local).parent.glob(".chaves-*.tmp"))
+
+
+def test_cofre_corrompido_nao_e_apagado_pela_gravacao(local):
+    from datetime import datetime, timezone
+
+    cofre.criar(local, "Antes da queda de energia")
+    arquivo = cofre.caminho(local)
+    arquivo.write_text('{"chaves": [{"id"', encoding="utf-8")
+
+    with pytest.raises(cofre.CofreCorrompido):
+        cofre.criar(local, "depois")
+    with pytest.raises(cofre.CofreCorrompido):
+        cofre.revogar(local, "qualquer")
+    # O carimbo de uso desiste em silencio, e tambem nao grava.
+    cofre._marcar_uso(local, "qualquer", datetime.now(timezone.utc))
+
+    assert arquivo.read_text(encoding="utf-8") == '{"chaves": [{"id"'
+
+
+def test_cofre_corrompido_leva_503_na_emissao(cliente, local):
+    cofre.criar(local, "x")
+    cofre.caminho(local).write_text("lixo", encoding="utf-8")
+    r = cliente.post("/api/chaves", json={"rotulo": "y"})
+    assert r.status_code == 503
+    assert cofre.caminho(local).read_text(encoding="utf-8") == "lixo"
+
+
+def test_indice_reaproveitado_e_invalidado_quando_o_arquivo_muda(local, monkeypatch):
+    _, texto = cofre.criar(local, "Claude")
+    resolve = cofre.resolver(local)
+    assert resolve(texto) == local.storage  # monta o indice e carimba
+
+    leituras = 0
+    original = cofre._ler
+
+    def contando(settings, estrito=False):
+        nonlocal leituras
+        leituras += 1
+        return original(settings, estrito)
+
+    monkeypatch.setattr(cofre, "_ler", contando)
+    resolve(texto)  # o carimbo mudou o arquivo: rele uma vez
+    resolve(texto)
+    resolve(texto)
+    assert leituras == 1, "com o arquivo parado, cada chamada nao deve reler o cofre"
+
+    # Revogada por outro processo (aqui, direto no arquivo): o indice percebe.
+    cofre.caminho(local).write_text(json.dumps({"chaves": []}), encoding="utf-8")
+    assert resolve(texto) is None
+
+
+def test_a_trava_vale_entre_processos(local):
+    """A api e o mcp sao processos distintos: a trava precisa ser do sistema de
+    arquivos, e nao so de thread. Um processo filho segura a trava; a emissao
+    daqui espera ele soltar."""
+    import os
+    import subprocess
+    import sys
+    import time
+
+    cofre.criar(local, "existente")
+    script = (
+        "import sys, time\n"
+        "from fitradeoff_api import chaves\n"
+        "from fitradeoff_api.config import Settings\n"
+        "from pathlib import Path\n"
+        "s = Settings(storage=Path(sys.argv[1]))\n"
+        "with chaves._trava(s):\n"
+        "    print('travado', flush=True)\n"
+        "    time.sleep(1.5)\n"
+    )
+    filho = subprocess.Popen(
+        [sys.executable, "-c", script, str(local.storage)],
+        stdout=subprocess.PIPE,
+        text=True,
+        env={**os.environ},
+    )
+    try:
+        assert filho.stdout.readline().strip() == "travado"
+        inicio = time.monotonic()
+        cofre.criar(local, "depois da trava")
+        assert time.monotonic() - inicio > 0.5, "a emissao nao esperou a trava do outro processo"
+    finally:
+        filho.wait(10)
+    assert len(cofre.listar(local)) == 2

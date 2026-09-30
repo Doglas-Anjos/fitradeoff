@@ -6,10 +6,13 @@ dicionario do DTO correspondente, ja definido no motor.
 
 from __future__ import annotations
 
-from fastapi import APIRouter
+from pathlib import Path
+
+from fastapi import APIRouter, Depends
 from fitradeoff import DecisionService
 
-from ..deps import CALCULO, LEVE, translate
+from ..config import Settings
+from ..deps import CALCULO, LEVE, acervo, conferir_teto, get_settings, translate
 from ..schemas import (
     AnswerIn,
     ConsequenceSensitivityIn,
@@ -51,12 +54,18 @@ def listar(service: DecisionService = LEVE):
 
 
 @router.post("/decisoes", status_code=201, summary="Cria uma decisao")
-def criar(dados: DecisionIn, service: DecisionService = LEVE):
+def criar(
+    dados: DecisionIn,
+    service: DecisionService = LEVE,
+    caminho: Path = Depends(acervo),
+    settings: Settings = Depends(get_settings),
+):
     """Cria a decisao a partir das alternativas, criterios e consequencias.
 
     Erros: 400 dados incoerentes que o dominio recusa; 409 problematica ou configuracao
     que o motor recusa; 413 problema acima dos limites do motor; 422 corpo invalido.
     """
+    _run(lambda: conferir_teto(caminho, settings, service))
     return _run(
         lambda: service.create(
             nome=dados.nome,

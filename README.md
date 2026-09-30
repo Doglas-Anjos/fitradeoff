@@ -45,7 +45,7 @@ uma suíte que está no repositório.
 | Paridade medida contra o sistema oficial | **74 casos**, versionados — 63 batem de 73 comparáveis; ver abaixo |
 | Decisão em grupo | a fazer |
 
-**1442 testes**: 736 de motor e API, 69 do servidor MCP, 125 de paridade e 512 de interface.
+**1469 testes**: 756 de motor e API, 73 do servidor MCP, 125 de paridade e 515 de interface.
 Entre eles, um decisor-oráculo que verifica a invariante central do método (a alternativa
 verdadeiramente ótima nunca sai do conjunto de POAs), testes que auditam a própria
 arquitetura e testes de entrada não confiável.
@@ -255,6 +255,9 @@ Os dados ficam em `~/.fitradeoff/decisoes` (configurável por `FITRADEOFF_DATA`)
 | `FITRADEOFF_JWT_MAX_VALIDADE` | por quantos segundos, no máximo, um token pode valer (padrão 900) |
 | `FITRADEOFF_MCP_JSON` | responder num JSON só, em vez de fluxo de eventos (padrão desligado) |
 | `FITRADEOFF_ACEITAR_CHAVES_DO_COFRE` | se as chaves da tela valem neste servidor (padrão ligado) |
+| `FITRADEOFF_CHAVE_DIAS` | validade, em dias, de cada chave emitida (padrão 90) |
+| `FITRADEOFF_CHAVE_TOKEN_RECENTE_S` | idade máxima do token do FasorX que pode emitir chave (padrão 120) |
+| `FITRADEOFF_MAX_DECISOES_POR_PESSOA` | teto de decisões no acervo de cada pessoa; o do dono não tem teto (padrão 300, 0 desliga) |
 | `ANTHROPIC_API_KEY` | só para a rota `/api/chat`, que não tem mais tela |
 
 ### Decisões no PostgreSQL
@@ -327,6 +330,12 @@ configuração pronto para cada cliente, com a chave dentro, porque trocar
 Uma chave não é senha escolhida por gente: são 256 bits aleatórios, e o que fica
 gravado é o resumo SHA-256 dela. O texto existe uma vez, na resposta que o criou.
 Perder a chave não tem recuperação — revoga-se e emite-se outra.
+
+Toda chave **vence** — em 90 dias por padrão (`FITRADEOFF_CHAVE_DIAS`) —, e a lista mostra
+"vence em …" ou "vencida". Uma credencial portadora sem prazo valeria para sempre depois de vazar.
+Só o dono da plataforma pode emitir chave sem prazo, e só explicitamente
+(`python -m fitradeoff_api.chaves criar "CI" --dias 0`). Chaves gravadas antes da validade existir:
+as de pessoa vencem 90 dias depois de criadas; as do dono continuam sem prazo até ele revogá-las.
 
 ## Uso por código
 
@@ -457,7 +466,8 @@ O resto é o que vale **se** alguém alcançar a porta assim mesmo:
 | Superfície mínima | só `/mcp` e `/saude` existem. Sem `/api`, sem `/docs`, sem emitir chave |
 | Escopo por identidade | uma credencial válida abre **o acervo dela**, não o dos outros |
 | Algoritmo fixado | o JWT é verificado com o algoritmo que nós configuramos, nunca o que ele declara; `exp` exigido, `iss` e `aud` conferidos |
-| Chaves do cofre | 256 bits, guardadas por resumo, comparadas em tempo constante; revogar vale na chamada seguinte, porque o cofre é lido a cada requisição |
+| Chaves do cofre | 256 bits, guardadas por resumo, comparadas em tempo constante; vencem (90 dias por padrão); revogar vale na chamada seguinte, porque o índice do cofre é refeito sempre que o arquivo muda |
+| Cofre compartilhado | `api` e `mcp` gravam o mesmo `chaves.json` sob trava de arquivo, com provisório único e `fsync`; arquivo ilegível nunca é sobrescrito por uma lista vazia |
 | `Host` declarado | quem chega por um nome fora de `FITRADEOFF_MCP_HOSTS` é recusado |
 | Corpo limitado | 4 MiB por requisição, teto do próprio SDK |
 | Custo limitado | 500 alternativas, 30 critérios, 200 amostras, 20 limiares — o preço de uma requisição é limitado por construção, não por sorte |
@@ -511,6 +521,20 @@ Há teste para isso.
 Sem `FITRADEOFF_JWT_JWKS_URL` nem `FITRADEOFF_JWT_SECRET`, nenhum token é aceito: só as chaves do
 cofre entram. Um verificador que aceitasse qualquer assinatura seria pior do que não existir.
 
+Com `FITRADEOFF_JWT_JWKS_URL`, **`FITRADEOFF_JWT_ISSUER` e `FITRADEOFF_JWT_AUDIENCE` são
+obrigatórias**: sem as duas o processo não parte, e o registro diz qual falta. A chave pública de
+um JWKS costuma assinar tudo o que aquele emissor emite; sem `aud` conferido, um token que a
+aplicação da frente emitiu para outro serviço dela entraria aqui. Os tokens, por sua vez, precisam
+trazer `iss` e `aud`. No HS256 o público continua opcional — o segredo é só das duas pontas.
+
+**O emissor não muda depois de publicado.** Ele entra no nome do diretório de cada pessoa; trocar
+`FITRADEOFF_JWT_ISSUER` deixa todos os acervos para trás. A barra no fim é ignorada
+(`https://x.org` e `https://x.org/` dão o mesmo diretório), mas qualquer outra diferença conta.
+
+Token assinado vai **só no cabeçalho** `Authorization`. Na URL (`/mcp/<credencial>`) só a chave
+do cofre (`fit_...`) é aceita: um JWT no caminho ficaria gravado em log de proxy, e não há como
+revogá-lo antes de expirar.
+
 **Cada `sub` abre o próprio acervo**, ao lado do acervo do dono da plataforma — e a identidade
 nunca vira componente de caminho: o diretório é o resumo de `iss` + `sub`. Um identificador cru
 traria junto o problema do `..` e deixaria a lista de quem usa a plataforma legível no disco.
@@ -537,6 +561,13 @@ entrou pela aplicação principal emite, lista e revoga as próprias chaves — 
 dessa pessoa grava onde ela vê na tela, e em nenhum outro lugar. Ninguém vê nem revoga a chave de
 outra pessoa. Até 10 chaves por pessoa.
 
+Emitir exige **sessão confirmada agora**: o token do FasorX precisa ter no máximo 120 s
+(`FITRADEOFF_CHAVE_TOKEN_RECENTE_S`), e a tela busca um novo logo antes de emitir. Sem isso, um
+token de 5 minutos vazado viraria uma chave de 90 dias. Token velho leva `403` ("Entre de novo
+para emitir uma chave"). O acervo de cada pessoa tem teto de decisões
+(`FITRADEOFF_MAX_DECISOES_POR_PESSOA`, 300) em todos os caminhos de criação — tela, planilha,
+chat e `create_problem` do MCP —; acima dele, `409`.
+
 As chaves **do dono da plataforma** — emitidas pela linha de comando (`python -m
 fitradeoff_api.chaves criar`) ou com `FITRADEOFF_ADMIN_TOKEN` — continuam abrindo o acervo
 principal, e continuam exigindo esse token para serem emitidas de fora.
@@ -549,7 +580,7 @@ assistente pelo servidor publicado.
 Se o encaminhamento dela acumular a resposta antes de repassar, a ferramenta parece travar sem
 erro nenhum. `FITRADEOFF_MCP_JSON=1` troca o fluxo de eventos por um JSON só, e aí não há o que
 acumular. Nada se perde: a troca custaria as perguntas do servidor de volta ao cliente, e nenhuma
-das catorze ferramentas faz isso.
+das ferramentas faz isso.
 
 Três coisas que costumam morder na integração:
 

@@ -17,6 +17,12 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 
 class SemCacheNaApi:
+    """Acrescenta ``Cache-Control: no-store`` as respostas de ``/api`` que nao o declaram.
+
+    Toca so no cabecalho de inicio da resposta; o corpo passa como veio, entao
+    as respostas em fluxo seguem em fluxo.
+    """
+
     def __init__(self, app: ASGIApp) -> None:
         self.app = app
 

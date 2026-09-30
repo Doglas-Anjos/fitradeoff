@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
+import { headers } from "next/headers";
 
 import { ProvedorIdioma } from "@/lib/i18n";
 import { Avisos } from "@/components/Avisos";
@@ -27,11 +28,15 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // O nonce da CSP desta requisicao (middleware.ts). Le-lo torna toda pagina
+  // dinamica, e esse e o preco do nonce: uma pagina estatica serviria o mesmo
+  // nonce a todo mundo, e ai ele nao provaria nada.
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
   return (
     <html
       lang="pt-BR"
@@ -59,7 +64,7 @@ export default function RootLayout({
             `dangerouslySetInnerHTML` é o único jeito de emitir script inline
             no App Router. O conteúdo é constante nossa, não entra dado de
             ninguém, então não há o que injetar. */}
-        <script dangerouslySetInnerHTML={{ __html: SCRIPT_TEMA }} />
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: SCRIPT_TEMA }} />
       </head>
       <body className="min-h-dvh">
         <ProvedorIdioma>

@@ -607,6 +607,30 @@ do SDK recusa **todo** pedido que chegar por ele com `421 Invalid Host header` �
 menciona MCP, nem chave, nem variável de ambiente. A tela de chaves confere essa coerência e avisa
 antes; o `compose.yml` se recusa a subir sem ela.
 
+## Cabeçalhos de segurança da interface
+
+A **Content Security Policy** da tela é do próprio app, e não do proxy: o
+[`middleware.ts`](web/middleware.ts) monta a política a cada requisição, com um *nonce* novo
+([`lib/csp.ts`](web/lib/csp.ts)). Só quem monta a página conhece o nonce, e é ele que permite
+tirar o `'unsafe-inline'` dos scripts.
+
+- **Scripts:** só da própria origem, ou inline com o nonce da requisição. O Next marca os scripts
+  dele; o script de tema do layout recebe o nonce.
+- **Estilos:** `<style>` só com nonce, da própria origem, ou com o hash exato do CSS que a
+  biblioteca de notificações injeta (um teste recalcula esse hash a partir do pacote instalado).
+  O `'unsafe-inline'` fica restrito aos atributos `style="..."`, que o React usa e que não aceitam
+  nonce — injetar estilo não executa código.
+- Os endereços do Cloudflare (verificação contra robôs) e o da FasorX (sessão) continuam
+  liberados.
+- `X-Powered-By` desligado.
+
+**O proxy na frente não deve enviar CSP própria.** Com duas políticas o navegador aplica as duas, e
+um scanner continua apontando o `'unsafe-inline'` da do proxy. Para conferir que só a do app chega:
+
+```bash
+curl -sI https://seu-dominio | grep -ci content-security-policy   # tem de dar 1
+```
+
 ## Entrada não confiável
 
 O servidor roda em stdio, como o próprio usuário, atendendo um cliente: não há fronteira de

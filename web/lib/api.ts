@@ -301,8 +301,13 @@ export const api = {
   pergunta: (id: string) =>
     request<Pergunta & Partial<Estado>>(`/api/decisoes/${id}/pergunta`),
 
-  responder: (id: string, preferencia: string) =>
-    post<Estado>(`/api/decisoes/${id}/resposta`, { preferencia }),
+  /** Responde a pergunta pendente. Com `perguntaId`, a resposta so vale se a
+   *  pendente ainda for a que foi exibida; sem ele, vale para a pendente. */
+  responder: (id: string, preferencia: string, perguntaId?: string) =>
+    post<Estado>(`/api/decisoes/${id}/resposta`, {
+      preferencia,
+      ...(perguntaId ? { pergunta_id: perguntaId } : {}),
+    }),
 
   julgar: (id: string, preferida: string, sobre: string) =>
     post<Estado>(`/api/decisoes/${id}/julgamento`, { preferida, sobre }),

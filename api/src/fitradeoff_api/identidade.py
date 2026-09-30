@@ -81,18 +81,13 @@ def _verificar(settings: Settings, token: str) -> dict | None:
 
     O que e sempre conferido: a assinatura, com o algoritmo fixado aqui (RS256
     com JWKS, HS256 com segredo), a presenca de ``exp`` e ``sub``, a validade e o
-    teto de ``jwt_max_validade``. O que so e conferido quando configurado:
-    ``aud`` apenas com ``jwt_audience`` definido, e ``iss`` apenas com
-    ``jwt_issuer`` definido. Sem eles, qualquer token que a chave de verificacao
-    aceite vale, de qualquer publico e de qualquer emissor -- o que importa
-    quando o mesmo JWKS ou segredo assina tokens para outros servicos. Nao e
-    obrigatorio (a decisao e de quem implanta), mas a partida avisa: ver
-    ``avisar_configuracao``.
-
-    Limitacao conhecida: sem ``jwt_audience`` e ``jwt_issuer``, um token emitido
-    pela mesma chave para outro servico da aplicacao da frente abre o acervo da
-    pessoa. Torna-los obrigatorios com JWT ligado e decisao pendente de quem
-    implanta, porque derruba a partida de uma instalacao que hoje nao os define.
+    teto de ``jwt_max_validade``. ``aud`` e ``iss`` sao conferidos quando
+    configurados, e com JWKS eles sao obrigatorios: ``Settings`` recusa a
+    partida com ``jwt_jwks_url`` sem ``jwt_issuer`` e ``jwt_audience``, porque a
+    chave publica e de terceiros e pode assinar tokens para outros servicos do
+    mesmo emissor. Com segredo HS256 eles ficam opcionais -- o segredo so e
+    compartilhado entre as duas pontas, e nao ha outro servico assinando com
+    ele. A partida avisa quando faltam: ver ``avisar_configuracao``.
     """
     opcoes: dict = {"require": ["exp", "sub"]}
     try:

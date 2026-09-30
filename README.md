@@ -1,5 +1,19 @@
 # FITradeoff — plataforma de apoio à decisão multicritério
 
+> [!IMPORTANT]
+> **Este não é o FITradeoff original.** É uma implementação independente do método FITradeoff,
+> sem vínculo com o sistema do CDSID-UFPE ([fitradeoff.org](https://fitradeoff.org/)), e **pode
+> apresentar valores diferentes dos dele**.
+>
+> Foi construída a partir do guia do usuário publicado no site do FITradeoff (*Practical User
+> Guide — FITradeoff*, CDSID-UFPE) e dos artigos que descrevem o método. Para aproximar os dois
+> sistemas, fizemos várias rodadas de equivalência: os mesmos casos, rodados no original e aqui e
+> comparados pergunta a pergunta e resultado a resultado, em cada problemática que o original
+> permite comparar — escolha, ranking, sorting e benefício-custo; o portfólio combinatorial dele não
+> roda em sessão. O que bate e o que ainda difere está em [Validação contra o sistema
+> oficial](#validação-contra-o-sistema-oficial) e, em detalhe, em
+> [`paridade/EQUIVALENCIA.md`](paridade/EQUIVALENCIA.md).
+
 Implementação do método **FITradeoff** (Flexible and Interactive Tradeoff, De Almeida et al., 2016)
 para elicitação de constantes de escala em modelos aditivos no escopo da MAVT, a partir de
 **informação parcial** de preferência.
@@ -12,10 +26,6 @@ atalho por dentro, e não calcula nada por conta própria.
 O decisor nunca vê um espaço de pesos nem um problema de programação linear: responde a
 comparações entre situações concretas, em reais e dias, e recebe uma recomendação que sabe
 justificar.
-
-O método é público e está descrito na literatura; esta é uma implementação independente,
-sem vínculo com o sistema oficial do CDSID-UFPE — e **comparada com ele, caso a caso**, por
-uma suíte que está no repositório.
 
 > **Veio auditar?** [`AUDITORIA.md`](AUDITORIA.md) é a porta de entrada: em que arquivo mora
 > cada etapa do método, quais parâmetros mudam a conclusão, o que é exato e o que é

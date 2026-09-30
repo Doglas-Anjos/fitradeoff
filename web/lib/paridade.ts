@@ -22,7 +22,7 @@ export interface CasoParidade {
   tipo: "linear" | "curva" | "discreto" | "estresse";
 }
 
-export const MEDIDO_EM = "2026-09-29";
+export const MEDIDO_EM = "2026-09-30";
 
 export const PARIDADE: CasoParidade[] = [
   {
@@ -924,6 +924,23 @@ export const PARIDADE: CasoParidade[] = [
     "tipo": "estresse"
   },
   {
+    "chave": "fin-R2-ranking-curva-nota4",
+    "problematica": "ranking",
+    "alternativas": 10,
+    "criterios": 5,
+    "oficial": {
+      "ordenacao": 8,
+      "tradeoff": 31
+    },
+    "nosso": {
+      "ordenacao": 8,
+      "tradeoff": 31
+    },
+    "resumo": "Ranking completo: Alt 05 > Alt 03 > Alt 02 > Alt 06 > Alt 01 > Alt 04 > Alt 09 > Alt 10 > Alt 07 > Alt 08.",
+    "bate": true,
+    "tipo": "estresse"
+  },
+  {
     "chave": "fin-S1-sorting-7x25-4c",
     "problematica": "sorting",
     "alternativas": 25,
@@ -1266,8 +1283,8 @@ export const PARIDADE: CasoParidade[] = [
 ];
 
 export const RESUMO = {
-  bate: 62,
-  comparaveis: 72,
+  bate: 63,
+  comparaveis: 73,
   travados: 1,
   maiorProblema: 30,
 };

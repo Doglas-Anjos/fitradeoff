@@ -379,7 +379,7 @@ Answered" subir.
 ### 29/09/2026: a rodada final, doze casos de borda
 
 A última rodada foi feita para tentar quebrar a equivalência: três escolhas,
-quatro sortings e cinco benefício-custo, além de dois rankings ainda em medição.
+dois rankings, quatro sortings e cinco benefício-custo.
 Os casos incluem curva não linear com nota discreta, custo em milhões e em
 milhares, doze alternativas a 0,1% umas das outras, limites de classe nas
 pontas, orçamento apertado e folgado, razões iguais, 7 critérios por 30
@@ -387,8 +387,13 @@ alternativas e respostas A, B e misturadas.
 
 | resultado | casos |
 |---|---|
-| batem por completo (contagem, sequência, desfecho) | `fin-E1`, `fin-E3`, `fin-S1` a `fin-S4`, `fin-B1` a `fin-B5` |
+| batem por completo (contagem, sequência, desfecho) | `fin-E1`, `fin-E3`, `fin-R2`, `fin-S1` a `fin-S4`, `fin-B1` a `fin-B5` |
 | mesma contagem e mesmo desfecho, ordem diferente | `fin-E2` (abertura B, ver abaixo) |
+| o oficial não completa | `fin-R1` (nota constante, ver "Onde o oficial não completa") |
+
+O `fin-R2` é o mais longo da rodada: ranking com curva não linear em cinco
+critérios e uma nota de 4 níveis, com 31 perguntas de tradeoff. As curvas batem
+pergunta a pergunta, e as 31 perguntas também, até a mesma ordem completa.
 
 "Desfecho" quer dizer o vencedor na escolha, a classe de cada alternativa no
 sorting e a carteira no benefício-custo, conferidos item a item com a tela final

@@ -22,7 +22,8 @@ from fastapi.responses import Response
 from fitradeoff import DecisionService
 
 from .. import spreadsheet
-from ..deps import CALCULO, acervo, translate, vaga
+from ..config import Settings
+from ..deps import CALCULO, acervo, conferir_teto, get_settings, translate, vaga
 
 router = APIRouter(prefix="/api", tags=["planilhas"])
 
@@ -116,6 +117,8 @@ async def importar(
     problematica: str = Form("escolha"),
     configuracao: str = Form("{}"),
     service: DecisionService = CALCULO,
+    caminho: Path = Depends(acervo),
+    ajustes: Settings = Depends(get_settings),
 ):
     """Cria uma decisao a partir de uma planilha ``.xlsx`` ou ``.csv``.
 
@@ -126,6 +129,12 @@ async def importar(
     planilha ilegivel ou configuracao que nao e objeto JSON; 400 ou 409 problematica ou
     configuracao que o motor recusa.
     """
+    # Antes de ler o arquivo: com o acervo cheio, nao ha por que processar a
+    # planilha. Importar e criar -- o mesmo teto da rota de criacao.
+    try:
+        await run_in_threadpool(conferir_teto, caminho, ajustes, service)
+    except Exception as exc:
+        raise translate(exc) from exc
     conteudo = await arquivo.read()
     if len(conteudo) > MAX_BYTES:
         raise HTTPException(

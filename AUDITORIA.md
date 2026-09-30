@@ -148,9 +148,9 @@ os critérios).
 python -m venv engine/.venv
 engine/.venv/Scripts/python -m pip install -e engine[dev] -e mcp_server -e api
 
-engine/.venv/Scripts/python -m pytest engine/tests api/tests -q   # 821
-engine/.venv/Scripts/python -m pytest mcp_server/tests -q         # 72
-cd web && npm install && npm test -- --run                        # 554
+engine/.venv/Scripts/python -m pytest engine/tests api/tests -q   # 851
+engine/.venv/Scripts/python -m pytest mcp_server/tests -q         # 80
+cd web && npm install && npm test -- --run                        # 565
 ```
 
 Entre eles há um **decisor-oráculo** que verifica a invariante central do método — a

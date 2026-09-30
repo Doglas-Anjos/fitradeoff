@@ -167,7 +167,7 @@ class Settings:
     nenhum, e com JSON nao ha o que acumular.
 
     Nao se perde nada aqui: a troca custaria as perguntas do servidor de volta
-    ao cliente, e nenhuma das dezenove ferramentas faz isso.
+    ao cliente, e nenhuma das ferramentas faz isso.
     """
     aceitar_chaves_do_cofre: bool = field(
         default_factory=lambda: _ligado("FITRADEOFF_ACEITAR_CHAVES_DO_COFRE", True)
@@ -227,6 +227,29 @@ class Settings:
     longos que isto, eles sao recusados -- e o motivo aparece no registro.
     """
 
+    # --- chaves do MCP e teto de acervo --------------------------------------
+    chave_dias: int = field(
+        default_factory=lambda: int(os.environ.get("FITRADEOFF_CHAVE_DIAS", "90"))
+    )
+    """Validade, em dias, de uma chave emitida. Ver ``chaves.criar``."""
+    chave_token_recente_s: int = field(
+        default_factory=lambda: int(
+            os.environ.get("FITRADEOFF_CHAVE_TOKEN_RECENTE_S", "120")
+        )
+    )
+    """Idade maxima (``iat``) do token do FasorX que pode emitir uma chave.
+
+    Um token de 5 minutos vazado viraria, sem isto, uma chave de 90 dias.
+    Exigir um token recem-emitido obriga quem emite a ter a sessao do FasorX
+    naquele instante, e nao so um token copiado de algum lugar.
+    """
+    max_decisoes_por_pessoa: int = field(
+        default_factory=lambda: int(
+            os.environ.get("FITRADEOFF_MAX_DECISOES_POR_PESSOA", "300")
+        )
+    )
+    """Teto de decisoes no acervo de cada pessoa. Ver ``fitradeoff_mcp.teto``."""
+
     def __post_init__(self) -> None:
         """Recusa, ja na montagem, o segredo HS256 curto demais para proteger algo.
 
@@ -235,8 +258,10 @@ class Settings:
         qualquer pessoa. So vale quando o segredo e de fato usado, ou seja, sem
         ``jwt_jwks_url`` (que tem precedencia em ``identidade._verificar``).
 
+        Tambem exige emissor e publico quando ha JWKS (ver o comentario abaixo).
+
         Erros: ConfiguracaoInvalida se o segredo tiver menos de
-        ``SEGREDO_HS256_MINIMO`` bytes.
+        ``SEGREDO_HS256_MINIMO`` bytes, ou se houver JWKS sem emissor ou publico.
         """
         if (
             self.jwt_secret
@@ -249,6 +274,43 @@ class Settings:
                 "com, por exemplo, `python -c \"import secrets; "
                 "print(secrets.token_urlsafe(32))\"`."
             )
+
+        # Com JWKS, emissor e publico sao obrigatorios, e a falta deles derruba
+        # a partida -- nao o primeiro pedido.
+        #
+        # Sem `aud` conferido, qualquer token que a aplicacao da frente assine
+        # com a mesma chave vale aqui: o de outro servico dela, o da propria
+        # sessao de navegador, o de uma API que nada tem a ver com o MCP. E a
+        # chave publica de um JWKS costuma assinar tudo o que aquele emissor
+        # emite. Sem `iss`, um segundo emissor que por acaso publique no mesmo
+        # JWKS (ou que o operador aponte por engano) entraria igual.
+        #
+        # Por que parar em vez de so avisar: o estado perigoso aqui e silencioso.
+        # Tudo funciona, os tokens certos entram -- e os errados tambem. Um aviso
+        # no registro seria lido depois do incidente. O `compose.yml` do servico
+        # `mcp` repassa as tres com `:-` (vazias sao validas: sem JWKS so a
+        # chave do cofre entra); e esta checagem que amarra uma na outra.
+        #
+        # O caminho HS256 (`jwt_secret`) fica de fora de proposito: o segredo e
+        # compartilhado so entre as duas pontas, entao nao ha outro servico
+        # assinando com ele. Emissor e publico continuam valendo se declarados.
+        if self.jwt_jwks_url:
+            faltando = [
+                nome
+                for nome, valor in (
+                    ("FITRADEOFF_JWT_ISSUER", self.jwt_issuer),
+                    ("FITRADEOFF_JWT_AUDIENCE", self.jwt_audience),
+                )
+                if not valor
+            ]
+            if faltando:
+                raise ConfiguracaoInvalida(
+                    "FITRADEOFF_JWT_JWKS_URL esta definida, mas falta "
+                    + " e ".join(faltando)
+                    + ": com chave publica de terceiros, emissor e publico "
+                    "precisam ser conferidos, ou um token emitido para outro "
+                    "servico do mesmo emissor entraria aqui."
+                )
 
     @property
     def chat_enabled(self) -> bool:

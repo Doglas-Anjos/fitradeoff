@@ -457,6 +457,16 @@ export default function ChavesPage() {
                           data: dataHoraLocal(chave.ultimo_uso, idioma),
                         })
                       : t("tela.chaves.emitidas.semUso")}
+                    {/* Sem data: chave do dono emitida com --dias 0, que nao vence. */}
+                    {chave.expira_em
+                      ? ` · ${
+                          new Date(chave.expira_em).getTime() <= Date.now()
+                            ? t("tela.chaves.emitidas.vencida")
+                            : t("tela.chaves.emitidas.vence", {
+                                data: dataHoraLocal(chave.expira_em, idioma),
+                              })
+                        }`
+                      : null}
                   </p>
                 </div>
                 <Botao

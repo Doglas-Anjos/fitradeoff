@@ -29,9 +29,9 @@ export const CHAVES = registrar({
     es: "Claves del MCP",
   },
   "tela.chaves.descricao": {
-    pt: "Gere uma chave e conduza a decisão de dentro do seu assistente. Ele ganha as catorze ferramentas do método, e quem calcula continua sendo esta plataforma.",
-    en: "Generate a key and run the decision from inside your assistant. It gains the method's fourteen tools, and this platform remains the one doing the computing.",
-    es: "Genere una clave y conduzca la decisión desde su asistente. Este obtiene las catorce herramientas del método, y quien calcula sigue siendo esta plataforma.",
+    pt: "Gere uma chave e conduza a decisão de dentro do seu assistente. Ele ganha as ferramentas do método, e quem calcula continua sendo esta plataforma.",
+    en: "Generate a key and run the decision from inside your assistant. It gains the method's tools, and this platform remains the one doing the computing.",
+    es: "Genere una clave y conduzca la decisión desde su asistente. Este obtiene las herramientas del método, y quien calcula sigue siendo esta plataforma.",
   },
 
   // --- o que a conexão dá -----------------------------------------------------
@@ -190,6 +190,16 @@ export const CHAVES = registrar({
     pt: "Nunca usada",
     en: "Never used",
     es: "Nunca usada",
+  },
+  "tela.chaves.emitidas.vence": {
+    pt: "vence em {data}",
+    en: "expires on {data}",
+    es: "vence el {data}",
+  },
+  "tela.chaves.emitidas.vencida": {
+    pt: "vencida",
+    en: "expired",
+    es: "vencida",
   },
   "tela.chaves.revogar": { pt: "Revogar", en: "Revoke", es: "Revocar" },
   "tela.chaves.revogar.confirma": {

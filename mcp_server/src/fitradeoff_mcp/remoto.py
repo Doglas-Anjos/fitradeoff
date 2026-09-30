@@ -18,6 +18,12 @@ Duas formas de apresentar a chave, porque os clientes diferem:
     o que faz dela uma chave de menor confianca: e por isso que a tela emite uma
     chave por cliente, e que revogar uma nao derruba as outras.
 
+    So a chave do cofre (``fit_...``) entra por aqui. Um token assinado no
+    caminho e recusado: ele e a identidade de uma pessoa, emitido pela aplicacao
+    da frente para ir no cabecalho, e numa URL ficaria gravado em todo proxy e
+    todo log por onde passasse -- uma credencial que ninguem consegue revogar
+    antes de expirar, espalhada em lugares que ninguem limpa.
+
 Quem decide se a chave vale, e o que ela abre, e o ``Resolvedor`` que o
 chamador injeta. Este modulo nao sabe onde chaves sao guardadas, nem como sao
 criadas: continua sendo casca de protocolo, como o resto do pacote.
@@ -48,10 +54,18 @@ A assinatura e a fronteira entre protocolo e politica. Hoje o resolvedor que a
 API injeta (``fitradeoff_api.identidade.resolver``) devolve um acervo por
 pessoa: a chave do cofre abre o acervo do dono dela, e o JWT da aplicacao da
 frente abre o acervo de quem ele identifica. Essa decisao mora toda no
-resolvedor; nada aqui nem nas dezenove ferramentas sabe de quem e o diretorio.
+resolvedor; nada aqui nem nas ferramentas sabe de quem e o diretorio.
 
 E sincrono, e por isso roda numa thread de trabalho, nunca no laco de eventos:
 ver ``Autenticacao``.
+"""
+
+PREFIXO_NO_CAMINHO = "fit_"
+"""O unico tipo de credencial que pode vir no caminho: a chave do cofre.
+
+Repetido aqui, e nao importado de ``fitradeoff_api.chaves``, porque este pacote
+nao depende da API -- a dependencia e no sentido contrario. O valor e parte do
+formato da chave, que ja esta nas maos dos clientes, entao nao muda.
 """
 
 CAMINHO = "/mcp"
@@ -129,6 +143,14 @@ class Autenticacao:
             )
             return
 
+        # Fora do laco de eventos, numa thread. O resolvedor e sincrono e pode
+        # demorar de verdade: verificar um token pode buscar o JWKS pela rede
+        # (ate dez segundos de teto), e uma chave do cofre le -- e as vezes
+        # reescreve -- o arquivo de chaves. Chamado aqui direto, ele congelaria
+        # o processo inteiro durante a espera: todas as outras conversas MCP, o
+        # `/saude` e as rotas da API montadas no mesmo aplicativo. O healthcheck
+        # falharia por uma busca lenta de chave publica, sem relacao nenhuma com
+        # a saude do servico.
         escopo = await anyio.to_thread.run_sync(self.resolvedor, chave)
         if escopo is None:
             await self._recusar(
@@ -179,8 +201,14 @@ class Autenticacao:
                 # Uma barra no meio nao e chave: e caminho que este servidor nao
                 # serve, e aceita-lo mandaria ao roteador um caminho que ele nao
                 # reconhece.
-                do_caminho = resto
                 caminho = self.caminho
+                # So a chave do cofre vale no caminho. Um JWT aqui e descartado
+                # -- o caminho ainda e normalizado, para a resposta ser o 401
+                # com a pista de como autenticar, e nao um 404 que nao explica
+                # nada. E o segmento some do escopo do mesmo jeito, entao o
+                # token tambem nao chega ao log de acesso deste processo.
+                if resto.startswith(PREFIXO_NO_CAMINHO):
+                    do_caminho = resto
 
         for nome, valor in scope.get("headers", []):
             if nome.lower() != b"authorization":
@@ -276,7 +304,7 @@ def criar_app(
     padrao, e e o que permite dar sinal de vida numa ferramenta demorada; o JSON
     serve quando ha um encaminhamento simples na frente, porque um proxy que
     acumule a resposta antes de repassar faz a ferramenta parecer travada, sem
-    erro nenhum. Nenhuma das dezenove ferramentas pergunta de volta ao cliente,
+    erro nenhum. Nenhuma das ferramentas pergunta de volta ao cliente,
     que e a unica coisa que a troca custaria.
     """
     _registrar_escopo()

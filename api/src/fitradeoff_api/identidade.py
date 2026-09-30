@@ -195,3 +195,15 @@ def resolver(settings: Settings) -> Resolvedor:
         return assercao(settings, apresentado)
 
     return para
+
+
+def declaracoes(settings: Settings, apresentado: str) -> dict | None:
+    """As declaracoes de um token ja verificado, ou ``None``.
+
+    Para quem precisa de mais do que o acervo -- a emissao de chaves confere o
+    ``iat``. Passa pela mesma verificacao de ``assercao``: uma segunda
+    decodificacao, com regras proprias, seria um segundo lugar para errar.
+    """
+    if not settings.jwt_configurado:
+        return None
+    return _verificar(settings, apresentado)

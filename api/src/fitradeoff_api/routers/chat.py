@@ -9,7 +9,7 @@ from fitradeoff import DecisionService
 
 from ..agent import DecisionAgent
 from ..config import Settings
-from ..deps import LEVE, acervo, em_vaga, get_settings
+from ..deps import LEVE, acervo, conferir_teto, em_vaga, get_settings
 from ..schemas import ChatIn
 
 router = APIRouter(prefix="/api", tags=["chat"])
@@ -37,6 +37,7 @@ def conversar(
         api_key=settings.anthropic_api_key,
         model=settings.chat_model,
         em_vaga=em_vaga(request, pasta),
+        antes_de_criar=lambda: conferir_teto(pasta, settings, service),
     )
     turno = agente.conversar(
         mensagens=[{"role": m.papel, "content": m.texto} for m in dados.mensagens],

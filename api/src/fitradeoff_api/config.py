@@ -204,6 +204,29 @@ class Settings:
     longos que isto, eles sao recusados -- e o motivo aparece no registro.
     """
 
+    # --- chaves do MCP e teto de acervo --------------------------------------
+    chave_dias: int = field(
+        default_factory=lambda: int(os.environ.get("FITRADEOFF_CHAVE_DIAS", "90"))
+    )
+    """Validade, em dias, de uma chave emitida. Ver ``chaves.criar``."""
+    chave_token_recente_s: int = field(
+        default_factory=lambda: int(
+            os.environ.get("FITRADEOFF_CHAVE_TOKEN_RECENTE_S", "120")
+        )
+    )
+    """Idade maxima (``iat``) do token do FasorX que pode emitir uma chave.
+
+    Um token de 5 minutos vazado viraria, sem isto, uma chave de 90 dias.
+    Exigir um token recem-emitido obriga quem emite a ter a sessao do FasorX
+    naquele instante, e nao so um token copiado de algum lugar.
+    """
+    max_decisoes_por_pessoa: int = field(
+        default_factory=lambda: int(
+            os.environ.get("FITRADEOFF_MAX_DECISOES_POR_PESSOA", "300")
+        )
+    )
+    """Teto de decisoes no acervo de cada pessoa. Ver ``fitradeoff_mcp.teto``."""
+
     @property
     def chat_enabled(self) -> bool:
         return bool(self.anthropic_api_key)

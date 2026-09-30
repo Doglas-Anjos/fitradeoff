@@ -51,6 +51,19 @@ def concordar(quantos: int, singular: str, plural: str) -> str:
 
 
 class PortfolioProblematic(Problematic):
+    """Le o espaco de pesos como carteira: a mochila de maior beneficio em cada amostra.
+
+    Resolvida quando todas as amostras de pesos dao a mesma carteira. Os
+    projetos que oscilam entre carteiras sao os indefinidos.
+
+    Metodo: Frej et al. (2021)
+    Exatidao: aproximada (amostragem)
+    Custo: 2m + ``samples`` LPs para os vertices (m = numero de criterios), e
+    ate um MILP por vertice
+    Erros: ValueError na construcao se o orcamento nao for positivo; na
+    validacao, se faltarem custos ou nenhuma alternativa couber no orcamento
+    """
+
     key = "portfolio"
     label = "Selecao de portfolio sob restricao de orcamento"
 

@@ -18,10 +18,14 @@ const CUSTO: CriterioOut = {
   chave: "c", nome: "Custo", direcao: "min", pior: 100, melhor: 10, escala: "continua",
 };
 
-const pergunta = () => screen.getByRole("radiogroup").getAttribute("aria-label");
+/* As opções são botões de ação num grupo nomeado pela pergunta (não rádios:
+   respondem na hora, nada fica marcado). */
+const grupoDaPergunta = () =>
+  document.querySelector<HTMLElement>('[role="group"][aria-live="polite"]');
+const pergunta = () => grupoDaPergunta()!.getAttribute("aria-label");
 
 function responder(tipo: "inferior" | "superior" | "indiferente") {
-  const opcoes = within(screen.getByRole("radiogroup")).getAllByRole("radio");
+  const opcoes = within(grupoDaPergunta()!).getAllByRole("button");
   fireEvent.click(opcoes[{ inferior: 0, superior: 1, indiferente: 2 }[tipo]]);
 }
 
@@ -63,7 +67,7 @@ describe("CurvaDeValor", () => {
     expect(vistas[4]).toContain("de 38 para 69, ou de 69 para 100");
 
     // encerrou: sem pergunta, com a mensagem, e a tabela com os sete ciclos
-    expect(screen.queryByRole("radiogroup")).toBeNull();
+    expect(grupoDaPergunta()).toBeNull();
     expect(screen.getByRole("status")).toHaveTextContent("pontos necessários foram elicitados");
     const linhas = within(screen.getByRole("table")).getAllByRole("row");
     expect(linhas).toHaveLength(1 + 7);

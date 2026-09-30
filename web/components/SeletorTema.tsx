@@ -19,11 +19,18 @@
  */
 
 import { Desktop, Moon, Sun } from "@phosphor-icons/react";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
+import { tecladoDeRadio } from "@/components/ui";
 import { useIdioma } from "@/lib/i18n";
 import "@/lib/i18n/nucleo";
-import { TEMAS, aplicar, gravarTema, lerTema, type Tema } from "@/lib/tema";
+import {
+  TEMAS,
+  TEMA_PADRAO,
+  assinarTema,
+  escolherTema,
+  temaEscolhido,
+} from "@/lib/tema";
 
 const ICONE = {
   sistema: Desktop,
@@ -37,35 +44,21 @@ export function SeletorTema({
   variante?: "barra" | "menu";
 }) {
   const { t } = useIdioma();
-  /* Começa no padrão e só lê o armazenamento depois de montar: ler durante a
-     renderização faria o HTML do servidor divergir do cliente. Quem já escolheu
-     não vê lampejo mesmo assim, porque o script de `layout.tsx` já pintou a
-     página antes de o React existir -- este estado é só o do controle. */
-  const [tema, setTema] = useState<Tema>("sistema");
-
-  useEffect(() => setTema(lerTema()), []);
-
-  /* Em "sistema", trocar a preferência do sistema operacional com a página
-     aberta tem de repintar na hora. Sem isto, só repintaria no próximo
-     carregamento -- e o modo que se chama "sistema" seria o único a não
-     acompanhar o sistema. */
-  useEffect(() => {
-    aplicar(tema);
-    if (tema !== "sistema") return;
-    const consulta = window.matchMedia("(prefers-color-scheme: dark)");
-    const aoMudar = () => aplicar("sistema");
-    consulta.addEventListener("change", aoMudar);
-    return () => consulta.removeEventListener("change", aoMudar);
-  }, [tema]);
-
-  const escolher = (novo: Tema) => {
-    setTema(novo);
-    gravarTema(novo);
-  };
+  /* No servidor é o padrão; no navegador, a escolha guardada. A troca entre
+     os dois na hidratação só mexe neste controle -- a página já foi pintada
+     pelo script de `layout.tsx`. */
+  const tema = useSyncExternalStore(assinarTema, temaEscolhido, () => TEMA_PADRAO);
+  const escolher = escolherTema;
+  const teclado = tecladoDeRadio(TEMAS, tema, escolher);
 
   if (variante === "menu") {
     return (
-      <div role="radiogroup" aria-label={t("nav.tema")} className="grid gap-0.5">
+      <div
+        role="radiogroup"
+        aria-label={t("nav.tema")}
+        {...teclado.grupo}
+        className="grid gap-0.5"
+      >
         {TEMAS.map((chave) => {
           const Icone = ICONE[chave];
           const ativo = tema === chave;
@@ -75,6 +68,7 @@ export function SeletorTema({
               type="button"
               role="radio"
               aria-checked={ativo}
+              {...teclado.item(chave)}
               onClick={() => escolher(chave)}
               data-ativo={ativo}
               className="item-tema tatil flex items-center gap-2.5 rounded-[var(--raio-controle)] px-3 py-2.5 text-sm"
@@ -92,6 +86,7 @@ export function SeletorTema({
     <div
       role="radiogroup"
       aria-label={t("nav.tema")}
+      {...teclado.grupo}
       className="grupo-tema flex overflow-hidden rounded-[var(--raio-controle)] border"
     >
       {TEMAS.map((chave) => {
@@ -103,6 +98,7 @@ export function SeletorTema({
             type="button"
             role="radio"
             aria-checked={ativo}
+            {...teclado.item(chave)}
             onClick={() => escolher(chave)}
             data-ativo={ativo}
             title={t(`nav.tema.${chave}`)}

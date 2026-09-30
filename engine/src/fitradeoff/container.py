@@ -36,7 +36,14 @@ from .solvers.scipy_solver import ScipyIntegerSolver, ScipyLinearSolver
 
 @dataclass
 class Container:
-    """As dependencias do motor, montadas explicitamente."""
+    """As dependencias do motor, montadas explicitamente.
+
+    Limitacao conhecida: ``epsilon`` vem do processo e nao e gravado no registro
+    da decisao, ao contrario do limiar de equivalencia. A mesma decisao, aberta
+    por processos configurados de forma diferente (a API usa o padrao, a suite de
+    paridade usa 0), da outro espaco de pesos, e ``state`` nao diz com que epsilon
+    o resultado saiu. Grava-lo no registro e decisao pendente.
+    """
 
     solver: LinearSolver
     integer_solver: IntegerSolver
@@ -72,6 +79,11 @@ class Container:
         settings: dict | None = None,
         equivalence: float | None = None,
     ) -> Problematic:
+        """A problematica ``key`` montada com o evaluator do limiar pedido.
+
+        Erros: UnknownProblematic se a chave nao estiver registrada; ValueError
+        se ``settings`` nao servir para a problematica (perfis, orcamento).
+        """
         return self.registry.create(
             key, self.evaluator_for(equivalence), self.integer_solver, settings
         )

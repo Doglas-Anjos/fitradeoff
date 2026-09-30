@@ -4,8 +4,9 @@ Duas maneiras de se identificar, porque sao dois caminhos diferentes ate aqui:
 
 **A chave do cofre** (``fit_...``), emitida na tela. E o cliente do proprio
 dono falando direto com o servidor -- o Claude Code na mesma maquina, ou o
-Claude na web por um tunel. Abre o acervo da plataforma, que e o que a tela
-mostra.
+Claude na web por um tunel. Abre o acervo do dono da chave: o da pessoa que a
+emitiu pela tela, ou o acervo principal se a chave e do dono da plataforma (ver
+``chaves.resolver``).
 
 **Um token assinado pela aplicacao da frente.** Quando o MCP fica atras de
 outra aplicacao, e ela quem sabe quem esta logado; nos nao temos sessao, nem
@@ -28,6 +29,8 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import os
+import sys
 import time
 from collections.abc import Callable
 from pathlib import Path
@@ -75,6 +78,21 @@ def _verificar(settings: Settings, token: str) -> dict | None:
     e informacao util para quem esta tentando adivinhar, e inutil para o cliente
     legitimo, que so precisa saber que tem de se autenticar de novo. O motivo
     vai para o registro, onde o operador o alcanca.
+
+    O que e sempre conferido: a assinatura, com o algoritmo fixado aqui (RS256
+    com JWKS, HS256 com segredo), a presenca de ``exp`` e ``sub``, a validade e o
+    teto de ``jwt_max_validade``. O que so e conferido quando configurado:
+    ``aud`` apenas com ``jwt_audience`` definido, e ``iss`` apenas com
+    ``jwt_issuer`` definido. Sem eles, qualquer token que a chave de verificacao
+    aceite vale, de qualquer publico e de qualquer emissor -- o que importa
+    quando o mesmo JWKS ou segredo assina tokens para outros servicos. Nao e
+    obrigatorio (a decisao e de quem implanta), mas a partida avisa: ver
+    ``avisar_configuracao``.
+
+    Limitacao conhecida: sem ``jwt_audience`` e ``jwt_issuer``, um token emitido
+    pela mesma chave para outro servico da aplicacao da frente abre o acervo da
+    pessoa. Torna-los obrigatorios com JWT ligado e decisao pendente de quem
+    implanta, porque derruba a partida de uma instalacao que hoje nao os define.
     """
     opcoes: dict = {"require": ["exp", "sub"]}
     try:
@@ -202,6 +220,80 @@ def assercao(settings: Settings, apresentado: str) -> Path | None:
 
     emissor = settings.jwt_issuer or str(declaracoes.get("iss") or "")
     return acervo_de(settings, emissor, pessoa)
+
+
+_LOOPBACK = {"127.0.0.1", "localhost", "::1", "[::1]"}
+
+
+def endereco_de_escuta(
+    argv: list[str] | None = None, ambiente: dict[str, str] | None = None
+) -> str | None:
+    """O ``--host`` com que o uvicorn foi lancado, ou ``None`` se nao se sabe.
+
+    O aplicativo nao recebe do servidor o endereco em que ele escuta; o que da
+    para ler e a linha de comando (``--host X`` ou ``--host=X``) e a variavel
+    ``UVICORN_HOST``, que o uvicorn tambem aceita. Sem nenhum dos dois, o
+    uvicorn escuta em 127.0.0.1 -- e ``None`` conta como loopback.
+    """
+    argv = sys.argv if argv is None else argv
+    ambiente = os.environ if ambiente is None else ambiente
+    for i, arg in enumerate(argv):
+        if arg == "--host" and i + 1 < len(argv):
+            return argv[i + 1]
+        if arg.startswith("--host="):
+            return arg.split("=", 1)[1]
+    return ambiente.get("UVICORN_HOST") or None
+
+
+def avisar_configuracao(
+    settings: Settings, *, com_api: bool, endereco: str | None = None
+) -> None:
+    """Grita no registro, na partida, as configuracoes que o dono precisa rever.
+
+    Nao impede a partida: implantar e decisao do dono, e ha quem rode assim de
+    proposito. Mas os dois casos abaixo nao podem passar em silencio.
+
+    **Sem verificador, com ``/api`` alcancavel de fora** (so para o aplicativo
+    com ``/api``, ``com_api``). Sem JWKS nem segredo, ``/api`` atende sem
+    cadastro e entrega o acervo do dono a quem chegar. Isso so e seguro atras
+    de loopback; o MCP declarado como publicado (``FITRADEOFF_MCP_HOSTS``) ou o
+    servidor escutando fora de loopback (``endereco``) dizem o contrario. Nivel
+    ERROR.
+
+    **Verificador sem ``aud`` ou sem ``iss``.** Sem eles, um token que o mesmo
+    JWKS ou segredo assinou para outro servico entra aqui. Nivel WARNING.
+    """
+    if com_api and not settings.jwt_configurado:
+        fora = endereco is not None and endereco.strip() not in _LOOPBACK
+        if settings.mcp_publicado or fora:
+            motivo = (
+                f"FITRADEOFF_MCP_HOSTS declarado ({', '.join(settings.mcp_hosts)})"
+                if settings.mcp_publicado
+                else f"escutando em {endereco}, fora de loopback"
+            )
+            logger.error(
+                "INSTALACAO ABERTA: %s, mas sem verificador de identidade "
+                "(FITRADEOFF_JWT_JWKS_URL ou FITRADEOFF_JWT_SECRET). /api atende "
+                "sem cadastro e entrega as decisoes do acervo principal a quem "
+                "alcancar a porta. Configure o verificador, ou publique so o MCP "
+                "(fitradeoff_api.mcp_remoto:app).",
+                motivo,
+            )
+    if settings.jwt_configurado:
+        faltam = [
+            nome
+            for nome, valor in (
+                ("FITRADEOFF_JWT_AUDIENCE", settings.jwt_audience),
+                ("FITRADEOFF_JWT_ISSUER", settings.jwt_issuer),
+            )
+            if not valor
+        ]
+        if faltam:
+            logger.warning(
+                "verificador de JWT sem %s: tokens emitidos para outros servicos "
+                "com a mesma chave de assinatura serao aceitos aqui.",
+                " nem ".join(faltam),
+            )
 
 
 def resolver(settings: Settings) -> Resolvedor:

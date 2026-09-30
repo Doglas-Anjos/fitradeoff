@@ -87,7 +87,7 @@ describe("abas", () => {
     render(<Visualizacoes problema={PROBLEMA} />);
     await usuario.click(screen.getByRole("button", { name: "Tabela" }));
     // normalizado por padrao: valores em [0,1] com tres casas
-    expect(screen.getAllByText("1.000").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("1,000").length).toBeGreaterThan(0);
     expect(screen.queryByText("20")).not.toBeInTheDocument();
 
     await usuario.click(screen.getByRole("checkbox", { name: /valor normalizado/i }));
@@ -126,7 +126,8 @@ const NOMES_LONGOS: Problema = {
 describe("eixo e rotulos", () => {
   it("mostra os numeros da escala", () => {
     render(<Visualizacoes problema={PROBLEMA} />);
-    for (const marca of ["0.00", "0.25", "0.50", "0.75", "1.00"]) {
+    // no separador do idioma: vírgula em pt
+    for (const marca of ["0,00", "0,25", "0,50", "0,75", "1,00"]) {
       expect(screen.getByText(marca), `falta a marca ${marca}`).toBeInTheDocument();
     }
   });
@@ -149,7 +150,7 @@ describe("eixo e rotulos", () => {
     await usuario.hover(screen.getByText("Custo unitário entregue"));
     expect(screen.queryByText(/0 = pior possível/)).not.toBeInTheDocument();
     // Forn A vale 0 e Forn B vale 1 nesse criterio
-    expect(screen.getByText("0.000")).toBeInTheDocument();
-    expect(screen.getByText("1.000")).toBeInTheDocument();
+    expect(screen.getByText("0,000")).toBeInTheDocument();
+    expect(screen.getByText("1,000")).toBeInTheDocument();
   });
 });

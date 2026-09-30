@@ -58,9 +58,9 @@ export const avisar = {
   feito: (mensagem: string) => toast.success(mensagem),
 
   /** Para o que dá para voltar atrás: some, mas deixa a saída à mão. */
-  desfazivel: (mensagem: string, desfazer: () => void) =>
+  desfazivel: (mensagem: string, desfazer: () => void, rotulo: string) =>
     toast(mensagem, {
-      action: { label: "desfazer", onClick: desfazer },
+      action: { label: rotulo, onClick: desfazer },
       duration: 6000,
     }),
 };

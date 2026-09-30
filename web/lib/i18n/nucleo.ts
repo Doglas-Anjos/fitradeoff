@@ -15,6 +15,10 @@ export const NUCLEO = registrar({
      critério, e o mesmo rótulo para as duas coisas manda a pessoa ao lugar
      errado. O título da tela diz que chaves são o meio. */
   "nav.chaves": { pt: "Conectar", en: "Connect", es: "Conectar" },
+  /* Aqui, e não no catálogo da paridade: a navegação aparece em toda rota, e
+     importar aquele catálogo por esta chave só embarcava ~80 KB de texto em
+     todas as páginas. */
+  "nav.paridade": { pt: "Paridade", en: "Parity", es: "Paridad" },
   "nav.sobre": { pt: "Sobre o método", en: "About the method", es: "Acerca del método" },
   "nav.sobre.titulo": {
     pt: "Site oficial do método, no CDSID/UFPE",
@@ -28,6 +32,11 @@ export const NUCLEO = registrar({
   },
   "nav.idioma": { pt: "Idioma", en: "Language", es: "Idioma" },
   "nav.tema": { pt: "Tema", en: "Theme", es: "Tema" },
+  "nav.pularParaConteudo": {
+    pt: "Pular para o conteúdo",
+    en: "Skip to content",
+    es: "Saltar al contenido",
+  },
   "nav.tema.sistema": { pt: "Seguir o sistema", en: "Follow the system", es: "Seguir el sistema" },
   "nav.tema.claro": { pt: "Claro", en: "Light", es: "Claro" },
   "nav.tema.escuro": { pt: "Escuro", en: "Dark", es: "Oscuro" },
@@ -148,6 +157,7 @@ export const NUCLEO = registrar({
   // --- ações recorrentes ----------------------------------------------------
   "acao.voltar": { pt: "Voltar", en: "Back", es: "Volver" },
   "acao.cancelar": { pt: "Cancelar", en: "Cancel", es: "Cancelar" },
+  "acao.desfazer": { pt: "Desfazer", en: "Undo", es: "Deshacer" },
   "acao.continuar": { pt: "Continuar", en: "Continue", es: "Continuar" },
   "acao.editar": { pt: "Editar", en: "Edit", es: "Editar" },
   "acao.excluir": { pt: "Excluir", en: "Delete", es: "Eliminar" },

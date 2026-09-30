@@ -40,6 +40,8 @@ class PlanilhaInvalida(Exception):
 
 @dataclass(frozen=True)
 class ProblemaImportado:
+    """O que foi lido da planilha, na forma que ``DecisionService.create`` recebe."""
+
     nome: str
     alternativas: list[str]
     criterios: list[dict]
@@ -218,6 +220,14 @@ def _limitadas(linhas: Iterable[Sequence[Any]]) -> list[list[Any]]:
 
 
 def parse_xlsx(conteudo: bytes) -> ProblemaImportado:
+    """Le a primeira aba de um ``.xlsx``, com os valores calculados das formulas.
+
+    O tamanho descomprimido e conferido antes de abrir o livro: um ``.xlsx`` e um zip, e
+    um arquivo pequeno pode se expandir ate esgotar a memoria.
+
+    Erros: PlanilhaInvalida se o arquivo nao e ``.xlsx``, passa do limite descomprimido,
+    esta corrompido ou nao segue o layout.
+    """
     try:
         with zipfile.ZipFile(io.BytesIO(conteudo)) as pacote:
             descomprimido = sum(item.file_size for item in pacote.infolist())
@@ -254,6 +264,14 @@ def parse_xlsx(conteudo: bytes) -> ProblemaImportado:
 
 
 def parse_csv(conteudo: bytes) -> ProblemaImportado:
+    """Le texto separado por virgula, ponto e virgula ou tabulacao.
+
+    Tenta UTF-8 e cai para Latin-1, que e o que o Excel brasileiro costuma gravar; o
+    separador e adivinhado de uma amostra do inicio. E tambem o caminho do texto colado
+    da area de transferencia.
+
+    Erros: PlanilhaInvalida se o texto nao decodifica ou nao segue o layout.
+    """
     for codificacao in ("utf-8-sig", "latin-1"):
         try:
             texto = conteudo.decode(codificacao)
@@ -273,6 +291,14 @@ def parse_csv(conteudo: bytes) -> ProblemaImportado:
 
 
 def parse(nome_arquivo: str, conteudo: bytes) -> ProblemaImportado:
+    """Escolhe o leitor pela extensao do nome do arquivo.
+
+    ``.xls`` e recusado com a instrucao de conversao, em vez de cair numa leitura que
+    falharia com mensagem pior.
+
+    Erros: PlanilhaInvalida se a extensao nao e reconhecida ou o conteudo nao segue o
+    layout.
+    """
     nome = (nome_arquivo or "").lower()
     if nome.endswith(".csv") or nome.endswith(".txt"):
         return parse_csv(conteudo)
@@ -356,6 +382,36 @@ def modelo() -> bytes:
     return saida.getvalue()
 
 
+# O que faz o Excel (ou o LibreOffice) ler um texto como formula: "=" e o que o
+# openpyxl grava como formula viva; "+", "-" e "@" viram formula quando alguem
+# edita a celula; tabulacao e retorno de carro abrem o caminho em importacoes
+# para CSV. E a lista da OWASP para injecao de formula.
+_INICIO_DE_FORMULA = ("=", "+", "-", "@", "\t", "\r")
+
+
+def _textos_literais(livro) -> None:
+    """Todo texto da exportacao fica gravado como texto, nunca como formula.
+
+    Os textos vem do decisor (nome do problema, das alternativas e dos
+    criterios, unidades, declaracoes da trilha). O openpyxl grava como formula
+    viva todo texto que comeca com ``=``, entao uma alternativa chamada
+    ``=HYPERLINK(...)`` virava formula ao abrir a planilha. Aqui o tipo da
+    celula e forcado para texto e a celula ganha o prefixo de aspas do Excel
+    (``quotePrefix``), que a mantem como texto mesmo se alguem a editar. O
+    texto mostrado e o original, sem apostrofo acrescentado.
+
+    Uma passada no livro inteiro, e nao um cuidado em cada ``append``: uma aba
+    nova escrita sem o cuidado ficaria aberta, e ninguem perceberia.
+    """
+    for aba in livro.worksheets:
+        for linha in aba.iter_rows():
+            for celula in linha:
+                valor = celula.value
+                if isinstance(valor, str) and valor.startswith(_INICIO_DE_FORMULA):
+                    celula.data_type = "s"
+                    celula.quotePrefix = True
+
+
 def _aba_perguntas(livro, auditoria: dict) -> None:
     """Uma linha por ciclo: o que foi perguntado e o que foi respondido.
 
@@ -414,6 +470,9 @@ def exportar(
 
     A trilha vai junto de proposito: um resultado sem o registro do que foi
     declarado nao se defende numa auditoria.
+
+    Os textos vindos do decisor saem como texto literal, nunca como formula:
+    ver ``_textos_literais``.
     """
     livro = Workbook()
 
@@ -480,6 +539,7 @@ def exportar(
     if sensibilidade:
         _aba_sensibilidade(livro, sensibilidade)
 
+    _textos_literais(livro)
     saida = io.BytesIO()
     livro.save(saida)
     return saida.getvalue()

@@ -1,7 +1,14 @@
 """Entidades do problema de decisao.
 
-Camada mais interna: nao conhece solver, persistencia nem protocolo. Tudo aqui
-e imutavel -- o que permite comparar, cachear e reconstruir estados sem medo.
+Camada mais interna: nao conhece solver, persistencia nem protocolo. As
+dataclasses daqui sao congeladas (``frozen=True``): nenhum campo pode ser
+reatribuido, o que permite comparar, cachear e reconstruir estados.
+
+Congelado nao bastaria para a matriz de consequencias de ``Problem``, que e um
+ndarray: por isso o ``Problem`` guarda uma copia propria, marcada como somente
+leitura. Alterar o array passado ao construtor nao muda o problema, e as
+escalas e a matriz de valor guardadas em ``cached_property`` nao ficam
+desatualizadas.
 """
 
 from __future__ import annotations
@@ -12,7 +19,13 @@ from functools import cached_property
 
 import numpy as np
 
-from .scales import DiscreteScale, PiecewiseScale, Scale, scale_from_column
+from .scales import (
+    DiscreteScale,
+    PiecewiseScale,
+    Scale,
+    indice_do_nivel,
+    scale_from_column,
+)
 
 
 class Direction(str, Enum):
@@ -65,38 +78,66 @@ class Criterion:
         oposto do que foi declarado, sem aviso. Numa escala construida, um
         limite fora dos niveis rebenta muito depois, na matriz de valor, com uma
         mensagem que fala de consequencia e nao de veto.
+
+        A ordem se confere pelo mesmo caminho que ``veto_factor`` usa para
+        aplicar os limites. Com curva de valor, e o valor que a curva da a cada
+        limite -- numa curva decrescente com direcao MAX, conferir pela direcao
+        recusava o par certo e aceitava o invertido. Sem curva, numa escala
+        construida, e a posicao do nivel; numa continua, a direcao.
         """
         if not self.has_veto:
             return
 
+        indices = {}
         if self.levels is not None:
-            niveis = np.asarray(self.levels, dtype=float)
-            indices = {}
             for papel, limite in (("aceitável", self.veto_upper),
                                   ("inaceitável", self.veto_lower)):
                 if limite is None:
                     continue
-                achado = np.flatnonzero(np.isclose(niveis, float(limite)))
-                if achado.size == 0:
+                achado = indice_do_nivel(self.levels, float(limite))
+                if achado is None:
                     raise ValueError(
                         f"O critério '{self.key}' tem escala construída: o limite "
                         f"de veto {papel} ({limite}) precisa ser um dos níveis "
                         f"declarados {self.levels}."
                     )
-                indices[papel] = int(achado[0])
-            if len(indices) == 2:
-                self._check_ordem(
-                    indices["aceitável"], indices["inaceitável"], "nível"
-                )
+                indices[papel] = achado
+
+        if self.veto_upper is None or self.veto_lower is None:
             return
 
-        if self.veto_upper is not None and self.veto_lower is not None:
+        curva = self._curva_de_valor()
+        if curva is not None:
+            self._check_ordem(
+                curva.value_of(float(self.veto_upper)),
+                curva.value_of(float(self.veto_lower)),
+                "valor",
+            )
+        elif self.levels is not None:
+            self._check_ordem(indices["aceitável"], indices["inaceitável"], "nível")
+        else:
             # a escala continua ainda nao existe aqui (depende das consequencias),
             # entao a ordem se confere pela direcao declarada
             sinal = 1.0 if self.direction is Direction.MAX else -1.0
             self._check_ordem(
                 sinal * self.veto_upper, sinal * self.veto_lower, "desempenho"
             )
+
+    def _curva_de_valor(self) -> PiecewiseScale | None:
+        """A curva elicitada como escala, ou ``None`` se nao ha curva valida.
+
+        Curva malformada nao e assunto do veto: fica ``None`` aqui, e o erro
+        dela aparece onde a escala e montada (``scale_for``), com a mensagem
+        propria.
+        """
+        if self.value_points is None:
+            return None
+        try:
+            return PiecewiseScale(
+                tuple((float(c), float(v)) for c, v in self.value_points)
+            )
+        except ValueError:
+            return None
 
     def _check_ordem(self, aceitavel: float, inaceitavel: float, termo: str) -> None:
         if aceitavel == inaceitavel:
@@ -107,11 +148,15 @@ class Criterion:
             )
         if aceitavel < inaceitavel:
             melhor = "maior" if self.direction is Direction.MAX else "menor"
-            comparacao = (
-                f"o nível aceitável deve vir depois do inaceitável"
-                if termo == "nível"
-                else f"o limite aceitável deve ser {melhor} que o inaceitável"
-            )
+            if termo == "nível":
+                comparacao = "o nível aceitável deve vir depois do inaceitável"
+            elif termo == "valor":
+                comparacao = (
+                    "pela curva de valor, o limite aceitável deve valer mais "
+                    "que o inaceitável"
+                )
+            else:
+                comparacao = f"o limite aceitável deve ser {melhor} que o inaceitável"
             raise ValueError(
                 f"Os limites de veto do critério '{self.key}' estão invertidos: "
                 f"{comparacao}."
@@ -137,14 +182,29 @@ class Criterion:
         degrau em 0 ou 1 naquele ponto, que e o que o guia do sistema de
         referencia descreve ao dizer que sem os dois "you will not count the
         hesitation region".
+
+        Nas fronteiras, cada limite guarda o sentido que tem quando os dois sao
+        declarados. Um desempenho exatamente no superior (aceitavel) da
+        ``z = 1``; exatamente no inferior (inaceitavel), ``z = 0``. Com um
+        limite so, o proprio ponto declarado segue o papel dele: so com
+        ``veto_upper``, o ponto e aceitavel e so o estritamente pior e vetado;
+        so com ``veto_lower``, o ponto ja e vetado e so o estritamente melhor
+        conta.
+
+        Metodo: de Almeida (2013)
+        Unidade: limites na unidade original do criterio; comparacao em valor
         """
         if not self.has_veto:
             return 1.0
 
-        alto = self.veto_upper if self.veto_upper is not None else self.veto_lower
+        v = scale.value_of(float(consequence))
+        if self.veto_upper is None:
+            # so o limite inaceitavel: no inferior ou abaixo dele, z = 0
+            return 0.0 if v <= scale.value_of(float(self.veto_lower)) else 1.0
+
+        alto = self.veto_upper
         baixo = self.veto_lower if self.veto_lower is not None else self.veto_upper
 
-        v = scale.value_of(float(consequence))
         v_alto = scale.value_of(float(alto))
         v_baixo = scale.value_of(float(baixo))
         # a escala ja resolveu a direcao: em valor, "melhor" e sempre maior
@@ -195,7 +255,18 @@ def _perguntaveis(niveis: tuple[float, ...]) -> tuple[float, ...]:
 # conteudo. Tambem e o que permite o cache das escalas e da matriz de valor.
 @dataclass(frozen=True, eq=False)
 class Problem:
-    """Alternativas avaliadas em criterios, na unidade original de cada um."""
+    """Alternativas avaliadas em criterios, na unidade original de cada um.
+
+    ``consequences`` e uma copia do array recebido, somente leitura: nem o
+    chamador (pelo array original) nem quem le o problema consegue alterar a
+    matriz depois, o que mantem ``scales``, ``values`` e ``veto_factors`` --
+    calculados uma vez e guardados -- coerentes com ela.
+
+    Erros: ValueError na construcao se a matriz tiver forma errada ou valores
+    nao finitos, se a matriz de valor sair nao finita (consequencias finitas
+    mas tao grandes que a faixa do criterio estoura), se houver menos de dois
+    criterios ou alternativas, chaves ou nomes repetidos, ou custos invalidos
+    """
 
     name: str
     criteria: tuple[Criterion, ...]
@@ -204,7 +275,8 @@ class Problem:
     costs: tuple[float, ...] | None = None  # usado pelas problematicas de carteira
 
     def __post_init__(self) -> None:
-        matrix = np.asarray(self.consequences, dtype=float)
+        matrix = np.array(self.consequences, dtype=float, copy=True)
+        matrix.setflags(write=False)
         object.__setattr__(self, "consequences", matrix)
 
         if matrix.ndim != 2:
@@ -234,6 +306,16 @@ class Problem:
             # `NaN <= 0` e falso -- um custo NaN passava pela forma antiga.
             if any(not (c > 0) or c == float("inf") for c in self.costs):
                 raise ValueError("Os custos devem ser estritamente positivos e finitos.")
+
+        # Consequencias finitas ainda podem dar valor nao finito: com -1e308 e
+        # 1e308 no mesmo criterio a faixa (max - min) estoura para infinito e a
+        # escala devolve NaN -- que o HiGHS aceita calado e resolve errado.
+        if not np.isfinite(self.values).all():
+            raise ValueError(
+                "As consequencias sao grandes demais para normalizar: a faixa "
+                "de algum criterio ultrapassa o maior numero representavel. "
+                "Reescreva os valores numa unidade menor (milhares, milhoes)."
+            )
 
     @property
     def n_alternatives(self) -> int:
@@ -296,6 +378,14 @@ class Problem:
         return [self.alternatives[i] for i in indices]
 
     def require_costs(self) -> tuple[float, ...]:
+        """Os custos das alternativas, para quem nao funciona sem eles.
+
+        Os custos sao opcionais no problema porque so as duas problematicas de
+        carteira os usam; elas chamam isto na validacao, para falhar com uma
+        mensagem que diz o que falta em vez de estourar numa conta com ``None``.
+
+        Erros: ValueError se o problema nao declara custos
+        """
         if self.costs is None:
             raise ValueError(
                 "As problematicas de carteira (portfolio e beneficio-custo) "

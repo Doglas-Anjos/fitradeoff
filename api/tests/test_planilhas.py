@@ -473,3 +473,40 @@ def test_export_sob_veto_leva_a_ressalva_junto(client):
 
     assert "Ressalva" in linhas, "o export saiu com as faixas e sem dizer como saíram"
     assert "envelope" in linhas["Ressalva"]
+
+
+def test_export_grava_nomes_que_parecem_formula_como_texto(client):
+    """Uma alternativa chamada ``=HYPERLINK(...)`` nao pode virar formula no Excel."""
+    perigosos = ['=HYPERLINK("http://exemplo.invalid","clique")', "+SOMA(1;2)", "@A1"]
+    criada = client.post(
+        "/api/decisoes",
+        json={
+            "nome": "=1+1",
+            "alternativas": perigosos,
+            "criterios": [
+                {"chave": "q", "nome": "=A1*2", "direcao": "max", "unidade": "-B2"},
+                {"chave": "c", "nome": "Custo", "direcao": "min"},
+            ],
+            "consequencias": [[0.0, 30.0], [10.0, 10.0], [5.0, 20.0]],
+        },
+    ).json()
+    pid = criada["id"]
+    client.post(f"/api/decisoes/{pid}/ordenacao", json={"ordem": ["q", "c"]})
+
+    r = client.get(f"/api/decisoes/{pid}/exportar?sensibilidade=true")
+    assert r.status_code == 200
+    livro = load_workbook(io.BytesIO(r.content))
+    assert "Sensibilidade" in livro.sheetnames
+
+    textos = []
+    for aba in livro.worksheets:
+        for linha in aba.iter_rows():
+            for celula in linha:
+                assert celula.data_type != "f", (aba.title, celula.coordinate, celula.value)
+                if isinstance(celula.value, str):
+                    textos.append(celula.value)
+    # O texto continua o original, sem apostrofo acrescentado.
+    for nome in [*perigosos, "=1+1", "=A1*2", "-B2"]:
+        assert nome in textos, nome
+    entrada = livro["Entrada"]
+    assert entrada["A1"].value == "=1+1" and entrada["A1"].data_type == "s"

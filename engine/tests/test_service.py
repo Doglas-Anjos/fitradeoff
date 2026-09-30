@@ -5,6 +5,7 @@ import pytest
 
 from conftest import ALTERNATIVAS, CONSEQUENCIAS, CRITERIOS_SPEC
 from fitradeoff import DecisionService, InvalidRequest, RecordNotFound
+from fitradeoff.application import LimitExceeded
 from fitradeoff.application.service import parse_preference
 from fitradeoff.domain import Preference
 
@@ -611,3 +612,187 @@ def test_configuracao_com_valor_nao_finito_e_recusada_e_nao_grava(service, confi
 def test_trocar_para_configuracao_nao_finita_e_recusado(service, criada):
     with pytest.raises(InvalidRequest, match="nao finito"):
         service.switch_problematic(criada["id"], "escolha", {"x": float("nan")})
+
+
+@pytest.mark.parametrize(
+    "campo, valor",
+    [
+        ("veto_superior", float("nan")),
+        ("veto_inferior", float("-inf")),
+        ("curva_de_valor", [[10.2, 0.0], [12.0, float("nan")], [15.8, 1.0]]),
+        ("niveis", [10.2, float("inf"), 15.8]),
+    ],
+)
+def test_criterio_com_valor_nao_finito_e_recusado_e_nao_grava(service, campo, valor):
+    """Veto, curva e niveis NaN eram aceitos e gravados, e a decisao so voltava
+    a funcionar desfazendo. O MCP passa dicionarios crus e o JSON aceita NaN."""
+    criterios = [dict(c) for c in CRITERIOS_SPEC]
+    criterios[1][campo] = valor
+    with pytest.raises(InvalidRequest, match="nao finito"):
+        service.create("Fornecedores", ALTERNATIVAS, criterios, CONSEQUENCIAS)
+    assert service.list() == []
+
+
+def test_custo_nao_finito_e_recusado_como_pedido_invalido(service):
+    with pytest.raises(InvalidRequest, match="nao finito"):
+        service.create(
+            "Carteira", ALTERNATIVAS, CRITERIOS_SPEC, CONSEQUENCIAS,
+            problematica="portfolio", configuracao={"orcamento": 20.0},
+            custos=[1.0, float("nan"), 1.0, 1.0],
+        )
+    assert service.list() == []
+
+
+@pytest.mark.parametrize(
+    "pontos",
+    [
+        [[10.2, 0.0], [float("nan"), 0.5], [15.8, 1.0]],
+        [[10.2, 0.0], [12.0, float("inf")], [15.8, 1.0]],
+    ],
+)
+def test_curva_de_valor_nao_finita_e_recusada_e_nao_grava(service, criada, pontos):
+    """Um ponto com consequencia NaN so era barrado adiante, pela normalizacao,
+    com ValueError dizendo que as consequencias eram "grandes demais"."""
+    with pytest.raises(InvalidRequest, match="nao finito"):
+        service.set_value_curve(criada["id"], "custo", pontos)
+    assert service.session(criada["id"]).problem.criteria[1].value_points is None
+
+
+# --- pergunta identificada ---------------------------------------------------
+
+
+def test_pergunta_id_e_o_mesmo_para_a_mesma_pergunta_no_mesmo_estado(service, criada):
+    service.rank_criteria(criada["id"], ["qualidade", "custo", "prazo"])
+    primeira = service.next_question(criada["id"])
+    de_novo = service.next_question(criada["id"])
+
+    assert len(primeira["pergunta_id"]) == 12
+    assert primeira["pergunta_id"] == de_novo["pergunta_id"]
+
+    service.answer(criada["id"], "A", pergunta_id=primeira["pergunta_id"])
+    seguinte = service.next_question(criada["id"])
+    assert seguinte["pergunta_id"] != primeira["pergunta_id"]
+
+
+def test_resposta_a_pergunta_que_ja_nao_e_a_pendente_e_recusada(service, criada):
+    """Duas abas, ou um pedido repetido: a segunda resposta citava uma pergunta
+    ja respondida e era gravada contra a pergunta seguinte, nunca mostrada."""
+    service.rank_criteria(criada["id"], ["qualidade", "custo", "prazo"])
+    vista = service.next_question(criada["id"])["pergunta_id"]
+    service.answer(criada["id"], "A", pergunta_id=vista)
+    declaracoes = len(service.session(criada["id"]).log)
+
+    with pytest.raises(InvalidRequest, match="A pergunta mudou"):
+        service.answer(criada["id"], "B", pergunta_id=vista)
+    assert len(service.session(criada["id"]).log) == declaracoes
+
+
+def test_resposta_sem_pergunta_id_continua_valendo_para_a_pendente(service, criada):
+    service.rank_criteria(criada["id"], ["qualidade", "custo", "prazo"])
+    antes = len(service.session(criada["id"]).log)
+    service.answer(criada["id"], "A")
+    assert len(service.session(criada["id"]).log) == antes + 1
+
+
+# --- grava so depois de montar a resposta ------------------------------------
+
+
+def test_falha_ao_montar_a_situacao_nao_grava_a_resposta(service, criada, monkeypatch):
+    """Gravando antes, a declaracao ficava persistida com o chamador recebendo
+    erro -- e repetir o pedido respondia a pergunta seguinte."""
+    import fitradeoff.application.service as modulo
+
+    service.rank_criteria(criada["id"], ["qualidade", "custo", "prazo"])
+    antes = len(service.session(criada["id"]).log)
+
+    def quebra(*args, **kwargs):
+        raise RuntimeError("falha ao montar")
+
+    monkeypatch.setattr(modulo, "state_dto", quebra)
+    with pytest.raises(RuntimeError):
+        service.answer(criada["id"], "A")
+    with pytest.raises(RuntimeError):
+        service.set_equivalence(criada["id"], 0.05)
+    with pytest.raises(RuntimeError):
+        service.switch_problematic(criada["id"], "ranking")
+    monkeypatch.undo()
+
+    registro = service.container.repository.get(criada["id"])
+    assert len(registro.log) == antes
+    assert registro.equivalence is None
+    assert registro.problematic_key == "escolha"
+
+
+def test_falha_ao_montar_a_resposta_da_criacao_nao_grava(service, monkeypatch):
+    import fitradeoff.application.service as modulo
+
+    def quebra(*args, **kwargs):
+        raise RuntimeError("falha ao montar")
+
+    monkeypatch.setattr(modulo, "problem_dto", quebra)
+    with pytest.raises(RuntimeError):
+        service.create("Fornecedores", ALTERNATIVAS, CRITERIOS_SPEC, CONSEQUENCIAS)
+    monkeypatch.undo()
+    assert service.list() == []
+
+
+# --- limiares da sensibilidade (epsilon) -------------------------------------
+
+
+@pytest.mark.parametrize("limiar", [-0.01, float("nan"), float("inf")])
+def test_limiar_de_sensibilidade_negativo_ou_nao_finito_e_recusado(service, criada, limiar):
+    service.rank_criteria(criada["id"], ["qualidade", "custo", "prazo"])
+    with pytest.raises(InvalidRequest, match="finito e nao negativo"):
+        service.sensitivity(criada["id"], [0.0, limiar])
+
+
+# --- orcamento de custo e tetos novos ----------------------------------------
+
+
+def test_orcamento_combinado_permite_os_casos_tipicos_e_recusa_o_produto_grande():
+    from fitradeoff.application.limits import Limits
+
+    limites = Limits()
+    limites.check_sensitivity_budget(100, 200)
+    limites.check_sensitivity_budget(500, 40)
+    with pytest.raises(LimitExceeded, match="cenarios"):
+        limites.check_sensitivity_budget(300, 2000)
+
+
+def test_sensibilidade_das_consequencias_confere_alternativas_vezes_cenarios(container, criada):
+    """Os tetos isolados deixavam passar 300 alternativas x 2000 cenarios: cerca
+    de 43 min num pedido so."""
+    from fitradeoff.application.limits import Limits
+
+    apertado = DecisionService(container, limits=Limits(max_sensitivity_budget=100))
+    apertado.rank_criteria(criada["id"], ["qualidade", "custo", "prazo"])
+    variacao = [{"criterio": "custo"}]
+    apertado.consequence_sensitivity(criada["id"], variacao, cenarios=25)  # 4 x 25
+    with pytest.raises(LimitExceeded, match="4 alternativas"):
+        apertado.consequence_sensitivity(criada["id"], variacao, cenarios=26)
+    with pytest.raises(LimitExceeded):
+        DecisionService(
+            container, limits=Limits(max_sensitivity_budget=7)
+        ).sensitivity(criada["id"], [0.0, 0.01])
+
+
+def test_curva_de_valor_com_pontos_demais_e_recusada(service, criada):
+    pontos = [[10.2 + i * 0.02, i / 200] for i in range(201)]
+    with pytest.raises(LimitExceeded, match="200"):
+        service.set_value_curve(criada["id"], "custo", pontos)
+    criterios = [dict(c) for c in CRITERIOS_SPEC]
+    criterios[1]["curva_de_valor"] = pontos
+    with pytest.raises(LimitExceeded, match="200"):
+        service.create("Fornecedores", ALTERNATIVAS, criterios, CONSEQUENCIAS)
+
+
+@pytest.mark.parametrize("amostras", [0, -3])
+def test_amostras_abaixo_de_um_sao_recusadas(service, amostras):
+    with pytest.raises(LimitExceeded, match="ao menos 1"):
+        service.create(
+            "Carteira", ALTERNATIVAS, CRITERIOS_SPEC, CONSEQUENCIAS,
+            problematica="portfolio",
+            configuracao={"orcamento": 25.0, "amostras": amostras},
+            custos=[10.0, 12.0, 8.0, 11.0],
+        )
+    assert service.list() == []

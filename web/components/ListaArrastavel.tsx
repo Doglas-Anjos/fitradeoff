@@ -13,7 +13,7 @@
  */
 
 import { ArrowDown, ArrowUp, DotsSixVertical } from "@phosphor-icons/react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useIdioma } from "@/lib/i18n";
 import "@/lib/i18n/estrutura";
@@ -54,6 +54,22 @@ export function ListaArrastavel({
   const [sobre, setSobre] = useState<string | null>(null);
   const [anuncio, setAnuncio] = useState("");
   const referencias = useRef<Record<string, HTMLLIElement | null>>({});
+  const lista = useRef<HTMLOListElement>(null);
+  /* A seta segue o item. Quem chama pode usar o índice como id, e aí o <li>
+     fica no lugar e o item muda de <li>: o foco ficava na posição antiga, e o
+     próximo Enter movia outro item. Depois de mover, o foco vai para a mesma
+     seta na posição nova. */
+  const focarSeta = useRef<{ posicao: number; direcao: "acima" | "abaixo" } | null>(
+    null,
+  );
+  useEffect(() => {
+    const alvo = focarSeta.current;
+    if (!alvo) return;
+    focarSeta.current = null;
+    lista.current?.children[alvo.posicao]
+      ?.querySelector<HTMLButtonElement>(`[data-seta="${alvo.direcao}"]`)
+      ?.focus();
+  }, [itens]);
 
   const mover = (de: number, para: number) => {
     if (para < 0 || para >= itens.length || de === para) return;
@@ -88,7 +104,7 @@ export function ListaArrastavel({
         {anuncio}
       </p>
 
-      <ol className="space-y-2">
+      <ol ref={lista} className="space-y-2">
         {itens.map((item, i) => {
           const sendoArrastado = arrastando === item.id;
           const alvoAtual = sobre === item.id && !sendoArrastado;
@@ -190,27 +206,40 @@ export function ListaArrastavel({
 
               {acoes?.(item.id)}
 
-              {/* mesmo efeito do arrasto, para teclado e toque impreciso */}
+              {/* Mesmo efeito do arrasto, para teclado e toque impreciso. Nas
+                  pontas a seta fica `aria-disabled`, e não `disabled`: subir o
+                  item até o topo desabilitava o botão que tinha o foco, e o
+                  foco caía no início da página no meio da reordenação. */}
               <span className="flex shrink-0 gap-0.5">
                 <button
                   type="button"
-                  onClick={() => mover(i, i - 1)}
-                  disabled={i === 0}
+                  data-seta="acima"
+                  onClick={() => {
+                    if (i === 0) return;
+                    focarSeta.current = { posicao: i - 1, direcao: "acima" };
+                    mover(i, i - 1);
+                  }}
+                  aria-disabled={i === 0 || undefined}
                   aria-label={t("estrutura.lista.moverAcima", { item: item.titulo })}
-                  className="tatil px-1.5 disabled:opacity-25"
+                  className="tatil flex min-h-9 min-w-8 items-center justify-center aria-disabled:cursor-default aria-disabled:opacity-25"
                   style={{ color: "var(--tinta-3)" }}
                 >
-                  <ArrowUp size={15} weight="bold" />
+                  <ArrowUp size={15} weight="bold" aria-hidden />
                 </button>
                 <button
                   type="button"
-                  onClick={() => mover(i, i + 1)}
-                  disabled={i === itens.length - 1}
+                  data-seta="abaixo"
+                  onClick={() => {
+                    if (i === itens.length - 1) return;
+                    focarSeta.current = { posicao: i + 1, direcao: "abaixo" };
+                    mover(i, i + 1);
+                  }}
+                  aria-disabled={i === itens.length - 1 || undefined}
                   aria-label={t("estrutura.lista.moverAbaixo", { item: item.titulo })}
-                  className="tatil px-1.5 disabled:opacity-25"
+                  className="tatil flex min-h-9 min-w-8 items-center justify-center aria-disabled:cursor-default aria-disabled:opacity-25"
                   style={{ color: "var(--tinta-3)" }}
                 >
-                  <ArrowDown size={15} weight="bold" />
+                  <ArrowDown size={15} weight="bold" aria-hidden />
                 </button>
               </span>
             </li>

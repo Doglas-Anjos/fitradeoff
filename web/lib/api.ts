@@ -369,6 +369,23 @@ export const api = {
   gravarRascunho: (rascunho: unknown) =>
     post<{ guardado: boolean; gravado_em: string }>("/api/rascunho", { rascunho }),
 
+  /* Para a aba que está fechando. `sendBeacon` não leva cabeçalho, e com o
+     FasorX ligado a API recusa quem chega sem `Authorization`; `keepalive`
+     sobrevive à saída da página como o beacon, mas leva o token. Síncrono de
+     propósito: não dá para esperar uma promessa num `visibilitychange`. */
+  gravarRascunhoNaSaida: (rascunho: unknown): void => {
+    const token = identidade.tokenEmMaos();
+    void fetch("/api/rascunho", {
+      method: "POST",
+      keepalive: true,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ rascunho }),
+    }).catch(() => {});
+  },
+
   descartarRascunho: () =>
     post<{ descartado: boolean }>("/api/rascunho/descartar", {}),
 

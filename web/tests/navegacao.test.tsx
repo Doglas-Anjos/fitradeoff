@@ -6,7 +6,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { Etapas } from "@/components/Etapas";
+import { Etapas, Passos, Rodape } from "@/components/Etapas";
 import { ListaArrastavel } from "@/components/ListaArrastavel";
 
 describe("barra de etapas", () => {
@@ -98,10 +98,20 @@ describe("lista arrastavel", () => {
     expect(reordenar).toHaveBeenCalledWith(["b", "a", "c"]);
   });
 
-  it("nao deixa subir o primeiro nem descer o ultimo", () => {
-    render(<ListaArrastavel itens={itens} onReordenar={vi.fn()} />);
-    expect(screen.getByLabelText("Mover Qualidade para cima")).toBeDisabled();
-    expect(screen.getByLabelText("Mover Prazo para baixo")).toBeDisabled();
+  it("nao deixa subir o primeiro nem descer o ultimo", async () => {
+    /* `aria-disabled`, e não `disabled`: o botão continua focável, senão o
+       foco caía no topo da página ao levar um item até a ponta. */
+    const usuario = userEvent.setup();
+    const reordenar = vi.fn();
+    render(<ListaArrastavel itens={itens} onReordenar={reordenar} />);
+    const topo = screen.getByLabelText("Mover Qualidade para cima");
+    const fundo = screen.getByLabelText("Mover Prazo para baixo");
+    expect(topo).toHaveAttribute("aria-disabled", "true");
+    expect(fundo).toHaveAttribute("aria-disabled", "true");
+
+    await usuario.click(topo);
+    await usuario.click(fundo);
+    expect(reordenar).not.toHaveBeenCalled();
   });
 
   it("o arrasto reordena como as setas", () => {
@@ -144,5 +154,61 @@ describe("lista arrastavel", () => {
   it("explica que da para arrastar ou usar as setas", () => {
     render(<ListaArrastavel itens={itens} onReordenar={vi.fn()} />);
     expect(screen.getByText(/Arraste pelos pontos/)).toBeInTheDocument();
+  });
+});
+
+describe("trilha do cadastro", () => {
+  const passos = [
+    { id: "a", rotulo: "Objetivo" },
+    { id: "b", rotulo: "Estrutura" },
+    { id: "c", rotulo: "Desempenhos" },
+  ];
+
+  it("volta só para o que já foi feito, e marca o passo atual", async () => {
+    const usuario = userEvent.setup();
+    const ir = vi.fn();
+    render(<Passos passos={passos} atual="b" onIr={ir} />);
+
+    const atual = screen.getByRole("button", { name: /Estrutura/ });
+    expect(atual).toHaveAttribute("aria-current", "step");
+    expect(atual).toBeDisabled();
+    // pular para frente aceitaria um passo que ainda não foi validado
+    expect(screen.getByRole("button", { name: /Desempenhos/ })).toBeDisabled();
+
+    await usuario.click(screen.getByRole("button", { name: /Objetivo/ }));
+    expect(ir).toHaveBeenCalledWith("a");
+  });
+
+  it("sem onIr, nenhum passo é clicável", () => {
+    render(<Passos passos={passos} atual="c" />);
+    expect(screen.getByRole("button", { name: /Objetivo/ })).toBeDisabled();
+  });
+});
+
+describe("rodapé de um passo", () => {
+  /* Cada lado é opcional: quem só tem a saída não precisa inventar uma ação
+     vazia, e quem só avança não ganha uma saída que não existe. */
+  it("só a saída", async () => {
+    const usuario = userEvent.setup();
+    const voltar = vi.fn();
+    render(
+      <Rodape>
+        <Rodape.Voltar rotulo="Voltar ao objetivo" onClick={voltar} />
+      </Rodape>,
+    );
+    await usuario.click(screen.getByRole("button", { name: "Voltar ao objetivo" }));
+    expect(voltar).toHaveBeenCalled();
+    expect(screen.getAllByRole("button")).toHaveLength(1);
+  });
+
+  it("só as ações", () => {
+    render(
+      <Rodape>
+        <Rodape.Acoes>
+          <button type="button">Continuar</button>
+        </Rodape.Acoes>
+      </Rodape>,
+    );
+    expect(screen.getAllByRole("button").map((b) => b.textContent)).toEqual(["Continuar"]);
   });
 });

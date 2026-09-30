@@ -35,6 +35,7 @@ revogada, porque o carimbo regravava a lista lida antes da revogacao.
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import hmac
 import json
@@ -333,8 +334,10 @@ def listar(settings: Settings, dono: str | None = None) -> list[Chave]:
     a plataforma e de onde. A vencida continua na lista (ate a ``PURGA``) para
     que quem estranhar o assistente parado descubra o motivo na tela.
     """
+    with _trava(settings):
+        chaves = _ler(settings)
     return sorted(
-        (c for c in _ler(settings) if c.dono == dono),
+        (c for c in chaves if c.dono == dono),
         key=lambda c: c.criada_em,
         reverse=True,
     )
@@ -420,6 +423,9 @@ def revogar(settings: Settings, id: str, dono: str | None = None) -> bool:
 
     Apaga, e nao marca como revogada: uma chave revogada nao tem uso futuro, e
     a trilha de auditoria da plataforma e sobre decisoes, nao sobre credenciais.
+
+    Erros: CofreCorrompido se o arquivo do cofre nao puder ser lido -- e nesse
+    caso nada e gravado por cima dele.
     """
     with _trava(settings):
         chaves = _ler(settings, estrito=True)
@@ -519,6 +525,10 @@ def resolver(settings: Settings):
 
     A decisao de escopo mora aqui, num lugar so -- por isso a assinatura
     devolve caminho, e nao um "sim".
+
+    Cofre ilegivel recusa toda chave (e fica no registro, em ``_ler``): nunca
+    e lido como vazio, nem regravado. Falhar ao marcar o uso nao recusa quem
+    ja provou a chave -- a marcacao e informativa --, mas fica no registro.
     """
 
     def para(apresentada: str) -> Path | None:
@@ -584,7 +594,15 @@ def _cli(argumentos: list[str] | None = None) -> int:
 
     opcoes = leitor.parse_args(argumentos)
     settings = load_settings()
+    try:
+        return _cli_comando(opcoes, settings)
+    except CofreCorrompido as exc:
+        print(f"Erro: {exc}")
+        return 1
 
+
+def _cli_comando(opcoes, settings: Settings) -> int:
+    """O subcomando ja lido, contra o cofre destas configuracoes."""
     if opcoes.comando == "listar":
         chaves = listar(settings)
         if not chaves:

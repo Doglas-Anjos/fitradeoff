@@ -23,6 +23,13 @@ DEFAULT_EPSILON = 1e-4
 
 
 class Sense(str, Enum):
+    """Sentido de uma restricao linear sobre os pesos.
+
+    O solver so trabalha com ``<=`` e ``==``: ``GE`` e convertida por
+    ``LinearConstraint.as_upper_bound`` e ``EQ`` vai para as linhas de
+    igualdade (ver ``solvers.base.build_rows``).
+    """
+
     LE = "<="
     GE = ">="
     EQ = "=="
@@ -59,6 +66,17 @@ class WeightSpace:
     constraints: tuple[LinearConstraint, ...] = ()
 
     def with_constraints(self, new: Iterable[LinearConstraint]) -> "WeightSpace":
+        """Devolve um espaco novo com as restricoes acrescentadas; este nao muda.
+
+        Nao testa viabilidade: acrescentar uma restricao que esvazia o espaco e
+        permitido, e e assim que a inconsistencia do decisor aparece -- quem
+        pergunta e o ``Evaluator.is_consistent``. A dimensao, sim, e conferida
+        aqui, porque um vetor de coeficientes do tamanho errado so estouraria
+        dentro do solver, longe da declaracao que o produziu.
+
+        Erros: ValueError se alguma restricao nao tiver ``n_criteria``
+        coeficientes
+        """
         added = tuple(new)
         for constraint in added:
             if len(constraint.coefficients) != self.n_criteria:
@@ -79,7 +97,16 @@ def ordering_constraints(
     epsilon: float,
     source: str = "",
 ) -> tuple[LinearConstraint, ...]:
-    """k[order[0]] >= k[order[1]] >= ... , para a ordem do maior peso ao menor."""
+    """k[order[0]] >= k[order[1]] >= ... , para a ordem do maior peso ao menor.
+
+    Uma restricao por par consecutivo -- ``len(order) - 1`` ao todo --, cada uma
+    ``k[a] - k[b] >= epsilon``. A folga torna a ordem estrita: dois criterios
+    ordenados nunca ficam com o mesmo peso. A transitividade dispensa os pares
+    nao consecutivos.
+
+    Metodo: de Almeida et al. (2016)
+    Unidade: ``epsilon`` em constante de escala (os pesos somam 1)
+    """
     built = []
     for higher, lower in zip(order, order[1:]):
         coefficients = [0.0] * n_criteria
@@ -98,6 +125,11 @@ def tradeoff_coefficients(
 
     E a diferenca entre as duas consequencias hipoteticas da pergunta de
     tradeoff: a primeira vale ``value * k[criterion]``, a segunda ``k[rival]``.
+    O sentido (>=, <= ou =) e a folga ficam com quem monta a restricao, em
+    ``TradeoffAnswer``.
+
+    Metodo: de Almeida et al. (2016)
+    Unidade: ``value`` e o valor normalizado do desempenho intermediario, em (0, 1)
     """
     coefficients = [0.0] * n_criteria
     coefficients[criterion] = value

@@ -60,7 +60,7 @@ def test_resposta_de_outro_par_nao_afeta_o_intervalo():
 
 
 def test_intervalos_sao_derivados_do_log(clock):
-    problem = make_problem([[1.0, 2.0, 3.0], [3.0, 2.0, 1.0]])
+    problem = make_problem([[1.0, 2.0, 3.0], [3.0, 1.0, 1.0]])
     log = AuditLog().record(CriteriaRanking((0, 1, 2)), clock)
     log = log.record(TradeoffAnswer(0, 1, 0.5, Preference.FIRST), clock)
 
@@ -72,7 +72,7 @@ def test_intervalos_sao_derivados_do_log(clock):
 
 def test_abertura_confronta_o_mais_importante_com_o_menos(clock):
     """O primeiro par oferecido e (topo, base), nao dois consecutivos."""
-    problem = make_problem([[1.0, 2.0, 3.0], [3.0, 2.0, 1.0]])
+    problem = make_problem([[1.0, 2.0, 3.0], [3.0, 1.0, 1.0]])
     log = AuditLog().record(CriteriaRanking((0, 1, 2)), clock)
 
     brackets = brackets_from_log(problem, log)
@@ -82,7 +82,7 @@ def test_abertura_confronta_o_mais_importante_com_o_menos(clock):
 
 def test_abertura_sai_da_lista_depois_de_respondida(clock):
     """Pergunta de abertura e feita uma vez so: respondida, nao volta."""
-    problem = make_problem([[1.0, 2.0, 3.0], [3.0, 2.0, 1.0]])
+    problem = make_problem([[1.0, 2.0, 3.0], [3.0, 1.0, 1.0]])
     log = AuditLog().record(CriteriaRanking((0, 1, 2)), clock)
     log = log.record(TradeoffAnswer(0, 2, 0.5, Preference.FIRST), clock)
 
@@ -117,6 +117,69 @@ def test_piso_da_abertura_alcanca_os_pares_consecutivos(clock):
 
     for b in brackets_from_log(problem, log):
         assert b.lower >= 0.9, (b.criterion, b.rival, b.lower)
+
+
+def test_nao_sei_nao_aperta_os_pares_vizinhos(evaluator, clock):
+    """"Nao sei" encerra o par sem afirmar nada sobre a razao.
+
+    Antes a faixa colapsava no meio, e a propagacao da abertura lia esse meio
+    como razao conhecida: com B na abertura (0, 2) a 0.5 e "nao sei" em (0, 1),
+    o par (1, 2) fechava e a elicitacao acabava com a0 e a1 ainda
+    potencialmente otimas -- o espaco de pesos admite k2/k1 de 0.55 a 0.95.
+    """
+    problem = make_problem([[100, 100, 0], [100, 30, 100], [0, 0, 0]])
+    session = session_for(problem, evaluator, clock).rank_criteria([0, 1, 2])
+    abertura = session.next_question()
+    assert (abertura.criterion, abertura.rival, abertura.value) == (0, 2, 0.5)
+    session = session.answer(abertura, Preference.SECOND)
+    session = session.record(TradeoffAnswer(0, 1, 0.75, Preference.NO_ANSWER))
+
+    assert set(evaluator.potentially_optimal(problem, session.weight_space)) == {0, 1}
+    seguinte = session.next_question()
+    assert seguinte is not None
+    assert (seguinte.criterion, seguinte.rival) == (1, 2)
+    encerrado = [b for b in session.brackets if (b.criterion, b.rival) == (0, 1)]
+    assert encerrado[0].encerrado and encerrado[0].width > 0
+
+
+def test_criterio_degenerado_fica_fora_dos_pares(clock):
+    """Com todas as alternativas empatadas no criterio 1, ele nao discrimina.
+
+    Antes ele ficava na cadeia: como rival gerava uma pergunta em que A domina
+    B ("2 anos (o pior possivel)" contra "2 anos (o melhor possivel)"), e como
+    foco nao tinha desempenho intermediario, entao (1, 2) nunca era perguntado
+    e o criterio 2 so era alcancado pela abertura. Os vizinhos viram par
+    direto; a ordenacao dos pesos continua a declarada.
+    """
+    problem = make_problem([[1.0, 2.0, 0.0, 3.0], [0.0, 2.0, 1.0, 1.0]])
+    log = AuditLog().record(CriteriaRanking((0, 1, 2, 3)), clock)
+
+    pares = [(b.criterion, b.rival, b.abertura) for b in brackets_from_log(problem, log)]
+    assert pares == [(0, 3, True), (0, 2, False), (2, 3, False)]
+
+
+def test_so_dois_criterios_uteis_dispensam_a_abertura(evaluator, clock):
+    problem = make_problem([[1.0, 2.0, 0.0], [0.0, 2.0, 1.0]])
+    session = session_for(problem, evaluator, clock).rank_criteria([0, 1, 2])
+
+    assert [(b.criterion, b.rival) for b in session.brackets] == [(0, 2)]
+    pergunta = session.next_question()
+    assert (pergunta.criterion, pergunta.rival) == (0, 2)
+
+
+def test_nova_ordenacao_substitui_a_anterior_no_espaco_de_pesos(
+    fornecedores, evaluator, clock
+):
+    """Ordenar de novo somava as duas ordens no espaco (contraditorias),
+    enquanto os pares de perguntas ja seguiam so a nova."""
+    session = session_for(fornecedores, evaluator, clock)
+    session = session.rank_criteria([0, 1, 2]).rank_criteria([2, 1, 0])
+
+    assert session.is_consistent
+    faixas = evaluator.weight_bounds(fornecedores, session.weight_space)
+    # na nova ordem o criterio 2 e o de maior peso: pode passar de 1/3
+    assert faixas[2].upper > 0.5
+    assert faixas[0].upper <= 1 / 3 + 1e-9
 
 
 def test_preferir_A_na_abertura_nao_move_piso_nenhum(clock):
@@ -323,9 +386,13 @@ def test_outro_limiar_reinterpreta_o_mesmo_log(fornecedores, evaluator, clock):
 
 
 def test_declaracoes_contraditorias_sao_detectadas(fornecedores, evaluator, clock):
+    # uma segunda ordenacao substitui a primeira (nao contradiz); o que
+    # contradiz sao duas respostas incompativeis sobre o mesmo par:
+    # k1/k0 <= 0.3 e k1/k0 >= 0.6
     session = session_for(fornecedores, evaluator, clock, epsilon=1e-3)
     session = session.rank_criteria([0, 1, 2])
-    session = session.record(CriteriaRanking((2, 1, 0)))
+    session = session.record(TradeoffAnswer(0, 1, 0.3, Preference.FIRST))
+    session = session.record(TradeoffAnswer(0, 1, 0.6, Preference.SECOND))
 
     assert not session.is_consistent
     assert session.finished

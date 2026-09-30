@@ -83,14 +83,27 @@ def _mcp_url() -> str:
     return "http://127.0.0.1:8000/mcp"
 
 
+# Tamanho minimo do segredo HS256, em bytes: o tamanho da saida do SHA-256. A
+# RFC 7518 (secao 3.2) exige chave de pelo menos esse tamanho para o HS256.
+SEGREDO_HS256_MINIMO = 32
+
+
+class ConfiguracaoInvalida(ValueError):
+    """Uma configuracao que o servidor se recusa a usar, dita na partida."""
+
+
 @dataclass(frozen=True)
 class Settings:
-    """Ajustes da API.
+    """Ajustes da API, lidos do ambiente uma vez por processo.
 
-    Sem autenticacao por enquanto: a plataforma roda local, e qualquer pessoa
-    com acesso a porta ve todas as decisoes. Quando entrar login, o isolamento
-    vem de um repositorio com escopo de dono -- a porta ``DecisionRepository``
-    ja permite isso sem mexer em regra de negocio.
+    A identidade de quem chama depende de ``jwt_configurado``. Sem verificador
+    (nem ``jwt_jwks_url`` nem ``jwt_secret``), a plataforma roda na maquina do
+    decisor e quem alcanca a porta e o dono: ``/api`` atende sem cadastro e
+    tudo vai para ``storage``. Com verificador, toda chamada a ``/api`` precisa
+    de um JWT assinado pela aplicacao da frente, e cada pessoa recebe um acervo
+    proprio, ao lado de ``storage`` (ver ``identidade.acervo_de``). O MCP aceita
+    ainda as chaves do cofre, que tem dono: a de uma pessoa abre o acervo dela,
+    a do dono da plataforma abre ``storage``.
     """
 
     storage: Path = field(
@@ -129,6 +142,16 @@ class Settings:
     )
     chat_model: str = field(
         default_factory=lambda: os.environ.get("FITRADEOFF_CHAT_MODEL", "claude-sonnet-5")
+    )
+    #: Conversas de chat simultaneas por pessoa, e no total do processo. Cada
+    #: conversa segura um trabalhador do servidor durante ate doze idas ao
+    #: modelo; o total fica bem abaixo dos 40 trabalhadores para que o chat nunca
+    #: tome o lugar das rotas. Acima de qualquer dos dois, 429 na hora.
+    chat_por_pessoa: int = field(
+        default_factory=lambda: int(os.environ.get("FITRADEOFF_CHAT_POR_PESSOA", "1"))
+    )
+    chat_no_total: int = field(
+        default_factory=lambda: int(os.environ.get("FITRADEOFF_CHAT_NO_TOTAL", "4"))
     )
     mcp_url: str = field(default_factory=_mcp_url)
     mcp_hosts: list[str] = field(default_factory=_mcp_hosts)
@@ -228,6 +251,30 @@ class Settings:
     """Teto de decisoes no acervo de cada pessoa. Ver ``fitradeoff_mcp.teto``."""
 
     def __post_init__(self) -> None:
+        """Recusa, ja na montagem, o segredo HS256 curto demais para proteger algo.
+
+        O PyJWT so avisa, e aceita assinar e verificar com tres bytes: um
+        segredo assim cai por forca bruta, e quem o descobre assina token de
+        qualquer pessoa. So vale quando o segredo e de fato usado, ou seja, sem
+        ``jwt_jwks_url`` (que tem precedencia em ``identidade._verificar``).
+
+        Tambem exige emissor e publico quando ha JWKS (ver o comentario abaixo).
+
+        Erros: ConfiguracaoInvalida se o segredo tiver menos de
+        ``SEGREDO_HS256_MINIMO`` bytes, ou se houver JWKS sem emissor ou publico.
+        """
+        if (
+            self.jwt_secret
+            and not self.jwt_jwks_url
+            and len(self.jwt_secret.encode("utf-8")) < SEGREDO_HS256_MINIMO
+        ):
+            raise ConfiguracaoInvalida(
+                f"FITRADEOFF_JWT_SECRET tem {len(self.jwt_secret.encode('utf-8'))} "
+                f"bytes; o HS256 exige ao menos {SEGREDO_HS256_MINIMO}. Gere um "
+                "com, por exemplo, `python -c \"import secrets; "
+                "print(secrets.token_urlsafe(32))\"`."
+            )
+
         # Com JWKS, emissor e publico sao obrigatorios, e a falta deles derruba
         # a partida -- nao o primeiro pedido.
         #
@@ -257,7 +304,7 @@ class Settings:
                 if not valor
             ]
             if faltando:
-                raise ValueError(
+                raise ConfiguracaoInvalida(
                     "FITRADEOFF_JWT_JWKS_URL esta definida, mas falta "
                     + " e ".join(faltando)
                     + ": com chave publica de terceiros, emissor e publico "

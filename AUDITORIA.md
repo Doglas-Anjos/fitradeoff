@@ -36,6 +36,19 @@ tela são cascas que não tomam decisão de método nenhuma.
 restrição imposta ao LP saem do **mesmo objeto** (`PreferenceStatement`). Não há como a
 auditoria narrar uma coisa e o modelo impor outra.
 
+**Como o código é documentado.** As regras estão em
+[`PADRAO_DE_DOCUMENTACAO.md`](PADRAO_DE_DOCUMENTACAO.md), e
+`engine/tests/test_documentacao.py` falha se alguma função, classe ou rota que o
+padrão exige ficar sem docstring. As funções que decidem algo trazem rótulos fixos,
+que transformam perguntas de auditoria em buscas:
+
+```bash
+grep -rn "Paridade:" engine/src    # regras que vieram de medição contra o oficial
+grep -rn "Custo:" engine/src       # onde o motor gasta LPs, e quantos
+grep -rn "Exatidao:" engine/src    # o que é exato, aproximado ou conservador
+grep -rn "Limitacao conhecida:" engine/src api/src mcp_server/src   # defeitos declarados
+```
+
 A arquitetura em camadas é verificada por AST a cada execução da suíte
 ([`engine/tests/test_architecture.py`](engine/tests/test_architecture.py)): o domínio não
 importa ninguém.

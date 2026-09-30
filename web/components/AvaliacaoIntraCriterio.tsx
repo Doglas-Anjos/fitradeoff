@@ -30,19 +30,20 @@ export function AvaliacaoIntraCriterio({
   criterios,
   ocupado,
   onSalvar,
-  /** Fechada, a seção vira uma linha resumindo o que está declarado. */
-  comoResumo = false,
+  /** Só o estado inicial: a pessoa abre e fecha à vontade depois. Fechada, a
+   *  seção vira uma linha resumindo o que está declarado. */
+  abertaInicialmente = true,
 }: {
   criterios: CriterioOut[];
   ocupado: boolean;
   onSalvar: (criterio: string, pontos: Ponto[] | null) => void;
-  comoResumo?: boolean;
+  abertaInicialmente?: boolean;
 }) {
   const { t } = useIdioma();
   const [emEdicao, setEmEdicao] = useState<string | null>(null);
   /* Aberta por padrão no fluxo, para a etapa não passar despercebida; fechada
      quando só serve de consulta. */
-  const [aberta, setAberta] = useState(!comoResumo);
+  const [aberta, setAberta] = useState(abertaInicialmente);
 
   const ajustados = criterios.filter((c) => c.curva_de_valor).length;
   const todosLineares = ajustados === 0;

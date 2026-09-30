@@ -310,6 +310,27 @@ def test_o_veto_nao_descarta_alternativa_que_ainda_pode_vencer(evaluator, espaco
     )
 
 
+def test_empatadas_sob_veto_nao_se_eliminam_uma_a_outra(evaluator, espaco):
+    """A e B identicas e melhores em tudo: envelopes iguais se separam nos dois
+    sentidos, e a separacao simples fazia uma eliminar a outra -- a escolha
+    terminava "resolvida" com zero alternativas potencialmente otimas."""
+    p = Problem(
+        "t",
+        (
+            criterio("a", direto=True, alto=0.5, baixo=0.2),
+            criterio("b", direto=True),
+            criterio("c", direto=True),
+        ),
+        ("A", "B", "C"),
+        np.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [0.3, 0.2, 0.1]]),
+    )
+    assert evaluator.potentially_optimal(p, espaco) == (0, 1)
+
+    analise = ChoiceProblematic(evaluator).analyse(p, espaco)
+    assert analise.resolved is False
+    assert "0 alternativas" not in analise.headline
+
+
 def test_sem_veto_a_otimalidade_potencial_continua_a_exata(evaluator, espaco):
     p = make_problem([[1.0, 1.0, 1.0], [0.0, 0.0, 0.0], [0.5, 0.5, 0.5]])
     assert evaluator.potentially_optimal(p, espaco) == (0,)
@@ -488,3 +509,51 @@ def test_a_recusa_alcanca_quem_monta_o_criterio_por_dicionario():
             {"chave": "q", "nome": "Q", "direcao": "max",
              "veto_superior": 10.0, "veto_inferior": 90.0}
         )
+
+
+def test_com_curva_a_ordem_dos_limites_se_confere_pela_curva():
+    """Curva decrescente com direcao MAX: quem vale mais e o numero menor.
+
+    `veto_factor` aplica os limites pela curva, mas a ordem era conferida pela
+    direcao -- o par certo era recusado e o invertido, aceito.
+    """
+    curva = ((0.0, 1.0), (100.0, 0.0))
+    certo = Criterion("q", "Q", veto_upper=20.0, veto_lower=80.0, value_points=curva)
+    assert certo.has_veto
+    with pytest.raises(ValueError, match="invertidos"):
+        Criterion("q", "Q", veto_upper=80.0, veto_lower=20.0, value_points=curva)
+
+    p = Problem("t", (certo, criterio("b")), ("A", "B"),
+                np.array([[10.0, 1.0], [90.0, 0.0]]))
+    assert p.veto_factors[0, 0] == pytest.approx(1.0)  # 10 vale mais que 20
+    assert p.veto_factors[1, 0] == pytest.approx(0.0)  # 90 vale menos que 80
+
+
+def test_so_o_limite_inferior_veta_o_proprio_ponto():
+    """"No inferior ou abaixo dele e inaceitavel": com so ``veto_lower``, o
+    desempenho exatamente no limite recebia z = 1."""
+    p = Problem(
+        "t",
+        (criterio("a", baixo=70.0), criterio("b")),
+        ("A", "B", "C"),
+        np.array([[60.0, 1.0], [70.0, 2.0], [80.0, 3.0]]),
+    )
+    assert list(p.veto_factors[:, 0]) == [0.0, 0.0, 1.0]
+
+
+def test_so_o_limite_superior_aceita_o_proprio_ponto():
+    p = Problem(
+        "t",
+        (criterio("a", alto=70.0), criterio("b")),
+        ("A", "B", "C"),
+        np.array([[60.0, 1.0], [70.0, 2.0], [80.0, 3.0]]),
+    )
+    assert list(p.veto_factors[:, 0]) == [0.0, 1.0, 1.0]
+
+
+def test_limite_de_veto_em_nivel_grande_e_lido_no_nivel_certo():
+    """Com a tolerancia relativa do np.isclose, 100001 era lido como 100000 e
+    o par (aceitavel 100001, inaceitavel 100000) caia em "mesmo nivel"."""
+    niveis = (100000.0, 100001.0, 100002.0)
+    c = Criterion("q", "Q", levels=niveis, veto_upper=100001.0, veto_lower=100000.0)
+    assert c.has_veto

@@ -75,7 +75,16 @@ class ScipyLinearSolver(LinearSolver):
 
 
 class ScipyIntegerSolver(IntegerSolver):
-    """Mochila binaria pelo HiGHS MIP."""
+    """Mochila binaria pelo HiGHS MIP.
+
+    Otima de fato: roda com ``mip_rel_gap = 0``, e nao com o padrao do HiGHS
+    (1e-4, relativo), que devolvia carteiras quase otimas quando duas diferiam
+    menos que 0,01% em beneficio (52 de 150 mochilas de 14 projetos com
+    beneficios quase empatados, contra forca bruta). Sem solucao, ou sem
+    nenhum projeto que caiba, devolve a carteira vazia.
+
+    Custo: ate um MILP por chamada (nenhum se nenhum projeto cabe)
+    """
 
     def knapsack(
         self, benefits: np.ndarray, costs: np.ndarray, budget: float
@@ -91,8 +100,17 @@ class ScipyIntegerSolver(IntegerSolver):
         # Sem isso, um projeto de beneficio zero num dado vetor de pesos deixa o
         # MILP indiferente, e a carteira devolvida passa a depender do solver --
         # o que arruinaria tanto o determinismo quanto a leitura de quais
-        # projetos "sempre" ou "nunca" entram. O peso e pequeno o bastante para
-        # nunca inverter uma diferenca real de beneficio.
+        # projetos "sempre" ou "nunca" entram.
+        #
+        # O desempate em si e pequeno: no maximo 1e-9 por projeto, somado sobre
+        # a carteira. Para ele valer, o solver precisa provar a otimalidade: com
+        # o `mip_rel_gap` padrao do HiGHS (1e-4) ele parava a ate 0,01% do
+        # limite dual, e duas carteiras mais proximas que isso saiam trocadas.
+        # Por isso `mip_rel_gap = 0`. `disp = False` deixa explicito que o log do
+        # HiGHS fica desligado; a linha "HighsMipSolverData::transformNew
+        # IntegerFeasibleSolution tmpSolver.run();" que ainda aparece as vezes
+        # no console e um printf fixo da versao do HiGHS embutida no scipy
+        # 1.18, que nenhuma opcao cala.
         tie_break = 1e-9 / max(float(costs.max()), 1.0)
 
         result = milp(
@@ -100,6 +118,7 @@ class ScipyIntegerSolver(IntegerSolver):
             constraints=ScipyLinearConstraint(costs.reshape(1, -1), -np.inf, budget),
             integrality=np.ones_like(benefits),
             bounds=ScipyBounds(0, 1),
+            options={"mip_rel_gap": 0.0, "disp": False},
         )
         if not result.success:
             return ()

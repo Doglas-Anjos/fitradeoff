@@ -82,7 +82,16 @@ class PreferenceStatement(ABC):
 
 @dataclass(frozen=True)
 class CriteriaRanking(PreferenceStatement):
-    """Ordenacao dos criterios, do maior peso para o menor."""
+    """Ordenacao dos criterios, do maior peso para o menor.
+
+    Vira ``n - 1`` restricoes ``k[a] - k[b] >= epsilon``, uma por par
+    consecutivo da ordem (``ordering_constraints``), todas com a mesma origem.
+    Uma segunda ordenacao no log nao substitui a primeira no espaco de pesos:
+    as restricoes das duas se somam.
+
+    Metodo: de Almeida et al. (2016)
+    Unidade: ``epsilon`` em constante de escala
+    """
 
     order: tuple[int, ...]
 
@@ -113,6 +122,20 @@ class TradeoffAnswer(PreferenceStatement):
     valor ``value``, pior em todos os outros -- com a consequencia B --
     ``rival`` no melhor desempenho, pior em todos os outros. A primeira vale
     ``value * k[criterion]``; a segunda vale ``k[rival]``.
+
+    A restricao que cada resposta impoe, sobre ``d = value * k[criterion] -
+    k[rival]``:
+
+    - preferir A: ``d >= epsilon``;
+    - preferir B: ``d <= -epsilon``;
+    - indiferente: ``d = 0``, sem folga;
+    - nao sei: nenhuma restricao.
+
+    Metodo: de Almeida et al. (2016)
+    Unidade: ``value`` em valor normalizado (0, 1); ``epsilon`` em constante de
+    escala
+    Erros: ValueError na construcao se ``value`` estiver fora de (0, 1) ou os
+    dois criterios coincidirem
     """
 
     criterion: int
@@ -196,6 +219,18 @@ class HolisticJudgement(PreferenceStatement):
     O decisor olha o desempenho completo de duas alternativas e declara que uma
     e melhor. Combina o paradigma holistico ao de decomposicao, dentro do mesmo
     espaco de pesos.
+
+    Vira uma restricao, ``(v[over] - v[preferred]) . k <= -epsilon``: a
+    preferida vence por ao menos ``epsilon`` em valor global. A mesma folga
+    que nas outras declaracoes, mas medida em outra regua -- aqui e diferenca de
+    valor global, la e diferenca entre constantes de escala.
+
+    Limitacao conhecida: sob veto, a restricao usa ``problem.values``, sem a
+    penalidade. Um decisor que prefere X porque Y esta na zona de veto recebe uma
+    restricao sobre os pesos que talvez nao sustente essa preferencia -- o
+    motivo dele era o veto, nao os pesos.
+
+    Unidade: ``epsilon`` em valor global normalizado
     """
 
     preferred: int

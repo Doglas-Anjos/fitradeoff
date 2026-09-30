@@ -285,6 +285,88 @@ def test_a_folga_de_relogio_nao_derruba_o_token_no_limite(tmp_path):
     assert identidade.resolver(settings)(token(exp=no_limite)) is not None
 
 
+# --- o que a configuracao recusa ou avisa -------------------------------------
+
+
+def test_segredo_hs256_curto_e_recusado_na_montagem(tmp_path):
+    """Tres bytes caem por forca bruta; o PyJWT so avisaria."""
+    from fitradeoff_api.config import ConfiguracaoInvalida, SEGREDO_HS256_MINIMO
+
+    with pytest.raises(ConfiguracaoInvalida, match="HS256"):
+        ajustes(tmp_path, jwt_secret="abc")
+    with pytest.raises(ConfiguracaoInvalida):
+        ajustes(tmp_path, jwt_secret="x" * (SEGREDO_HS256_MINIMO - 1))
+    # No limite, passa; e com JWKS o segredo nem e usado.
+    assert ajustes(tmp_path, jwt_secret="x" * SEGREDO_HS256_MINIMO).jwt_configurado
+    assert ajustes(
+        tmp_path, jwt_secret="abc", jwt_jwks_url="https://principal.exemplo.org/jwks"
+    ).jwt_configurado
+
+
+def test_verificador_sem_aud_ou_iss_avisa_na_partida(tmp_path, caplog):
+    caplog.set_level("WARNING", logger="fitradeoff_api.identidade")
+    identidade.avisar_configuracao(
+        ajustes(tmp_path, jwt_audience=None), com_api=False
+    )
+    assert any(
+        r.levelname == "WARNING" and "FITRADEOFF_JWT_AUDIENCE" in r.getMessage()
+        and "outros servicos" in r.getMessage()
+        for r in caplog.records
+    )
+
+    caplog.clear()
+    identidade.avisar_configuracao(ajustes(tmp_path), com_api=False)
+    assert caplog.records == []
+
+
+@pytest.mark.parametrize(
+    "mudancas, endereco",
+    [
+        ({"mcp_hosts": ["mcp.exemplo.org"]}, None),
+        ({}, "0.0.0.0"),
+    ],
+    ids=["mcp-publicado", "fora-de-loopback"],
+)
+def test_sem_verificador_e_publicado_grita_na_partida(tmp_path, caplog, mudancas, endereco):
+    caplog.set_level("WARNING", logger="fitradeoff_api.identidade")
+    settings = ajustes(tmp_path, jwt_secret=None, **mudancas)
+    identidade.avisar_configuracao(settings, com_api=True, endereco=endereco)
+    assert any(
+        r.levelname == "ERROR" and "INSTALACAO ABERTA" in r.getMessage()
+        for r in caplog.records
+    )
+
+
+def test_sem_verificador_em_loopback_nao_grita(tmp_path, caplog):
+    caplog.set_level("WARNING", logger="fitradeoff_api.identidade")
+    settings = ajustes(tmp_path, jwt_secret=None)
+    for endereco in (None, "127.0.0.1", "localhost"):
+        identidade.avisar_configuracao(settings, com_api=True, endereco=endereco)
+    assert caplog.records == []
+
+
+def test_o_aviso_sai_na_partida_do_aplicativo(tmp_path, caplog, monkeypatch):
+    """Ligado no ciclo de vida, e nao so disponivel como funcao."""
+    from fastapi.testclient import TestClient
+
+    from fitradeoff_api import create_app
+
+    monkeypatch.setattr(identidade, "endereco_de_escuta", lambda: None)
+    caplog.set_level("WARNING", logger="fitradeoff_api.identidade")
+    settings = ajustes(tmp_path, jwt_secret=None, mcp_hosts=["mcp.exemplo.org"])
+    with TestClient(create_app(settings)):
+        pass
+    assert any("INSTALACAO ABERTA" in r.getMessage() for r in caplog.records)
+
+
+def test_endereco_de_escuta_le_a_linha_de_comando():
+    ler = identidade.endereco_de_escuta
+    assert ler(["uvicorn", "app:app", "--host", "0.0.0.0"], {}) == "0.0.0.0"
+    assert ler(["uvicorn", "--host=::"], {}) == "::"
+    assert ler(["uvicorn"], {"UVICORN_HOST": "10.0.0.1"}) == "10.0.0.1"
+    assert ler(["uvicorn"], {}) is None
+
+
 # --- com JWKS, emissor e publico sao obrigatorios -----------------------------
 
 URL_JWKS = "https://principal.exemplo.org/jwks"

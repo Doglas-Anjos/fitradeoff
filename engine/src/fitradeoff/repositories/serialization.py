@@ -16,6 +16,11 @@ from .base import DecisionRecord
 
 
 def criterion_to_dict(criterion: Criterion) -> dict:
+    """O criterio no formato persistido, com as chaves em portugues.
+
+    Os campos opcionais (niveis, curva, vetos) so aparecem quando existem, o
+    que mantem legivel o arquivo de uma decisao sem nada disso.
+    """
     data = {
         "chave": criterion.key,
         "nome": criterion.name,
@@ -41,6 +46,15 @@ def _optional_float(data: dict, key: str) -> float | None:
 
 
 def criterion_from_dict(data: dict) -> Criterion:
+    """Monta o criterio a partir do formato persistido ou do pedido de criacao.
+
+    E tambem o parser da entrada de ``DecisionService.create``: so ``chave`` e
+    obrigatoria; ``nome`` cai na chave, ``direcao`` em ``max`` e ``unidade`` em
+    vazio.
+
+    Erros: KeyError sem ``chave``; ValueError se ``direcao`` nao for uma
+    ``Direction`` valida ou se niveis, curva ou vetos nao forem numericos.
+    """
     levels = data.get("niveis")
     curva = data.get("curva_de_valor")
     return Criterion(
@@ -58,6 +72,11 @@ def criterion_from_dict(data: dict) -> Criterion:
 
 
 def record_to_dict(record: DecisionRecord) -> dict:
+    """O registro inteiro no formato persistido: problema, configuracao e trilha.
+
+    E o formato do arquivo JSON e a origem das colunas e do documento do
+    Postgres. ``criado_em`` perde a fracao de segundo.
+    """
     problem = record.problem
     return {
         "id": record.id,
@@ -77,6 +96,16 @@ def record_to_dict(record: DecisionRecord) -> dict:
 
 
 def record_from_dict(data: dict) -> DecisionRecord:
+    """Remonta o registro, aceitando os gravados antes dos campos opcionais.
+
+    Campos ausentes em registros antigos (limiar, favorita, problematica,
+    configuracao, trilha) caem no comportamento que eles tinham. A matriz passa
+    de novo pela validacao de ``Problem``.
+
+    Erros: KeyError se faltar ``id``, ``nome``, ``criterios``, ``alternativas``
+    ou ``consequencias``; ValueError se o problema for invalido ou uma data
+    nao estiver em ISO 8601.
+    """
     problem = Problem(
         name=data["nome"],
         criteria=tuple(criterion_from_dict(c) for c in data["criterios"]),

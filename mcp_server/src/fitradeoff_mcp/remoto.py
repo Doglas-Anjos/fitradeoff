@@ -50,10 +50,14 @@ from .vagas import Vagas
 Resolvedor = Callable[[str], Path | None]
 """Chave apresentada -> diretorio de dados que ela abre, ou ``None`` se nao vale.
 
-A assinatura e a fronteira entre protocolo e politica. Hoje o cofre devolve o
-mesmo diretorio para toda chave valida -- a plataforma tem um acervo so. Isolar
-os dados por chave, quando fizer sentido, e mudar o que esta funcao devolve, e
-nada aqui nem nas ferramentas muda junto.
+A assinatura e a fronteira entre protocolo e politica. Hoje o resolvedor que a
+API injeta (``fitradeoff_api.identidade.resolver``) devolve um acervo por
+pessoa: a chave do cofre abre o acervo do dono dela, e o JWT da aplicacao da
+frente abre o acervo de quem ele identifica. Essa decisao mora toda no
+resolvedor; nada aqui nem nas ferramentas sabe de quem e o diretorio.
+
+E sincrono, e por isso roda numa thread de trabalho, nunca no laco de eventos:
+ver ``Autenticacao``.
 """
 
 PREFIXO_NO_CAMINHO = "fit_"
@@ -95,6 +99,13 @@ class Autenticacao:
     o caminho quando a chave vem dentro dele -- e isso precisa acontecer antes do
     roteamento, ou a rota do MCP nao reconheceria ``/mcp/<chave>``. Fora do
     prefixo, nao toca em nada: as rotas da API seguem como estavam.
+
+    O ``Resolvedor`` e sincrono e roda numa thread de trabalho
+    (``anyio.to_thread``), e nao no laco de eventos. O que a API injeta le o
+    cofre do disco (e pode regrava-lo ao marcar uso) ou, com JWT, pode buscar o
+    JWKS pela rede -- com teto de dez segundos. No laco, isso parava o processo
+    inteiro a cada chave apresentada, inclusive por quem nao tem credencial
+    nenhuma; na thread, so esta requisicao espera.
     """
 
     def __init__(

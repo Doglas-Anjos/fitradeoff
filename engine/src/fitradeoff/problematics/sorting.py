@@ -19,6 +19,21 @@ from .portfolio import concordar
 
 
 class SortingProblematic(Problematic):
+    """Le o espaco de pesos como alocacao em classes delimitadas por perfis.
+
+    ``profiles`` sao os cortes entre classes, em valor global; ``n`` perfis
+    fazem ``n + 1`` classes, da pior (indice 0) para a melhor. Uma alternativa
+    fica definida quando a faixa do seu valor global, encolhida pelo limiar
+    (``_classes_for``), alcanca uma unica classe.
+
+    Metodo: Kang et al. (2020)
+    Exatidao: exata (LP)
+    Custo: 2n LPs (``value_bounds``)
+    Unidade: perfis em valor global normalizado, em (0, 1)
+    Erros: ValueError na construcao se nao houver perfil, se algum estiver fora
+    de (0, 1), se houver repetido, ou se o numero de nomes nao for o de classes
+    """
+
     key = "sorting"
     label = "Classificacao das alternativas em classes"
 
@@ -76,12 +91,23 @@ class SortingProblematic(Problematic):
         Faixa mais estreita que o limiar colapsa no meio: se o valor global nao
         pode mais ser fixado com precisao melhor que ele, ela precisa cair em
         algum lugar, e o meio e a leitura honesta.
+
+        Nos cortes, a regra e uma so: o corte pertence a classe de cima. As
+        classes sao semiabertas, ``[start, end)``, e so a ultima fecha em 1. A
+        faixa encolhida ``[baixo, alto]`` alcanca a classe quando
+        ``alto >= start`` e ``baixo < end``. Uma faixa cujo ``baixo`` encosta
+        num corte fica so na classe de cima; uma cujo ``alto`` encosta nele
+        alcanca as duas, porque o valor do corte e da classe de cima. Faixa
+        reduzida a um ponto (``baixo == alto``) vai para o colapso, pela mesma
+        regra.
+
+        Unidade: valor global normalizado [0, 1]
         """
         edges = (0.0,) + self._profiles + (1.0,)
         folga = self.evaluator.equivalence / 2.0
         baixo, alto = lower + folga, upper - folga
 
-        if baixo > alto:
+        if baixo >= alto:
             # Faixa menor que o limiar: decide pelo meio, e por **uma** classe
             # so. Colapsar para um ponto e cair no teste de sobreposicao abaixo
             # devolveria duas classes quando o meio calha de ser exatamente um
@@ -97,8 +123,10 @@ class SortingProblematic(Problematic):
         reached = []
         for index in range(self.n_classes):
             start, end = edges[index], edges[index + 1]
-            # sobreposicao entre a faixa encolhida e [start, end)
-            if alto >= start and baixo <= end:
+            # sobreposicao entre a faixa encolhida e [start, end): o corte e da
+            # classe de cima, e so a ultima classe fecha em 1
+            ultima = index == self.n_classes - 1
+            if alto >= start and (baixo < end or (ultima and baixo <= end)):
                 reached.append(index)
         return tuple(reached)
 

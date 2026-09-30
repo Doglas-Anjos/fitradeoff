@@ -25,6 +25,8 @@ from .questions import Bracket, TradeoffQuestion
 # Quem mostrou o erro foi `bc-08` com curva nao linear: com a curva, a mesma
 # faixa de valor cabe numa fatia de consequencia muito diferente, e o piso em
 # valor corta no lugar errado.
+#
+# Unidade: razao entre pesos (largura do Bracket), em [0, 1]
 DEFAULT_RESOLUTION = 1e-9
 
 # Um par e abandonado quando a faixa ainda possivel, levada a consequencia, fica
@@ -47,6 +49,9 @@ DEFAULT_RESOLUTION = 1e-9
 # Na unidade do criterio quer dizer que a regra depende da escala: um custo em
 # milhares nunca chega a uma faixa de 0,01, e o par so se encerra pelo peso ou
 # pela problematica. E o que o oficial faz, e o que se reproduz aqui.
+#
+# Paridade: bc-08 com curva e sorting-20 reescalado, 28/09/2026
+# Unidade: unidade original do criterio em foco
 LARGURA_MINIMA = 0.01
 
 # Abaixo deste peso maximo possivel para o criterio rival, a pergunta sobre o par
@@ -63,14 +68,24 @@ LARGURA_MINIMA = 0.01
 # 7,40e-6 e parou com 3,70e-6 -- 25 perguntas. O 1e-5 que valia antes ficava
 # fora dessa janela e dava 24. O corte dele esta entre 3,70e-6 e 7,40e-6; 5e-6
 # fica dentro, e da as mesmas contagens em todos os casos medidos.
+#
+# Paridade: ranking-20 (data nao registrada); sorting-20 reescalado, 28/09/2026
+# Unidade: constante de escala (peso maximo do rival sobre o espaco viavel)
 PESO_DESPREZIVEL = 5e-6
 
 
 def _estreita_demais(problem: Problem, bracket: Bracket) -> bool:
-    """Se a faixa deste par, em consequencia, ja e mais estreita que LARGURA_MINIMA.
+    """A faixa deste par, em consequencia, ja e mais estreita que LARGURA_MINIMA?
 
     So para escala continua. Numa discreta -- com curva ou sem -- a pergunta so
     usa valores declarados, e o esgotamento e o de ``Bracket.candidate_value``.
+
+    A faixa do bracket e de razao entre pesos, e e lida aqui como faixa de
+    valor do criterio em foco, porque a pergunta usa essa razao como o valor
+    do desempenho intermediario; a escala leva as duas pontas a consequencia.
+
+    Paridade: bc-08 com curva e sorting-20 reescalado, 28/09/2026
+    Unidade: unidade original do criterio em foco
     """
     escala = problem.scales[bracket.criterion]
     if escala.intermediate_values() is not None:
@@ -123,10 +138,19 @@ class QuestionSelector(ABC):
         pergunta de abertura (qualidade contra durabilidade) e so depois deixa a
         qualidade de lado -- Qualidade x Custo ele nunca pergunta. Nos pulavamos
         a abertura e faziamos uma pergunta a menos.
+
+        Par encerrado por "nao sei" (``Bracket.encerrado``) nao volta, qualquer
+        que seja a largura que as respostas deixaram.
+
+        Nao consulta o espaco de pesos: o filtro pelo peso do rival fica com
+        quem seleciona (``WidestBracketSelector.select``).
+
+        Paridade: fin-E3, 29/09/2026 (abertura abaixo da largura minima)
+        Custo: nenhum LP
         """
         found = []
         for bracket in sorted(brackets, key=lambda b: -b.width):
-            if bracket.width < self._resolution:
+            if bracket.encerrado or bracket.width < self._resolution:
                 continue
             if _estreita_demais(problem, bracket) and not bracket.abertura:
                 continue
@@ -156,6 +180,18 @@ class WidestBracketSelector(QuestionSelector):
     """
 
     def select(self, problem, log, brackets, space, problematic):
+        """A candidata de faixa mais larga cujo rival ainda pesa algo.
+
+        Percorre as candidatas na ordem de ``_candidates`` e devolve a primeira
+        em que o rival pode pesar ao menos ``PESO_DESPREZIVEL``. Se nenhuma
+        passa, devolve ``None`` e a elicitacao se da por esgotada.
+
+        Paridade: ranking-20 (data nao registrada); sorting-20 reescalado,
+        28/09/2026
+        Exatidao: exata (LP)
+        Custo: 2m LPs (``weight_bounds``, m = numero de criterios), so quando ha
+        candidata; nenhum quando nao ha
+        """
         candidates = self._candidates(problem, brackets)
         if not candidates:
             return None

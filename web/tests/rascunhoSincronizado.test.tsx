@@ -102,6 +102,10 @@ describe("qual versão abre", () => {
     render(<Tela />);
 
     await waitFor(() => expect(mostrado()).toBe("navegador novo"));
+    // e sobe: sem isso o servidor ficava atrás até a próxima tecla
+    await waitFor(() =>
+      expect(api.gravarRascunho).toHaveBeenCalledWith({ nome: "navegador novo" }),
+    );
   });
 
   it("os dois têm: o do servidor vence quando é o mais novo", async () => {
@@ -204,5 +208,109 @@ describe("o que a digitação dispara", () => {
 
     await new Promise((r) => setTimeout(r, ESPERA_SINCRONIA * 2));
     expect(api.gravarRascunho).not.toHaveBeenCalled();
+  });
+
+  it("sair da tela antes da pausa manda o que faltava", async () => {
+    /* Navegar para outra tela desmonta sem esconder a aba: o relógio do
+       debounce era só cancelado, e as últimas teclas sumiam do servidor. */
+    const usuario = userEvent.setup();
+    const { unmount } = render(<Tela />);
+    await waitFor(() => expect(api.lerRascunho).toHaveBeenCalled());
+
+    await usuario.click(screen.getByRole("button", { name: "digitar" }));
+    unmount();
+
+    expect(api.gravarRascunho).toHaveBeenCalledWith({ nome: "digitado" });
+  });
+
+  it("esconder a aba manda com keepalive, e não por beacon sem cabeçalho", async () => {
+    /* Com o FasorX ligado a API recusa quem chega sem Authorization, e
+       `sendBeacon` não leva cabeçalho nenhum. */
+    const saida = vi.spyOn(api, "gravarRascunhoNaSaida").mockImplementation(() => {});
+    const usuario = userEvent.setup();
+    render(<Tela />);
+    await waitFor(() => expect(api.lerRascunho).toHaveBeenCalled());
+
+    await usuario.click(screen.getByRole("button", { name: "digitar" }));
+    const visibilidade = vi
+      .spyOn(document, "visibilityState", "get")
+      .mockReturnValue("hidden");
+    document.dispatchEvent(new Event("visibilitychange"));
+    visibilidade.mockRestore();
+
+    expect(saida).toHaveBeenCalledWith({ nome: "digitado" });
+  });
+});
+
+describe("digitar antes de a leitura voltar", () => {
+  it("a leitura que chega depois não apaga o que foi digitado", async () => {
+    let entregar!: (r: { rascunho: unknown; gravado_em: string | null }) => void;
+    vi.spyOn(api, "lerRascunho").mockReturnValue(
+      new Promise((r) => {
+        entregar = r;
+      }),
+    );
+    const usuario = userEvent.setup();
+    render(<Tela />);
+
+    await usuario.click(screen.getByRole("button", { name: "digitar" }));
+    entregar({ rascunho: { nome: "do servidor" }, gravado_em: "2026-01-02T00:00:00+00:00" });
+
+    await waitFor(() =>
+      expect(JSON.parse(window.localStorage.getItem(CHAVE)!).valor).toEqual({
+        nome: "digitado",
+      }),
+    );
+    expect(mostrado()).toBe("digitado");
+  });
+});
+
+describe("a gravação que parte do valor de agora", () => {
+  /* A forma funcional existe para o "desfazer" de um aviso, que chega segundos
+     depois de outras gravações: ela tem de partir do que está gravado, e não
+     do que a renderização daquele momento tinha visto. */
+  function Somador() {
+    const [valor, guardar] = useRascunhoSincronizado<{ nome: string }>("teste", {
+      nome: "vazio",
+    });
+    const exclamar = () => guardar((v) => ({ nome: `${v.nome}!` }));
+    return (
+      <div>
+        <output>{valor.nome}</output>
+        <button
+          onClick={() => {
+            exclamar();
+            exclamar();
+          }}
+        >
+          duas vezes
+        </button>
+      </div>
+    );
+  }
+
+  it("duas gravações no mesmo evento se somam, em vez de uma apagar a outra", async () => {
+    vi.spyOn(api, "lerRascunho").mockResolvedValue({ rascunho: null, gravado_em: null });
+    const usuario = userEvent.setup();
+    render(<Somador />);
+    await waitFor(() => expect(api.lerRascunho).toHaveBeenCalled());
+
+    await usuario.click(screen.getByRole("button", { name: "duas vezes" }));
+
+    expect(mostrado()).toBe("vazio!!");
+  });
+
+  it("parte do valor que a abertura adotou, não do padrão", async () => {
+    vi.spyOn(api, "lerRascunho").mockResolvedValue({
+      rascunho: { nome: "do servidor" },
+      gravado_em: "2026-01-02T00:00:00+00:00",
+    });
+    const usuario = userEvent.setup();
+    render(<Somador />);
+    await waitFor(() => expect(mostrado()).toBe("do servidor"));
+
+    await usuario.click(screen.getByRole("button", { name: "duas vezes" }));
+
+    expect(mostrado()).toBe("do servidor!!");
   });
 });

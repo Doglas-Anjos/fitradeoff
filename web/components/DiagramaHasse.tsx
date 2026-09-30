@@ -116,21 +116,34 @@ export function DiagramaHasse({
   const [falhou, setFalhou] = useState(false);
   const diferencas = diferencasDadas.length > 0 ? diferencasDadas : (carregadas ?? []);
 
+  /* Só a última pergunta vale: se o diagrama mudar com um pedido a caminho, a
+     resposta velha chegaria depois do reset e mostraria as diferenças do
+     diagrama anterior. */
+  const pedido = useRef(0);
   const carregar = () => {
     if (!carregarDiferencas) return;
+    const este = ++pedido.current;
     setCarregando(true);
     setFalhou(false);
     carregarDiferencas()
-      .then((d) => setCarregadas(d))
-      .catch(() => setFalhou(true))
-      .finally(() => setCarregando(false));
+      .then((d) => {
+        if (este === pedido.current) setCarregadas(d);
+      })
+      .catch(() => {
+        if (este === pedido.current) setFalhou(true);
+      })
+      .finally(() => {
+        if (este === pedido.current) setCarregando(false);
+      });
   };
 
   /* Uma resposta nova muda o diagrama e as diferenças: o que foi carregado
      deixa de valer, e o painel aberto pede de novo. */
   const assinatura = JSON.stringify([niveis, arestas]);
   useEffect(() => {
+    pedido.current++; // o que estiver a caminho já não é deste diagrama
     setCarregadas(null);
+    setCarregando(false);
     if (comDiferencas && carregarDiferencas) carregar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assinatura]);
@@ -468,7 +481,7 @@ function PainelDiferencas({
   teto: boolean;
   variasPosicoes: boolean;
 }) {
-  const { t } = useIdioma();
+  const { t, n: numero } = useIdioma();
   const blocos = posicoes
     .map((bloco, i) => ({
       n: i + 1,
@@ -527,7 +540,7 @@ function PainelDiferencas({
                           key={b}
                           className="num whitespace-nowrap px-1.5 py-0.5"
                           data-maior={eMaior || undefined}
-                          title={v != null ? t("viz.hasse.diferencas.celula", { a, b, v: v.toFixed(3) }) : undefined}
+                          title={v != null ? t("viz.hasse.diferencas.celula", { a, b, v: numero(v, 3) }) : undefined}
                           style={{
                             color: v == null ? "var(--tinta-fraca)" : "var(--tinta)",
                             background: eMaior
@@ -536,7 +549,7 @@ function PainelDiferencas({
                             fontWeight: eMaior ? 600 : 400,
                           }}
                         >
-                          {v == null ? "–" : v.toFixed(3)}
+                          {v == null ? "–" : numero(v, 3)}
                         </td>
                       );
                     })}

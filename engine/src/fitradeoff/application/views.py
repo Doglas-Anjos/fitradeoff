@@ -6,11 +6,13 @@ mesmo, e esta declarado em ``dto.py``.
 
 from __future__ import annotations
 
+import hashlib
+
 import numpy as np
 
 from ..domain.preferences import HolisticJudgement
 from ..domain.problem import Problem
-from ..elicitation.questions import QuestionBrief
+from ..elicitation.questions import QuestionBrief, TradeoffQuestion
 from ..elicitation.session import DecisionSession
 from ..problematics.base import Analysis
 from ..repositories.base import DecisionRecord, DecisionSummary
@@ -201,6 +203,14 @@ LEITURA_DA_TRILHA = (
 
 
 def problem_dto(record: DecisionRecord) -> ProblemDTO:
+    """O problema da decisao no formato de ``ProblemDTO``, sem replay.
+
+    Nao monta sessao: tudo sai do registro e da matriz de valor. O mapa de
+    conflito fica de fora nas carteiras, onde o custo entra na conta e liderar
+    criterio nao diz quem cabe no orcamento.
+
+    Custo: O(n^2 m) comparacoes vetorizadas (mapa de conflito); nenhum LP
+    """
     problem = record.problem
     chaves = [c.key for c in problem.criteria]
     return ProblemDTO(
@@ -257,6 +267,11 @@ def _iso(instante) -> str | None:
 
 
 def summary_dto(resumo: DecisionSummary) -> SummaryDTO:
+    """Uma linha da listagem, com as datas em ISO 8601 (ou ausentes).
+
+    Parte de ``DecisionSummary`` e nao do registro para que o adaptador
+    Postgres responda a listagem sem ler matriz nem trilha.
+    """
     return SummaryDTO(
         id=resumo.id,
         nome=resumo.nome,
@@ -271,6 +286,12 @@ def summary_dto(resumo: DecisionSummary) -> SummaryDTO:
 
 
 def analysis_dto(analysis: Analysis, record: DecisionRecord | None = None) -> AnalysisDTO:
+    """Converte a ``Analysis`` da problematica para o contrato de saida.
+
+    Com ``record``, as arestas de ``dominancia_direta`` ganham a origem
+    (holistica ou decomposicao), que so a trilha conhece; sem ele -- como na
+    varredura de sensibilidade -- o detalhe passa intacto.
+    """
     return AnalysisDTO(
         problematica=analysis.problematic,
         resolvido=analysis.resolved,
@@ -379,9 +400,33 @@ def state_dto(record: DecisionRecord, session: DecisionSession) -> StateDTO:
     )
 
 
-def question_dto(record_id: str, brief: QuestionBrief) -> QuestionDTO:
+def pergunta_id(question: TradeoffQuestion, declaracoes: int) -> str:
+    """Identificador curto e estavel da pergunta pendente, neste estado da trilha.
+
+    Entra o que define a pergunta (criterio, rival, valor) e o numero de
+    declaracoes ja gravadas. A mesma pergunta no mesmo estado da sempre o mesmo
+    id; qualquer declaracao gravada no meio muda o id, mesmo que a pergunta
+    seguinte repita criterio, rival e valor -- e o que deixa ``answer`` recusar
+    uma resposta dada a uma pergunta que ja nao e a pendente.
+
+    Nao e segredo nem credencial: 12 digitos hexadecimais do SHA-1 bastam para
+    distinguir perguntas da mesma decisao.
+    """
+    chave = f"{question.criterion}|{question.rival}|{question.value!r}|{declaracoes}"
+    return hashlib.sha1(chave.encode("utf-8")).hexdigest()[:12]
+
+
+def question_dto(record_id: str, brief: QuestionBrief, declaracoes: int) -> QuestionDTO:
+    """A pergunta apresentada, no formato de ``QuestionDTO``.
+
+    ``declaracoes`` e o numero de declaracoes na trilha quando a pergunta foi
+    montada; entra no ``pergunta_id``. ``como_responder`` e instrucao para o
+    agente, nao para o decisor: cita a ferramenta de resposta e proibe
+    responder por ele.
+    """
     return QuestionDTO(
         id=record_id,
+        pergunta_id=pergunta_id(brief.question, declaracoes),
         enunciado=brief.as_text(),
         criterio_em_foco=brief.focus_criterion,
         criterio_rival=brief.rival_criterion,

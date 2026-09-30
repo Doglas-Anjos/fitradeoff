@@ -20,6 +20,18 @@ from .veto import RESSALVA_VETO
 
 
 class RankingProblematic(Problematic):
+    """Le o espaco de pesos como ordem: a faixa de posicoes de cada alternativa.
+
+    A dominancia com folga do limiar de equivalencia e separada em estrita e
+    empate; resolvido e quando todo par se ordena ou empata, e o resultado e
+    entao uma pre-ordem completa.
+
+    Metodo: Frej et al. (2019); com veto, de Almeida (2013)
+    Exatidao: exata (LP) sem veto; conservadora (envelope) com veto
+    Custo: o de ``Evaluator.dominance_matrix`` sobre as n alternativas; as
+    diferencas maximas ficam fora (``max_differences``)
+    """
+
     key = "ranking"
     label = "Ordenacao completa das alternativas"
     # o veto do FITradeoff esta definido para escolha e ordenacao
@@ -124,6 +136,14 @@ class RankingProblematic(Problematic):
         Fora da analise de proposito: e o painel do diagrama de Hasse que as
         mostra, so quando aberto, e o custo delas cresce com o quadrado do
         numero de alternativas (ver ``_max_differences``).
+
+        Recalcula a matriz de dominancia em vez de reusar a da analise, entao
+        paga os LPs dela de novo.
+
+        Exatidao: exata (LP) sem veto; limite superior (envelope) com veto
+        Custo: o de ``dominance_matrix``, mais 2 LPs por par incomparavel sem
+        veto; com veto, 4n LPs da matriz e mais 4n dos envelopes
+        Unidade: valor global normalizado
         """
         dominance = self.evaluator.dominance_matrix(problem, space)
         return self._max_differences(problem, space, dominance)

@@ -43,6 +43,16 @@ class ProblematicRegistry:
         integer_solver: IntegerSolver,
         settings: dict | None = None,
     ) -> Problematic:
+        """Constroi a problematica registrada com esta chave.
+
+        ``settings`` e o dicionario persistido junto da decisao (perfis do
+        sorting, orcamento das carteiras); cada construtor le so o que usa e
+        valida o resto, entao um orcamento ausente falha no construtor da
+        problematica, e nao aqui.
+
+        Erros: UnknownProblematic se a chave nao estiver registrada; ValueError
+        vindo do construtor, se a configuracao nao servir
+        """
         if key not in self._builders:
             raise UnknownProblematic(
                 f"Problematica '{key}' desconhecida. Disponiveis: "

@@ -96,8 +96,9 @@ describe("carteira por razão não cai no ramo de escolha", () => {
   it("mostra a faixa de razão de cada projeto", () => {
     render(<ResultadoAnalise analise={analise} />);
     expect(screen.getByText(/Razão entre benefício e custo/)).toBeInTheDocument();
-    // a faixa sai com tres casas, e nao arredondada para inteiro
-    expect(screen.getByText(/0\.050 a 0\.100/)).toBeInTheDocument();
+    // a faixa sai com tres casas, e nao arredondada para inteiro -- e com o
+    // separador decimal do idioma (pt: vírgula)
+    expect(screen.getByText(/0,050 a 0,100/)).toBeInTheDocument();
   });
 
   it("mostra a dominância entre faixas que não se sobrepõem", () => {

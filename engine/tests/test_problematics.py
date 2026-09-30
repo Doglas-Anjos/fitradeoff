@@ -68,6 +68,30 @@ def test_dominancia_restrita_ao_subconjunto_coincide_com_a_completa(evaluator):
             assert restrita[i, l] == completa[i, l]
 
 
+def test_dominancia_de_poucas_poas_nao_paga_a_faixa_de_todas(solver):
+    """A escolha pede a matriz so das POAs. As faixas de valor, atalho que se
+    paga na matriz completa do ranking, custavam 2n LPs aqui e dobraram os LPs
+    por pergunta da escolha (30/09/2026). Com ate tres alternativas pedidas, o LP
+    direto sai mais barato, e nenhuma faixa e calculada."""
+    faixas = []
+
+    class Contando(type(solver)):
+        def bounds_of(self, space, objective):
+            faixas.append(1)
+            return super().bounds_of(space, objective)
+
+    avaliador = Evaluator(Contando())
+    rng = np.random.default_rng(3)
+    problem = make_problem(rng.random((30, 4)), names=[f"a{i}" for i in range(30)])
+    space = space_for(problem, range(4))
+
+    avaliador.dominance_matrix(problem, space, subset=(0, 1, 2))
+    assert faixas == []
+
+    avaliador.dominance_matrix(problem, space, subset=tuple(range(6)))
+    assert len(faixas) == 6  # so as pedidas, nunca as 30
+
+
 def test_limiar_de_equivalencia_resolve_empate(evaluator):
     problem = make_problem([[1.0, 0.0], [0.0, 1.0], [0.5, 0.5]])
     # k0 >= k1 nao estrito admite k0 = k1 = 0.5, onde as tres empatam
@@ -261,6 +285,24 @@ def test_sorting_faixa_mais_estreita_que_o_limiar_cai_no_meio(evaluator):
     assert len(classes) == 1
 
 
+def test_sorting_corte_pertence_a_classe_de_cima_mesmo_sem_limiar(evaluator):
+    """C vale 0.5 em todo peso e o corte e 0.5: a faixa e um ponto sobre o
+    corte. Com o teste fechado dos dois lados ela contava para as duas classes
+    e ficava indefinida para sempre; o corte e da classe de cima."""
+    from fitradeoff.problematics.evaluator import Evaluator
+
+    sorting = SortingProblematic(
+        Evaluator(evaluator.solver, equivalence=0.0), profiles=(0.5,)
+    )
+    problem = make_problem([[1.0, 0.0], [0.0, 1.0], [0.5, 0.5]], names=["A", "B", "C"])
+    analysis = sorting.analyse(problem, space_for(problem, [0, 1]))
+
+    assert analysis.detail["alocacao"]["C"]["classes_possiveis"] == ["Classe 2"]
+    # faixa que so encosta no corte por baixo fica na classe de cima
+    assert sorting._classes_for(0.5, 0.7) == (1,)
+    assert sorting._classes_for(0.3, 0.5) == (0, 1)
+
+
 def test_sorting_deixa_indefinida_a_alternativa_que_atravessa_perfil(evaluator):
     # corte em 0.4 para que Y, em [0, 0.5], atravesse por 0.1 -- bem acima de
     # metade do limiar, que e o que o encolhimento perdoa
@@ -310,6 +352,30 @@ def test_carteiras_de_mesmo_beneficio_desempatam_pela_mais_barata(evaluator):
     custos = np.array([1.0, 1.0, 1.0])
     # o projeto de beneficio nulo nao entra, ainda que caiba no orcamento
     assert solver.knapsack(beneficios, custos, budget=99) == (0, 2)
+
+
+def test_mochila_e_otima_mesmo_com_beneficios_quase_empatados():
+    """Contra forca bruta, em mochilas onde carteiras diferem menos de 0,01%.
+
+    Com o `mip_rel_gap` padrao do HiGHS (1e-4) o solver parava antes de provar
+    a otimalidade e devolvia uma carteira um pouco pior em cerca de um terco
+    destes casos.
+    """
+    import itertools
+
+    solver = ScipyIntegerSolver()
+    rng = np.random.default_rng(1)
+    n = 14
+    mascaras = np.array(list(itertools.product([0, 1], repeat=n)), dtype=float)
+    for _ in range(12):
+        custos = rng.integers(1, 20, n).astype(float)
+        beneficios = custos * (1 + rng.uniform(-1e-4, 1e-4, n))
+        orcamento = float(np.floor(custos.sum() * 0.5)) + 0.5
+        cabem = mascaras @ custos <= orcamento + 1e-12
+        melhor = float((mascaras[cabem] @ beneficios).max())
+
+        carteira = solver.knapsack(beneficios, custos, orcamento)
+        assert beneficios[list(carteira)].sum() >= melhor - 1e-8
 
 
 def test_portfolio_respeita_o_orcamento(evaluator):
@@ -550,6 +616,61 @@ def test_razao_e_mochila_podem_escolher_carteiras_diferentes(evaluator):
     assert por_razao.detail["sempre_selecionados"] != mochila.detail[
         "sempre_selecionados"
     ]
+
+
+def test_beneficio_custo_nao_depende_da_unidade_do_custo(evaluator):
+    """Custo em reais ou em dezenas de milhoes: a mesma decisao.
+
+    Antes as razoes (valor em [0, 1] / custo) eram comparadas com a tolerancia
+    absoluta de 1e-7; com custos ~1e7 toda razao ficava abaixo dela, a
+    carteira saia vazia e a leitura se dava por resolvida.
+    """
+    def analisar(escala):
+        problem = make_problem(
+            [[1.0, 0.0], [0.0, 1.0], [0.6, 0.6], [0.8, 0.3]],
+            costs=[c * escala for c in (10.0, 12.0, 9.0, 8.0)],
+            names=["A", "B", "C", "D"],
+        )
+        return beneficio_custo(evaluator, 25.0 * escala).analyse(
+            problem, space_for(problem, [0, 1])
+        )
+
+    unitario, grande = analisar(1.0), analisar(1e7)
+
+    assert unitario.resolved is False
+    assert grande.resolved is unitario.resolved
+    assert unitario.detail["pares_sem_ordem_de_razao"]
+    assert (grande.detail["pares_sem_ordem_de_razao"]
+            == unitario.detail["pares_sem_ordem_de_razao"])
+    projetos = [c["projetos"] for c in unitario.detail["portfolios_encontrados"]]
+    assert all(projetos)
+    assert [c["projetos"] for c in grande.detail["portfolios_encontrados"]] == projetos
+    assert (grande.detail["carteira_mais_frequente"]["projetos"]
+            == unitario.detail["carteira_mais_frequente"]["projetos"])
+    # as razoes publicadas seguem na unidade original do custo
+    assert unitario.detail["razoes"]["A"]["razao_maxima"] == pytest.approx(0.1)
+
+
+def test_parada_pelo_orcamento_segue_a_chave_da_gulosa(evaluator):
+    """X e Y tem a mesma razao em todo peso; a gulosa desempata pelo mais
+    barato (Y), sobra 30, X nao cabe e entra P ou Q -- qual depende dos pesos.
+
+    A simulacao da parada ordenava pelo indice (X antes de Y) e anunciava a
+    carteira definida enquanto as amostras davam {Y, P} e {Y, Q}.
+    """
+    problem = make_problem(
+        [[0.8, 0.8], [0.4, 0.4], [0.3, 0.0], [0.0, 0.6], [1.0, 1.0]],
+        costs=[40.0, 20.0, 25.0, 25.0, 1000.0],
+        names=["X", "Y", "P", "Q", "Z"],
+    )
+    analysis = beneficio_custo(evaluator, 50.0).analyse(
+        problem, space_for(problem, [0, 1])
+    )
+
+    carteiras = [c["projetos"] for c in analysis.detail["portfolios_encontrados"]]
+    assert len(carteiras) > 1
+    assert analysis.resolved is False
+    assert "definida" not in analysis.headline
 
 
 # --- registro -----------------------------------------------------------------

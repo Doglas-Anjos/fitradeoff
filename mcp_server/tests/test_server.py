@@ -448,3 +448,28 @@ def test_saida_de_inconsistencia_e_aplicada(problema):
     depois = srv.resolve_inconsistency(problema["id"], "desfazer")
     assert "erro" not in depois
     assert srv.get_problem(problema["id"])["declaracoes_registradas"] == 0
+
+
+def test_answer_com_question_id_vencido_e_recusado(problema):
+    """O id da pergunta que next_question devolveu prende a resposta a ela."""
+    id_ = problema["id"]
+    srv.rank_criteria(id_, ["qualidade", "custo", "prazo"])
+    vista = srv.next_question(id_)
+    assert vista["pergunta_id"]
+
+    estado = srv.answer(id_, "A", question_id=vista["pergunta_id"])
+    assert "erro" not in estado
+    declaracoes = srv.status(id_)["declaracoes"]
+
+    repetida = srv.answer(id_, "A", question_id=vista["pergunta_id"])
+    assert "erro" in repetida
+    assert srv.status(id_)["declaracoes"] == declaracoes
+
+
+def test_a_descricao_de_answer_pede_o_pergunta_id():
+    import asyncio
+
+    ferramentas = {t.name: t for t in asyncio.run(srv.server.list_tools())}
+    descricao = ferramentas["answer"].description
+    assert "pergunta_id" in descricao and "question_id" in descricao
+    assert "question_id" in ferramentas["answer"].input_schema["properties"]

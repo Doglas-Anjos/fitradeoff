@@ -365,6 +365,15 @@ class PostgresDecisionRepository(DecisionRepository):
     # -- leitura --
 
     def get(self, record_id: str) -> DecisionRecord:
+        """Le a decisao e a trilha numa consulta so, e memoriza a versao lida.
+
+        A versao guardada aqui e o que permite a ``save`` do mesmo pedido
+        recusar uma gravacao concorrente.
+
+        Erros: RecordNotFound se nao houver decisao desse dono com esse id;
+        ValueError se o id for invalido; StorageUnavailable se o banco nao
+        responder.
+        """
         self._check(record_id)
         with self._conexao() as conn:
             linha = conn.execute(
@@ -394,6 +403,12 @@ class PostgresDecisionRepository(DecisionRepository):
         return [DecisionSummary(*linha) for linha in linhas]
 
     def exists(self, record_id: str) -> bool:
+        """Ha decisao desse dono com esse id?
+
+        Sobrescreve a da porta para nao montar o registro nem memorizar versao.
+
+        Erros: ValueError se o id for invalido; StorageUnavailable.
+        """
         self._check(record_id)
         with self._conexao() as conn:
             return conn.execute(
@@ -404,6 +419,20 @@ class PostgresDecisionRepository(DecisionRepository):
     # -- escrita --
 
     def save(self, record: DecisionRecord) -> None:
+        """Grava so a diferenca em relacao ao que este repositorio leu.
+
+        Registro lido antes por esta instancia: ``UPDATE`` condicionado a versao
+        lida, apaga as declaracoes depois do prefixo comum e insere as novas.
+        Registro nunca lido por esta instancia: gravacao as cegas (upsert que
+        substitui a linha e a trilha inteiras), SEM conferencia de versao --
+        a protecao contra concorrencia so existe para quem fez ``get`` antes.
+        Tudo numa transacao: uma recusa nao deixa trilha pela metade.
+
+        Erros: ConcurrentModification se a versao mudou desde o ``get``;
+        RecordNotFound se a decisao lida foi apagada nesse meio tempo;
+        ValueError se o id for invalido; StorageUnavailable se o banco nao
+        responder.
+        """
         self._check(record.id)
         dados = record_to_dict(record)
         trilha: list[dict] = dados["auditoria"]
@@ -509,6 +538,14 @@ class PostgresDecisionRepository(DecisionRepository):
         raise RecordNotFound(f"Decisao '{ident}' nao encontrada.")
 
     def delete(self, record_id: str) -> None:
+        """Apaga a decisao; a trilha vai junto pela exclusao em cascata.
+
+        Nao confere versao: apaga mesmo que outra janela tenha gravado depois
+        da leitura deste pedido.
+
+        Erros: RecordNotFound se nao existir; ValueError se o id for invalido;
+        StorageUnavailable.
+        """
         self._check(record_id)
         with self._conexao() as conn:
             apagada = conn.execute(

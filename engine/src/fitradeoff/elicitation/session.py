@@ -54,10 +54,20 @@ class DecisionSession:
 
     @property
     def weight_space(self) -> WeightSpace:
-        """Espaco de pesos implicado por tudo o que o decisor declarou."""
+        """Espaco de pesos implicado por tudo o que o decisor declarou.
+
+        Das ordenacoes dos criterios, so a ultima entra: uma nova ordenacao
+        substitui a anterior, como ja acontece nos pares de perguntas
+        (``brackets_from_log``). Somar as duas deixava no espaco as restricoes
+        das duas ordens -- em geral contraditorias -- enquanto as perguntas
+        seguiam so a nova.
+        """
         if "space" not in self._cache:
             space = WeightSpace(self.problem.n_criteria)
+            vigente = self.log.last_of_type(CriteriaRanking)
             for statement in self.log.statements():
+                if isinstance(statement, CriteriaRanking) and statement is not vigente:
+                    continue
                 space = space.with_constraints(
                     statement.constraints(self.problem, self.epsilon)
                 )

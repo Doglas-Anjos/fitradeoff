@@ -23,6 +23,12 @@ def _clean(data: dict) -> dict:
 
 @dataclass(frozen=True)
 class CriterionDTO:
+    """Um criterio como a tela e o agente o veem, dentro de ``ProblemDTO``.
+
+    ``melhor`` e ``pior`` estao na unidade do criterio, ja com a direcao
+    resolvida. Campos opcionais nulos somem na serializacao.
+    """
+
     chave: str
     nome: str
     unidade: str
@@ -49,6 +55,13 @@ class CriterionDTO:
 
 @dataclass(frozen=True)
 class ProblemDTO:
+    """O problema de uma decisao: criterios, matriz e configuracao.
+
+    Resposta de ``create``, ``describe`` e ``set_value_curve``, lida pela API
+    (e dela pela tela) e pelo MCP. ``consequencias`` vem na unidade de cada
+    criterio; ``valores``, normalizado em [0, 1].
+    """
+
     id: str
     nome: str
     problematica: str
@@ -106,6 +119,13 @@ class ConflitoDTO:
 
 @dataclass(frozen=True)
 class AnalysisDTO:
+    """O resultado da problematica, como sai de ``Problematic.analyse``.
+
+    Vai dentro de ``StateDTO``, ``AuditDTO`` e ``ScenarioDTO``. O ``detalhe``
+    e especifico de cada problematica e, na serializacao, sobe para o topo.
+    ``indefinidas`` sao indices de alternativa, nao nomes.
+    """
+
     problematica: str
     resolvido: bool
     indefinidas: list[int]
@@ -126,6 +146,13 @@ class AnalysisDTO:
 
 @dataclass(frozen=True)
 class StateDTO:
+    """A situacao corrente de uma decisao, resposta da maioria dos casos de uso.
+
+    Montado por ``views.state_dto`` e lido pela API e pelo MCP. Os campos
+    opcionais so aparecem quando se aplicam: sem elicitacao iniciada nao ha
+    analise, e com declaracoes inconsistentes ha ``aviso`` em vez de faixas.
+    """
+
     id: str
     nome: str
     problematica: str
@@ -171,7 +198,18 @@ class StateDTO:
 
 @dataclass(frozen=True)
 class QuestionDTO:
+    """A pergunta de tradeoff pendente, pronta para mostrar ao decisor.
+
+    Resposta de ``next_question``. ``id`` e o da decisao; ``pergunta_id``
+    identifica esta pergunta NESTE estado da trilha (ver
+    ``views.pergunta_id``). Quem responde devolve o ``pergunta_id`` a
+    ``DecisionService.answer``, que recusa a resposta se a pergunta pendente
+    ja for outra -- duas abas, ou um pedido repetido, nao gravam contra uma
+    pergunta que o decisor nao viu.
+    """
+
     id: str
+    pergunta_id: str
     enunciado: str
     criterio_em_foco: str
     criterio_rival: str
@@ -186,6 +224,11 @@ class QuestionDTO:
 
 @dataclass(frozen=True)
 class StatementDTO:
+    """Uma linha da trilha de auditoria, dentro de ``AuditDTO``.
+
+    ``autor`` e declarado por quem chamou, nao autenticado.
+    """
+
     sequencia: int
     autor: str
     registrado_em: str
@@ -197,6 +240,12 @@ class StatementDTO:
 
 @dataclass(frozen=True)
 class AuditDTO:
+    """A trilha completa e o que ela impos, resposta de ``explain``.
+
+    E o que um auditor le para reconstituir o resultado: declaracoes,
+    restricoes ativas e o limiar de equivalencia em vigor.
+    """
+
     id: str
     declaracoes: list[StatementDTO]
     restricoes_ativas: list[str]
@@ -250,6 +299,12 @@ class SummaryDTO:
 
 @dataclass(frozen=True)
 class ScenarioDTO:
+    """Um ponto da varredura de ``DecisionService.sensitivity``.
+
+    ``limiar`` e o epsilon (folga entre os pesos de dois criterios), nao o
+    limiar de equivalencia entre alternativas, apesar do nome do campo.
+    """
+
     limiar: float
     consistente: bool
     resumo: str
@@ -266,6 +321,8 @@ class ScenarioDTO:
 
 @dataclass(frozen=True)
 class SensitivityDTO:
+    """Resposta de ``DecisionService.sensitivity``: um cenario por epsilon."""
+
     id: str
     cenarios: list[ScenarioDTO]
 

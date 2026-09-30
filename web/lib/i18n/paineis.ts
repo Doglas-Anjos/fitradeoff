@@ -23,6 +23,12 @@ import { registrar } from "./index";
 import "./nucleo";
 
 export const PAINEIS = registrar({
+  // faixa de razões benefício/custo: "0.412 a 0.587"
+  "resultado.razao.intervalo": {
+    pt: "{min} a {max}",
+    en: "{min} to {max}",
+    es: "{min} a {max}",
+  },
   // --- resumo de uma decisão: "4 alternativas · 3 critérios · 2 respostas" ---
   // O separador " · " é pontuação, não texto: fica no código.
   "resumo.alternativa.um": { pt: "{n} alternativa", en: "{n} alternative", es: "{n} alternativa" },

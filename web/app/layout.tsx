@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
 
@@ -16,6 +16,15 @@ export const metadata: Metadata = {
   title: "FITradeoff",
   description:
     "Decida entre alternativas comparando situações concretas, sem atribuir pesos.",
+};
+
+/* A cor da barra do navegador no celular acompanha a navegação navy, que é o
+   que fica colado nela. */
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#071d38" },
+    { media: "(prefers-color-scheme: dark)", color: "#0c1c2e" },
+  ],
 };
 
 export default function RootLayout({
@@ -60,7 +69,10 @@ export default function RootLayout({
               confirmar a sessao. Sem sessao, o Portao manda para o login. */}
           <Portao>
             <Navegacao />
-            {children}
+            {/* alvo do "pular para o conteúdo" da navegação */}
+            <div id="conteudo" tabIndex={-1}>
+              {children}
+            </div>
             <RodapeFasorx />
             {/* uma só, na raiz: duas montadas duplicam todo aviso */}
             <Avisos />

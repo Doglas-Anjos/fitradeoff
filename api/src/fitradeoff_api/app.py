@@ -71,6 +71,13 @@ async def _entrada_invalida(_request: Request, exc: RequestValidationError) -> J
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
+    """Monta a aplicacao local: ``/api`` e o MCP por HTTP, no mesmo processo.
+
+    A ordem dos middlewares importa e esta comentada abaixo: o MCP entra depois das
+    rotas porque veste o aplicativo com a autenticacao dele, e a medicao entra por
+    ultimo para contar os 401 dessa autenticacao. As vagas de calculo sao uma instancia
+    so para os dois lados.
+    """
     settings = settings or load_settings()
 
     @asynccontextmanager
@@ -80,8 +87,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         O app do MCP e montado depois que este aplicativo existe -- ele precisa
         de um aplicativo para se ligar -- entao o ciclo o encontra em
         ``app.state``, ja que a leitura acontece na partida, nao aqui.
+
+        Na partida, avisa tambem as configuracoes de identidade que o dono
+        precisa rever (ver ``identidade.avisar_configuracao``).
         """
         avisar_se_sem_folga(app.state.vagas)
+        identidade.avisar_configuracao(
+            settings, com_api=True, endereco=identidade.endereco_de_escuta()
+        )
         async with remoto.ciclo_de_vida(app.state.mcp), metricas.servir(
             settings.metricas_porta
         ):
@@ -107,6 +120,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # Uma instancia so para a API e para o MCP montado aqui: cada pessoa segura
     # no maximo `vagas_por_pessoa` calculos somando os dois lados.
     app.state.vagas = vagas_de(settings)
+    # O chat tem teto proprio, fora das vagas de calculo: ver `chat.Conversas`.
+    app.state.conversas = chat.Conversas(settings.chat_por_pessoa, settings.chat_no_total)
     app.include_router(decisions.router)
     app.include_router(planilhas.router)
     app.include_router(chat.router)

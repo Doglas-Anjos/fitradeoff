@@ -22,7 +22,7 @@
  */
 
 import { ChartBar, ChartPolar, Circle as CircleIcon, Table } from "@phosphor-icons/react";
-import { useMemo, useState } from "react";
+import { createContext, useContext, useMemo, useState } from "react";
 
 import { Dica } from "@/components/ui";
 import { useIdioma } from "@/lib/i18n";
@@ -32,18 +32,35 @@ import type { CriterioOut, Problema } from "@/lib/types";
 
 type Aba = "barras" | "radar" | "bolhas" | "tabela";
 
-/* O rotulo de cada aba vem do catalogo, entao aqui fica a chave. */
-const ABAS: { id: Aba; chave: string; Icone: typeof ChartBar }[] = [
-  { id: "barras", chave: "viz.aba.barras", Icone: ChartBar },
-  { id: "radar", chave: "viz.aba.radar", Icone: ChartPolar },
-  { id: "bolhas", chave: "viz.aba.bolhas", Icone: CircleIcon },
-  { id: "tabela", chave: "viz.aba.tabela", Icone: Table },
-];
-
 interface Serie {
   nome: string;
   cor: string;
   valores: number[];
+}
+
+/* --- o que todos os graficos leem ----------------------------------------------
+
+   Os quatro graficos desenham a mesma matriz filtrada. Antes cada um recebia
+   `criterios`, `series`, `ativo` e `aoApontar` por propriedade, repassados de
+   novo a `Moldura` -- e o radar e a tabela recebiam parte disso so para
+   ignorar. Um contexto interno, montado uma vez pelo painel, deixa cada grafico
+   pedir o que usa. Nao sai deste arquivo: fora do painel ele nao tem sentido. */
+
+interface Visualizacao {
+  problema: Problema;
+  criterios: CriterioOut[];
+  series: Serie[];
+  /** Criterio sob o ponteiro ou o foco, lido na faixa de leitura. */
+  ativo: string | null;
+  aoApontar: (chave: string | null) => void;
+}
+
+const ContextoVisualizacao = createContext<Visualizacao | null>(null);
+
+function useVisualizacao(): Visualizacao {
+  const ctx = useContext(ContextoVisualizacao);
+  if (!ctx) throw new Error("grafico fora de <Visualizacoes>");
+  return ctx;
 }
 
 const MARCAS = [0, 0.25, 0.5, 0.75, 1];
@@ -57,19 +74,12 @@ const CALHA = "2.4rem"; // largura reservada aos numeros do eixo
    por acaso convivem. */
 
 function Moldura({
-  criterios,
-  series,
-  ativo,
-  aoApontar,
   children,
 }: {
-  criterios: CriterioOut[];
-  series: Serie[];
-  ativo: string | null;
-  aoApontar: (chave: string | null) => void;
   children: (criterio: CriterioOut, indice: number) => React.ReactNode;
 }) {
-  const { t } = useIdioma();
+  const { t, n } = useIdioma();
+  const { criterios, series, ativo, aoApontar } = useVisualizacao();
   const emFoco = criterios.find((c) => c.chave === ativo);
 
   return (
@@ -95,7 +105,7 @@ function Moldura({
                 />
                 <span style={{ color: "var(--tinta-3)" }}>{serie.nome}</span>
                 <span className="num" style={{ color: "var(--tinta)" }}>
-                  {serie.valores[criterios.indexOf(emFoco)].toFixed(3)}
+                  {n(serie.valores[criterios.indexOf(emFoco)], 3)}
                 </span>
                 {i < series.length - 1 && (
                   <span style={{ color: "var(--borda-forte)" }}>·</span>
@@ -121,7 +131,7 @@ function Moldura({
                 color: "var(--tinta-fraca)",
               }}
             >
-              {m.toFixed(2)}
+              {n(m, 2)}
             </span>
           ))}
         </div>
@@ -153,6 +163,10 @@ function Moldura({
                 onFocus={() => aoApontar(criterio.chave)}
                 onBlur={() => aoApontar(null)}
                 tabIndex={0}
+                /* focável para o teclado ver a leitura da coluna: precisa de
+                   nome, senão o leitor anuncia um grupo vazio */
+                role="group"
+                aria-label={criterio.nome}
                 className="relative rounded-[var(--raio-controle)] transition-colors"
                 style={{
                   background:
@@ -196,21 +210,12 @@ function Moldura({
 
 /* --- barras ----------------------------------------------------------------- */
 
-function Barras({
-  criterios,
-  series,
-  ativo,
-  aoApontar,
-}: {
-  criterios: CriterioOut[];
-  series: Serie[];
-  ativo: string | null;
-  aoApontar: (chave: string | null) => void;
-}) {
+function Barras() {
   const { t } = useIdioma();
+  const { series } = useVisualizacao();
   return (
-    <div role="img" aria-label={t("viz.barras.rotulo")}>
-      <Moldura criterios={criterios} series={series} ativo={ativo} aoApontar={aoApontar}>
+    <div role="figure" aria-label={t("viz.barras.rotulo")}>
+      <Moldura>
         {(_criterio, j) => (
           <div className="absolute inset-x-0 bottom-0 flex h-full items-end justify-center gap-[2px] px-[8%]">
             {series.map((serie) => (
@@ -239,21 +244,12 @@ function Barras({
    Codificacao redundante nao acrescenta leitura: acrescenta ruido, e faz um
    valor alto parecer duas vezes mais alto. Marca de tamanho constante. */
 
-function Pontos({
-  criterios,
-  series,
-  ativo,
-  aoApontar,
-}: {
-  criterios: CriterioOut[];
-  series: Serie[];
-  ativo: string | null;
-  aoApontar: (chave: string | null) => void;
-}) {
+function Pontos() {
   const { t } = useIdioma();
+  const { series } = useVisualizacao();
   return (
-    <div role="img" aria-label={t("viz.bolhas.rotulo")}>
-      <Moldura criterios={criterios} series={series} ativo={ativo} aoApontar={aoApontar}>
+    <div role="figure" aria-label={t("viz.bolhas.rotulo")}>
+      <Moldura>
         {(_criterio, j) => (
           <div className="absolute inset-0">
             {series.map((serie, i) => (
@@ -280,8 +276,9 @@ function Pontos({
 
 /* --- radar ------------------------------------------------------------------ */
 
-function Radar({ criterios, series }: { criterios: CriterioOut[]; series: Serie[] }) {
+function Radar() {
   const { t } = useIdioma();
+  const { criterios, series } = useVisualizacao();
   const n = criterios.length;
   const centro = 50;
   const raio = 34;
@@ -369,16 +366,9 @@ function Radar({ criterios, series }: { criterios: CriterioOut[]; series: Serie[
 
 /* --- tabela ----------------------------------------------------------------- */
 
-function Tabela({
-  criterios,
-  series,
-  problema,
-}: {
-  criterios: CriterioOut[];
-  series: Serie[];
-  problema: Problema;
-}) {
-  const { t } = useIdioma();
+function Tabela() {
+  const { t, n } = useIdioma();
+  const { criterios, series, problema } = useVisualizacao();
   const [normalizado, setNormalizado] = useState(true);
   return (
     <div>
@@ -418,7 +408,7 @@ function Tabela({
                   <td key={c.chave} className="num py-1.5 text-right"
                     style={{ color: "var(--tinta-2)" }}>
                     {normalizado
-                      ? serie.valores[j].toFixed(3)
+                      ? n(serie.valores[j], 3)
                       : problema.consequencias[serie.nome][c.chave]}
                   </td>
                 ))}
@@ -430,6 +420,25 @@ function Tabela({
     </div>
   );
 }
+
+/* --- abas ---------------------------------------------------------------------
+
+   A aba e o grafico que ela abre moram na mesma linha. Antes eram duas listas
+   -- `ABAS` para os botoes e um ternario encadeado para o grafico -- e uma aba
+   nova exigia lembrar da segunda. O rotulo vem do catalogo, entao aqui fica a
+   chave. */
+
+const ABAS: {
+  id: Aba;
+  chave: string;
+  Icone: typeof ChartBar;
+  Componente: () => React.ReactNode;
+}[] = [
+  { id: "barras", chave: "viz.aba.barras", Icone: ChartBar, Componente: Barras },
+  { id: "radar", chave: "viz.aba.radar", Icone: ChartPolar, Componente: Radar },
+  { id: "bolhas", chave: "viz.aba.bolhas", Icone: CircleIcon, Componente: Pontos },
+  { id: "tabela", chave: "viz.aba.tabela", Icone: Table, Componente: Tabela },
+];
 
 /* --- painel ----------------------------------------------------------------- */
 
@@ -445,7 +454,12 @@ export function Visualizacoes({
   const [aba, setAba] = useState<Aba>("barras");
   const [esconderEmpates, setEsconderEmpates] = useState(true);
   const [ativo, setAtivo] = useState<string | null>(null);
-  const todas = Object.keys(problema.valores ?? problema.consequencias);
+  // memorizado: é dependência dos dois `useMemo` abaixo, e um array novo a
+  // cada renderização os fazia recalcular sempre
+  const todas = useMemo(
+    () => Object.keys(problema.valores ?? problema.consequencias),
+    [problema],
+  );
   const [visiveis, setVisiveis] = useState<string[]>(
     destaque && destaque.length ? destaque : todas,
   );
@@ -479,21 +493,28 @@ export function Visualizacoes({
 
   const escondidos = problema.criterios.length - criterios.length;
 
+  const contexto = useMemo<Visualizacao>(
+    () => ({ problema, criterios, series, ativo, aoApontar: setAtivo }),
+    [problema, criterios, series, ativo],
+  );
+  const Grafico = (ABAS.find((a) => a.id === aba) ?? ABAS[0]).Componente;
+
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex gap-1">
+        <div role="group" aria-label={t("viz.abas.rotulo")} className="flex gap-1">
           {ABAS.map(({ id, chave, Icone }) => {
             const ativa = aba === id;
             return (
-              <button key={id} onClick={() => setAba(id)}
+              /* `aria-pressed`: a aba escolhida era só visual */
+              <button key={id} type="button" aria-pressed={ativa} onClick={() => setAba(id)}
                 className="tatil flex items-center gap-1.5 rounded-[var(--raio-controle)] px-2.5 py-1.5 text-[12px]"
                 style={{
                   background: ativa ? "var(--painel-fundo)" : "transparent",
                   color: ativa ? "var(--tinta)" : "var(--tinta-3)",
                   fontWeight: ativa ? 500 : 400,
                 }}>
-                <Icone size={14} weight={ativa ? "fill" : "regular"} />
+                <Icone size={14} weight={ativa ? "fill" : "regular"} aria-hidden />
                 {t(chave)}
               </button>
             );
@@ -534,14 +555,10 @@ export function Visualizacoes({
           <p className="py-8 text-center text-sm" style={{ color: "var(--tinta-3)" }}>
             {t("viz.semAlternativa")}
           </p>
-        ) : aba === "barras" ? (
-          <Barras criterios={criterios} series={series} ativo={ativo} aoApontar={setAtivo} />
-        ) : aba === "radar" ? (
-          <Radar criterios={criterios} series={series} />
-        ) : aba === "bolhas" ? (
-          <Pontos criterios={criterios} series={series} ativo={ativo} aoApontar={setAtivo} />
         ) : (
-          <Tabela criterios={criterios} series={series} problema={problema} />
+          <ContextoVisualizacao.Provider value={contexto}>
+            <Grafico />
+          </ContextoVisualizacao.Provider>
         )}
       </div>
 

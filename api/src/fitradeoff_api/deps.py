@@ -226,6 +226,13 @@ def translate(exc: Exception) -> HTTPException:
 
     Um lugar so: se cada rota decidisse por conta propria, a mesma falha sairia
     como 400 numa e 500 noutra.
+
+    Limitacao conhecida: ``ValueError``, ``KeyError``, ``IndexError`` e
+    ``TypeError`` genericos viram 400 com o texto da excecao. Um defeito de
+    programacao no motor sai entao como erro do cliente, com detalhe interno, em
+    vez de 500 no registro. Estreitar para as excecoes de dominio pede antes que
+    o dominio pare de sinalizar entrada invalida com ``ValueError`` -- hoje e
+    assim que ``Problem`` e ``Criterion`` recusam dados ruins.
     """
     if isinstance(exc, RecordNotFound):
         return HTTPException(status.HTTP_404_NOT_FOUND, str(exc))

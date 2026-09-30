@@ -15,12 +15,12 @@
 
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { CadastroEstrutural } from "@/components/CadastroEstrutural";
+import { RascunhoEmMemoria } from "@/components/entrada/contextoRascunho";
 import { SinteseResultado } from "@/components/SinteseResultado";
-import { RASCUNHO_VAZIO, type Rascunho } from "@/lib/rascunho";
+import { RASCUNHO_VAZIO } from "@/lib/rascunho";
 import type { Analise, Estado, Problema, Problematica } from "@/lib/types";
 
 const RESSALVA =
@@ -93,22 +93,11 @@ describe("a ressalva acompanha o resultado calculado sob veto", () => {
 
 describe("o campo de veto só existe onde o método o define", () => {
   function montar(problematica: Problematica) {
-    function Palco() {
-      const [rascunho, setRascunho] = useState<Rascunho>({
-        ...RASCUNHO_VAZIO,
-        problematica,
-        passo: "estrutura",
-      });
-      return (
-        <CadastroEstrutural
-          rascunho={rascunho}
-          onAlterar={setRascunho}
-          onVoltar={vi.fn()}
-          onSalvar={vi.fn()}
-        />
-      );
-    }
-    render(<Palco />);
+    render(
+      <RascunhoEmMemoria inicial={{ ...RASCUNHO_VAZIO, problematica, passo: "estrutura" }}>
+        <CadastroEstrutural onSalvar={vi.fn()} />
+      </RascunhoEmMemoria>,
+    );
   }
 
   const abridor = () =>

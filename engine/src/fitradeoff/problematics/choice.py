@@ -16,6 +16,20 @@ from .veto import RESSALVA_VETO
 
 
 class ChoiceProblematic(Problematic):
+    """Le o espaco de pesos como escolha: quais alternativas ainda podem ser a melhor.
+
+    Resolvida quando resta uma POA, ou quando as POAs restantes sao todas
+    equivalentes no limiar (``Evaluator.all_equivalent``). Com veto, as POAs
+    saem do envelope conservador e a equivalencia nunca e declarada, entao a
+    parada so acontece com no maximo uma POA.
+
+    Metodo: de Almeida et al. (2016); com veto, de Almeida (2013)
+    Exatidao: exata (LP) sem veto; conservadora (envelope) com veto
+    Custo: sem veto, n LPs das POAs, ate 2 por par de POAs na equivalencia e a
+    matriz de dominancia restrita as POAs (ver ``dominance_matrix``); com veto,
+    8n LPs (os envelopes saem duas vezes: nas POAs e na matriz)
+    """
+
     key = "escolha"
     label = "Escolha da melhor alternativa"
     # o veto do FITradeoff esta definido para escolha e ordenacao

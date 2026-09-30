@@ -327,3 +327,54 @@ def test_curva_tem_precedencia_sobre_niveis():
     # pela escala construida 3.0 valeria 1.0 tambem, mas o ponto e a precedencia
     assert com_curva.values[0][0] == 0.0
     assert com_curva.values[1][0] == 1.0
+
+
+# --- robustez numerica e isolamento da matriz ---------------------------------
+
+
+def test_niveis_grandes_e_vizinhos_nao_se_confundem():
+    """A tolerancia relativa padrao do np.isclose (1e-5) lia 100001 como
+    100000 e devolvia valor 0 em vez de 0,5."""
+    escala = DiscreteScale((100000.0, 100001.0, 100002.0))
+    assert escala.value_of(100001.0) == pytest.approx(0.5)
+    assert escala.value_of(100002.0) == pytest.approx(1.0)
+
+
+def test_consequencias_finitas_mas_enormes_sao_recusadas():
+    """-1e308 e 1e308 no mesmo criterio: a faixa estoura para infinito e o
+    valor sai NaN, que o HiGHS aceitaria calado."""
+    with pytest.raises(ValueError, match="grandes demais"):
+        make_problem([[-1e308, 0.0], [1e308, 1.0], [0.0, 0.5]])
+
+
+def test_problema_nao_acompanha_o_array_do_chamador():
+    """O problema guarda copia propria: mexer no array original depois nao
+    dessincroniza a matriz das escalas e dos valores ja calculados."""
+    from fitradeoff.domain import Problem
+
+    matriz = np.array([[1.0, 2.0], [3.0, 4.0]])
+    problem = Problem(
+        "t", (Criterion("a", "A"), Criterion("b", "B")), ("X", "Y"), matriz
+    )
+    valores = problem.values.copy()
+    matriz[0, 0] = 99.0
+
+    assert problem.consequences[0, 0] == 1.0
+    assert np.array_equal(problem.values, valores)
+    with pytest.raises(ValueError):
+        problem.consequences[0, 0] = 5.0
+
+
+def test_numeros_grandes_saem_sem_notacao_cientifica():
+    """Com ``.4g``, 17667,5 e 17672,3 saiam ambos "1.767e+04 R$" e duas
+    perguntas seguidas pareciam iguais."""
+    from fitradeoff.domain import format_amount, format_number
+
+    assert format_amount(17667.5, "R$") == "17667.5 R$"
+    assert format_amount(17672.3, "R$") == "17672.3 R$"
+    assert format_number(1234.567) == "1234.57"
+    assert format_number(0.00001234) == "0.00001234"
+    # abaixo de 1000 seguem os quatro algarismos significativos de antes
+    assert format_number(28.5321) == "28.53"
+    assert format_number(0.61456) == "0.6146"
+    assert format_number(30.0) == "30"

@@ -143,6 +143,28 @@ def test_caminho_mais_fundo_nao_e_chave(cliente):
     assert resposta.status_code == 401
 
 
+def test_o_resolvedor_roda_fora_do_laco_de_eventos(acervos):
+    """Ler o cofre ou buscar o JWKS no laco pararia o processo inteiro."""
+    import asyncio
+
+    no_laco: list[bool] = []
+
+    def resolvedor(chave: str):
+        try:
+            asyncio.get_running_loop()
+            no_laco.append(True)
+        except RuntimeError:
+            no_laco.append(False)
+        return acervos.get(chave)
+
+    externo = Starlette(routes=[])
+    remoto.montar(externo, resolvedor)
+    with TestClient(externo, base_url=LOCAL) as c:
+        c.post("/mcp", json=pedido("tools/list"), headers={**CABECALHOS, "Authorization": "Bearer x"})
+
+    assert no_laco == [False]
+
+
 def test_rota_fora_do_mcp_nao_pede_chave(cliente):
     """A autenticacao veste o aplicativo inteiro, mas guarda um prefixo so."""
     assert cliente.get("/api/saude").status_code == 200

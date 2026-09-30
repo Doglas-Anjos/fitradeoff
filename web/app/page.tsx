@@ -49,7 +49,7 @@ export default function Home() {
   const itens = ["pesos", "registro", "objetivos", "parar"];
   return (
     <main>
-      <section className="relative overflow-hidden bg-[var(--navy)]">
+      <section className="superficie-navy relative overflow-hidden bg-[var(--navy)]">
         <div className="pointer-events-none absolute -right-40 -top-44 h-[32rem] w-[32rem] rounded-full border border-white/10" />
         <div className="pointer-events-none absolute -right-16 -top-16 h-80 w-80 rounded-full border border-white/10" />
         <div className="relative mx-auto grid max-w-7xl gap-12 px-5 py-16 sm:py-20 lg:grid-cols-[1.05fr_.95fr] lg:items-center lg:gap-20 lg:py-24">

@@ -46,7 +46,7 @@ export function ResultadoAnalise({
   /* Com ele, o painel de diferenças máximas do Hasse as pede sob demanda. */
   decisaoId?: string;
 }) {
-  const { t } = useIdioma();
+  const { t, n } = useIdioma();
 
   if (analise.problematica === "ranking" && analise.posicoes_possiveis) {
     const linhas = Object.entries(analise.posicoes_possiveis).sort(
@@ -135,7 +135,7 @@ export function ResultadoAnalise({
                   )}
                 </td>
                 <td className="num py-1 text-right text-xs">
-                  {dados.faixa_de_valor[0].toFixed(3)} – {dados.faixa_de_valor[1].toFixed(3)}
+                  {n(dados.faixa_de_valor[0], 3)} – {n(dados.faixa_de_valor[1], 3)}
                 </td>
               </tr>
             ))}
@@ -218,7 +218,10 @@ export function ResultadoAnalise({
                       {r.custo}
                     </td>
                     <td className="num" style={{ color: "var(--tinta-2)" }}>
-                      {r.razao_minima.toFixed(3)} a {r.razao_maxima.toFixed(3)}
+                      {t("resultado.razao.intervalo", {
+                        min: n(r.razao_minima, 3),
+                        max: n(r.razao_maxima, 3),
+                      })}
                     </td>
                   </tr>
                 ))}

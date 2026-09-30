@@ -37,6 +37,7 @@ from .views import (
     analysis_dto,
     audit_dto,
     pareto_dominance,
+    pergunta_id as _pergunta_id,
     problem_dto,
     question_dto,
     state_dto,
@@ -93,10 +94,11 @@ class DecisionService:
     repositorio, e por isso pode levantar, alem dos erros proprios listados em
     cada metodo, os do armazenamento: ``RecordNotFound`` (nao ha decisao com
     esse id), ``ValueError`` (id fora do alfabeto aceito pelos adaptadores) e,
-    so com o adaptador Postgres, ``StorageUnavailable``. Os que gravam podem
-    levantar ainda ``ConcurrentModification`` -- mas so com o adaptador
-    Postgres: os de memoria e de arquivo gravam por cima sem conferir versao
-    (ver ``DecisionRepository``).
+    com os adaptadores Postgres e de arquivo, ``StorageUnavailable`` (banco
+    fora do ar; arquivo ilegivel, como ``CorruptRecord``). Os que gravam podem
+    levantar ainda ``ConcurrentModification`` com os adaptadores Postgres e de
+    arquivo, que conferem versao; o de memoria grava por cima (ver
+    ``DecisionRepository``).
 
     A API traduz ``RecordNotFound`` para 404, ``StorageUnavailable`` para 503,
     ``ConcurrentModification`` e ``InvalidRequest`` para 409,
@@ -129,19 +131,20 @@ class DecisionService:
         return record, self._container.session_for(record)
 
     def _commit(self, record: DecisionRecord, session: DecisionSession) -> dict:
-        """Persiste o log da sessao e devolve a situacao resultante.
+        """Monta a situacao resultante e, so se ela sair, persiste o log.
 
-        Limitacao conhecida: a gravacao acontece ANTES de montar o
-        ``state_dto``. Se montar a situacao falhar depois de gravar (um LP que
-        levanta, um erro de serializacao), a declaracao ja esta persistida e
-        quem chamou recebe um erro -- e pode repetir o pedido achando que nada
-        foi gravado. Vale para todo caso de uso que passa por aqui
-        (``rank_criteria``, ``answer``, ``judge``, ``undo``,
+        A ordem importa: montar a situacao resolve LPs e serializa, e pode
+        falhar. Gravando antes, uma falha deixaria a declaracao persistida com o
+        chamador recebendo erro -- e um novo pedido responderia a pergunta
+        seguinte. Montando antes, ou o chamador recebe a situacao e a declaracao
+        esta gravada, ou recebe o erro e nada mudou. Vale para todo caso de uso
+        que passa por aqui (``rank_criteria``, ``answer``, ``judge``, ``undo``,
         ``resolve_inconsistency``).
         """
         record.log = session.log
+        payload = state_dto(record, session).to_dict()
         self._container.repository.save(record)
-        return state_dto(record, session).to_dict()
+        return payload
 
     def session(self, record_id: str) -> DecisionSession:
         return self._load(record_id)[1]
@@ -225,15 +228,16 @@ class DecisionService:
         Pareto, para que o decisor possa retira-las antes da primeira pergunta,
         quando isso nao custa nada.
 
-        Limitacao conhecida: grava antes de montar a resposta; uma falha ao
-        montar ``problem_dto`` deixa a decisao criada sem que o chamador receba
-        o id.
+        A resposta e montada antes de gravar: uma falha ao monta-la nao deixa
+        uma decisao criada cujo id o chamador nunca recebeu.
 
         Custo: comparacoes vetorizadas O(n^2 m) para a dominancia e o mapa de
         conflito; nenhum LP.
-        Erros: InvalidRequest se a problematica for desconhecida, a
-        configuracao tiver NaN/infinito ou o limiar for invalido;
-        LimitExceeded se o tamanho ou as amostras passarem do teto; ValueError
+        Erros: InvalidRequest se a problematica for desconhecida, se a
+        configuracao, os custos ou um criterio (niveis, curva de valor, limites
+        de veto) tiverem NaN/infinito, ou se o limiar for invalido;
+        LimitExceeded se o tamanho, os pontos de uma curva ou as amostras
+        passarem do teto; ValueError
         se a matriz, os custos ou a configuracao da problematica forem
         invalidos; KeyError se um criterio vier sem ``chave``.
         """
@@ -245,6 +249,10 @@ class DecisionService:
 
         criteria = tuple(_as_criterion(c) for c in criterios)
         self._check_size(nome, alternativas, criteria)
+        for criterion in criteria:
+            _recusar_criterio_nao_finito(criterion)
+        if custos:
+            _recusar_nao_finitos([_como_float(c, "custos") for c in custos], "custos")
 
         settings = configuracao or {}
         self._check_settings(problematica, settings)
@@ -268,7 +276,6 @@ class DecisionService:
         # a problematica confere o que ela propria exige, antes de persistir
         self._container.problematic(problematica, settings).validate(problem)
 
-        self._container.repository.save(record)
         payload = problem_dto(record).to_dict()
         payload["proximo_passo"] = PROXIMO_PASSO
         # Nas carteiras o custo entra na conta: uma alternativa pior em todo
@@ -278,6 +285,7 @@ class DecisionService:
             if dominadas:
                 payload["dominadas"] = dominadas
                 payload["leitura_das_dominadas"] = LEITURA_DAS_DOMINADAS
+        self._container.repository.save(record)
         return payload
 
     def rank_criteria(self, record_id: str, ordem: Sequence[str]) -> dict:
@@ -287,9 +295,6 @@ class DecisionService:
         julgamentos holisticos: as perguntas de tradeoff respondidas se referiam
         a outra sequencia de pares. A resposta conta quantas foram descartadas
         em ``declaracoes_descartadas``.
-
-        Limitacao conhecida: grava antes de montar a situacao (ver
-        ``_commit``).
 
         Erros: InvalidRequest se ``ordem`` nao citar cada criterio exatamente
         uma vez.
@@ -311,9 +316,9 @@ class DecisionService:
     def next_question(self, record_id: str) -> dict:
         """A pergunta pendente ou, se nao houver, a situacao com o motivo.
 
-        So le: nada e gravado, e a pergunta mostrada nao fica associada ao
-        registro. ``answer`` recalcula a pergunta pendente na hora de gravar
-        (ver a limitacao descrita la).
+        So le: nada e gravado. A pergunta sai com ``pergunta_id``, que quem
+        responde devolve a ``answer`` para que a resposta so valha contra esta
+        pergunta, neste estado da trilha.
 
         Erros: InvalidRequest se os criterios ainda nao foram ordenados.
         """
@@ -325,7 +330,7 @@ class DecisionService:
 
         brief = session.present_question()
         if brief is not None:
-            return question_dto(record.id, brief).to_dict()
+            return question_dto(record.id, brief, len(session.log)).to_dict()
 
         payload = state_dto(record, session).to_dict()
         payload["pergunta"] = None
@@ -336,25 +341,22 @@ class DecisionService:
         )
         return payload
 
-    def answer(self, record_id: str, preferencia: str) -> dict:
+    def answer(
+        self, record_id: str, preferencia: str, pergunta_id: str | None = None
+    ) -> dict:
         """Registra a resposta do decisor a pergunta pendente e grava o log.
 
-        Limitacao conhecida: a resposta e aplicada a pergunta que estiver
-        pendente NO MOMENTO DA GRAVACAO -- o metodo chama ``next_question()`` de
-        novo --, e nao a pergunta que o decisor viu: o pedido nao carrega
-        nenhuma identificacao da pergunta. Duas abas, o chat e a tela, ou um
-        cliente que repete o pedido depois de um timeout podem gravar a
-        preferencia contra uma pergunta que nunca foi mostrada. A checagem de
-        versao do adaptador Postgres so recusa escritas que se cruzam entre a
-        leitura e a gravacao; um pedido repetido depois que o primeiro terminou
-        passa, e os outros adaptadores nem essa checagem fazem.
+        ``pergunta_id`` e o que ``next_question`` devolveu junto com a pergunta
+        mostrada. Com ele, a resposta so e gravada se a pergunta pendente agora
+        for a mesma, no mesmo estado da trilha: duas abas, o chat e a tela, ou
+        um pedido repetido depois de um timeout recebem recusa em vez de gravar
+        a preferencia contra uma pergunta que o decisor nunca viu. Sem ele
+        (``None``), vale a pergunta pendente no momento da gravacao -- o
+        comportamento de antes, mantido para quem ainda nao envia o id.
 
-        Limitacao conhecida: grava antes de montar a situacao (ver
-        ``_commit``).
-
-        Erros: InvalidRequest se ``preferencia`` nao for uma resposta aceita ou
+        Erros: InvalidRequest se ``preferencia`` nao for uma resposta aceita,
         se nao houver pergunta pendente (elicitacao nao iniciada, encerrada ou
-        inconsistente).
+        inconsistente) ou se ``pergunta_id`` nao for o da pergunta pendente.
         """
         preference = parse_preference(preferencia)
         record, session = self._load(record_id)
@@ -362,14 +364,18 @@ class DecisionService:
         question = session.next_question()
         if question is None:
             raise InvalidRequest("Nao ha pergunta pendente para esta decisao.")
+        if pergunta_id is not None and pergunta_id != _pergunta_id(
+            question, len(session.log)
+        ):
+            raise InvalidRequest(
+                "A pergunta mudou desde que foi exibida; recarregue e responda a "
+                "pergunta atual."
+            )
 
         return self._commit(record, session.answer(question, preference))
 
     def judge(self, record_id: str, preferida: str, sobre: str) -> dict:
         """Registra um julgamento holistico entre duas alternativas reais.
-
-        Limitacao conhecida: grava antes de montar a situacao (ver
-        ``_commit``).
 
         Erros: KeyError se um dos nomes nao for alternativa do problema;
         ValueError se as duas forem a mesma alternativa ou a declaracao for
@@ -386,9 +392,6 @@ class DecisionService:
     def undo(self, record_id: str) -> dict:
         """Desfaz a ultima declaracao, qualquer que seja o tipo, e grava o log.
 
-        Limitacao conhecida: grava antes de montar a situacao (ver
-        ``_commit``).
-
         Erros: InvalidRequest se nao houver declaracao a desfazer.
         """
         record, session = self._load(record_id)
@@ -404,8 +407,8 @@ class DecisionService:
         ``configuracao`` ausente reaproveita a atual; presente, substitui a
         configuracao inteira. O limiar de equivalencia atravessa a troca.
 
-        Limitacao conhecida: como em ``_commit``, grava antes de montar a
-        situacao; uma falha ao montar deixa a troca persistida.
+        Como em ``_commit``, a situacao e montada antes de gravar: uma falha
+        ao monta-la nao deixa a troca persistida.
 
         Erros: InvalidRequest se a configuracao tiver NaN/infinito;
         UnknownProblematic se a chave nao estiver registrada; LimitExceeded se
@@ -422,8 +425,9 @@ class DecisionService:
         record.problematic_key = problematica
         record.settings = settings
         # o limiar de equivalencia nao e tocado: e da decisao, nao da leitura
+        payload = state_dto(record, self._container.session_for(record)).to_dict()
         self._container.repository.save(record)
-        return state_dto(record, self._container.session_for(record)).to_dict()
+        return payload
 
     def set_equivalence(self, record_id: str, limiar: float | None) -> dict:
         """Troca o limiar de equivalencia da decisao e rele o mesmo log.
@@ -442,15 +446,16 @@ class DecisionService:
 
         ``None`` devolve a decisao ao padrao do processo.
 
-        Limitacao conhecida: grava antes de montar a situacao, como ``_commit``.
+        Como em ``_commit``, a situacao e montada antes de gravar.
 
         Erros: InvalidRequest se o limiar nao for numero ou estiver fora de
         [MIN_EQUIVALENCE, MAX_EQUIVALENCE], NaN incluido.
         """
         record, _ = self._load(record_id)
         record.equivalence = self._check_equivalence(limiar)
+        payload = state_dto(record, self._container.session_for(record)).to_dict()
         self._container.repository.save(record)
-        return state_dto(record, self._container.session_for(record)).to_dict()
+        return payload
 
     def set_favorite(self, record_id: str, favorita: bool) -> dict:
         """Marca ou desmarca a decisao como favorita.
@@ -491,23 +496,28 @@ class DecisionService:
         Um cenario inconsistente volta com ``consistente=False`` e sem analise,
         em vez de interromper a varredura.
 
-        Limitacao conhecida: os valores de ``limiares`` nao sao validados alem
-        da conversao para ``float``. Um epsilon negativo e aceito e transforma a
-        preferencia estrita ``k_i - k_j >= epsilon`` numa restricao que admite
-        ``k_j > k_i``; NaN e infinito tambem nao sao recusados aqui. A mensagem
-        "Limiar alto demais" dos cenarios inconsistentes supoe epsilon positivo.
+        Cada limiar precisa ser finito e nao negativo: um epsilon negativo
+        transformaria a preferencia estrita ``k_i - k_j >= epsilon`` numa
+        restricao que admite ``k_j > k_i``, e NaN ou infinito chegariam ao LP.
+        E por isso que a mensagem "Limiar alto demais" dos cenarios
+        inconsistentes pode supor epsilon positivo.
 
         Custo: uma analise completa da decisao por limiar
         Erros: LimitExceeded se houver mais limiares que
-        ``max_sensitivity_points``; ValueError ou TypeError se um limiar nao
-        for conversivel para ``float``.
+        ``max_sensitivity_points`` ou se limiares x alternativas passar de
+        ``max_sensitivity_budget``; InvalidRequest se um limiar nao for
+        numero, for negativo, NaN ou infinito.
         """
         self._limits.check_sensitivity(len(limiares))
+        epsilons = [_epsilon_valido(epsilon) for epsilon in limiares]
         record, session = self._load(record_id)
+        self._limits.check_sensitivity_budget(
+            record.problem.n_alternatives, len(epsilons)
+        )
 
         cenarios = []
-        for epsilon in limiares:
-            variant = session.with_epsilon(float(epsilon))
+        for epsilon in epsilons:
+            variant = session.with_epsilon(epsilon)
             if not variant.is_consistent:
                 cenarios.append(
                     ScenarioDTO(
@@ -537,9 +547,10 @@ class DecisionService:
         so e permitido antes da elicitacao comecar: depois, as respostas ja dadas
         se referiam a outra escala.
 
-        Erros: InvalidRequest se a elicitacao ja comecou; KeyError se o
-        criterio nao existir; ValueError se a curva for invalida para a escala
-        do criterio.
+        Erros: InvalidRequest se a elicitacao ja comecou ou se a curva tiver
+        NaN/infinito; LimitExceeded se a curva passar de ``max_value_points``;
+        KeyError se o criterio nao existir; ValueError se a curva for invalida
+        para a escala do criterio.
         """
         from dataclasses import replace as _replace
 
@@ -551,9 +562,12 @@ class DecisionService:
             )
 
         indice = record.problem.index_of_criterion(criterio)
+        if pontos:
+            self._limits.check_value_points(len(pontos), criterio)
         curva = (
             tuple((float(c), float(v)) for c, v in pontos) if pontos else None
         )
+        _recusar_nao_finitos(curva, "curva_de_valor")
         criterios = list(record.problem.criteria)
         criterios[indice] = _replace(criterios[indice], value_points=curva)
         novo = _replace(record.problem, criteria=tuple(criterios))
@@ -561,8 +575,9 @@ class DecisionService:
         novo.scales
 
         record.problem = novo
+        payload = problem_dto(record).to_dict()
         self._container.repository.save(record)
-        return problem_dto(record).to_dict()
+        return payload
 
     def diagnose(self, record_id: str) -> dict:
         """Quais declaracoes brigam entre si, e o que da para fazer."""
@@ -576,15 +591,14 @@ class DecisionService:
 
         As acoes aceitas sao ``desfazer``, ``inverter`` e ``remover``; a saida
         ``reordenar`` que ``diagnose`` pode oferecer nao passa por aqui, e sim
-        por ``rank_criteria``. ``remover`` renumera as declaracoes mantidas e
-        regrava o instante e o autor delas (ver ``inconsistency.resolver``).
-
-        Limitacao conhecida: grava antes de montar a situacao (ver
-        ``_commit``).
+        por ``rank_criteria``. ``remover`` conserva o instante e o autor das
+        declaracoes mantidas; so a sequencia das posteriores cai uma posicao
+        (ver ``inconsistency.resolver``).
 
         Erros: ValueError se nao houver declaracao, a acao for desconhecida, a
         ultima declaracao nao puder ser invertida, ou ``sequencia`` faltar ou
-        nao existir.
+        nao existir; InvalidRequest se ``remover`` apontar a ordenacao dos
+        criterios.
         """
         record, session = self._load(record_id)
         return self._commit(record, resolver(session, acao, sequencia))
@@ -603,15 +617,17 @@ class DecisionService:
         ``sensitivity`` -- que varre o epsilon, a folga entre os pesos de dois
         criterios --, e as duas nao se substituem.
 
-        Limitacao conhecida: so e medida de fato na problematica de escolha;
-        nas demais a estabilidade informada nao mede nada, e cenarios
-        inconsistentes contam contra a estabilidade sem aparecer na resposta
-        (ver ``sensitivity.analisar``).
+        O que conta como "a solucao" depende da problematica, e cenarios
+        inconsistentes saem contados a parte, fora do denominador (ver
+        ``sensitivity.analisar``).
 
         Exatidao: aproximada (amostragem, semente fixa)
         Custo: uma analise completa da decisao por cenario
-        Erros: LimitExceeded se houver variacoes ou cenarios demais;
-        InvalidRequest se os criterios ainda nao foram ordenados; KeyError se
+        Erros: LimitExceeded se houver variacoes ou cenarios demais, ou se
+        cenarios x alternativas passar de ``max_sensitivity_budget``;
+        InvalidRequest se os criterios ainda nao foram ordenados, se as
+        declaracoes ja forem inconsistentes, se uma faixa for NaN/infinita ou
+        se a problematica nao tiver definicao de solucao; KeyError se
         uma variacao vier sem ``criterio``; ValueError se o criterio for
         desconhecido, a faixa for negativa ou passar de 100% para baixo, ou
         ``cenarios`` for menor que 1.
@@ -624,20 +640,23 @@ class DecisionService:
                 f"reprocessa a decisao inteira."
             )
 
-        _, session = self._load(record_id)
+        record, session = self._load(record_id)
+        self._limits.check_sensitivity_budget(record.problem.n_alternatives, cenarios)
         if not session.started:
             raise InvalidRequest(
                 "A analise de sensibilidade exige ao menos a ordenacao dos pesos."
             )
 
-        pedidos = [
-            VariacaoCriterio(
-                criterio=v["criterio"],
-                para_baixo=float(v.get("para_baixo", 10.0)),
-                para_cima=float(v.get("para_cima", 10.0)),
+        pedidos = []
+        for v in variacoes:
+            para_baixo = float(v.get("para_baixo", 10.0))
+            para_cima = float(v.get("para_cima", 10.0))
+            _recusar_nao_finitos([para_baixo, para_cima], "variacoes")
+            pedidos.append(
+                VariacaoCriterio(
+                    criterio=v["criterio"], para_baixo=para_baixo, para_cima=para_cima
+                )
             )
-            for v in variacoes
-        ]
         return analisar(session, pedidos, cenarios=cenarios, semente=semente).to_dict()
 
     # --- verificacoes ---------------------------------------------------------
@@ -653,6 +672,10 @@ class DecisionService:
             self._limits.check_name(criterion.name, "nome de criterio")
             if criterion.levels is not None:
                 self._limits.check_levels(len(criterion.levels), criterion.key)
+            if criterion.value_points is not None:
+                self._limits.check_value_points(
+                    len(criterion.value_points), criterion.key
+                )
 
     def _check_equivalence(self, limiar: float | None) -> float | None:
         """Confere o limiar pedido; ``None`` atravessa como "usa o padrao".
@@ -703,6 +726,46 @@ def _recusar_nao_finitos(valor, onde: str) -> None:
     elif isinstance(valor, (list, tuple)):
         for posicao, item in enumerate(valor):
             _recusar_nao_finitos(item, f"{onde}[{posicao}]")
+
+
+def _como_float(valor, onde: str) -> float:
+    """``float(valor)``, com a recusa no formato dos demais erros de entrada."""
+    try:
+        return float(valor)
+    except (TypeError, ValueError):
+        raise InvalidRequest(f"Valor nao numerico em '{onde}': {valor!r}.") from None
+
+
+def _recusar_criterio_nao_finito(criterion: Criterion) -> None:
+    """Recusa NaN ou infinito nos numeros que o criterio carrega.
+
+    Niveis, curva de valor e limites de veto chegam do pedido de criacao --
+    o servidor MCP passa dicionarios crus, e o JSON do Python aceita ``NaN`` e
+    ``Infinity``. Nada no ``Problem`` confere esses campos, entao um veto NaN
+    era gravado e a decisao so voltava a funcionar desfazendo.
+
+    Erros: InvalidRequest no primeiro valor nao finito.
+    """
+    onde = f"criterios.{criterion.key}"
+    _recusar_nao_finitos(criterion.levels, f"{onde}.niveis")
+    _recusar_nao_finitos(criterion.value_points, f"{onde}.curva_de_valor")
+    _recusar_nao_finitos(criterion.veto_upper, f"{onde}.veto_superior")
+    _recusar_nao_finitos(criterion.veto_lower, f"{onde}.veto_inferior")
+
+
+def _epsilon_valido(epsilon) -> float:
+    """O limiar da sensibilidade como ``float`` finito e nao negativo.
+
+    Erros: InvalidRequest se nao for numero, for negativo, NaN ou infinito.
+    """
+    valor = _como_float(epsilon, "limiares")
+    if not math.isfinite(valor) or valor < 0:
+        raise InvalidRequest(
+            f"Cada limiar da analise de sensibilidade precisa ser um numero "
+            f"finito e nao negativo; veio {valor!r}. Ele e a folga minima entre "
+            f"os pesos de dois criterios na preferencia estrita."
+        )
+    return valor
 
 
 def _without_log(record: DecisionRecord) -> DecisionRecord:

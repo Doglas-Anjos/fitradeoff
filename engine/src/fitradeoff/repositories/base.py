@@ -27,6 +27,17 @@ class StorageUnavailable(Exception):
     """
 
 
+class CorruptRecord(StorageUnavailable):
+    """O registro existe, mas o armazenamento devolveu algo que nao se le.
+
+    Um arquivo JSON truncado, de topo que nao e objeto ou em formato de outra
+    versao. Subclasse de ``StorageUnavailable`` de proposito: o defeito e do
+    armazenamento, nao do pedido, e por isso nao pode sair como ``ValueError``
+    -- que a API traduz para 400, culpando quem chamou. Herdando, a API
+    responde 5xx sem precisar conhecer este nome.
+    """
+
+
 class ConcurrentModification(Exception):
     """A decisao mudou entre a leitura e a gravacao deste pedido.
 
@@ -37,14 +48,14 @@ class ConcurrentModification(Exception):
     auditoria: quem recebe isto rele a decisao e decide de novo, agora vendo o
     que a outra janela fez.
 
-    Limitacao conhecida: isto NAO e uma garantia da porta. So o adaptador
-    Postgres levanta esta excecao, porque so ele guarda versao por linha e
-    confere na gravacao. ``InMemoryDecisionRepository`` e
-    ``JsonFileDecisionRepository`` gravam por cima sem conferir nada: com eles,
-    a segunda gravacao apaga a primeira em silencio, exatamente o cenario
-    descrito acima. Mesmo no Postgres, a conferencia so vale para um registro
-    que a mesma instancia do repositorio leu antes (``get``); gravar sem ter
-    lido substitui por inteiro.
+    Levantada pelos adaptadores que guardam versao e conferem na gravacao:
+    Postgres (versao por linha) e ``JsonFileDecisionRepository`` (versao no
+    arquivo, conferida sob trava entre processos). A conferencia vale para um
+    registro que a mesma instancia do repositorio leu antes (``get`` ou
+    ``list``). Gravar sem ter lido difere entre os dois: o Postgres substitui
+    por inteiro; o de arquivo recusa se o arquivo ja existir.
+    ``InMemoryDecisionRepository`` nao confere nada -- e duble de teste, e com
+    ele a segunda gravacao apaga a primeira.
     """
 
 
@@ -143,19 +154,21 @@ class DecisionRepository(ABC):
 
     Contrato comum aos adaptadores: identificadores seguem o alfabeto
     ``[A-Za-z0-9_-]{1,64}``, e um id fora dele e recusado com ``ValueError``
-    antes de qualquer acesso. O que a porta NAO garante: controle de
-    concorrencia. So o adaptador Postgres confere versao na gravacao (ver
-    ``ConcurrentModification``); os demais sao "ultima gravacao vence".
+    antes de qualquer acesso. Controle de concorrencia: os adaptadores
+    Postgres e de arquivo conferem versao na gravacao (ver
+    ``ConcurrentModification``); o de memoria e "ultima gravacao vence".
     """
 
     @abstractmethod
     def save(self, record: DecisionRecord) -> None:
         """Grava o registro inteiro, criando-o se nao existir.
 
-        Erros: ValueError se o id for invalido; so no Postgres,
+        Erros: ValueError se o id for invalido; no Postgres e no arquivo,
         ConcurrentModification se outra gravacao passou na frente desde o
-        ``get``, RecordNotFound se o registro lido foi apagado nesse meio
-        tempo, e StorageUnavailable se o banco nao responder.
+        ``get`` (no arquivo, tambem se um registro nunca lido ja existir), e
+        RecordNotFound se o registro lido foi apagado nesse meio tempo;
+        StorageUnavailable se o banco nao responder ou o arquivo nao puder ser
+        trocado.
         """
         ...
 
@@ -164,13 +177,17 @@ class DecisionRepository(ABC):
         """O registro com esse id, montado a partir do armazenamento.
 
         Erros: RecordNotFound se nao existir; ValueError se o id for invalido;
-        StorageUnavailable (so Postgres).
+        StorageUnavailable (Postgres fora do ar) ou CorruptRecord (arquivo
+        ilegivel).
         """
         ...
 
     @abstractmethod
     def list(self) -> list[DecisionRecord]:
         """Todos os registros, montados por inteiro. Para a listagem, ``summaries``.
+
+        O adaptador de arquivo deixa de fora, com aviso no log, o arquivo que
+        nao se le.
 
         Erros: StorageUnavailable (so Postgres).
         """

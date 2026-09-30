@@ -47,7 +47,7 @@ def test_views_devolvem_dto_tipado_e_nao_dicionario_solto(service, iniciada):
     assert isinstance(state_dto(record, session), StateDTO)
     assert isinstance(audit_dto(record, session), AuditDTO)
     assert isinstance(analysis_dto(session.analyse()), AnalysisDTO)
-    assert isinstance(question_dto(record.id, session.present_question()), QuestionDTO)
+    assert isinstance(question_dto(record.id, session.present_question(), len(session.log)), QuestionDTO)
 
 
 def test_dto_e_imutavel(service, iniciada):
@@ -119,10 +119,10 @@ def test_problema_traz_custos_quando_ha(service):
 
 def test_pergunta_serializa_todos_os_campos(service, iniciada):
     record, session = load(service, iniciada)
-    payload = question_dto(record.id, session.present_question()).to_dict()
+    payload = question_dto(record.id, session.present_question(), len(session.log)).to_dict()
 
     assert set(payload) == {
-        "id", "enunciado", "criterio_em_foco", "criterio_rival",
+        "id", "pergunta_id", "enunciado", "criterio_em_foco", "criterio_rival",
         "opcao_a", "opcao_b", "posicao_na_escala", "como_responder",
     }
 

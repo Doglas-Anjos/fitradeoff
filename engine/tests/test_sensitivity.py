@@ -8,9 +8,10 @@ ao chamar duas coisas de equivalentes?".
 import numpy as np
 import pytest
 
-from conftest import make_problem
+from conftest import ALTERNATIVAS, CONSEQUENCIAS, CRITERIOS_SPEC, make_problem
+from fitradeoff import DecisionService, InvalidRequest
 from fitradeoff.application.sensitivity import VariacaoCriterio, analisar
-from fitradeoff.domain import Preference
+from fitradeoff.domain import HolisticJudgement, Preference
 from fitradeoff.elicitation import DecisionSession
 from fitradeoff.problematics import ChoiceProblematic
 
@@ -161,3 +162,112 @@ def test_with_problem_recusa_estrutura_diferente(base):
     menor = make_problem([[1.0, 2.0, 3.0], [3.0, 2.0, 1.0]])
     with pytest.raises(ValueError, match="mesmos criterios"):
         base.with_problem(menor)
+
+
+# --- a solucao de cada problematica ------------------------------------------
+
+
+ORDEM = ["qualidade", "custo", "prazo"]
+VARIACAO_GRANDE = [
+    {"criterio": "qualidade", "para_baixo": 40, "para_cima": 40},
+    {"criterio": "custo", "para_baixo": 40, "para_cima": 40},
+    {"criterio": "prazo", "para_baixo": 40, "para_cima": 40},
+]
+
+
+@pytest.fixture
+def servico(container):
+    return DecisionService(container, make_id=lambda: "d1")
+
+
+def _elicitada(servico, problematica, configuracao=None, custos=None):
+    servico.create(
+        "Fornecedores", ALTERNATIVAS, CRITERIOS_SPEC, CONSEQUENCIAS,
+        problematica=problematica, configuracao=configuracao, custos=custos,
+    )
+    servico.rank_criteria("d1", ORDEM)
+    pesos = {0: 0.5, 1: 0.3, 2: 0.2}
+    for _ in range(40):
+        question = servico.session("d1").next_question()
+        if question is None:
+            break
+        prefere_a = pesos[question.criterion] * question.value >= pesos[question.rival]
+        servico.answer("d1", "A" if prefere_a else "B")
+
+
+def test_ranking_mede_se_a_ordem_mudou(servico):
+    """Antes, fora da escolha, a solucao comparada era sempre o conjunto vazio e
+    a estabilidade saia 100% sem medir nada."""
+    _elicitada(servico, "ranking")
+    parado = servico.consequence_sensitivity(
+        "d1", [{"criterio": "custo", "para_baixo": 0, "para_cima": 0}], cenarios=5
+    )
+    assert parado["estabilidade"] == 1.0
+    assert parado["problematica"] == "ranking"
+    assert parado["solucao_original"]  # o topo do ranking
+
+    agitado = servico.consequence_sensitivity("d1", VARIACAO_GRANDE, cenarios=30)
+    assert agitado["estabilidade"] < 1.0
+
+
+def test_sorting_mede_se_a_alocacao_mudou(servico):
+    _elicitada(
+        servico, "sorting",
+        configuracao={"perfis": [0.35, 0.7], "classes": ["Baixa", "Media", "Alta"]},
+    )
+    parado = servico.consequence_sensitivity(
+        "d1", [{"criterio": "custo", "para_baixo": 0, "para_cima": 0}], cenarios=5
+    )
+    assert parado["estabilidade"] == 1.0
+    agitado = servico.consequence_sensitivity("d1", VARIACAO_GRANDE, cenarios=30)
+    assert agitado["estabilidade"] < 1.0
+
+
+@pytest.mark.parametrize("problematica", ["portfolio", "beneficio_custo"])
+def test_carteiras_comparam_a_carteira(servico, problematica):
+    _elicitada(
+        servico, problematica,
+        configuracao={"orcamento": 25.0, "amostras": 8},
+        custos=[10.0, 12.0, 8.0, 11.0],
+    )
+    analise = servico.state("d1")["analise"]
+    esperado = (
+        analise["sempre_selecionados"]
+        if problematica == "portfolio"
+        else analise["carteira_mais_frequente"]["projetos"]
+    )
+    resultado = servico.consequence_sensitivity(
+        "d1", [{"criterio": "custo", "para_baixo": 0, "para_cima": 0}], cenarios=3
+    )
+    assert resultado["problematica"] == problematica
+    assert sorted(resultado["solucao_original"]) == sorted(esperado)
+    assert resultado["solucao_original"]
+    assert resultado["estabilidade"] == 1.0
+
+
+def test_problematica_sem_definicao_de_solucao_e_recusada():
+    from fitradeoff.application.sensitivity import _solucao
+
+    with pytest.raises(InvalidRequest, match="nao sabe o que comparar"):
+        _solucao("inventada", {})
+
+
+def test_cenarios_inconsistentes_sao_contados_a_parte(evaluator, clock):
+    """Cenarios em que as respostas deixam de caber juntas eram pulados mas
+    ficavam no denominador, e a resposta nao dizia quantos foram."""
+    problem = make_problem(
+        [[10.0, 10.0], [9.9, 9.9], [1.0, 1.0]], names=["A", "B", "C"]
+    )
+    s = sessao(evaluator, clock, problem).record(HolisticJudgement(preferred=0, over=1))
+    resultado = analisar(
+        s,
+        [VariacaoCriterio("c0", 5, 5), VariacaoCriterio("c1", 5, 5)],
+        cenarios=60,
+    ).to_dict()
+
+    inconsistentes = resultado["cenarios_inconsistentes"]
+    assert 0 < inconsistentes < 60
+    assert resultado["cenarios_consistentes"] == 60 - inconsistentes
+    # A esta na solucao em todo cenario consistente: com o denominador certo,
+    # a frequencia e 1, e nao a fracao de cenarios consistentes
+    assert resultado["frequencia"]["A"] == 1.0

@@ -5,9 +5,14 @@
 as duas.
 """
 
+from dataclasses import replace
+from datetime import datetime, timezone
+
 import pytest
 
 from conftest import make_problem
+from fitradeoff import InvalidRequest
+from fitradeoff.domain import FixedClock
 from fitradeoff.application.inconsistency import diagnosticar, resolver
 from fitradeoff.domain import CriteriaRanking, HolisticJudgement, Preference
 from fitradeoff.elicitation import DecisionSession
@@ -204,3 +209,26 @@ def test_inverter_indiferenca_e_recusado(elicitavel):
 def test_inverter_exige_resposta_de_tradeoff(conflitante):
     with pytest.raises(ValueError, match="tradeoff"):
         resolver(conflitante, "inverter")
+
+
+def test_remover_preserva_instante_e_autor_das_mantidas(evaluator, clock, problema):
+    """O replay regravava as mantidas com o relogio da resolucao e o autor
+    padrao: a trilha passava a dizer que o decisor declarou tudo agora."""
+    s = sessao(evaluator, clock, problema)
+    s = s.record(HolisticJudgement(preferred=0, over=2), actor="ana")
+    s = s.record(HolisticJudgement(preferred=3, over=1), actor="bruno")
+    s = s.record(HolisticJudgement(preferred=2, over=0), actor="ana")
+    depois = replace(s, clock=FixedClock(datetime(2030, 1, 1, tzinfo=timezone.utc)))
+
+    resolvida = resolver(depois, "remover", sequencia=2)
+
+    entradas = resolvida.log.entries
+    assert [e.actor for e in entradas] == ["decisor", "bruno", "ana"]
+    assert all(e.recorded_at == clock.now() for e in entradas)
+    assert [e.sequence for e in entradas] == [1, 2, 3]
+
+
+def test_remover_a_ordenacao_dos_criterios_e_recusado(conflitante):
+    """Sem a ordenacao, as respostas seguintes ficavam orfas."""
+    with pytest.raises(InvalidRequest, match="reordene"):
+        resolver(conflitante, "remover", sequencia=1)

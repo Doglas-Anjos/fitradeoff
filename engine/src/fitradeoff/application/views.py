@@ -6,11 +6,13 @@ mesmo, e esta declarado em ``dto.py``.
 
 from __future__ import annotations
 
+import hashlib
+
 import numpy as np
 
 from ..domain.preferences import HolisticJudgement
 from ..domain.problem import Problem
-from ..elicitation.questions import QuestionBrief
+from ..elicitation.questions import QuestionBrief, TradeoffQuestion
 from ..elicitation.session import DecisionSession
 from ..problematics.base import Analysis
 from ..repositories.base import DecisionRecord, DecisionSummary
@@ -398,14 +400,33 @@ def state_dto(record: DecisionRecord, session: DecisionSession) -> StateDTO:
     )
 
 
-def question_dto(record_id: str, brief: QuestionBrief) -> QuestionDTO:
+def pergunta_id(question: TradeoffQuestion, declaracoes: int) -> str:
+    """Identificador curto e estavel da pergunta pendente, neste estado da trilha.
+
+    Entra o que define a pergunta (criterio, rival, valor) e o numero de
+    declaracoes ja gravadas. A mesma pergunta no mesmo estado da sempre o mesmo
+    id; qualquer declaracao gravada no meio muda o id, mesmo que a pergunta
+    seguinte repita criterio, rival e valor -- e o que deixa ``answer`` recusar
+    uma resposta dada a uma pergunta que ja nao e a pendente.
+
+    Nao e segredo nem credencial: 12 digitos hexadecimais do SHA-1 bastam para
+    distinguir perguntas da mesma decisao.
+    """
+    chave = f"{question.criterion}|{question.rival}|{question.value!r}|{declaracoes}"
+    return hashlib.sha1(chave.encode("utf-8")).hexdigest()[:12]
+
+
+def question_dto(record_id: str, brief: QuestionBrief, declaracoes: int) -> QuestionDTO:
     """A pergunta apresentada, no formato de ``QuestionDTO``.
 
-    ``como_responder`` e instrucao para o agente, nao para o decisor: cita a
-    ferramenta de resposta e proibe responder por ele.
+    ``declaracoes`` e o numero de declaracoes na trilha quando a pergunta foi
+    montada; entra no ``pergunta_id``. ``como_responder`` e instrucao para o
+    agente, nao para o decisor: cita a ferramenta de resposta e proibe
+    responder por ele.
     """
     return QuestionDTO(
         id=record_id,
+        pergunta_id=pergunta_id(brief.question, declaracoes),
         enunciado=brief.as_text(),
         criterio_em_foco=brief.focus_criterion,
         criterio_rival=brief.rival_criterion,

@@ -200,12 +200,16 @@ class StateDTO:
 class QuestionDTO:
     """A pergunta de tradeoff pendente, pronta para mostrar ao decisor.
 
-    Resposta de ``next_question``. Nao carrega identificador da pergunta: ``id``
-    e o da decisao, e ``answer`` nao tem como conferir que a resposta se
-    refere a esta pergunta.
+    Resposta de ``next_question``. ``id`` e o da decisao; ``pergunta_id``
+    identifica esta pergunta NESTE estado da trilha (ver
+    ``views.pergunta_id``). Quem responde devolve o ``pergunta_id`` a
+    ``DecisionService.answer``, que recusa a resposta se a pergunta pendente
+    ja for outra -- duas abas, ou um pedido repetido, nao gravam contra uma
+    pergunta que o decisor nao viu.
     """
 
     id: str
+    pergunta_id: str
     enunciado: str
     criterio_em_foco: str
     criterio_rival: str

@@ -7,10 +7,12 @@ import pytest
 from conftest import make_problem
 from fitradeoff.domain import AuditLog, CriteriaRanking, Preference, TradeoffAnswer
 from fitradeoff.repositories import (
+    ConcurrentModification,
     DecisionRecord,
     InMemoryDecisionRepository,
     JsonFileDecisionRepository,
     RecordNotFound,
+    StorageUnavailable,
 )
 
 
@@ -159,11 +161,11 @@ def test_arquivo_gravado_e_json_legivel(tmp_path, record):
     repo.save(record)
     dados = json.loads((tmp_path / "abc123.json").read_text(encoding="utf-8"))
 
-    # so o problema e o log; nada de estado derivado
+    # so o problema, o log e o contador de versao; nada de estado derivado
     assert set(dados) == {
         "id", "nome", "problematica", "criado_em", "alternativas",
         "criterios", "consequencias", "custos", "configuracao", "auditoria",
-        "limiar_de_equivalencia", "favorita",
+        "limiar_de_equivalencia", "favorita", "versao",
     }
 
 
@@ -291,3 +293,118 @@ def test_arquivo_em_disco_sem_o_campo_continua_carregando(tmp_path, record):
 
     assert repo.get("abc123").favorite is False
     assert [r.favorite for r in repo.list()] == [False]
+
+
+# --- concorrencia e integridade do adaptador de arquivo ----------------------
+
+
+def test_duas_instancias_nao_perdem_declaracao_em_silencio(tmp_path, record, clock):
+    """Dois pedidos leem a mesma versao; o segundo a gravar era aceito e apagava
+    a declaracao do primeiro sem aviso."""
+    JsonFileDecisionRepository(tmp_path).save(record)
+    aba_1 = JsonFileDecisionRepository(tmp_path)
+    aba_2 = JsonFileDecisionRepository(tmp_path)
+    da_aba_1 = aba_1.get("abc123")
+    da_aba_2 = aba_2.get("abc123")
+
+    da_aba_1.log = da_aba_1.log.record(
+        TradeoffAnswer(1, 2, 0.5, Preference.FIRST), clock
+    )
+    aba_1.save(da_aba_1)
+    da_aba_2.log = da_aba_2.log.record(
+        TradeoffAnswer(1, 2, 0.5, Preference.SECOND), clock
+    )
+    with pytest.raises(ConcurrentModification):
+        aba_2.save(da_aba_2)
+
+    gravado = JsonFileDecisionRepository(tmp_path).get("abc123")
+    assert gravado.log.entries[-1].statement.preference == Preference.FIRST
+    # depois de reler, a segunda aba grava normalmente
+    relido = aba_2.get("abc123")
+    relido.favorite = True
+    aba_2.save(relido)
+    assert JsonFileDecisionRepository(tmp_path).get("abc123").favorite
+
+
+def test_registro_novo_nao_sobrescreve_arquivo_de_outro(tmp_path, record):
+    JsonFileDecisionRepository(tmp_path).save(record)
+    intruso = DecisionRecord(id="abc123", problem=record.problem)
+    with pytest.raises(ConcurrentModification):
+        JsonFileDecisionRepository(tmp_path).save(intruso)
+    assert len(JsonFileDecisionRepository(tmp_path).get("abc123").log) == 2
+
+
+def test_registro_apagado_depois_da_leitura_nao_renasce(tmp_path, record):
+    JsonFileDecisionRepository(tmp_path).save(record)
+    repo = JsonFileDecisionRepository(tmp_path)
+    lido = repo.get("abc123")
+    JsonFileDecisionRepository(tmp_path).delete("abc123")
+    with pytest.raises(RecordNotFound):
+        repo.save(lido)
+
+
+def test_arquivo_corrompido_e_falha_de_armazenamento_e_nao_de_pedido(tmp_path, record):
+    """JSON truncado levantava JSONDecodeError, um ValueError -- que a API traduz
+    para 400, culpando quem chamou por um defeito do disco."""
+    repo = JsonFileDecisionRepository(tmp_path)
+    (tmp_path / "abc123.json").write_text('{"id": "abc1', encoding="utf-8")
+    with pytest.raises(StorageUnavailable) as erro:
+        repo.get("abc123")
+    assert not isinstance(erro.value, ValueError)
+    (tmp_path / "abc123.json").write_text('{"id": "abc123"}', encoding="utf-8")
+    with pytest.raises(StorageUnavailable):
+        repo.get("abc123")
+
+
+def test_arquivo_corrompido_fora_da_listagem_sai_no_log(tmp_path, record, caplog):
+    repo = JsonFileDecisionRepository(tmp_path)
+    repo.save(record)
+    (tmp_path / "lixo.json").write_text("{ nao e json", encoding="utf-8")
+    with caplog.at_level("WARNING", logger="fitradeoff.repositories.adapters"):
+        assert [r.id for r in repo.list()] == ["abc123"]
+    assert "lixo.json" in caplog.text
+
+
+def test_gravacao_e_atomica(tmp_path, record, monkeypatch):
+    """``write_text`` truncava o arquivo e escrevia por cima: uma queda no meio
+    deixava JSON pela metade. Agora uma falha na troca preserva o anterior."""
+    import os
+
+    repo = JsonFileDecisionRepository(tmp_path)
+    repo.save(record)
+    antes = (tmp_path / "abc123.json").read_text(encoding="utf-8")
+
+    def queda(*args, **kwargs):
+        raise OSError("queda no meio da gravacao")
+
+    monkeypatch.setattr(os, "replace", queda)
+    record.log = record.log.without_last()
+    with pytest.raises(OSError):
+        repo.save(record)
+    monkeypatch.undo()
+
+    assert (tmp_path / "abc123.json").read_text(encoding="utf-8") == antes
+    assert len(JsonFileDecisionRepository(tmp_path).get("abc123").log) == 2
+    assert not list(tmp_path.glob("*.tmp"))
+
+
+def test_trava_de_arquivo_e_exclusiva(tmp_path):
+    import threading
+    import time
+
+    from fitradeoff.repositories.adapters import _trava_exclusiva
+
+    caminho = tmp_path / "x.lock"
+    entrou = threading.Event()
+
+    def outra():
+        with _trava_exclusiva(caminho):
+            entrou.set()
+
+    with _trava_exclusiva(caminho):
+        concorrente = threading.Thread(target=outra)
+        concorrente.start()
+        time.sleep(0.3)
+        assert not entrou.is_set()
+    concorrente.join(timeout=15)
+    assert entrou.is_set()

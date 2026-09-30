@@ -272,3 +272,21 @@ def test_fluxo_completo_pelo_agente(service):
     estado = service.state(criada_id["id"])
     assert estado["declaracoes"] == 2
     assert estado["consistente"]
+
+
+def test_a_decisao_em_foco_chega_ao_modelo(service):
+    """Sem isto o id so voltava na resposta, e o modelo nunca sabia qual era."""
+    criada = service.create(**CRIAR)
+    agente = montar(service, [RespostaFalsa(content=[BlocoTexto("ok")])])
+    agente.conversar([{"role": "user", "content": "x"}], decisao_id=criada["id"])
+
+    sistema = agente._client.chamadas[0]["system"]  # noqa: SLF001
+    assert sistema.startswith(SYSTEM)
+    assert criada["id"] in sistema
+    assert "Fornecedores" in sistema
+
+
+def test_decisao_em_foco_inexistente_nao_muda_as_instrucoes(service):
+    agente = montar(service, [RespostaFalsa(content=[BlocoTexto("ok")])])
+    agente.conversar([{"role": "user", "content": "x"}], decisao_id="fantasma")
+    assert agente._client.chamadas[0]["system"] == SYSTEM  # noqa: SLF001

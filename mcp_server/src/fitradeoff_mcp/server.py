@@ -457,7 +457,8 @@ def rank_criteria(id: str, ordem: list[str]) -> dict:
 @tool(
     "Returns the next trade-off question, already worded in the problem's "
     "units (in Portuguese; translate to the decision maker's language). "
-    "Present both options in full, and make clear they are hypothetical."
+    "Present both options in full, and make clear they are hypothetical. "
+    "Keep its `pergunta_id`: answer needs it as `question_id`."
 )
 def next_question(id: str) -> dict:
     return service().next_question(id)
@@ -465,11 +466,15 @@ def next_question(id: str) -> dict:
 
 @tool(
     "Registers the decision maker's answer to the current question: 'A', 'B' "
-    "or 'indiferente' (indifferent). Only their answer, never yours. Returns "
-    "the updated status."
+    "or 'indiferente' (indifferent). Only their answer, never yours. Always "
+    "pass as `question_id` the `pergunta_id` you received from next_question "
+    "for the question the decision maker answered: if the pending question "
+    "changed meanwhile (another window, a retry), the answer is refused "
+    "instead of being recorded against a question they never saw -- then call "
+    "next_question again and present the new one. Returns the updated status."
 )
-def answer(id: str, preferencia: str) -> dict:
-    return service().answer(id, preferencia)
+def answer(id: str, preferencia: str, question_id: str | None = None) -> dict:
+    return service().answer(id, preferencia, pergunta_id=question_id)
 
 
 @tool(

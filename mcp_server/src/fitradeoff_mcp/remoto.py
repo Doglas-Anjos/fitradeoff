@@ -30,6 +30,7 @@ from collections.abc import AsyncIterator, Callable
 from pathlib import Path
 from typing import Any
 
+import anyio.to_thread
 from mcp.server.context import CallNext, HandlerResult, ServerRequestContext
 from mcp.server.transport_security import TransportSecuritySettings
 from starlette.applications import Starlette
@@ -49,8 +50,8 @@ pessoa: a chave do cofre abre o acervo do dono dela, e o JWT da aplicacao da
 frente abre o acervo de quem ele identifica. Essa decisao mora toda no
 resolvedor; nada aqui nem nas dezenove ferramentas sabe de quem e o diretorio.
 
-E chamado de forma sincrona, de dentro do middleware assincrono: ver a
-limitacao em ``Autenticacao``.
+E sincrono, e por isso roda numa thread de trabalho, nunca no laco de eventos:
+ver ``Autenticacao``.
 """
 
 CAMINHO = "/mcp"
@@ -85,11 +86,12 @@ class Autenticacao:
     roteamento, ou a rota do MCP nao reconheceria ``/mcp/<chave>``. Fora do
     prefixo, nao toca em nada: as rotas da API seguem como estavam.
 
-    Limitacao conhecida: o ``Resolvedor`` e sincrono e roda direto no laco de
-    eventos, dentro de ``__call__``. O que a API injeta le o cofre do disco (e
-    pode regrava-lo ao marcar uso) ou, com JWT, pode buscar o JWKS pela rede --
-    com teto de dez segundos. Enquanto isso, o processo inteiro para de atender,
-    nao so esta requisicao.
+    O ``Resolvedor`` e sincrono e roda numa thread de trabalho
+    (``anyio.to_thread``), e nao no laco de eventos. O que a API injeta le o
+    cofre do disco (e pode regrava-lo ao marcar uso) ou, com JWT, pode buscar o
+    JWKS pela rede -- com teto de dez segundos. No laco, isso parava o processo
+    inteiro a cada chave apresentada, inclusive por quem nao tem credencial
+    nenhuma; na thread, so esta requisicao espera.
     """
 
     def __init__(
@@ -127,7 +129,7 @@ class Autenticacao:
             )
             return
 
-        escopo = self.resolvedor(chave)
+        escopo = await anyio.to_thread.run_sync(self.resolvedor, chave)
         if escopo is None:
             await self._recusar(
                 scope, receive, send, "Chave invalida ou revogada."

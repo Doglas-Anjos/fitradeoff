@@ -119,10 +119,21 @@ def responder(
 ):
     """Registra a resposta do decisor a pergunta pendente.
 
-    Erros: 404 decisao inexistente; 400 ou 409 resposta que o motor recusa (sem pergunta
-    pendente, preferencia desconhecida); 409 edicao concorrente; 422 corpo invalido.
+    Com ``pergunta_id`` (o que veio de GET /pergunta), a resposta fica presa a
+    pergunta que o decisor viu: se outra aba, o chat ou um pedido repetido ja
+    mudou a pergunta pendente, nada e gravado e a resposta e 409 -- a tela rele
+    a pergunta e mostra a nova.
+
+    Erros: 404 decisao inexistente; 409 ``pergunta_id`` que nao e mais o da
+    pergunta pendente; 400 ou 409 resposta que o motor recusa (sem pergunta
+    pendente, preferencia desconhecida); 409 edicao concorrente; 422 corpo
+    invalido.
     """
-    return _run(lambda: service.answer(decisao_id, dados.preferencia))
+    return _run(
+        lambda: service.answer(
+            decisao_id, dados.preferencia, pergunta_id=dados.pergunta_id
+        )
+    )
 
 
 @router.post("/decisoes/{decisao_id}/julgamento", summary="Avaliacao holistica")

@@ -114,14 +114,85 @@ def test_teto_de_chaves(local):
         cofre.criar(local, "A que passa do teto")
 
 
-def test_arquivo_corrompido_nao_derruba_a_tela(local):
-    cofre.criar(local, "Antes da queda de energia")
-    cofre.caminho(local).write_text('{"chaves": [{"id"', encoding="utf-8")
+def test_cofre_corrompido_recusa_toda_chave_e_nao_e_sobrescrito(local, cliente):
+    """Fechar, e nao ler como vazio: vazio, a gravacao seguinte apagaria o resto."""
+    _, texto = cofre.criar(local, "Antes da queda de energia")
+    corrompido = '{"chaves": [{"id"'
+    cofre.caminho(local).write_text(corrompido, encoding="utf-8")
 
-    # Perde chaves, que se regeram; nao perde acesso a decisao alguma, e a tela
-    # abre.
+    assert cofre.resolver(local)(texto) is None
+    with pytest.raises(cofre.CofreIlegivel):
+        cofre.listar(local)
+    with pytest.raises(cofre.CofreIlegivel):
+        cofre.criar(local, "Nova")
+    with pytest.raises(cofre.CofreIlegivel):
+        cofre.revogar(local, "qualquer")
+    assert cliente.get("/api/chaves").status_code == 503
+    assert cliente.post("/api/chaves", json={"rotulo": "x"}).status_code == 503
+    # Nada foi gravado por cima: o arquivo continua o que era, para o operador.
+    assert cofre.caminho(local).read_text(encoding="utf-8") == corrompido
+
+
+def test_marcar_uso_nao_ressuscita_chave_revogada_no_meio(local, monkeypatch):
+    """A revogacao que chega entre a leitura e a gravacao do uso fica valendo."""
+    import threading
+    import time
+
+    chave, texto = cofre.criar(local, "Notebook roubado")
+    original = cofre._ler
+    revogacao: list[threading.Thread] = []
+
+    def lendo_e_deixando_revogar(settings):
+        lidas = original(settings)
+        if not revogacao and threading.current_thread() is threading.main_thread():
+            # Dentro da marcacao de uso: outra thread revoga agora, enquanto a
+            # lista lida ainda contem a chave.
+            t = threading.Thread(target=cofre.revogar, args=(local, chave.id))
+            revogacao.append(t)
+            t.start()
+            time.sleep(0.3)
+        return lidas
+
+    monkeypatch.setattr(cofre, "_ler", lendo_e_deixando_revogar)
+    cofre._marcar_uso(local, chave.id, cofre.datetime.now(cofre.timezone.utc))
+    revogacao[0].join(timeout=15)
+    monkeypatch.setattr(cofre, "_ler", original)
+
     assert cofre.listar(local) == []
-    assert cofre.resolver(local)("qualquer") is None
+    assert cofre.resolver(local)(texto) is None
+
+
+def test_emissoes_simultaneas_nao_se_apagam(local):
+    """Sem trava, duas emissoes lendo a mesma lista gravam uma por cima da outra."""
+    import threading
+
+    erros: list[BaseException] = []
+
+    def emitir(nome: str) -> None:
+        for i in range(8):
+            try:
+                cofre.criar(local, f"{nome} {i}")
+            except BaseException as exc:  # noqa: BLE001
+                erros.append(exc)
+
+    threads = [threading.Thread(target=emitir, args=(f"t{n}",)) for n in range(3)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join(timeout=60)
+
+    assert erros == []
+    assert len(cofre.listar(local)) == 24
+
+
+def test_gravacao_nao_depende_de_um_provisorio_de_nome_fixo(local):
+    """Um nome fixo seria dividido por duas gravacoes simultaneas."""
+    cofre.criar(local, "Primeira")
+    # Ocupa o nome que a versao antiga usava: com provisorio unico, nao importa.
+    (cofre.caminho(local).parent / "chaves.json.parcial").mkdir()
+    cofre.criar(local, "Segunda")
+    assert len(cofre.listar(local)) == 2
+    assert not list(cofre.caminho(local).parent.glob("chaves.json.*.parcial"))
 
 
 def test_ultimo_uso_e_registrado_uma_vez_por_minuto(local, monkeypatch):

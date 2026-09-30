@@ -12,6 +12,7 @@ iteracoes que o runner nao expoe.
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 from collections.abc import Callable
 from typing import Any
@@ -282,17 +283,44 @@ class DecisionAgent:
             # excecao que sobe aqui derrubaria a conversa inteira.
             return {"erro": f"{type(exc).__name__}: {exc}"}
 
+    def _sistema(self, decisao_id: str | None) -> str:
+        """As instrucoes, com a decisao em foco quando a tela diz qual e.
+
+        Sem isto, o ``decisao_id`` que a tela manda so voltava na resposta: o
+        modelo nunca o via, e numa conversa retomada perguntava de novo o que
+        ja estava registrado ou criava uma decisao nova. O nome vai junto para
+        o modelo confirmar com o decisor que e a decisao certa; se ela nao
+        existe (apagada, de outro acervo), nada e acrescentado.
+        """
+        if not decisao_id:
+            return SYSTEM
+        try:
+            nome = str(self._service.describe(decisao_id).get("nome") or "")
+        except Exception:  # noqa: BLE001
+            return SYSTEM
+        return (
+            f"{SYSTEM}\n\nDecisao em foco nesta conversa: id `{decisao_id}`, "
+            f"nome {json.dumps(nome[:200], ensure_ascii=False)}. Continue esta "
+            "decisao usando este id nas ferramentas; so crie outra se o decisor "
+            "pedir."
+        )
+
     def conversar(self, mensagens: list[dict], decisao_id: str | None = None) -> Turno:
-        """Processa a conversa ate o modelo parar de chamar ferramentas."""
+        """Processa a conversa ate o modelo parar de chamar ferramentas.
+
+        Erros: as excecoes do SDK da Anthropic (limite de uso, falha do
+        servico, rede) sobem sem traducao; a rota as traduz para 502 ou 503.
+        """
         historico = list(mensagens)
         usadas: list[dict] = []
         atual = decisao_id
+        sistema = self._sistema(decisao_id)
 
         for _ in range(MAX_ITERACOES):
             resposta = self._client.messages.create(
                 model=self._model,
                 max_tokens=8000,
-                system=SYSTEM,
+                system=sistema,
                 tools=TOOLS,
                 messages=historico,
             )
@@ -349,6 +377,4 @@ class DecisionAgent:
 
 
 def _texto(valor: Any) -> str:
-    import json
-
     return json.dumps(valor, ensure_ascii=False, default=str)

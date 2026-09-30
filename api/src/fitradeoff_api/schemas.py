@@ -114,6 +114,13 @@ class AnswerIn(Entrada):
     """A resposta a pergunta de tradeoff pendente."""
 
     preferencia: str = Field(description="'A', 'B' ou 'indiferente'")
+    pergunta_id: str | None = Field(
+        default=None,
+        max_length=128,
+        description="O `pergunta_id` da pergunta que o decisor viu, como veio de "
+        "GET /pergunta. Com ele, a resposta so e gravada se essa ainda for a "
+        "pergunta pendente; sem ele, vale para a pendente no momento da gravacao.",
+    )
 
 
 class JudgementIn(Entrada):
@@ -190,18 +197,48 @@ class ResolucaoIn(Entrada):
     sequencia: int | None = None
 
 
+# Tetos do chat. Cada mensagem vai inteira ao modelo em ate doze idas por turno,
+# entao o tamanho do historico e custo pago doze vezes. Uma resposta do modelo
+# (max_tokens=8000) cabe folgada em 40 mil caracteres, e oitenta mensagens sao
+# quarenta idas e voltas -- uma decisao inteira com folga. O total fecha o caso
+# de muitas mensagens todas no teto.
+LIMITE_TEXTO_DO_CHAT = 40_000
+LIMITE_MENSAGENS_DO_CHAT = 80
+LIMITE_HISTORICO_DO_CHAT = 400_000
+
+
 class ChatMessage(Entrada):
     """Uma mensagem da conversa, de quem fala e o texto."""
 
     papel: Literal["user", "assistant"]
-    texto: str
+    texto: str = Field(max_length=LIMITE_TEXTO_DO_CHAT)
 
 
 class ChatIn(Entrada):
-    """O historico da conversa e a decisao em foco, se houver."""
+    """O historico da conversa e a decisao em foco, se houver.
 
-    mensagens: list[ChatMessage] = Field(min_length=1)
-    decisao_id: str | None = None
+    O ``decisao_id`` vai para as instrucoes do modelo (ver
+    ``DecisionAgent.conversar``), por isso so aceita o formato de um
+    identificador: nada de texto livre la dentro.
+    """
+
+    mensagens: list[ChatMessage] = Field(
+        min_length=1, max_length=LIMITE_MENSAGENS_DO_CHAT
+    )
+    decisao_id: str | None = Field(
+        default=None, max_length=64, pattern=r"^[A-Za-z0-9_-]+$"
+    )
+
+    @field_validator("mensagens")
+    @classmethod
+    def historico_dentro_do_teto(cls, valor: list[ChatMessage]) -> list[ChatMessage]:
+        """O historico inteiro cabe em ``LIMITE_HISTORICO_DO_CHAT`` caracteres."""
+        if sum(len(m.texto) for m in valor) > LIMITE_HISTORICO_DO_CHAT:
+            raise ValueError(
+                f"Historico longo demais (maximo {LIMITE_HISTORICO_DO_CHAT} "
+                "caracteres somando as mensagens). Comece uma conversa nova."
+            )
+        return valor
 
 
 class ChaveIn(Entrada):

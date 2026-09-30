@@ -64,6 +64,8 @@ def create_mcp_app(settings: Settings | None = None) -> Starlette:
     @asynccontextmanager
     async def ciclo(app: Starlette) -> AsyncIterator[None]:
         avisar_se_sem_folga(app.state.vagas)
+        # Sem /api aqui: so o aviso de aud/iss faltando se aplica.
+        identidade.avisar_configuracao(settings, com_api=False)
         async with remoto.ciclo_de_vida(app.state.mcp), metricas.servir(
             settings.metricas_porta
         ):

@@ -611,3 +611,58 @@ def test_favorita_pede_o_estado_desejado(client, decisao):
     """Corpo sem `favorita` é recusado: a rota define, não alterna, e um pedido
     repetido não pode significar coisas diferentes."""
     assert client.post(f"/api/decisoes/{decisao}/favorita", json={}).status_code == 422
+
+
+# --- resposta presa a pergunta mostrada ---------------------------------------
+
+
+def test_resposta_com_pergunta_id_vencido_devolve_409_e_nao_grava(client):
+    """A resposta vale para a pergunta que o decisor viu, nao para a pendente."""
+    decisao = client.post(
+        "/api/decisoes",
+        json={
+            "nome": "Tres criterios",
+            "alternativas": ["A", "B", "C", "D"],
+            "criterios": [
+                {"chave": "q", "nome": "Q", "direcao": "max"},
+                {"chave": "c", "nome": "C", "direcao": "min"},
+                {"chave": "p", "nome": "P", "direcao": "min"},
+            ],
+            "consequencias": [
+                [0.8, 12.0, 30.0], [0.9, 16.0, 12.0], [0.7, 10.0, 45.0], [0.85, 14.0, 20.0]
+            ],
+        },
+    ).json()["id"]
+    client.post(f"/api/decisoes/{decisao}/ordenacao", json={"ordem": ["q", "c", "p"]})
+    vista = client.get(f"/api/decisoes/{decisao}/pergunta").json()
+    assert vista["pergunta_id"]
+
+    primeira = client.post(
+        f"/api/decisoes/{decisao}/resposta",
+        json={"preferencia": "A", "pergunta_id": vista["pergunta_id"]},
+    )
+    assert primeira.status_code == 200
+    declaracoes = client.get(f"/api/decisoes/{decisao}/estado").json()["declaracoes"]
+    # Ainda ha pergunta pendente, e e outra: o 409 abaixo vem do id vencido, e
+    # nao de a elicitacao ter encerrado.
+    pendente = client.get(f"/api/decisoes/{decisao}/pergunta").json()
+    assert pendente.get("enunciado")
+    assert pendente["pergunta_id"] != vista["pergunta_id"]
+
+    # O mesmo pedido repetido (outra aba, retry depois de timeout): a pergunta
+    # pendente ja e outra.
+    repetida = client.post(
+        f"/api/decisoes/{decisao}/resposta",
+        json={"preferencia": "A", "pergunta_id": vista["pergunta_id"]},
+    )
+    assert repetida.status_code == 409
+    depois = client.get(f"/api/decisoes/{decisao}/estado").json()["declaracoes"]
+    assert depois == declaracoes
+
+
+def test_pergunta_id_longo_demais_e_recusado_pelo_schema(client, decisao):
+    r = client.post(
+        f"/api/decisoes/{decisao}/resposta",
+        json={"preferencia": "A", "pergunta_id": "x" * 129},
+    )
+    assert r.status_code == 422

@@ -21,16 +21,23 @@ bastante para nao ajudar quem quer adivinhar o resto.
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import hmac
 import json
+import logging
+import os
 import secrets
 import re
+import tempfile
+from collections.abc import Iterator
 from dataclasses import asdict, dataclass, replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from .config import Settings
+
+logger = logging.getLogger(__name__)
 
 PREFIXO = "fit_"
 """Marca o texto como chave desta plataforma quando aparece fora de contexto."""
@@ -114,18 +121,100 @@ def _resumir(chave: str) -> str:
     return hashlib.sha256(chave.encode("utf-8")).hexdigest()
 
 
+class CofreIlegivel(RuntimeError):
+    """O arquivo do cofre existe, mas nao e um cofre que se consiga ler.
+
+    Nao e tratado como cofre vazio. Vazio, a proxima gravacao regravaria uma
+    lista quase sem chaves por cima dele, e a autenticacao passaria a decidir
+    sobre um estado que ninguem escreveu. Quem recebe isto recusa: a
+    autenticacao nega, e a tela diz que o cofre precisa de atencao.
+    """
+
+
+# Quanto esperar pela trava do cofre antes de desistir. As secoes travadas
+# duram milissegundos (ler e regravar um arquivo pequeno); dez segundos so se
+# esgotam com um processo pendurado segurando a trava.
+_ESPERA_DA_TRAVA = 10.0
+
+
+@contextlib.contextmanager
+def _trava(settings: Settings) -> Iterator[None]:
+    """Exclusao mutua entre processos em volta de toda leitura e gravacao.
+
+    O cofre tem mais de um escritor, e em processos separados: a API emite e
+    revoga, o MCP marca uso a cada chamada. Sem trava, uma marcacao de uso que
+    leu antes de uma revogacao regravava a chave revogada. A trava e um arquivo
+    ``.lock`` ao lado do cofre, travado pelo sistema operacional
+    (``msvcrt.locking`` no Windows, ``fcntl.flock`` no POSIX): o sistema a
+    solta sozinho se o processo morrer segurando.
+
+    A leitura tambem trava. No Windows, ``os.replace`` falha sobre um arquivo
+    aberto por outro processo, e uma leitura sem trava faria a gravacao
+    vizinha falhar.
+
+    Nao e reentrante: quem ja a segura nao pode pedi-la de novo.
+    """
+    arquivo = caminho(settings)
+    arquivo.parent.mkdir(parents=True, exist_ok=True)
+    trava = arquivo.with_name(arquivo.name + ".lock")
+    with open(trava, "a+b") as fd:
+        if os.name == "nt":
+            import msvcrt
+            import time
+
+            limite = time.monotonic() + _ESPERA_DA_TRAVA
+            while True:
+                fd.seek(0)
+                try:
+                    msvcrt.locking(fd.fileno(), msvcrt.LK_NBLCK, 1)
+                    break
+                except OSError:
+                    if time.monotonic() >= limite:
+                        raise
+                    time.sleep(0.01)
+            try:
+                yield
+            finally:
+                fd.seek(0)
+                msvcrt.locking(fd.fileno(), msvcrt.LK_UNLCK, 1)
+        else:
+            import fcntl
+
+            fcntl.flock(fd.fileno(), fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                fcntl.flock(fd.fileno(), fcntl.LOCK_UN)
+
+
 def _ler(settings: Settings) -> list[Chave]:
+    """As chaves do arquivo. Chame com a trava (``_trava``) segura.
+
+    Erros: CofreIlegivel se o arquivo existe mas nao e JSON com a lista
+    ``chaves``. Ausente e o unico caso que vale como cofre vazio.
+    """
     arquivo = caminho(settings)
     if not arquivo.exists():
         return []
     try:
         bruto = json.loads(arquivo.read_text(encoding="utf-8"))
         registros = bruto["chaves"]
-    except (json.JSONDecodeError, KeyError, TypeError):
-        # Arquivo truncado por escrita interrompida. Tratar como vazio nao
-        # perde acesso a decisao alguma -- perde chaves, que se regeram -- e e
-        # melhor do que a tela inteira quebrar na abertura.
-        return []
+        if not isinstance(registros, list):
+            raise TypeError("chaves nao e lista")
+    except (json.JSONDecodeError, UnicodeDecodeError, KeyError, TypeError) as exc:
+        # As gravacoes daqui sao atomicas (``_gravar``), entao um arquivo assim
+        # nao vem de escrita interrompida: e disco ou mao alheia. Recusar e o
+        # unico caminho que nao decide sobre um estado desconhecido.
+        logger.error(
+            "cofre de chaves ilegivel em %s (%s): autenticacao por chave recusada "
+            "ate o arquivo ser corrigido ou removido",
+            arquivo,
+            type(exc).__name__,
+        )
+        raise CofreIlegivel(
+            "O cofre de chaves esta ilegivel. Corrija ou remova o arquivo "
+            "chaves.json no servidor; as chaves nele deixam de valer."
+        ) from exc
     chaves: list[Chave] = []
     for registro in registros:
         try:
@@ -144,7 +233,7 @@ def _ler(settings: Settings) -> list[Chave]:
                     dono=(str(registro["dono"]) if registro.get("dono") else None),
                 )
             )
-        except (KeyError, TypeError):
+        except (KeyError, TypeError, AttributeError):
             # Registro sem o que uma chave precisa nao autentica ninguem;
             # ignora-lo mantem as outras chaves valendo.
             continue
@@ -152,17 +241,35 @@ def _ler(settings: Settings) -> list[Chave]:
 
 
 def _gravar(settings: Settings, chaves: list[Chave]) -> None:
+    """Regrava o cofre inteiro. Chame com a trava (``_trava``) segura."""
     arquivo = caminho(settings)
     arquivo.parent.mkdir(parents=True, exist_ok=True)
     texto = json.dumps(
         {"chaves": [asdict(c) for c in chaves]}, ensure_ascii=False, indent=1
     )
-    # Escrita em dois passos, como a do rascunho: um corte no meio do write
-    # deixaria JSON pela metade, e a leitura seguinte trataria o arquivo como
-    # vazio -- ou seja, revogaria todas as chaves de uma vez.
-    provisorio = arquivo.with_suffix(".json.parcial")
-    provisorio.write_text(texto, encoding="utf-8")
-    provisorio.replace(arquivo)
+    # Escrita em dois passos: um corte no meio do write deixaria JSON pela
+    # metade. O provisorio tem nome unico, no mesmo diretorio (``os.replace``
+    # so e atomico dentro do mesmo sistema de arquivos): um nome fixo seria
+    # dividido por duas gravacoes, que trocariam o conteudo uma da outra.
+    descritor, provisorio = tempfile.mkstemp(
+        prefix=arquivo.name + ".", suffix=".parcial", dir=arquivo.parent
+    )
+    try:
+        with os.fdopen(descritor, "w", encoding="utf-8") as saida:
+            saida.write(texto)
+        # O mkstemp cria com 0600. A API e o MCP podem rodar como usuarios
+        # diferentes sobre o mesmo volume; o cofre mantem o modo que ja tinha
+        # (ou o de um arquivo comum), como antes da troca para nome unico.
+        try:
+            modo = arquivo.stat().st_mode & 0o777
+        except FileNotFoundError:
+            modo = 0o644
+        os.chmod(provisorio, modo)
+        os.replace(provisorio, arquivo)
+    except BaseException:
+        with contextlib.suppress(OSError):
+            os.unlink(provisorio)
+        raise
 
 
 def listar(settings: Settings, dono: str | None = None) -> list[Chave]:
@@ -170,9 +277,13 @@ def listar(settings: Settings, dono: str | None = None) -> list[Chave]:
 
     Cada um ve so as proprias: a lista de chaves de outra pessoa diria quem usa
     a plataforma e de onde.
+
+    Erros: CofreIlegivel se o arquivo do cofre nao puder ser lido.
     """
+    with _trava(settings):
+        chaves = _ler(settings)
     return sorted(
-        (c for c in _ler(settings) if c.dono == dono),
+        (c for c in chaves if c.dono == dono),
         key=lambda c: c.criada_em,
         reverse=True,
     )
@@ -184,6 +295,15 @@ def criar(settings: Settings, rotulo: str, dono: str | None = None) -> tuple[Cha
     Devolve o registro e o texto, nessa ordem, para que quem chama nao confunda
     um com o outro: o registro pode ir para a tela e para o disco, o texto so
     para a resposta desta chamada.
+
+    Limitacao conhecida: a chave nao expira. Vale ate ser revogada, mesmo que a
+    pessoa perca o acesso na aplicacao da frente, e a chave passada na URL fica
+    em log de proxy e em historico de navegador. Validade e revogacao em massa
+    por dono sao decisao pendente.
+
+    Erros: ValueError se o rotulo ou o dono forem invalidos, ou se um teto for
+    alcancado; CofreIlegivel se o arquivo do cofre nao puder ser lido -- e nesse
+    caso nada e gravado por cima dele.
     """
     rotulo = rotulo.strip()
     if not rotulo:
@@ -193,15 +313,6 @@ def criar(settings: Settings, rotulo: str, dono: str | None = None) -> tuple[Cha
 
     if dono is not None and not _DONO_VALIDO.match(dono):
         raise ValueError("Dono de chave invalido.")
-
-    chaves = _ler(settings)
-    teto = LIMITE if dono is None else LIMITE_POR_PESSOA
-    if sum(1 for c in chaves if c.dono == dono) >= teto:
-        raise ValueError(
-            f"Limite de {teto} chaves alcancado. Revogue as que nao estao em uso."
-        )
-    if len(chaves) >= LIMITE_TOTAL:
-        raise ValueError("O cofre de chaves esta cheio. Fale com o administrador.")
 
     texto = PREFIXO + secrets.token_urlsafe(_BYTES)
     chave = Chave(
@@ -215,7 +326,16 @@ def criar(settings: Settings, rotulo: str, dono: str | None = None) -> tuple[Cha
         criada_em=_agora(),
         dono=dono,
     )
-    _gravar(settings, [*chaves, chave])
+    with _trava(settings):
+        chaves = _ler(settings)
+        teto = LIMITE if dono is None else LIMITE_POR_PESSOA
+        if sum(1 for c in chaves if c.dono == dono) >= teto:
+            raise ValueError(
+                f"Limite de {teto} chaves alcancado. Revogue as que nao estao em uso."
+            )
+        if len(chaves) >= LIMITE_TOTAL:
+            raise ValueError("O cofre de chaves esta cheio. Fale com o administrador.")
+        _gravar(settings, [*chaves, chave])
     return chave, texto
 
 
@@ -227,53 +347,54 @@ def revogar(settings: Settings, id: str, dono: str | None = None) -> bool:
 
     Apaga, e nao marca como revogada: uma chave revogada nao tem uso futuro, e
     a trilha de auditoria da plataforma e sobre decisoes, nao sobre credenciais.
+
+    Erros: CofreIlegivel se o arquivo do cofre nao puder ser lido.
     """
-    chaves = _ler(settings)
-    restantes = [c for c in chaves if not (c.id == id and c.dono == dono)]
-    if len(restantes) == len(chaves):
-        return False
-    _gravar(settings, restantes)
+    with _trava(settings):
+        chaves = _ler(settings)
+        restantes = [c for c in chaves if not (c.id == id and c.dono == dono)]
+        if len(restantes) == len(chaves):
+            return False
+        _gravar(settings, restantes)
     return True
 
 
-def _marcar_uso(settings: Settings, id: str, quando: datetime) -> None:
-    """Registra o uso relendo antes de gravar.
+def _marcar_uso(settings: Settings, id: str, quando: datetime) -> bool:
+    """Registra o uso relendo o cofre, com a trava segura, antes de gravar.
 
-    A releitura existe porque duas escritas simultaneas -- uma chamada de
-    ferramenta e uma emissao pela tela -- reescrevem o mesmo arquivo inteiro, e
-    gravar a partir de uma lista lida ha varios minutos apagaria a chave que a
-    outra acabou de criar. A releitura estreita a janela, mas nao a fecha.
+    A releitura sob a trava e o que impede esta gravacao de desfazer outra: a
+    lista gravada aqui e a que esta no disco agora, e nao a que o resolvedor
+    leu. So o ``ultimo_uso`` de uma chave que AINDA existe muda -- se ela foi
+    revogada entre a autenticacao e aqui, nada e gravado, e a revogacao fica.
 
-    Limitacao conhecida: o cofre e lido, alterado e regravado inteiro sem trava,
-    e por mais de um escritor -- a API emite e revoga, o MCP marca uso, em
-    threads do mesmo processo ou em processos separados. Se esta
-    leitura acontece antes de uma revogacao e a gravacao depois dela, a lista
-    gravada aqui ainda contem a chave revogada, e a revogacao se desfaz em
-    silencio; do mesmo jeito, uma chave emitida nessa janela some. Alem disso,
-    toda gravacao usa o mesmo arquivo provisorio (``chaves.json.parcial``), entao
-    duas gravacoes simultaneas podem trocar o conteudo uma da outra ou falhar no
-    ``replace``. A granularidade de um minuto reduz a frequencia, nao o risco.
+    Devolve se a chave ainda existe: o resolvedor recusa a que sumiu no meio.
     """
-    chaves = _ler(settings)
-    atualizadas: list[Chave] = []
-    mudou = False
-    for chave in chaves:
-        if chave.id != id:
-            atualizadas.append(chave)
-            continue
-        anterior = chave.ultimo_uso
-        if anterior is not None:
-            try:
-                if quando - datetime.fromisoformat(anterior) < GRANULARIDADE_DE_USO:
-                    return
-            except ValueError:
-                pass  # carimbo ilegivel: reescreve
-        # replace, e nao Chave(...) campo a campo: montada a mao, a copia
-        # perderia qualquer campo novo -- foi o que quase aconteceu com o dono.
-        atualizadas.append(replace(chave, ultimo_uso=quando.isoformat(timespec="seconds")))
-        mudou = True
-    if mudou:
-        _gravar(settings, atualizadas)
+    with _trava(settings):
+        chaves = _ler(settings)
+        atualizadas: list[Chave] = []
+        mudou = False
+        existe = False
+        for chave in chaves:
+            if chave.id != id:
+                atualizadas.append(chave)
+                continue
+            existe = True
+            anterior = chave.ultimo_uso
+            if anterior is not None:
+                try:
+                    if quando - datetime.fromisoformat(anterior) < GRANULARIDADE_DE_USO:
+                        return True
+                except ValueError:
+                    pass  # carimbo ilegivel: reescreve
+            # replace, e nao Chave(...) campo a campo: montada a mao, a copia
+            # perderia qualquer campo novo -- foi o que quase aconteceu com o dono.
+            atualizadas.append(
+                replace(chave, ultimo_uso=quando.isoformat(timespec="seconds"))
+            )
+            mudou = True
+        if mudou:
+            _gravar(settings, atualizadas)
+    return existe
 
 
 def resolver(settings: Settings):
@@ -289,11 +410,20 @@ def resolver(settings: Settings):
 
     A decisao de escopo mora aqui, num lugar so -- por isso a assinatura
     devolve caminho, e nao um "sim".
+
+    Cofre ilegivel recusa toda chave (e fica no registro, em ``_ler``): nunca
+    e lido como vazio, nem regravado. Falhar ao marcar o uso nao recusa quem
+    ja provou a chave -- a marcacao e informativa --, mas fica no registro.
     """
 
     def para(apresentada: str) -> Path | None:
         alvo = _resumir(apresentada)
-        for chave in _ler(settings):
+        try:
+            with _trava(settings):
+                chaves = _ler(settings)
+        except CofreIlegivel:
+            return None
+        for chave in chaves:
             # Tempo constante: comparar resumos com `==` daria, em principio,
             # uma medida de quantos caracteres batem.
             if hmac.compare_digest(chave.resumo, alvo):
@@ -304,7 +434,17 @@ def resolver(settings: Settings):
                 else:
                     # Dono adulterado no arquivo: nao abre nada.
                     return None
-                _marcar_uso(settings, chave.id, datetime.now(timezone.utc))
+                try:
+                    if not _marcar_uso(settings, chave.id, datetime.now(timezone.utc)):
+                        return None  # revogada entre a leitura e aqui
+                except CofreIlegivel:
+                    return None
+                except OSError as exc:
+                    logger.warning(
+                        "ultimo uso da chave %s nao registrado: %s",
+                        chave.id,
+                        type(exc).__name__,
+                    )
                 return destino
         return None
 
@@ -338,7 +478,15 @@ def _cli(argumentos: list[str] | None = None) -> int:
 
     opcoes = leitor.parse_args(argumentos)
     settings = load_settings()
+    try:
+        return _cli_comando(opcoes, settings)
+    except CofreIlegivel as exc:
+        print(f"Erro: {exc}")
+        return 1
 
+
+def _cli_comando(opcoes, settings: Settings) -> int:
+    """O subcomando ja lido, contra o cofre destas configuracoes."""
     if opcoes.comando == "listar":
         chaves = listar(settings)
         if not chaves:

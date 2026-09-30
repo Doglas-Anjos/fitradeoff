@@ -382,6 +382,36 @@ def modelo() -> bytes:
     return saida.getvalue()
 
 
+# O que faz o Excel (ou o LibreOffice) ler um texto como formula: "=" e o que o
+# openpyxl grava como formula viva; "+", "-" e "@" viram formula quando alguem
+# edita a celula; tabulacao e retorno de carro abrem o caminho em importacoes
+# para CSV. E a lista da OWASP para injecao de formula.
+_INICIO_DE_FORMULA = ("=", "+", "-", "@", "\t", "\r")
+
+
+def _textos_literais(livro) -> None:
+    """Todo texto da exportacao fica gravado como texto, nunca como formula.
+
+    Os textos vem do decisor (nome do problema, das alternativas e dos
+    criterios, unidades, declaracoes da trilha). O openpyxl grava como formula
+    viva todo texto que comeca com ``=``, entao uma alternativa chamada
+    ``=HYPERLINK(...)`` virava formula ao abrir a planilha. Aqui o tipo da
+    celula e forcado para texto e a celula ganha o prefixo de aspas do Excel
+    (``quotePrefix``), que a mantem como texto mesmo se alguem a editar. O
+    texto mostrado e o original, sem apostrofo acrescentado.
+
+    Uma passada no livro inteiro, e nao um cuidado em cada ``append``: uma aba
+    nova escrita sem o cuidado ficaria aberta, e ninguem perceberia.
+    """
+    for aba in livro.worksheets:
+        for linha in aba.iter_rows():
+            for celula in linha:
+                valor = celula.value
+                if isinstance(valor, str) and valor.startswith(_INICIO_DE_FORMULA):
+                    celula.data_type = "s"
+                    celula.quotePrefix = True
+
+
 def _aba_perguntas(livro, auditoria: dict) -> None:
     """Uma linha por ciclo: o que foi perguntado e o que foi respondido.
 
@@ -441,11 +471,8 @@ def exportar(
     A trilha vai junto de proposito: um resultado sem o registro do que foi
     declarado nao se defende numa auditoria.
 
-    Limitacao conhecida: os textos vindos do decisor (nome do problema, das
-    alternativas e dos criterios, unidades, declaracoes da trilha) vao para as
-    celulas sem escape. O openpyxl grava como formula viva todo texto que
-    comeca com ``=``, entao um nome como ``=HYPERLINK(...)`` vira formula ao
-    abrir a planilha no Excel (injecao de formula, CSV/XLSX injection).
+    Os textos vindos do decisor saem como texto literal, nunca como formula:
+    ver ``_textos_literais``.
     """
     livro = Workbook()
 
@@ -512,6 +539,7 @@ def exportar(
     if sensibilidade:
         _aba_sensibilidade(livro, sensibilidade)
 
+    _textos_literais(livro)
     saida = io.BytesIO()
     livro.save(saida)
     return saida.getvalue()

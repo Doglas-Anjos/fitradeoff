@@ -159,6 +159,11 @@ def aviso_de_configuracao(settings: Settings) -> str | None:
     )
 
 
+def _ilegivel(exc: cofre.CofreIlegivel) -> HTTPException:
+    """503, e nao lista vazia: a tela nao pode mostrar um cofre que nao leu."""
+    return HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(exc))
+
+
 @router.get("", summary="As chaves emitidas e como conectar")
 def listar(
     settings: Settings = Depends(get_settings),
@@ -167,9 +172,15 @@ def listar(
     """A lista nunca traz o texto das chaves -- ele nao existe mais em lugar algum.
 
     So as chaves de quem pergunta: cada pessoa ve as proprias.
+
+    Erros: 503 cofre ilegivel no servidor.
     """
+    try:
+        chaves = cofre.listar(settings, dono)
+    except cofre.CofreIlegivel as exc:
+        raise _ilegivel(exc) from exc
     return {
-        "chaves": [c.publica() for c in cofre.listar(settings, dono)],
+        "chaves": [c.publica() for c in chaves],
         "url": settings.mcp_url,
         "publicado": settings.mcp_publicado,
         "aviso": aviso_de_configuracao(settings),
@@ -182,9 +193,15 @@ def criar(
     settings: Settings = Depends(get_settings),
     dono: str | None = Depends(dono_da_gestao),
 ) -> dict[str, object]:
-    """A unica resposta da API que contem o texto de uma chave."""
+    """A unica resposta da API que contem o texto de uma chave.
+
+    Erros: 400 rotulo invalido ou teto alcancado; 503 cofre ilegivel no servidor
+    (nada e gravado por cima dele).
+    """
     try:
         chave, texto = cofre.criar(settings, dados.rotulo, dono)
+    except cofre.CofreIlegivel as exc:
+        raise _ilegivel(exc) from exc
     except ValueError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
     return {"chave": chave.publica(), "texto": texto, "url": settings.mcp_url}
@@ -200,10 +217,14 @@ def revogar(
 
     Erros: 404 chave inexistente ou de outra pessoa (as duas respondem igual, para nao
     confirmar que o id existe); 401 sessao invalida; 403 ou 503 gestao fechada, ver
-    ``gestao_liberada``.
+    ``gestao_liberada``; 503 cofre ilegivel no servidor.
     """
     # So revoga chave do proprio dono. A de outra pessoa responde 404, igual a
     # uma que nao existe -- 403 confirmaria que o id e de alguem.
-    if not cofre.revogar(settings, id, dono):
+    try:
+        revogada = cofre.revogar(settings, id, dono)
+    except cofre.CofreIlegivel as exc:
+        raise _ilegivel(exc) from exc
+    if not revogada:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Chave nao encontrada.")
     return {"revogada": True}

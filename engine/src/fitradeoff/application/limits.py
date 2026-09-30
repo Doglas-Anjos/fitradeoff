@@ -32,6 +32,13 @@ class Limits:
     max_name_length: int = 200
 
     def check_problem(self, n_alternatives: int, n_criteria: int) -> None:
+        """Recusa problemas acima do teto de alternativas ou de criterios.
+
+        O teto de alternativas e o que importa para o tempo: o numero de LPs
+        cresce com o quadrado dele (matriz de dominancia).
+
+        Erros: LimitExceeded se qualquer um dos dois passar do teto.
+        """
         if n_alternatives > self.max_alternatives:
             raise LimitExceeded(
                 f"{n_alternatives} alternativas excedem o limite de "
@@ -65,6 +72,16 @@ class Limits:
             )
 
     def check_sensitivity(self, points: int) -> None:
+        """Recusa varreduras de sensibilidade com pontos demais.
+
+        Serve as duas analises: conta os limiares de
+        ``DecisionService.sensitivity`` e tambem as variacoes de
+        ``consequence_sensitivity``, embora a mensagem fale sempre em
+        "limiares". O numero de cenarios desta ultima tem teto proprio,
+        ``max_sensitivity_scenarios``, conferido no servico.
+
+        Erros: LimitExceeded se ``points`` passar de ``max_sensitivity_points``.
+        """
         if points > self.max_sensitivity_points:
             raise LimitExceeded(
                 f"{points} limiares excedem o limite de "

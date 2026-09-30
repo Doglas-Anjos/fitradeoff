@@ -43,10 +43,14 @@ from .vagas import Vagas
 Resolvedor = Callable[[str], Path | None]
 """Chave apresentada -> diretorio de dados que ela abre, ou ``None`` se nao vale.
 
-A assinatura e a fronteira entre protocolo e politica. Hoje o cofre devolve o
-mesmo diretorio para toda chave valida -- a plataforma tem um acervo so. Isolar
-os dados por chave, quando fizer sentido, e mudar o que esta funcao devolve, e
-nada aqui nem nas catorze ferramentas muda junto.
+A assinatura e a fronteira entre protocolo e politica. Hoje o resolvedor que a
+API injeta (``fitradeoff_api.identidade.resolver``) devolve um acervo por
+pessoa: a chave do cofre abre o acervo do dono dela, e o JWT da aplicacao da
+frente abre o acervo de quem ele identifica. Essa decisao mora toda no
+resolvedor; nada aqui nem nas dezenove ferramentas sabe de quem e o diretorio.
+
+E chamado de forma sincrona, de dentro do middleware assincrono: ver a
+limitacao em ``Autenticacao``.
 """
 
 CAMINHO = "/mcp"
@@ -80,6 +84,12 @@ class Autenticacao:
     o caminho quando a chave vem dentro dele -- e isso precisa acontecer antes do
     roteamento, ou a rota do MCP nao reconheceria ``/mcp/<chave>``. Fora do
     prefixo, nao toca em nada: as rotas da API seguem como estavam.
+
+    Limitacao conhecida: o ``Resolvedor`` e sincrono e roda direto no laco de
+    eventos, dentro de ``__call__``. O que a API injeta le o cofre do disco (e
+    pode regrava-lo ao marcar uso) ou, com JWT, pode buscar o JWKS pela rede --
+    com teto de dez segundos. Enquanto isso, o processo inteiro para de atender,
+    nao so esta requisicao.
     """
 
     def __init__(
@@ -264,7 +274,7 @@ def criar_app(
     padrao, e e o que permite dar sinal de vida numa ferramenta demorada; o JSON
     serve quando ha um encaminhamento simples na frente, porque um proxy que
     acumule a resposta antes de repassar faz a ferramenta parecer travada, sem
-    erro nenhum. Nenhuma das catorze ferramentas pergunta de volta ao cliente,
+    erro nenhum. Nenhuma das dezenove ferramentas pergunta de volta ao cliente,
     que e a unica coisa que a troca custaria.
     """
     _registrar_escopo()

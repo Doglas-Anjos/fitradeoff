@@ -5,9 +5,14 @@ estiverem um pouco errados?"*. Varia o desempenho das alternativas dentro de uma
 faixa percentual, reprocessa a decisao em cada cenario, e conta com que
 frequencia a resposta muda.
 
-Nao confundir com a sensibilidade sobre o limiar de equivalencia, que ja existia
-e responde outra coisa -- o quanto a conclusao depende do parametro que separa
-preferencia de indiferenca. As duas sao uteis e nao se substituem.
+Nao confundir com a sensibilidade de ``DecisionService.sensitivity``, que ja
+existia e responde outra coisa: ela varre o epsilon, a folga da preferencia
+estrita entre os pesos de dois criterios, e nao o limiar de equivalencia entre
+alternativas. As duas sao uteis e nao se substituem.
+
+Limitacao conhecida: a comparacao entre cenarios usa
+``detail["potencialmente_otimas"]``, que so a problematica de escolha produz.
+Ver ``analisar``.
 
 O sorteio usa semente fixa: uma analise que muda de resultado a cada execucao
 nao serve para defender uma decisao.
@@ -40,6 +45,13 @@ class VariacaoCriterio:
 
 @dataclass
 class ResultadoSensibilidade:
+    """Resultado de ``analisar``, devolvido pela API e pelo MCP via ``to_dict``.
+
+    Frequencias e estabilidade sao fracoes do total de cenarios PEDIDOS, nao
+    dos cenarios consistentes; o numero de cenarios inconsistentes nao e
+    informado. Ver as limitacoes em ``analisar``.
+    """
+
     cenarios: int
     criterios_variados: list[dict]
     # com que frequencia cada alternativa apareceu na solucao
@@ -92,6 +104,27 @@ def analisar(
 
     As respostas do decisor nao mudam: o que varia sao os numeros do problema.
     Isso isola o efeito da incerteza dos dados da incerteza das preferencias.
+    Cada alternativa recebe um fator proprio por criterio variado, sorteado
+    uniformemente em ``[1 - para_baixo/100, 1 + para_cima/100]`` e aplicado a
+    consequencia na unidade do criterio.
+
+    Limitacao conhecida: a "solucao" comparada e
+    ``detail["potencialmente_otimas"]``, que so a problematica de escolha
+    produz. Nas outras (ranking, sorting, carteiras) a solucao original e cada
+    cenario viram o conjunto vazio, todo cenario consistente conta como
+    "igual", e a estabilidade informada e so a fracao de cenarios
+    consistentes -- nao mede se o ranking, as classes ou a carteira mudaram.
+    As frequencias saem todas zero.
+
+    Limitacao conhecida: cenarios cujo espaco de pesos fica vazio sao pulados,
+    mas continuam no denominador. Eles puxam para baixo a estabilidade e as
+    frequencias como se a solucao tivesse mudado, e o resultado nao diz
+    quantos foram.
+
+    Exatidao: aproximada (amostragem; semente fixa, entao reprodutivel)
+    Custo: um replay e uma analise completa da decisao por cenario
+    Erros: ValueError se ``variacoes`` estiver vazia, ``cenarios`` for menor
+    que 1 ou um criterio for desconhecido.
     """
     problem = session.problem
     if not variacoes:

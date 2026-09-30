@@ -61,7 +61,10 @@ class Bracket:
 
         Seja r a razao. Preferir A significa ``value * k >= k_rival``, ou seja
         ``r <= value``, o que baixa o teto; preferir B eleva o piso; a
-        indiferenca fixa ``r = value``.
+        indiferenca fixa ``r = value``. "Nao sei" colapsa a faixa no ponto
+        medio so para encerrar o par (ver a limitacao no corpo).
+
+        Unidade: razao ``k[rival] / k[criterion]``, em [0, 1]
         """
         if answer.criterion != self.criterion or answer.rival != self.rival:
             return self
@@ -74,6 +77,12 @@ class Bracket:
         # sem resposta: o par se encerra sem que nada seja afirmado sobre a
         # razao entre os pesos -- o intervalo colapsa apenas para que a pergunta
         # nao volte, e nenhuma restricao entrou no modelo
+        #
+        # Limitacao conhecida: o bracket colapsado no ponto medio e
+        # indistinguivel de um fixado por "indiferente". Quem le as pontas dele
+        # como informacao -- e `_propagar_abertura` le -- trata o "nao sei"
+        # como se o decisor tivesse fixado a razao no meio da faixa, embora o
+        # espaco de pesos nao tenha restricao nenhuma ali.
         return replace(self, lower=self.midpoint, upper=self.midpoint)
 
     def candidate_value(self, problem: Problem) -> float | None:
@@ -84,6 +93,8 @@ class Bracket:
         meio. Sem nenhum nivel disponivel, o par se esgota -- perguntar por um
         desempenho inexistente produziria uma restricao que a pergunta feita ao
         decisor nao sustenta.
+
+        Unidade: valor normalizado do criterio em foco, em (0, 1)
         """
         realizable = problem.scales[self.criterion].intermediate_values()
         if realizable is None:
@@ -113,6 +124,10 @@ def brackets_from_log(
     restricoes lineares se intersectam, e intersecao e comutativa. Por isso a
     abertura pode ser revista a qualquer momento, como qualquer outra resposta:
     o que vale e o conjunto do log, nao a sequencia.
+
+    Sem ordenacao no log nao ha intervalo nenhum. Havendo mais de uma, vale a
+    ultima para montar os pares. Nao resolve LP: os intervalos saem so das
+    respostas registradas, e nao do espaco de pesos.
     """
     ranking = log.last_of_type(CriteriaRanking)
     if ranking is None:
@@ -169,6 +184,14 @@ def _propagar_abertura(
     seguidas (28/09/2026, no estresse com 7 criterios) a derrubaram: com dois
     fatores ja fixados em v2 e v3, o seguinte precisa ser ao menos piso/(v2*v3),
     e o seletor perguntou abaixo disso.
+
+    Limitacao conhecida: ``piso`` e ``teto`` vem so das respostas A, B e
+    indiferente a abertura, mas os fatores ``outros`` sao lidos das pontas dos
+    brackets consecutivos, como estao. Um par consecutivo encerrado por "nao
+    sei" chega aqui colapsado no ponto medio (``Bracket.narrowed_by``), e entra
+    na conta como se a razao dele fosse conhecida e igual a esse meio -- o que
+    o decisor nao afirmou e o espaco de pesos nao contem. Os pares vizinhos
+    podem entao ser apertados alem do que o espaco de pesos justifica.
     """
     topo, base = ordem[0], ordem[-1]
     piso, teto = 0.0, 1.0
@@ -228,6 +251,13 @@ class ConsequenceLine:
 
 @dataclass(frozen=True)
 class Option:
+    """Uma das duas consequencias hipoteticas, linha a linha.
+
+    Traz todos os criterios, e nao so o que muda: o destacado primeiro, os
+    demais no pior desempenho, para que o decisor veja a situacao inteira que
+    esta avaliando.
+    """
+
     label: str
     lines: tuple[ConsequenceLine, ...]
 
@@ -247,6 +277,12 @@ class QuestionBrief:
     option_b: Option
 
     def as_text(self) -> str:
+        """A pergunta inteira em texto corrido, para quem nao tem tela.
+
+        O enunciado repete que tudo o que nao aparece esta no pior desempenho:
+        e a premissa da pergunta de tradeoff, e sem ela o decisor tende a
+        imaginar os outros criterios num nivel medio e responder outra coisa.
+        """
         return (
             "Compare duas situacoes hipoteticas. Em ambas, tudo o que nao for "
             "mencionado abaixo esta no pior desempenho possivel.\n\n"
@@ -289,6 +325,13 @@ class QuestionPresenter:
         return Option(label=label, lines=tuple(lines))
 
     def present(self, problem: Problem, question: TradeoffQuestion) -> QuestionBrief:
+        """Monta as duas opcoes na unidade de cada criterio.
+
+        A opcao A leva o criterio em foco no desempenho de valor
+        ``question.value``; a B, o rival no melhor desempenho. Os valores sao
+        convertidos em consequencia pela escala de cada criterio, entao uma
+        curva elicitada muda o numero mostrado, nao a pergunta.
+        """
         return QuestionBrief(
             question=question,
             focus_criterion=problem.criteria[question.criterion].name,

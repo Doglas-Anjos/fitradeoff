@@ -40,6 +40,13 @@ class Conflito:
 
 @dataclass
 class Diagnostico:
+    """Resultado de ``diagnosticar``: os conflitos e as saidas oferecidas.
+
+    Consumido pela API e pelo MCP via ``to_dict``; cada item de ``saidas``
+    traz a ``acao`` que ``resolver`` aceita, exceto ``reordenar``, que o
+    chamador executa pela ordenacao dos criterios.
+    """
+
     inconsistente: bool
     conflitos: list[Conflito] = field(default_factory=list)
     ultima: dict | None = None
@@ -49,6 +56,12 @@ class Diagnostico:
 
     @property
     def leitura(self) -> str:
+        """O diagnostico em uma frase para o decisor, conforme o caso.
+
+        Tres casos: compativel, declaracao impossivel sozinha, ou par em
+        conflito. O texto evita dizer que alguma declaracao esta "errada":
+        o decisor escolhe qual reflete o que pensa.
+        """
         if not self.inconsistente:
             return "As declarações são compatíveis entre si."
         if self.impossivel:
@@ -213,7 +226,24 @@ def diagnosticar(session: DecisionSession) -> Diagnostico:
 
 
 def resolver(session: DecisionSession, acao: str, sequencia: int | None = None):
-    """Aplica a saída escolhida e devolve a sessão resultante."""
+    """Aplica a saida escolhida e devolve a sessao resultante.
+
+    ``desfazer`` trunca a ultima declaracao; ``inverter`` troca a ultima
+    resposta de tradeoff pela oposta, com instante novo. ``remover`` nao apaga
+    a declaracao no lugar: desfaz TODAS e registra de novo as que ficam, na
+    mesma ordem.
+
+    Limitacao conhecida: por causa desse replay, em ``remover`` as declaracoes
+    mantidas perdem os metadados originais. Cada uma ganha instante novo (o do
+    relogio no momento da resolucao), o autor padrao ``"decisor"`` no lugar do
+    que foi gravado, e numero de sequencia renumerado a partir de 1 -- os
+    numeros mostrados pelo diagnostico anterior deixam de valer. A trilha
+    resultante nao registra que houve uma remocao.
+
+    Erros: ValueError se nao houver declaracao, a acao for desconhecida, a
+    ultima declaracao nao for resposta de tradeoff ou for indiferenca (em
+    ``inverter``), ou ``sequencia`` faltar ou nao existir (em ``remover``).
+    """
     entradas = list(session.log.entries)
     if not entradas:
         raise ValueError("Não há declaração a resolver.")
@@ -237,6 +267,8 @@ def resolver(session: DecisionSession, acao: str, sequencia: int | None = None):
             raise ValueError("Informe qual declaração remover.")
         if not any(e.sequence == sequencia for e in entradas):
             raise ValueError(f"Não existe declaração de número {sequencia}.")
+        # So as declaracoes sobrevivem, nao as entradas: o replay abaixo lhes da
+        # instante, autor padrao e sequencia novos (ver a docstring).
         mantidas = [e.statement for e in entradas if e.sequence != sequencia]
         limpa = session
         for _ in entradas:

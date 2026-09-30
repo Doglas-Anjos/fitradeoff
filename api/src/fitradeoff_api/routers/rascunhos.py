@@ -63,6 +63,11 @@ def caminho(pasta: Path, settings: Settings) -> Path:
 def ler(
     pasta: Path = Depends(acervo), settings: Settings = Depends(get_settings)
 ) -> dict[str, Any]:
+    """O rascunho guardado de quem chama, com o carimbo de quando foi gravado.
+
+    Arquivo ausente ou ilegivel responde como rascunho vazio, para a tela nao quebrar na
+    abertura.
+    """
     arquivo = caminho(pasta, settings)
     if not arquivo.exists():
         return {"rascunho": None, "gravado_em": None}
@@ -84,6 +89,10 @@ def gravar(
     pasta: Path = Depends(acervo),
     settings: Settings = Depends(get_settings),
 ) -> dict[str, Any]:
+    """Guarda o rascunho de quem chama, carimbado pelo relogio do servidor.
+
+    Erros: 422 corpo sem o campo ``rascunho``; 413 rascunho acima de 512 kB.
+    """
     rascunho = corpo.get("rascunho")
     if rascunho is None:
         raise HTTPException(
@@ -121,6 +130,10 @@ def gravar(
 def descartar(
     pasta: Path = Depends(acervo), settings: Settings = Depends(get_settings)
 ) -> dict[str, bool]:
+    """Apaga o rascunho de quem chama.
+
+    Descartar o que nao existe tambem responde sucesso: o resultado pedido ja vale.
+    """
     arquivo = caminho(pasta, settings)
     arquivo.unlink(missing_ok=True)
     return {"descartado": True}

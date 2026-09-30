@@ -36,6 +36,15 @@ class ConcurrentModification(Exception):
     declaracao sumiria da trilha sem aviso. Recusar a segunda e o que preserva a
     auditoria: quem recebe isto rele a decisao e decide de novo, agora vendo o
     que a outra janela fez.
+
+    Limitacao conhecida: isto NAO e uma garantia da porta. So o adaptador
+    Postgres levanta esta excecao, porque so ele guarda versao por linha e
+    confere na gravacao. ``InMemoryDecisionRepository`` e
+    ``JsonFileDecisionRepository`` gravam por cima sem conferir nada: com eles,
+    a segunda gravacao apaga a primeira em silencio, exatamente o cenario
+    descrito acima. Mesmo no Postgres, a conferencia so vale para um registro
+    que a mesma instancia do repositorio leu antes (``get``); gravar sem ter
+    lido substitui por inteiro.
     """
 
 
@@ -107,6 +116,12 @@ class DecisionSummary:
 
     @staticmethod
     def of(record: "DecisionRecord") -> "DecisionSummary":
+        """O resumo de um registro ja carregado.
+
+        E a regra de referencia para as colunas que o adaptador Postgres grava
+        desnormalizadas; ``atualizado_em`` e o instante da declaracao mais
+        recente, ou a criacao se nao houver declaracao.
+        """
         entradas = record.log.entries
         return DecisionSummary(
             id=record.id,
@@ -124,19 +139,51 @@ class DecisionSummary:
 
 
 class DecisionRepository(ABC):
-    """Armazenamento de decisoes."""
+    """Armazenamento de decisoes.
+
+    Contrato comum aos adaptadores: identificadores seguem o alfabeto
+    ``[A-Za-z0-9_-]{1,64}``, e um id fora dele e recusado com ``ValueError``
+    antes de qualquer acesso. O que a porta NAO garante: controle de
+    concorrencia. So o adaptador Postgres confere versao na gravacao (ver
+    ``ConcurrentModification``); os demais sao "ultima gravacao vence".
+    """
 
     @abstractmethod
-    def save(self, record: DecisionRecord) -> None: ...
+    def save(self, record: DecisionRecord) -> None:
+        """Grava o registro inteiro, criando-o se nao existir.
+
+        Erros: ValueError se o id for invalido; so no Postgres,
+        ConcurrentModification se outra gravacao passou na frente desde o
+        ``get``, RecordNotFound se o registro lido foi apagado nesse meio
+        tempo, e StorageUnavailable se o banco nao responder.
+        """
+        ...
 
     @abstractmethod
-    def get(self, record_id: str) -> DecisionRecord: ...
+    def get(self, record_id: str) -> DecisionRecord:
+        """O registro com esse id, montado a partir do armazenamento.
+
+        Erros: RecordNotFound se nao existir; ValueError se o id for invalido;
+        StorageUnavailable (so Postgres).
+        """
+        ...
 
     @abstractmethod
-    def list(self) -> list[DecisionRecord]: ...
+    def list(self) -> list[DecisionRecord]:
+        """Todos os registros, montados por inteiro. Para a listagem, ``summaries``.
+
+        Erros: StorageUnavailable (so Postgres).
+        """
+        ...
 
     @abstractmethod
-    def delete(self, record_id: str) -> None: ...
+    def delete(self, record_id: str) -> None:
+        """Apaga o registro e sua trilha.
+
+        Erros: RecordNotFound se nao existir; ValueError se o id for invalido;
+        StorageUnavailable (so Postgres).
+        """
+        ...
 
     def summaries(self) -> list[DecisionSummary]:
         """A listagem. O padrao monta cada registro; um banco responde sem isso."""

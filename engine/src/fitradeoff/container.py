@@ -72,6 +72,11 @@ class Container:
         settings: dict | None = None,
         equivalence: float | None = None,
     ) -> Problematic:
+        """A problematica ``key`` montada com o evaluator do limiar pedido.
+
+        Erros: UnknownProblematic se a chave nao estiver registrada; ValueError
+        se ``settings`` nao servir para a problematica (perfis, orcamento).
+        """
         return self.registry.create(
             key, self.evaluator_for(equivalence), self.integer_solver, settings
         )

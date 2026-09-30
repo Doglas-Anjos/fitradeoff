@@ -34,6 +34,8 @@ Problematica = Literal[
 
 
 class CriterionIn(Entrada):
+    """Um criterio, com escala construida, curva de valor e veto opcionais."""
+
     chave: str = Field(min_length=1, max_length=64)
     nome: str = Field(min_length=1, max_length=200)
     direcao: Literal["max", "min"] = "max"
@@ -64,6 +66,7 @@ class CriterionIn(Entrada):
     @field_validator("niveis")
     @classmethod
     def niveis_ordenados(cls, valor: list[float] | None) -> list[float] | None:
+        """Uma escala construida tem ao menos dois niveis, do pior para o melhor."""
         if valor is None:
             return None
         if len(valor) < 2:
@@ -76,6 +79,8 @@ class CriterionIn(Entrada):
 
 
 class DecisionIn(Entrada):
+    """O pedido de criacao: o problema inteiro e a problematica com que e lido."""
+
     nome: str = Field(min_length=1, max_length=200)
     alternativas: list[str] = Field(min_length=2)
     criterios: list[CriterionIn] = Field(min_length=2)
@@ -100,24 +105,34 @@ class DecisionIn(Entrada):
 
 
 class RankingIn(Entrada):
+    """A ordem dos criterios por peso, do maior para o menor."""
+
     ordem: list[str] = Field(min_length=2, description="Chaves, do maior peso ao menor")
 
 
 class AnswerIn(Entrada):
+    """A resposta a pergunta de tradeoff pendente."""
+
     preferencia: str = Field(description="'A', 'B' ou 'indiferente'")
 
 
 class JudgementIn(Entrada):
+    """Uma avaliacao holistica: ``preferida`` e melhor que ``sobre``."""
+
     preferida: str
     sobre: str
 
 
 class ProblematicIn(Entrada):
+    """A troca de problematica, com a configuracao que ela exige."""
+
     problematica: Problematica
     configuracao: dict | None = None
 
 
 class LimiarDeEquivalenciaIn(Entrada):
+    """O novo limiar de equivalencia da decisao, ou nulo para o padrao."""
+
     # Sem `ge`/`le` de proposito: a faixa aceitavel e conferida no motor, pelo
     # mesmo motivo do par de veto em `CriterionIn` -- o servidor MCP nao passa
     # por este schema, e uma regra declarada so aqui o deixaria de fora dela.
@@ -128,6 +143,8 @@ class LimiarDeEquivalenciaIn(Entrada):
 
 
 class FavoritaIn(Entrada):
+    """O estado de favorita desejado para a decisao."""
+
     # Estado desejado, e nao "alterna": duas abas abertas na mesma lista
     # alternariam uma contra a outra e o resultado dependeria da ordem de
     # chegada. Com o valor explicito, reenviar o mesmo pedido nao muda nada.
@@ -135,22 +152,30 @@ class FavoritaIn(Entrada):
 
 
 class SensitivityIn(Entrada):
+    """Os limiares a testar na analise de sensibilidade sobre os pesos."""
+
     limiares: list[float] = Field(min_length=1)
 
 
 class VariacaoIn(Entrada):
+    """Quanto um criterio pode variar, em porcentagem, para baixo e para cima."""
+
     criterio: str
     para_baixo: float = Field(default=10.0, ge=0, le=100)
     para_cima: float = Field(default=10.0, ge=0)
 
 
 class ConsequenceSensitivityIn(Entrada):
+    """Sensibilidade sobre as consequencias: variacoes, cenarios e semente."""
+
     variacoes: list[VariacaoIn] = Field(min_length=1)
     cenarios: int = Field(default=200, ge=1, le=2000)
     semente: int = 0
 
 
 class CurvaDeValorIn(Entrada):
+    """A curva de valor de um criterio, ou nulo para voltar a escala linear."""
+
     criterio: str
     pontos: list[tuple[float, float]] | None = Field(
         default=None,
@@ -159,16 +184,22 @@ class CurvaDeValorIn(Entrada):
 
 
 class ResolucaoIn(Entrada):
+    """A saida escolhida para a inconsistencia e a declaracao alvo, se houver."""
+
     acao: Literal["desfazer", "inverter", "remover"]
     sequencia: int | None = None
 
 
 class ChatMessage(Entrada):
+    """Uma mensagem da conversa, de quem fala e o texto."""
+
     papel: Literal["user", "assistant"]
     texto: str
 
 
 class ChatIn(Entrada):
+    """O historico da conversa e a decisao em foco, se houver."""
+
     mensagens: list[ChatMessage] = Field(min_length=1)
     decisao_id: str | None = None
 

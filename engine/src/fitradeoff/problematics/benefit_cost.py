@@ -70,6 +70,31 @@ def concordar(quantos: int, singular: str, plural: str) -> str:
 
 
 class BenefitCostProblematic(Problematic):
+    """Le o espaco de pesos como carteira gulosa pela razao valor/custo.
+
+    Resolvida quando a ordem das razoes fecha para todo par de projetos, ou,
+    enquanto o espaco de pesos so tem a ordenacao dos criterios, quando o
+    orcamento ja fixa a carteira (``_carteira_fechada_pelo_orcamento``).
+
+    Limitacao conhecida: as razoes sao valor global (em [0, 1]) dividido pelo
+    custo na unidade que o usuario informou, e sao comparadas com a
+    ``TOLERANCE`` absoluta de 1e-7. O resultado depende, portanto, da unidade
+    do custo. Com custos muito grandes as razoes e as diferencas entre elas
+    caem abaixo da tolerancia: pares passam a contar como ordenados (e a
+    elicitacao pode parar cedo), e com custos acima de ~1e7 toda razao fica
+    abaixo de 1e-7 e nenhum projeto entra na carteira gulosa.
+
+    Paridade: bc-08 e bc-20, 27/09/2026 (parada pela ordem das razoes);
+    vol-bc-3x8 e fin-B2, 29/09/2026 (parada pelo orcamento)
+    Exatidao: exata (LP) nas faixas e na ordem das razoes; aproximada
+    (amostragem) na carteira
+    Custo: 2n LPs das faixas, 2m + ``samples`` LPs dos vertices (m = numero de
+    criterios) e 2 LPs por par de faixas de razao sobrepostas
+    Unidade: razao em valor global por unidade de custo
+    Erros: ValueError na construcao se o orcamento nao for positivo; na
+    validacao, se faltarem custos ou nenhuma alternativa couber no orcamento
+    """
+
     key = "beneficio_custo"
     label = "Carteira pela razao beneficio-custo"
 
@@ -142,9 +167,19 @@ class BenefitCostProblematic(Problematic):
         sem_ordem = self._pares_sem_ordem(
             problem, space, costs, razao_minima, razao_maxima
         )
-        # So antes do primeiro tradeoff: no bc-20 o sistema de referencia tem a
-        # carteira fechada pelo orcamento desde a 11a pergunta e segue ate a 17a,
-        # fechando a ordem inteira -- ele nao reavalia esta parada no meio.
+        # A parada pelo orcamento vale so no inicio: no bc-20 o sistema de
+        # referencia tem a carteira fechada pelo orcamento desde a 11a pergunta e
+        # segue ate a 17a, fechando a ordem inteira -- ele nao reavalia esta
+        # parada no meio.
+        #
+        # A regra implementada nao olha o log, e sim as origens das restricoes:
+        # vale enquanto o espaco de pesos tem no maximo UMA origem distinta
+        # (`space.sources` sao os textos de `describe` de cada declaracao). A
+        # ordenacao dos criterios gera varias restricoes com a mesma origem, e
+        # conta como uma. Qualquer declaracao que gere restricao com outra
+        # origem desliga a parada: um tradeoff respondido com A, B ou
+        # indiferente, um julgamento holistico, ou uma segunda ordenacao
+        # diferente da primeira. Um "nao sei" nao gera restricao e nao desliga.
         so_a_ordenacao = len(set(space.sources)) <= 1
         pelo_orcamento = (
             bool(sem_ordem)
@@ -270,10 +305,23 @@ class BenefitCostProblematic(Problematic):
         peso" e ``max_k (r_l - r_i) . k <= 0``: um LP por sentido. Pares de faixas
         disjuntas ja estao ordenados e nao pagam LP nenhum -- em geral sao a
         maioria.
+
+        Paridade: bc-08 e bc-20, 27/09/2026
+        Exatidao: exata (LP), a menos da tolerancia (ver a limitacao no corpo)
+        Custo: 2 LPs por par de faixas de razao sobrepostas; nenhum por par de
+        faixas disjuntas
+        Unidade: razao em valor global por unidade de custo
         """
         razoes = problem.values / costs[:, None]
         solver = self.evaluator.solver
         pendentes = []
+        # Limitacao conhecida: TOLERANCE (1e-7) e absoluta e aqui se compara
+        # com razoes valor/custo e com diferencas de razao, cuja escala e
+        # 1/custo. O resultado depende da unidade do custo: com custos muito
+        # grandes, diferencas reais de razao ficam abaixo de 1e-7, o par deixa
+        # de ser pendente e conta como ordenado -- a elicitacao pode parar antes
+        # da hora. Com custos pequenos a mesma tolerancia fica relativamente
+        # mais fina.
         for i in range(problem.n_alternatives):
             for l in range(i + 1, problem.n_alternatives):
                 if (razao_minima[i] > razao_maxima[l] + TOLERANCE
@@ -312,6 +360,12 @@ class BenefitCostProblematic(Problematic):
         Caber inteiro nao basta. No fin-B2 tudo cabe (dez projetos, 227 num
         orcamento de 237): a carteira sao todos, em qualquer ordem, e mesmo assim
         ele fez as 14 perguntas e fechou a ordem inteira.
+
+        Quem chama so aplica esta parada enquanto o espaco de pesos tem no
+        maximo uma origem de restricao (ver ``_analyse``).
+
+        Paridade: vol-bc-3x8, 29/09/2026; fin-B2, 29/09/2026
+        Custo: nenhum LP (recebe os pares sem ordem ja calculados)
         """
         # Par ja ordenado tem o mesmo sentido em todo peso viavel, inclusive no
         # centro das amostras: ordenar por ali deixa cada par fechado do lado
@@ -347,8 +401,16 @@ class BenefitCostProblematic(Problematic):
         ``l``. E conservador de proposito -- o decisor consegue conferir a
         conclusao olhando os dois intervalos publicados, sem confiar em nenhuma
         conta que nao esteja na tela.
+
+        Exatidao: conservadora -- faixas exatas (LP), mas pares de faixas
+        sobrepostas com ordem fixa nao sao declarados
+        Custo: nenhum LP (recebe as faixas prontas)
         """
         pares = []
+        # Limitacao conhecida: a mesma TOLERANCE absoluta de `_pares_sem_ordem`,
+        # comparada com razoes cuja escala depende da unidade do custo. Com
+        # custos muito grandes a folga passa a engolir diferencas reais e
+        # menos dominancias sao declaradas.
         for i in range(len(razao_minima)):
             for l in range(len(razao_minima)):
                 if i != l and razao_minima[i] > razao_maxima[l] + TOLERANCE:
@@ -368,6 +430,8 @@ class BenefitCostProblematic(Problematic):
         - razao nao positiva fica fora, ainda que haja folga. Um projeto que nao
           agrega valor algum naquele vetor de pesos so consumiria orcamento e
           apareceria como "selecionado" sem ter sido escolhido por merito.
+
+        Custo: nenhum LP
         """
         ordem = sorted(
             range(len(razoes)),
@@ -378,6 +442,10 @@ class BenefitCostProblematic(Problematic):
         escolhidos: list[int] = []
         restante = self._budget
         for i in ordem:
+            # Limitacao conhecida: "razao nao positiva" e testada contra a
+            # TOLERANCE absoluta (1e-7), e a razao e valor em [0, 1] dividido
+            # pelo custo. Com custos acima de ~1e7 na unidade informada, toda
+            # razao fica abaixo de 1e-7 e nenhum projeto entra na carteira.
             if razoes[i] <= TOLERANCE:
                 continue
             if costs[i] <= restante + 1e-12:

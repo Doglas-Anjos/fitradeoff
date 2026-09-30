@@ -21,7 +21,11 @@ class Scale(ABC):
 
     @abstractmethod
     def value_of(self, consequence: float) -> float:
-        """Valor em [0, 1] da consequencia dada."""
+        """Valor da consequencia dada: em [0, 1] dentro do que a escala cobre.
+
+        Fora disso cada escala decide: a continua extrapola, a curva satura na
+        ponta, a discreta recusa (ver cada subclasse).
+        """
 
     @abstractmethod
     def consequence_at(self, value: float) -> float:
@@ -48,7 +52,16 @@ class Scale(ABC):
 
 @dataclass(frozen=True)
 class ContinuousScale(Scale):
-    """Normalizacao linear sobre a faixa observada entre as alternativas."""
+    """Normalizacao linear sobre a faixa observada entre as alternativas.
+
+    A pior consequencia observada vale 0 e a melhor vale 1. ``value_of`` nao
+    corta: uma consequencia fora da faixa observada -- um limite de veto, por
+    exemplo -- extrapola a reta e sai abaixo de 0 ou acima de 1. E o que
+    ``Criterion.veto_factor`` precisa para comparar um limite fora da faixa com
+    as alternativas.
+
+    Unidade: valor normalizado, [0, 1] dentro da faixa observada
+    """
 
     lower: float
     upper: float
@@ -75,6 +88,13 @@ class DiscreteScale(Scale):
 
     Todos os niveis entram na escala mesmo que nenhuma alternativa se situe
     neles, conforme a avaliacao intra-criterio do FITradeoff.
+
+    Os niveis sao igualmente espacados em valor: o nivel de indice ``i`` vale
+    ``i / (n - 1)``. ``consequence_at`` arredonda para o nivel mais proximo,
+    porque entre dois niveis nao ha consequencia que a escala realize.
+
+    Unidade: valor normalizado [0, 1]
+    Erros: ValueError em ``value_of`` para uma consequencia fora dos niveis
     """
 
     levels: tuple[float, ...]
@@ -137,6 +157,13 @@ class PiecewiseScale(Scale):
     ``realizaveis``, quando existe, e o conjunto de consequencias que uma
     pergunta de tradeoff pode mostrar -- e o caso da escala construida com curva
     (ver ``Criterion.scale_for``). Sem ele, qualquer ponto da curva serve.
+
+    Fora dos pontos extremos a curva e constante: ``value_of`` devolve o valor
+    da ponta mais proxima, ao contrario de ``ContinuousScale``, que extrapola.
+
+    Unidade: valor normalizado [0, 1]
+    Erros: ValueError na construcao, se a curva tiver menos de dois pontos, nao
+    for ordenada e monotona, ou nao incluir os valores 0 e 1
     """
 
     pontos: tuple[tuple[float, float], ...]
@@ -197,7 +224,12 @@ class PiecewiseScale(Scale):
 
 
 def scale_from_column(column: np.ndarray, ascending: bool) -> Scale:
-    """Escala continua deduzida da faixa observada, ou degenerada se ha empate."""
+    """Escala continua deduzida da faixa observada, ou degenerada se ha empate.
+
+    A faixa e a das alternativas, e nao uma declarada pelo decisor: acrescentar
+    ou remover uma alternativa extrema muda o valor de todas as outras naquele
+    criterio. O empate usa ``np.isclose``, com as tolerancias padrao do numpy.
+    """
     lower, upper = float(column.min()), float(column.max())
     if np.isclose(lower, upper):
         return DegenerateScale(lower)

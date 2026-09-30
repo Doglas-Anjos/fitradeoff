@@ -3,9 +3,12 @@
     uvicorn fitradeoff_api.mcp_remoto:app --host 0.0.0.0 --port 8765
 
 O aplicativo de ``app.py`` monta o MCP ao lado das rotas de ``/api``, o que e
-conveniente na maquina do decisor e inaceitavel fora dela: `/api` nao tem
-autenticacao nesta versao, entao publicar aquela porta publicaria todas as
-decisoes junto.
+conveniente na maquina do decisor e arriscado fora dela: sem verificador de
+identidade configurado, ``/api`` atende sem cadastro quem alcanca a porta, entao
+publicar aquela porta publicaria as decisoes do acervo principal junto. Com
+verificador, ``/api`` exige o JWT da aplicacao da frente e cada pessoa ve so o
+proprio acervo -- mas publicar so o que precisa ser publico continua sendo a
+defesa que nao depende de configuracao.
 
 Daria para resolver com uma regra de proxy que so deixe passar ``/mcp``. Nao
 resolve: uma regra dessas esta a um erro de digitacao de publicar o resto, e o
@@ -51,6 +54,11 @@ async def saude(request: Request) -> JSONResponse:
 
 
 def create_mcp_app(settings: Settings | None = None) -> Starlette:
+    """Monta a superficie publica: ``/mcp``, ``/saude`` e nenhuma outra rota.
+
+    Mesma autenticacao, mesmas vagas e mesma medicao do aplicativo local, na mesma
+    ordem; o que falta aqui, de proposito, sao as rotas de ``/api``.
+    """
     settings = settings or load_settings()
 
     @asynccontextmanager

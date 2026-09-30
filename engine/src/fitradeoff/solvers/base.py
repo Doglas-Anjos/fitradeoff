@@ -15,6 +15,11 @@ import numpy as np
 from ..domain.weights import Sense, WeightSpace
 
 # Folga numerica para comparar o valor otimo de um LP com zero.
+#
+# E absoluta, e foi pensada para grandezas em valor global normalizado [0, 1].
+# Quem a compara com outra regua herda a escala dela: em `benefit_cost.py` ela e
+# comparada com razoes valor/custo, que dependem da unidade do custo (ver a
+# "Limitacao conhecida" la).
 TOLERANCE = 1e-7
 
 
@@ -97,7 +102,12 @@ class LinearSolver(ABC):
         """Vetor de pesos que atinge esse maximo -- um vertice do espaco viavel."""
 
     def bounds_of(self, space: WeightSpace, objective: np.ndarray) -> Bounds:
-        """Faixa de ``objective . k`` sobre o espaco de pesos."""
+        """Faixa de ``objective . k`` sobre o espaco de pesos.
+
+        Exatidao: exata (LP)
+        Custo: 2 LPs (um para o teto, um para o piso)
+        Erros: InfeasibleWeightSpace se o espaco de pesos for vazio
+        """
         upper = self.maximize(space, objective)
         lower = self.maximize(space, -np.asarray(objective, dtype=float))
         if upper is None or lower is None:

@@ -71,6 +71,13 @@ async def _entrada_invalida(_request: Request, exc: RequestValidationError) -> J
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
+    """Monta a aplicacao local: ``/api`` e o MCP por HTTP, no mesmo processo.
+
+    A ordem dos middlewares importa e esta comentada abaixo: o MCP entra depois das
+    rotas porque veste o aplicativo com a autenticacao dele, e a medicao entra por
+    ultimo para contar os 401 dessa autenticacao. As vagas de calculo sao uma instancia
+    so para os dois lados.
+    """
     settings = settings or load_settings()
 
     @asynccontextmanager

@@ -242,8 +242,17 @@ def _marcar_uso(settings: Settings, id: str, quando: datetime) -> None:
     A releitura existe porque duas escritas simultaneas -- uma chamada de
     ferramenta e uma emissao pela tela -- reescrevem o mesmo arquivo inteiro, e
     gravar a partir de uma lista lida ha varios minutos apagaria a chave que a
-    outra acabou de criar. A janela entre esta leitura e a gravacao continua
-    existindo; o que se perde nela e um carimbo de ultimo uso, nunca uma chave.
+    outra acabou de criar. A releitura estreita a janela, mas nao a fecha.
+
+    Limitacao conhecida: o cofre e lido, alterado e regravado inteiro sem trava,
+    e por mais de um escritor -- a API emite e revoga, o MCP marca uso, em
+    threads do mesmo processo ou em processos separados. Se esta
+    leitura acontece antes de uma revogacao e a gravacao depois dela, a lista
+    gravada aqui ainda contem a chave revogada, e a revogacao se desfaz em
+    silencio; do mesmo jeito, uma chave emitida nessa janela some. Alem disso,
+    toda gravacao usa o mesmo arquivo provisorio (``chaves.json.parcial``), entao
+    duas gravacoes simultaneas podem trocar o conteudo uma da outra ou falhar no
+    ``replace``. A granularidade de um minuto reduz a frequencia, nao o risco.
     """
     chaves = _ler(settings)
     atualizadas: list[Chave] = []

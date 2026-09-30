@@ -75,7 +75,14 @@ class ScipyLinearSolver(LinearSolver):
 
 
 class ScipyIntegerSolver(IntegerSolver):
-    """Mochila binaria pelo HiGHS MIP."""
+    """Mochila binaria pelo HiGHS MIP.
+
+    Otima a menos do ``mip_rel_gap`` padrao do HiGHS (1e-4, relativo), que
+    nao e alterado aqui. Sem solucao, ou sem nenhum projeto que caiba,
+    devolve a carteira vazia.
+
+    Custo: ate um MILP por chamada (nenhum se nenhum projeto cabe)
+    """
 
     def knapsack(
         self, benefits: np.ndarray, costs: np.ndarray, budget: float
@@ -91,8 +98,15 @@ class ScipyIntegerSolver(IntegerSolver):
         # Sem isso, um projeto de beneficio zero num dado vetor de pesos deixa o
         # MILP indiferente, e a carteira devolvida passa a depender do solver --
         # o que arruinaria tanto o determinismo quanto a leitura de quais
-        # projetos "sempre" ou "nunca" entram. O peso e pequeno o bastante para
-        # nunca inverter uma diferenca real de beneficio.
+        # projetos "sempre" ou "nunca" entram.
+        #
+        # O desempate em si e pequeno: no maximo 1e-9 por projeto, somado sobre
+        # a carteira. Mas ele nao e o que limita a precisao. O `milp` roda com as
+        # opcoes padrao do HiGHS, e o padrao de `mip_rel_gap` e 1e-4: o solver
+        # para quando a carteira achada esta a ate 0,01% (relativo) do limite
+        # dual. Duas carteiras cujo beneficio difere menos que isso podem sair
+        # trocadas -- a de beneficio um pouco menor pode ser a devolvida --, e o
+        # desempate por custo, cinco ordens de grandeza abaixo, nao impede isso.
         tie_break = 1e-9 / max(float(costs.max()), 1.0)
 
         result = milp(

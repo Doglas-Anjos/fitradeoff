@@ -1,28 +1,35 @@
 """Rotas das chaves do MCP remoto: emitir, listar, revogar.
 
-Estas rotas emitem credencial, e por isso sao as unicas da API com porta:
+Toda chave tem dono, e as rotas so mexem nas chaves de quem chama.
 
-*Do proprio computador, sem aplicacao autenticando na frente* -- passa. E quem
-chega pelo navegador local, pelo rewrite do Next, ou por um tunel SSH ate o
-hospedeiro, que o SSH ja autenticou.
+*Com o JWT da aplicacao da frente* -- a pessoa gerencia as proprias chaves, e
+cada uma abre so o acervo dela (ver ``dono_da_gestao``).
 
-*De qualquer outro lugar, ou com uma aplicacao autenticando na frente* -- exige
-``FITRADEOFF_ADMIN_TOKEN`` no cabecalho ``X-Fitradeoff-Admin``, e recusa com 503
-enquanto esse token nao existir. Administrar de longe e uma decisao, entao
-precisa ser configurada.
+*Sem JWT* -- as chaves sao as do dono da plataforma, que abrem o acervo
+principal, e por isso tem porta:
 
-A segunda metade dessa regra fecha uma escalada: a chave do cofre abre o acervo
+- do proprio computador, sem aplicacao autenticando na frente, passa. E quem
+  chega pelo navegador local, pelo rewrite do Next, ou por um tunel SSH ate o
+  hospedeiro, que o SSH ja autenticou;
+- de qualquer outro lugar, ou com uma aplicacao autenticando na frente, exige
+  ``FITRADEOFF_ADMIN_TOKEN`` no cabecalho ``X-Fitradeoff-Admin``, e recusa com
+  503 enquanto esse token nao existir. Administrar de longe e uma decisao, entao
+  precisa ser configurada.
+
+A segunda metade dessa regra fecha uma escalada: a chave sem dono abre o acervo
 do dono da plataforma, e nao o de quem a pediu. Onde ha gente autenticada
-entrando -- e chegando, por tabela, da rede interna -- emitir uma chave viraria
-o caminho mais curto para ler as decisoes alheias.
+entrando -- e chegando, por tabela, da rede interna -- emitir uma chave dessas
+viraria o caminho mais curto para ler as decisoes alheias.
 
 O endereco de origem nao prova muita coisa quando ha proxy no caminho: um proxy
-que publique a porta 8000 chega como ``127.0.0.1`` igual ao navegador local.
-So que nessa situacao o vazamento ja aconteceu por outro caminho -- ``/api`` nao
-tem autenticacao nesta versao, e as decisoes estariam publicas antes de qualquer
-chave ser emitida. A resposta a esse risco nao e apertar aqui: e nao publicar
-esta superficie. Quem publica sobe ``fitradeoff_api.mcp_remoto``, que serve so
-``/mcp`` e nao tem estas rotas.
+que publique a porta 8000 chega como ``127.0.0.1`` igual ao navegador local. Com
+verificador de identidade configurado isso nao importa: a checagem de loopback
+nem roda, e ``/api`` inteira exige o JWT. Sem verificador, porem, ``/api`` atende
+sem cadastro quem alcanca a porta, e publicar essa porta publicaria as decisoes
+do acervo principal antes de qualquer chave ser emitida. A resposta a esse risco
+nao e apertar aqui: e nao publicar esta superficie sem verificador. Quem publica
+so o MCP sobe ``fitradeoff_api.mcp_remoto``, que serve so ``/mcp`` e nao tem
+estas rotas.
 
 ``X-Forwarded-For`` nao e consultado de proposito: e cabecalho, ou seja, e do
 cliente, e confiar nele seria pior do que nao ter checagem nenhuma.
@@ -189,6 +196,12 @@ def revogar(
     settings: Settings = Depends(get_settings),
     dono: str | None = Depends(dono_da_gestao),
 ) -> dict[str, bool]:
+    """Revoga uma chave de quem chama.
+
+    Erros: 404 chave inexistente ou de outra pessoa (as duas respondem igual, para nao
+    confirmar que o id existe); 401 sessao invalida; 403 ou 503 gestao fechada, ver
+    ``gestao_liberada``.
+    """
     # So revoga chave do proprio dono. A de outra pessoa responde 404, igual a
     # uma que nao existe -- 403 confirmaria que o id e de alguem.
     if not cofre.revogar(settings, id, dono):

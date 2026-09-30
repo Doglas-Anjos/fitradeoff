@@ -1,7 +1,15 @@
 """Entidades do problema de decisao.
 
-Camada mais interna: nao conhece solver, persistencia nem protocolo. Tudo aqui
-e imutavel -- o que permite comparar, cachear e reconstruir estados sem medo.
+Camada mais interna: nao conhece solver, persistencia nem protocolo. As
+dataclasses daqui sao congeladas (``frozen=True``): nenhum campo pode ser
+reatribuido, o que permite comparar, cachear e reconstruir estados.
+
+Congelado nao e o mesmo que imutavel, e ha uma excecao que importa: a matriz de
+consequencias de ``Problem``. ``np.asarray`` nao copia um ndarray que ja e
+float, entao o ``Problem`` guarda **a mesma** matriz que o chamador passou. Se o
+chamador altera o array depois, o problema muda junto -- e as escalas e a
+matriz de valor, ja guardadas em ``cached_property``, ficam desatualizadas sem
+aviso. Quem constroi um ``Problem`` nao deve mexer no array depois.
 """
 
 from __future__ import annotations
@@ -137,6 +145,18 @@ class Criterion:
         degrau em 0 ou 1 naquele ponto, que e o que o guia do sistema de
         referencia descreve ao dizer que sem os dois "you will not count the
         hesitation region".
+
+        Nas fronteiras, o que o codigo faz de fato. Com os dois limites, um
+        desempenho exatamente no superior da ``z = 1`` e exatamente no inferior
+        da ``z = 0``. Com um limite so -- seja ele ``veto_lower`` ou
+        ``veto_upper`` --, os dois papeis caem no mesmo ponto e o teste
+        ``v >= v_alto`` roda primeiro: um desempenho **exatamente no limite**
+        recebe ``z = 1`` (aceitavel), e so o estritamente pior recebe ``z = 0``.
+        Isso vale inclusive para quem declarou apenas ``veto_lower``, o limite
+        "inaceitavel": o proprio ponto declarado nao e vetado.
+
+        Metodo: de Almeida (2013)
+        Unidade: limites na unidade original do criterio; comparacao em valor
         """
         if not self.has_veto:
             return 1.0
@@ -195,7 +215,13 @@ def _perguntaveis(niveis: tuple[float, ...]) -> tuple[float, ...]:
 # conteudo. Tambem e o que permite o cache das escalas e da matriz de valor.
 @dataclass(frozen=True, eq=False)
 class Problem:
-    """Alternativas avaliadas em criterios, na unidade original de cada um."""
+    """Alternativas avaliadas em criterios, na unidade original de cada um.
+
+    Congelado, mas nao isolado do chamador: ``consequences`` e o proprio array
+    recebido quando ele ja e um ndarray de float (``np.asarray`` nao copia).
+    Alterar esse array depois muda o problema e deixa ``scales``, ``values`` e
+    ``veto_factors`` -- calculados uma vez e guardados -- desatualizados.
+    """
 
     name: str
     criteria: tuple[Criterion, ...]
@@ -296,6 +322,14 @@ class Problem:
         return [self.alternatives[i] for i in indices]
 
     def require_costs(self) -> tuple[float, ...]:
+        """Os custos das alternativas, para quem nao funciona sem eles.
+
+        Os custos sao opcionais no problema porque so as duas problematicas de
+        carteira os usam; elas chamam isto na validacao, para falhar com uma
+        mensagem que diz o que falta em vez de estourar numa conta com ``None``.
+
+        Erros: ValueError se o problema nao declara custos
+        """
         if self.costs is None:
             raise ValueError(
                 "As problematicas de carteira (portfolio e beneficio-custo) "

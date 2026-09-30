@@ -1,8 +1,12 @@
 """Adaptadores de persistencia: memoria e arquivo JSON.
 
-Um adaptador Postgres entra aqui ao lado destes, implementando a mesma porta --
+O adaptador Postgres mora em ``postgres.py`` e implementa a mesma porta --
 nenhuma regra de negocio muda. O de memoria existe para os testes rodarem sem
 tocar em disco.
+
+Limitacao conhecida: nenhum dos dois confere versao ao gravar. Diferente do
+Postgres, eles nunca levantam ``ConcurrentModification``: duas gravacoes que
+se cruzam terminam com a ultima valendo e a outra perdida sem aviso.
 """
 
 from __future__ import annotations
@@ -20,7 +24,10 @@ class InMemoryDecisionRepository(DecisionRepository):
 
     Valida o identificador com a mesma regra do adaptador de disco: um duble de
     teste que aceita o que o real recusa esconde justamente os bugs que
-    importam.
+    importam. Assim como o de disco, grava por cima sem conferir versao.
+
+    Erros: ValueError se o id for invalido; RecordNotFound em ``get``/``delete``
+    de id inexistente.
     """
 
     _VALID_ID = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
@@ -66,6 +73,11 @@ class JsonFileDecisionRepository(DecisionRepository):
       reservados antes de tocar no sistema de arquivos;
     * conferencia do caminho ja resolvido, que pega o que sobrar -- inclusive um
       link simbolico apontando para fora do diretorio.
+
+    Erros: ValueError se o id for invalido ou resolver para fora do diretorio;
+    RecordNotFound em ``get``/``delete`` de id inexistente; em ``get``,
+    ``json.JSONDecodeError`` (subclasse de ValueError) ou KeyError se o arquivo
+    estiver corrompido ou em formato de outra versao.
     """
 
     # hexadecimal e hifen bastam para os identificadores que geramos, e nao
@@ -96,6 +108,15 @@ class JsonFileDecisionRepository(DecisionRepository):
         return candidate
 
     def save(self, record: DecisionRecord) -> None:
+        """Regrava o arquivo inteiro da decisao.
+
+        Limitacao conhecida: sem conferencia de versao -- a gravacao sobrescreve
+        o que estiver no disco, mesmo que outro pedido tenha gravado depois da
+        leitura deste, e nunca levanta ``ConcurrentModification``. Tambem nao e
+        atomica: ``write_text`` trunca o arquivo e escreve por cima, sem arquivo
+        temporario nem renomeacao. Uma queda no meio deixa JSON truncado, que
+        ``get`` passa a recusar e ``list`` omite em silencio.
+        """
         self._directory.mkdir(parents=True, exist_ok=True)
         self._path(record.id).write_text(
             json.dumps(record_to_dict(record), ensure_ascii=False, indent=2),
@@ -109,6 +130,13 @@ class JsonFileDecisionRepository(DecisionRepository):
         return record_from_dict(json.loads(path.read_text(encoding="utf-8")))
 
     def list(self) -> list[DecisionRecord]:
+        """Todos os registros legiveis do diretorio, em ordem de nome de arquivo.
+
+        Tolerante de proposito: um arquivo corrompido, de topo que nao e objeto
+        ou de outra versao do formato e pulado sem aviso, para que um arquivo
+        ruim nao derrube a listagem inteira. O preco e que ele some da lista
+        sem que ninguem saiba por que; ``get`` com o mesmo id levanta o erro.
+        """
         if not self._directory.exists():
             return []
         records = []

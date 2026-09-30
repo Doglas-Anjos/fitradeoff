@@ -40,6 +40,8 @@ class PlanilhaInvalida(Exception):
 
 @dataclass(frozen=True)
 class ProblemaImportado:
+    """O que foi lido da planilha, na forma que ``DecisionService.create`` recebe."""
+
     nome: str
     alternativas: list[str]
     criterios: list[dict]
@@ -218,6 +220,14 @@ def _limitadas(linhas: Iterable[Sequence[Any]]) -> list[list[Any]]:
 
 
 def parse_xlsx(conteudo: bytes) -> ProblemaImportado:
+    """Le a primeira aba de um ``.xlsx``, com os valores calculados das formulas.
+
+    O tamanho descomprimido e conferido antes de abrir o livro: um ``.xlsx`` e um zip, e
+    um arquivo pequeno pode se expandir ate esgotar a memoria.
+
+    Erros: PlanilhaInvalida se o arquivo nao e ``.xlsx``, passa do limite descomprimido,
+    esta corrompido ou nao segue o layout.
+    """
     try:
         with zipfile.ZipFile(io.BytesIO(conteudo)) as pacote:
             descomprimido = sum(item.file_size for item in pacote.infolist())
@@ -254,6 +264,14 @@ def parse_xlsx(conteudo: bytes) -> ProblemaImportado:
 
 
 def parse_csv(conteudo: bytes) -> ProblemaImportado:
+    """Le texto separado por virgula, ponto e virgula ou tabulacao.
+
+    Tenta UTF-8 e cai para Latin-1, que e o que o Excel brasileiro costuma gravar; o
+    separador e adivinhado de uma amostra do inicio. E tambem o caminho do texto colado
+    da area de transferencia.
+
+    Erros: PlanilhaInvalida se o texto nao decodifica ou nao segue o layout.
+    """
     for codificacao in ("utf-8-sig", "latin-1"):
         try:
             texto = conteudo.decode(codificacao)
@@ -273,6 +291,14 @@ def parse_csv(conteudo: bytes) -> ProblemaImportado:
 
 
 def parse(nome_arquivo: str, conteudo: bytes) -> ProblemaImportado:
+    """Escolhe o leitor pela extensao do nome do arquivo.
+
+    ``.xls`` e recusado com a instrucao de conversao, em vez de cair numa leitura que
+    falharia com mensagem pior.
+
+    Erros: PlanilhaInvalida se a extensao nao e reconhecida ou o conteudo nao segue o
+    layout.
+    """
     nome = (nome_arquivo or "").lower()
     if nome.endswith(".csv") or nome.endswith(".txt"):
         return parse_csv(conteudo)
@@ -414,6 +440,12 @@ def exportar(
 
     A trilha vai junto de proposito: um resultado sem o registro do que foi
     declarado nao se defende numa auditoria.
+
+    Limitacao conhecida: os textos vindos do decisor (nome do problema, das
+    alternativas e dos criterios, unidades, declaracoes da trilha) vao para as
+    celulas sem escape. O openpyxl grava como formula viva todo texto que
+    comeca com ``=``, entao um nome como ``=HYPERLINK(...)`` vira formula ao
+    abrir a planilha no Excel (injecao de formula, CSV/XLSX injection).
     """
     livro = Workbook()
 

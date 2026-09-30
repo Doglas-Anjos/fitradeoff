@@ -60,6 +60,16 @@ class AuditEntry:
 
     @staticmethod
     def from_dict(data: dict) -> "AuditEntry":
+        """Reconstroi uma entrada gravada por ``to_dict``.
+
+        ``autor`` e opcional porque os logs gravados antes de existir o campo
+        nao o tem; eles voltam atribuidos ao decisor, que era o unico autor
+        possivel entao. A declaracao passa por ``statement_from_dict``, que
+        recusa um tipo desconhecido.
+
+        Erros: KeyError se faltar ``sequencia``, ``declaracao`` ou
+        ``registrado_em``; ValueError se a declaracao ou a data nao se lerem
+        """
         return AuditEntry(
             sequence=data["sequencia"],
             statement=statement_from_dict(data["declaracao"]),
@@ -80,6 +90,13 @@ class AuditLog:
         clock: Clock,
         actor: str = "decisor",
     ) -> "AuditLog":
+        """Devolve um log novo com a declaracao no fim; este nao muda.
+
+        A sequencia e a posicao no log, contada a partir de 1, e nao um
+        contador proprio: desfazer trunca o log, e a proxima declaracao reusa o
+        numero da que foi desfeita. A hora vem do relogio injetado, para que os
+        testes gravem sempre o mesmo instante.
+        """
         entry = AuditEntry(
             sequence=len(self.entries) + 1,
             statement=statement,

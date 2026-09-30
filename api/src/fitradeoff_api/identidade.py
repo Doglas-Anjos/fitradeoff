@@ -4,8 +4,9 @@ Duas maneiras de se identificar, porque sao dois caminhos diferentes ate aqui:
 
 **A chave do cofre** (``fit_...``), emitida na tela. E o cliente do proprio
 dono falando direto com o servidor -- o Claude Code na mesma maquina, ou o
-Claude na web por um tunel. Abre o acervo da plataforma, que e o que a tela
-mostra.
+Claude na web por um tunel. Abre o acervo do dono da chave: o da pessoa que a
+emitiu pela tela, ou o acervo principal se a chave e do dono da plataforma (ver
+``chaves.resolver``).
 
 **Um token assinado pela aplicacao da frente.** Quando o MCP fica atras de
 outra aplicacao, e ela quem sabe quem esta logado; nos nao temos sessao, nem
@@ -64,6 +65,14 @@ def _verificar(settings: Settings, token: str) -> dict | None:
     e informacao util para quem esta tentando adivinhar, e inutil para o cliente
     legitimo, que so precisa saber que tem de se autenticar de novo. O motivo
     vai para o registro, onde o operador o alcanca.
+
+    O que e sempre conferido: a assinatura, com o algoritmo fixado aqui (RS256
+    com JWKS, HS256 com segredo), a presenca de ``exp`` e ``sub``, a validade e o
+    teto de ``jwt_max_validade``. O que so e conferido quando configurado:
+    ``aud`` apenas com ``jwt_audience`` definido, e ``iss`` apenas com
+    ``jwt_issuer`` definido. Sem eles, qualquer token que a chave de verificacao
+    aceite vale, de qualquer publico e de qualquer emissor -- o que importa
+    quando o mesmo JWKS ou segredo assina tokens para outros servicos.
     """
     opcoes = {"require": ["exp", "sub"]}
     try:

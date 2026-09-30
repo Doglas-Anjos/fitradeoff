@@ -49,6 +49,7 @@ def _anexo(conteudo: bytes, nome: str) -> Response:
 
 @router.get("/modelo-planilha", summary="Baixa a planilha-modelo")
 def modelo():
+    """A planilha-modelo, com o layout que a importacao le."""
     return _anexo(spreadsheet.modelo(), "modelo-fitradeoff.xlsx")
 
 
@@ -116,6 +117,15 @@ async def importar(
     configuracao: str = Form("{}"),
     service: DecisionService = CALCULO,
 ):
+    """Cria uma decisao a partir de uma planilha ``.xlsx`` ou ``.csv``.
+
+    Perfis de sorting e orcamento de carteira nao cabem na planilha e vem no campo
+    ``configuracao`` do mesmo formulario, como objeto JSON.
+
+    Erros: 413 arquivo acima de 2 MB ou problema acima dos limites do motor; 422
+    planilha ilegivel ou configuracao que nao e objeto JSON; 400 ou 409 problematica ou
+    configuracao que o motor recusa.
+    """
     conteudo = await arquivo.read()
     if len(conteudo) > MAX_BYTES:
         raise HTTPException(

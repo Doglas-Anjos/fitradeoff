@@ -25,6 +25,13 @@ def conversar(
     # inteiro. A vaga e pedida em volta de cada ferramenta (``em_vaga``).
     service: DecisionService = LEVE,
 ):
+    """Um turno de conversa com o agente de decisao.
+
+    O agente conduz a decisao pelas mesmas operacoes da API, e pede vaga de calculo so
+    em volta de cada ferramenta.
+
+    Erros: 503 chat desligado (falta ANTHROPIC_API_KEY); 422 corpo invalido.
+    """
     if not settings.chat_enabled:
         raise HTTPException(
             status.HTTP_503_SERVICE_UNAVAILABLE,

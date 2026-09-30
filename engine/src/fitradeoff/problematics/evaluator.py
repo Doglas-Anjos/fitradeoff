@@ -60,6 +60,8 @@ class Evaluator:
 
         Espaco vazio significa preferencias que se contradizem: e o teste de
         inconsistencia do metodo, que sai de graca desta formulacao.
+
+        Custo: 1 LP
         """
         return self._solver.is_feasible(space)
 
@@ -70,7 +72,16 @@ class Evaluator:
     def is_potentially_optimal(
         self, problem: Problem, space: WeightSpace, index: int
     ) -> bool:
-        """A alternativa e a melhor para ao menos um vetor de pesos viavel?"""
+        """A alternativa e a melhor para ao menos um vetor de pesos viavel?
+
+        Sem veto, um LP de viabilidade com as linhas ``(v_l - v_i) . k <= 0``.
+        Com veto, delega a ``potentially_optimal``, que calcula os envelopes de
+        todas as alternativas mesmo para responder sobre uma so.
+
+        Metodo: de Almeida et al. (2016); com veto, de Almeida (2013)
+        Exatidao: exata (LP) sem veto; conservadora (envelope) com veto
+        Custo: 1 LP sem veto; 4n LPs com veto
+        """
         if problem.has_veto:
             return index in self.potentially_optimal(problem, space)
         rows = self._beats_all_rows(problem.values, index)
@@ -91,6 +102,10 @@ class Evaluator:
         alternativas que o decisor ainda pode escolher -- o erro grave, porque
         some com a opcao antes de ele a ver. A leitura passa a ser a
         conservadora: e POA quem nenhuma outra domina pelo envelope.
+
+        Metodo: de Almeida et al. (2016); com veto, de Almeida (2013)
+        Exatidao: exata (LP) sem veto; conservadora (envelope) com veto
+        Custo: n LPs sem veto; 4n LPs com veto
         """
         if problem.has_veto:
             envelopes = self.penalized_bounds(problem, space)
@@ -135,7 +150,17 @@ class Evaluator:
     def dominates(
         self, problem: Problem, space: WeightSpace, better: int, worse: int
     ) -> bool:
-        """``better`` nunca fica mais que o limiar atras de ``worse``?"""
+        """``better`` nunca fica mais que o limiar atras de ``worse``?
+
+        Dominancia com folga (``_folga``): ``max_k (v_worse - v_better) . k``
+        nao passa do limiar de equivalencia. Pareto com a mesma folga responde
+        sem LP. Nao considera o veto; sob veto, quem decide e
+        ``vetoed_dominates``.
+
+        Exatidao: exata (LP), a menos da folga declarada
+        Custo: 0 LP (Pareto) ou 1 LP
+        Unidade: folga em valor global normalizado
+        """
         if better == worse:
             return False
         folga = self._folga
@@ -153,6 +178,13 @@ class Evaluator:
         Sao n^2 LPs no caso geral, o que domina o custo do motor. ``subset``
         restringe aos pares que interessam -- em geral apenas as POAs, que e
         onde a avaliacao holistica acontece.
+
+        Exatidao: exata (LP) sem veto -- os tres atalhos so dispensam LPs cuja
+        resposta ja se sabe; conservadora (envelope) com veto
+        Custo: sem veto, com k alternativas pedidas: 2m + 8 LPs no maximo para os
+        vertices (m = numero de criterios), 2k LPs de faixa quando k > 3, e ate
+        k(k-1) LPs de ``dominates`` nos pares que nenhum atalho decide; com veto,
+        4n LPs (os envelopes das n alternativas, mesmo com ``subset``)
         """
         n = problem.n_alternatives
         indices = tuple(range(n)) if subset is None else tuple(subset)
@@ -232,6 +264,10 @@ class Evaluator:
         Quem precisa da faixa que corresponde a recomendacao deve pedir
         ``penalized_bounds``: com veto declarado, publicar esta faixa ao lado de
         uma recomendacao ja penalizada seria a tela contradizendo o motor.
+
+        Exatidao: exata (LP)
+        Custo: 2n LPs
+        Unidade: valor global normalizado [0, 1]
         """
         return tuple(
             self._solver.bounds_of(space, problem.values[i])
@@ -244,6 +280,10 @@ class Evaluator:
         Linear em ``k``, como o valor -- entao sai do mesmo LP, so trocando os
         coeficientes. Sem veto declarado, ``z`` e toda de uns e ``r`` e
         exatamente 1 em todo o espaco.
+
+        Metodo: de Almeida (2013)
+        Exatidao: exata (LP)
+        Custo: 2n LPs
         """
         return tuple(
             self._solver.bounds_of(space, problem.veto_factors[i])
@@ -274,6 +314,13 @@ class Evaluator:
 
         E o mesmo criterio que a carteira por razao ja usa para declarar
         dominancia so entre faixas disjuntas.
+
+        Sem veto no problema, devolve a faixa exata do valor (``value_bounds``).
+
+        Metodo: de Almeida (2013)
+        Exatidao: conservadora (envelope) com veto; exata (LP) sem veto
+        Custo: 4n LPs com veto; 2n sem veto
+        Unidade: valor global normalizado
         """
         faixas = self.bounds_by_index(problem, space, range(problem.n_alternatives))
         return tuple(faixas[i] for i in range(problem.n_alternatives))
@@ -292,6 +339,9 @@ class Evaluator:
         Devolve dicionario, e nao tupla, de proposito: uma tupla alinhada com
         ``indices`` convida a indexa-la pelo indice da alternativa, que e o
         mesmo numero com outro significado. O dicionario nao permite o engano.
+
+        Exatidao: conservadora (envelope) com veto; exata (LP) sem veto
+        Custo: 2 LPs por indice distinto sem veto; 4 com veto
         """
         indices = tuple(dict.fromkeys(indices))
         valores = {i: self._solver.bounds_of(space, problem.values[i]) for i in indices}
@@ -323,6 +373,11 @@ class Evaluator:
 
         Criterio conservador: so afirma quando os envelopes nao se sobrepoem.
         Sem veto no problema, cai no teste exato de sempre.
+
+        Metodo: de Almeida (2013)
+        Exatidao: conservadora (envelope) com veto; exata (LP) sem veto
+        Custo: 4n LPs com veto (recalcula todos os envelopes a cada chamada);
+        0 ou 1 LP sem veto
         """
         if better == worse:
             return False
@@ -350,6 +405,11 @@ class Evaluator:
         e mais largo que a faixa real. Declarar indiferenca sobre um envelope
         largo esconderia uma diferenca que existe -- entao aqui o erro seguro e
         nao declarar, e seguir perguntando.
+
+        Exatidao: exata (LP)
+        Custo: ate 2 LPs (o segundo so se o primeiro ficar no limiar); nenhum com
+        veto, com limiar zero ou com ``i == l``
+        Unidade: limiar em valor global normalizado
         """
         if i == l:
             return True
@@ -364,7 +424,13 @@ class Evaluator:
     def all_equivalent(
         self, problem: Problem, space: WeightSpace, indices
     ) -> bool:
-        """Todas as alternativas do conjunto sao indiferentes entre si?"""
+        """Todas as alternativas do conjunto sao indiferentes entre si?
+
+        Um conjunto de uma alternativa, ou vazio, responde ``False``: nao ha
+        empate a declarar. Para no primeiro par que nao e equivalente.
+
+        Custo: ate k(k-1) LPs para k alternativas (2 por par)
+        """
         indices = tuple(indices)
         if len(indices) <= 1:
             return False
@@ -375,7 +441,16 @@ class Evaluator:
         )
 
     def weight_bounds(self, problem: Problem, space: WeightSpace) -> tuple[Bounds, ...]:
-        """Faixa possivel de cada constante de escala."""
+        """Faixa possivel de cada constante de escala.
+
+        E o que o seletor usa para abandonar o par cujo rival ja nao pesa nada
+        (``PESO_DESPREZIVEL``).
+
+        Exatidao: exata (LP)
+        Custo: 2m LPs (m = numero de criterios)
+        Unidade: constante de escala, em [0, 1]
+        Erros: InfeasibleWeightSpace se o espaco de pesos for vazio
+        """
         bounds = []
         for j in range(problem.n_criteria):
             objective = np.zeros(problem.n_criteria)
@@ -393,6 +468,11 @@ class Evaluator:
         seria um problema bilinear: a amostragem de vertices e uma aproximacao, e
         esta documentada como tal em ``PortfolioProblematic`` e em
         ``BenefitCostProblematic``.
+
+        Exatidao: aproximada (amostragem) -- cada vertice e exato, o conjunto nao
+        cobre todos os vertices
+        Custo: 2m + ``extra`` LPs (m = numero de criterios)
+        Erros: InfeasibleWeightSpace se nenhum LP achar vetor viavel
         """
         n = problem.n_criteria
         directions = [np.eye(n)[j] for j in range(n)]

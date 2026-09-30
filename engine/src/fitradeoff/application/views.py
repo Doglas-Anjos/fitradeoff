@@ -201,6 +201,14 @@ LEITURA_DA_TRILHA = (
 
 
 def problem_dto(record: DecisionRecord) -> ProblemDTO:
+    """O problema da decisao no formato de ``ProblemDTO``, sem replay.
+
+    Nao monta sessao: tudo sai do registro e da matriz de valor. O mapa de
+    conflito fica de fora nas carteiras, onde o custo entra na conta e liderar
+    criterio nao diz quem cabe no orcamento.
+
+    Custo: O(n^2 m) comparacoes vetorizadas (mapa de conflito); nenhum LP
+    """
     problem = record.problem
     chaves = [c.key for c in problem.criteria]
     return ProblemDTO(
@@ -257,6 +265,11 @@ def _iso(instante) -> str | None:
 
 
 def summary_dto(resumo: DecisionSummary) -> SummaryDTO:
+    """Uma linha da listagem, com as datas em ISO 8601 (ou ausentes).
+
+    Parte de ``DecisionSummary`` e nao do registro para que o adaptador
+    Postgres responda a listagem sem ler matriz nem trilha.
+    """
     return SummaryDTO(
         id=resumo.id,
         nome=resumo.nome,
@@ -271,6 +284,12 @@ def summary_dto(resumo: DecisionSummary) -> SummaryDTO:
 
 
 def analysis_dto(analysis: Analysis, record: DecisionRecord | None = None) -> AnalysisDTO:
+    """Converte a ``Analysis`` da problematica para o contrato de saida.
+
+    Com ``record``, as arestas de ``dominancia_direta`` ganham a origem
+    (holistica ou decomposicao), que so a trilha conhece; sem ele -- como na
+    varredura de sensibilidade -- o detalhe passa intacto.
+    """
     return AnalysisDTO(
         problematica=analysis.problematic,
         resolvido=analysis.resolved,
@@ -380,6 +399,11 @@ def state_dto(record: DecisionRecord, session: DecisionSession) -> StateDTO:
 
 
 def question_dto(record_id: str, brief: QuestionBrief) -> QuestionDTO:
+    """A pergunta apresentada, no formato de ``QuestionDTO``.
+
+    ``como_responder`` e instrucao para o agente, nao para o decisor: cita a
+    ferramenta de resposta e proibe responder por ele.
+    """
     return QuestionDTO(
         id=record_id,
         enunciado=brief.as_text(),

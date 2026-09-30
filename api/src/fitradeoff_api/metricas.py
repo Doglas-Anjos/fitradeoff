@@ -141,6 +141,7 @@ class _ColetorDasVagas(Collector):
         self.vagas: Vagas | None = None
 
     def collect(self) -> Iterator[GaugeMetricFamily]:
+        """Uma leitura das vagas por coleta do Prometheus; nada, antes de ``ligar``."""
         vagas = self.vagas
         if vagas is None:
             return

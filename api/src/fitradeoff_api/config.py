@@ -85,12 +85,16 @@ def _mcp_url() -> str:
 
 @dataclass(frozen=True)
 class Settings:
-    """Ajustes da API.
+    """Ajustes da API, lidos do ambiente uma vez por processo.
 
-    Sem autenticacao por enquanto: a plataforma roda local, e qualquer pessoa
-    com acesso a porta ve todas as decisoes. Quando entrar login, o isolamento
-    vem de um repositorio com escopo de dono -- a porta ``DecisionRepository``
-    ja permite isso sem mexer em regra de negocio.
+    A identidade de quem chama depende de ``jwt_configurado``. Sem verificador
+    (nem ``jwt_jwks_url`` nem ``jwt_secret``), a plataforma roda na maquina do
+    decisor e quem alcanca a porta e o dono: ``/api`` atende sem cadastro e
+    tudo vai para ``storage``. Com verificador, toda chamada a ``/api`` precisa
+    de um JWT assinado pela aplicacao da frente, e cada pessoa recebe um acervo
+    proprio, ao lado de ``storage`` (ver ``identidade.acervo_de``). O MCP aceita
+    ainda as chaves do cofre, que tem dono: a de uma pessoa abre o acervo dela,
+    a do dono da plataforma abre ``storage``.
     """
 
     storage: Path = field(
@@ -144,7 +148,7 @@ class Settings:
     nenhum, e com JSON nao ha o que acumular.
 
     Nao se perde nada aqui: a troca custaria as perguntas do servidor de volta
-    ao cliente, e nenhuma das catorze ferramentas faz isso.
+    ao cliente, e nenhuma das dezenove ferramentas faz isso.
     """
     aceitar_chaves_do_cofre: bool = field(
         default_factory=lambda: _ligado("FITRADEOFF_ACEITAR_CHAVES_DO_COFRE", True)

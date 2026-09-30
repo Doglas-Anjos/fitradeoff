@@ -464,6 +464,32 @@ esse procedimento, com as duas sequências medidas presas em teste, e a conta da
 suíte de paridade (`medidos.comparacoes_de_ordenacao`) também. Os cinco casos de
 7 critérios passam a bater.
 
+### 30/09/2026: comparar a conclusão em todos os casos, e o empate que isso revelou
+
+Até aqui os 57 casos do registro eram conferidos pelo caminho: as duas contagens
+e a sequência de pares. A conclusão (o vencedor, o tipo de ordem, a classe de cada
+alternativa, a carteira) só era conferida nos 16 casos originais. O registro
+passou a guardar a tela final do oficial, e a conclusão passou a ser comparada em
+todos em que ela foi guardada e dá para ler (`test_caso_medido_chega_a_mesma_conclusao_do_oficial`).
+A tela de paridade mostra, caso a caso, o que cada lado concluiu.
+
+Dois casos com o caminho idêntico chegavam a conclusões diferentes:
+`est-quase-empate` e `est-discreto7`. Nos dois, nós terminávamos com um empate
+entre duas alternativas e o oficial com ordem completa. No `est-quase-empate`, a
+Alt 04 supera a Alt 03 em **todo** vetor de pesos que resta (o máximo de
+V(Alt 03) − V(Alt 04) é −0,0023), mas por menos que o limiar de 0,01. A dominância
+com folga valia nos dois sentidos, e nós chamávamos isso de empate. O oficial
+ordena. A regra corrigida: empate só quando nenhuma das duas é certamente melhor;
+quando uma vence em todo peso, é ordem, mesmo dentro do limiar
+(`problematics/ranking.py`). Com veto o empate fica, porque o valor penalizado não
+é linear nos pesos e a conta exata não sai de um LP.
+
+A mesma rodada ensinou o leitor a reconhecer o fim por esgotamento: quando as
+perguntas acabam sem conclusão completa, o oficial não mostra tabela nenhuma, só
+"There are no comparisons to be made ... anymore" e a oferta de seguir pela
+avaliação holística. Nesses casos nós também terminamos sem conclusão completa, e
+os dois lados passam a ser comparados assim.
+
 ## O que permanece diferente
 
 ### Abertura respondida com B: os valores batem, a escolha do par não

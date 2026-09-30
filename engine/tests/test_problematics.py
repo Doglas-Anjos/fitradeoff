@@ -160,6 +160,26 @@ def test_ranking_parcial_aponta_os_pares_indefinidos(evaluator):
     assert "X vs Y" in analysis.detail["pares_indefinidos"]
 
 
+def test_melhor_em_todo_peso_nao_empata_mesmo_dentro_do_limiar(evaluator):
+    """Dentro do limiar nos dois sentidos, mas uma certamente melhor: e ordem.
+
+    B perde de A em todos os criterios, por menos que o limiar. A dominancia com
+    folga vale nos dois sentidos, e antes isso virava empate. O sistema de
+    referencia ordena (est-quase-empate, 30/09/2026): empate e para quando
+    nenhuma das duas e certamente melhor.
+    """
+    from fitradeoff.problematics.evaluator import Evaluator
+
+    problem = make_problem([[1.0, 0.5], [0.996, 0.498], [0.0, 1.0]], names=["A", "B", "C"])
+    folgado = Evaluator(evaluator.solver, equivalence=0.01)
+    analysis = RankingProblematic(folgado).analyse(problem, space_for(problem, [0, 1]))
+
+    assert analysis.detail["indiferencas"] == []
+    niveis = analysis.detail["niveis"]
+    assert ["A"] in niveis and ["B"] in niveis
+    assert niveis.index(["A"]) < niveis.index(["B"])
+
+
 def test_empate_no_limiar_fecha_a_ordem_como_pre_ordem(evaluator):
     """Duas alternativas indistinguiveis nao deixam o ranking em aberto.
 

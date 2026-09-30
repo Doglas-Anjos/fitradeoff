@@ -36,8 +36,14 @@ def analise(service, consequencias, nomes, limiar=None, julgamentos=()):
 
 def test_empate_vira_indiferenca_e_nao_colapsa_as_camadas(service):
     """A ~ B > C > D. Antes, o empate fazia as quatro cairem numa camada so,
-    o par virar duas setas opostas e o C ficar sem nenhuma seta chegando."""
-    an = analise(service, [[100, 100], [99, 99], [50, 50], [10, 10]],
+    o par virar duas setas opostas e o C ficar sem nenhuma seta chegando.
+
+    A e B se cruzam de verdade: A vence quando o peso de X domina, B quando os
+    pesos se igualam, e cada uma supera a outra por menos que o limiar. Um par
+    em que uma e melhor em todo peso nao empata, mesmo dentro do limiar -- o
+    oficial o ordena (ver test_problematics).
+    """
+    an = analise(service, [[100, 96], [98, 100], [50, 50], [10, 10]],
                  ["A", "B", "C", "D"], limiar=0.05)
     assert an["niveis"] == [["A", "B"], ["C"], ["D"]]
     assert {(a["de"], a["para"]) for a in an["dominancia_direta"]} == {
@@ -47,7 +53,7 @@ def test_empate_vira_indiferenca_e_nao_colapsa_as_camadas(service):
 
 
 def test_posicoes_sao_os_cortes_em_que_tudo_acima_supera_tudo_abaixo(service):
-    an = analise(service, [[100, 100], [99, 99], [50, 50], [10, 10]],
+    an = analise(service, [[100, 96], [98, 100], [50, 50], [10, 10]],
                  ["A", "B", "C", "D"], limiar=0.05)
     assert an["posicoes"] == [["A", "B"], ["C"], ["D"]]
 

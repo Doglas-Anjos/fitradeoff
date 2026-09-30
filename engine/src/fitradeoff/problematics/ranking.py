@@ -15,6 +15,7 @@ import numpy as np
 
 from ..domain.problem import Problem
 from ..domain.weights import WeightSpace
+from ..solvers.base import TOLERANCE
 from .base import Analysis, Problematic
 from .veto import RESSALVA_VETO
 
@@ -48,6 +49,29 @@ class RankingProblematic(Problematic):
         # produzia faixa invertida, com a primeira posicao maior que a ultima.
         empate = dominance & dominance.T
         estrita = dominance & ~dominance.T
+
+        # Empate so quando nenhuma das duas e certamente melhor. Dentro do
+        # limiar nos dois sentidos, uma delas ainda pode superar a outra em TODO
+        # peso viavel -- a diferenca maxima da outra sobre ela e zero ou menos --,
+        # e ai a ordem e certa, e o sistema de referencia a declara: em
+        # est-quase-empate (30/09/2026) a Alt 04 vence a Alt 03 em todo peso
+        # (max V03 - V04 = -0,0023), ele anuncia ordem completa, e nos
+        # anunciavamos pre-ordem com as duas empatadas. Com veto o valor e
+        # quadratico nos pesos e esse LP nao vale: o empate fica.
+        if not problem.has_veto:
+            solver = self.evaluator.solver
+            for i in range(n):
+                for l in range(i + 1, n):
+                    if not empate[i, l]:
+                        continue
+                    for melhor, pior in ((i, l), (l, i)):
+                        folga = solver.maximize(
+                            space, problem.values[pior] - problem.values[melhor]
+                        )
+                        if folga is not None and folga <= TOLERANCE:
+                            empate[i, l] = empate[l, i] = False
+                            estrita[melhor, pior] = True
+                            break
 
         acima = estrita.sum(axis=0)  # quantas superam cada alternativa
         abaixo = estrita.sum(axis=1)  # quantas cada alternativa supera

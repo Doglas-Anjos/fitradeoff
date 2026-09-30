@@ -92,13 +92,14 @@ class SortingProblematic(Problematic):
         pode mais ser fixado com precisao melhor que ele, ela precisa cair em
         algum lugar, e o meio e a leitura honesta.
 
-        Nos cortes, as duas leituras se comportam de modo diferente. No
-        colapso, um meio exatamente sobre um corte vai para a classe de cima.
-        Fora do colapso, o teste de sobreposicao e fechado dos dois lados: a
-        faixa encolhida ``[baixo, alto]`` alcanca a classe ``[start, end]``
-        quando ``alto >= start`` e ``baixo <= end``. Uma faixa que apenas
-        **encosta** num corte -- ``alto`` ou ``baixo`` exatamente igual a ele --
-        conta para as duas classes vizinhas, e a alternativa segue indefinida.
+        Nos cortes, a regra e uma so: o corte pertence a classe de cima. As
+        classes sao semiabertas, ``[start, end)``, e so a ultima fecha em 1. A
+        faixa encolhida ``[baixo, alto]`` alcanca a classe quando
+        ``alto >= start`` e ``baixo < end``. Uma faixa cujo ``baixo`` encosta
+        num corte fica so na classe de cima; uma cujo ``alto`` encosta nele
+        alcanca as duas, porque o valor do corte e da classe de cima. Faixa
+        reduzida a um ponto (``baixo == alto``) vai para o colapso, pela mesma
+        regra.
 
         Unidade: valor global normalizado [0, 1]
         """
@@ -106,7 +107,7 @@ class SortingProblematic(Problematic):
         folga = self.evaluator.equivalence / 2.0
         baixo, alto = lower + folga, upper - folga
 
-        if baixo > alto:
+        if baixo >= alto:
             # Faixa menor que o limiar: decide pelo meio, e por **uma** classe
             # so. Colapsar para um ponto e cair no teste de sobreposicao abaixo
             # devolveria duas classes quando o meio calha de ser exatamente um
@@ -122,9 +123,10 @@ class SortingProblematic(Problematic):
         reached = []
         for index in range(self.n_classes):
             start, end = edges[index], edges[index + 1]
-            # sobreposicao entre a faixa encolhida e [start, end], fechada dos
-            # dois lados: encostar num corte conta para as duas classes
-            if alto >= start and baixo <= end:
+            # sobreposicao entre a faixa encolhida e [start, end): o corte e da
+            # classe de cima, e so a ultima classe fecha em 1
+            ultima = index == self.n_classes - 1
+            if alto >= start and (baixo < end or (ultima and baixo <= end)):
                 reached.append(index)
         return tuple(reached)
 

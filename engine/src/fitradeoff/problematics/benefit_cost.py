@@ -76,13 +76,13 @@ class BenefitCostProblematic(Problematic):
     enquanto o espaco de pesos so tem a ordenacao dos criterios, quando o
     orcamento ja fixa a carteira (``_carteira_fechada_pelo_orcamento``).
 
-    Limitacao conhecida: as razoes sao valor global (em [0, 1]) dividido pelo
-    custo na unidade que o usuario informou, e sao comparadas com a
-    ``TOLERANCE`` absoluta de 1e-7. O resultado depende, portanto, da unidade
-    do custo. Com custos muito grandes as razoes e as diferencas entre elas
-    caem abaixo da tolerancia: pares passam a contar como ordenados (e a
-    elicitacao pode parar cedo), e com custos acima de ~1e7 toda razao fica
-    abaixo de 1e-7 e nenhum projeto entra na carteira gulosa.
+    Toda comparacao interna (ordem das razoes, dominancia, carteira gulosa e
+    parada pelo orcamento) usa o custo como fracao do orcamento, ``c / B``, e
+    nao na unidade informada: a razao fica em valor global por orcamento
+    inteiro, e a ``TOLERANCE`` absoluta significa a mesma coisa com custos em
+    reais ou em milhoes de reais. "O projeto nao agrega valor" e testado no
+    beneficio, que ja esta em [0, 1]. As razoes publicadas no detalhe
+    continuam na unidade original (valor por unidade de custo).
 
     Paridade: bc-08 e bc-20, 27/09/2026 (parada pela ordem das razoes);
     vol-bc-3x8 e fin-B2, 29/09/2026 (parada pelo orcamento)
@@ -90,7 +90,8 @@ class BenefitCostProblematic(Problematic):
     (amostragem) na carteira
     Custo: 2n LPs das faixas, 2m + ``samples`` LPs dos vertices (m = numero de
     criterios) e 2 LPs por par de faixas de razao sobrepostas
-    Unidade: razao em valor global por unidade de custo
+    Unidade: razao publicada em valor global por unidade de custo; comparada
+    internamente em valor global por fracao do orcamento
     Erros: ValueError na construcao se o orcamento nao for positivo; na
     validacao, se faltarem custos ou nenhuma alternativa couber no orcamento
     """
@@ -125,23 +126,37 @@ class BenefitCostProblematic(Problematic):
 
     def _analyse(self, problem: Problem, space: WeightSpace) -> Analysis:
         costs = np.asarray(problem.require_costs(), dtype=float)
+        # Custo como fracao do orcamento: e nesta escala que toda comparacao
+        # com TOLERANCE acontece, para o resultado nao depender da unidade em
+        # que o usuario digitou o custo (com custos ~1e7 a razao na unidade
+        # original ficava toda abaixo de 1e-7 e a carteira saia vazia).
+        custo_relativo = costs / self._budget
 
         # Parte exata: o custo e constante, entao a razao e linear nos pesos e a
         # sua faixa e a faixa do valor global dividida pelo custo. Nenhuma
         # amostragem envolvida -- sao dois LPs por projeto.
         faixas = self.evaluator.value_bounds(problem, space)
-        razao_minima = np.array([faixa.lower for faixa in faixas]) / costs
-        razao_maxima = np.array([faixa.upper for faixa in faixas]) / costs
+        beneficio_minimo = np.array([faixa.lower for faixa in faixas])
+        beneficio_maximo = np.array([faixa.upper for faixa in faixas])
+        # publicadas na unidade original
+        razao_minima = beneficio_minimo / costs
+        razao_maxima = beneficio_maximo / costs
+        # comparadas na escala do orcamento
+        razao_relativa_minima = beneficio_minimo / custo_relativo
+        razao_relativa_maxima = beneficio_maximo / custo_relativo
 
-        dominancia = self._dominancia_por_razao(razao_minima, razao_maxima)
+        dominancia = self._dominancia_por_razao(
+            razao_relativa_minima, razao_relativa_maxima
+        )
 
         vertices = self.evaluator.sample_weight_vertices(
             problem, space, extra=self._samples, seed=self._seed
         )
         contagem_de_carteiras: dict[tuple[int, ...], int] = {}
         for weights in vertices:
-            razoes = (problem.values @ weights) / costs
-            carteira = self._selecionar_por_razao(razoes, costs)
+            carteira = self._selecionar_por_razao(
+                problem.values @ weights, custo_relativo
+            )
             contagem_de_carteiras[carteira] = contagem_de_carteiras.get(carteira, 0) + 1
 
         total = len(contagem_de_carteiras)
@@ -165,7 +180,8 @@ class BenefitCostProblematic(Problematic):
         frequencia = contagem_de_carteiras[mais_frequente]
 
         sem_ordem = self._pares_sem_ordem(
-            problem, space, costs, razao_minima, razao_maxima
+            problem, space, custo_relativo, razao_relativa_minima,
+            razao_relativa_maxima,
         )
         # A parada pelo orcamento vale so no inicio: no bc-20 o sistema de
         # referencia tem a carteira fechada pelo orcamento desde a 11a pergunta e
@@ -178,15 +194,22 @@ class BenefitCostProblematic(Problematic):
         # ordenacao dos criterios gera varias restricoes com a mesma origem, e
         # conta como uma. Qualquer declaracao que gere restricao com outra
         # origem desliga a parada: um tradeoff respondido com A, B ou
-        # indiferente, um julgamento holistico, ou uma segunda ordenacao
-        # diferente da primeira. Um "nao sei" nao gera restricao e nao desliga.
+        # indiferente, ou um julgamento holistico. Uma segunda ordenacao nao
+        # desliga: ela substitui a primeira no espaco de pesos
+        # (``DecisionSession.weight_space``). Um "nao sei" nao gera restricao e
+        # nao desliga.
+        #
+        # Salvaguarda: a parada declara a carteira definida, entao nunca vale
+        # quando as amostras ja mostram mais de uma carteira. A ordem simulada
+        # no centro e um atalho; as amostras sao a gulosa de verdade.
         so_a_ordenacao = len(set(space.sources)) <= 1
         pelo_orcamento = (
             bool(sem_ordem)
             and so_a_ordenacao
+            and total == 1
             and self._carteira_fechada_pelo_orcamento(
-                costs,
-                (problem.values @ np.mean(vertices, axis=0)) / costs,
+                custo_relativo,
+                problem.values @ np.mean(vertices, axis=0),
                 set(sem_ordem),
             )
         )
@@ -295,7 +318,7 @@ class BenefitCostProblematic(Problematic):
         self,
         problem: Problem,
         space: WeightSpace,
-        costs: np.ndarray,
+        custo_relativo: np.ndarray,
         razao_minima: np.ndarray,
         razao_maxima: np.ndarray,
     ) -> list[tuple[int, int]]:
@@ -306,22 +329,20 @@ class BenefitCostProblematic(Problematic):
         disjuntas ja estao ordenados e nao pagam LP nenhum -- em geral sao a
         maioria.
 
+        Recebe o custo como fracao do orcamento (``c / B``) e as faixas de razao
+        nessa mesma escala: a ``TOLERANCE`` absoluta compara diferencas de
+        valor global por orcamento inteiro, o que nao depende da unidade do
+        custo.
+
         Paridade: bc-08 e bc-20, 27/09/2026
-        Exatidao: exata (LP), a menos da tolerancia (ver a limitacao no corpo)
+        Exatidao: exata (LP), a menos da tolerancia
         Custo: 2 LPs por par de faixas de razao sobrepostas; nenhum por par de
         faixas disjuntas
-        Unidade: razao em valor global por unidade de custo
+        Unidade: razao em valor global por fracao do orcamento
         """
-        razoes = problem.values / costs[:, None]
+        razoes = problem.values / custo_relativo[:, None]
         solver = self.evaluator.solver
         pendentes = []
-        # Limitacao conhecida: TOLERANCE (1e-7) e absoluta e aqui se compara
-        # com razoes valor/custo e com diferencas de razao, cuja escala e
-        # 1/custo. O resultado depende da unidade do custo: com custos muito
-        # grandes, diferencas reais de razao ficam abaixo de 1e-7, o par deixa
-        # de ser pendente e conta como ordenado -- a elicitacao pode parar antes
-        # da hora. Com custos pequenos a mesma tolerancia fica relativamente
-        # mais fina.
         for i in range(problem.n_alternatives):
             for l in range(i + 1, problem.n_alternatives):
                 if (razao_minima[i] > razao_maxima[l] + TOLERANCE
@@ -337,8 +358,8 @@ class BenefitCostProblematic(Problematic):
 
     def _carteira_fechada_pelo_orcamento(
         self,
-        costs: np.ndarray,
-        razao_no_centro: np.ndarray,
+        custo_relativo: np.ndarray,
+        beneficio_no_centro: np.ndarray,
         sem_ordem: set[tuple[int, int]],
     ) -> bool:
         """Se a ordem de razao ja conhecida basta para fixar a carteira gulosa.
@@ -361,21 +382,36 @@ class BenefitCostProblematic(Problematic):
         orcamento de 237): a carteira sao todos, em qualquer ordem, e mesmo assim
         ele fez as 14 perguntas e fechou a ordem inteira.
 
+        A ordem simulada usa a mesma chave da gulosa (``_selecionar_por_razao``):
+        razao decrescente, depois o mais barato, depois o indice, e pula quem
+        nao agrega valor. Com outra chave, dois projetos de razao identica em
+        todo peso (par que o LP ve como ordenado, mas empatado) ficavam na
+        ordem errada e a parada anunciava uma carteira que a gulosa nao monta.
+        Quem chama ainda exige que as amostras tenham dado uma carteira so.
+
         Quem chama so aplica esta parada enquanto o espaco de pesos tem no
         maximo uma origem de restricao (ver ``_analyse``).
 
         Paridade: vol-bc-3x8, 29/09/2026; fin-B2, 29/09/2026
         Custo: nenhum LP (recebe os pares sem ordem ja calculados)
+        Unidade: custo como fracao do orcamento; beneficio em valor global
         """
         # Par ja ordenado tem o mesmo sentido em todo peso viavel, inclusive no
         # centro das amostras: ordenar por ali deixa cada par fechado do lado
         # certo, e o corte depois da k-esima posicao e limpo quando nenhum par
         # ainda aberto o atravessa.
-        n = len(costs)
-        ordem = sorted(range(n), key=lambda i: -razao_no_centro[i])
+        razao_no_centro = beneficio_no_centro / custo_relativo
+        ordem = sorted(
+            (i for i in range(len(custo_relativo))
+             if beneficio_no_centro[i] > TOLERANCE),
+            key=lambda i: (-razao_no_centro[i], custo_relativo[i], i),
+        )
+        n = len(ordem)
         posicao = {projeto: k for k, projeto in enumerate(ordem)}
         alcance = list(range(n))  # ate onde cada posicao arrasta o seu grupo
         for i, l in sem_ordem:
+            if i not in posicao or l not in posicao:
+                continue  # projeto sem valor nao entra, em ordem nenhuma
             a, b = sorted((posicao[i], posicao[l]))
             alcance[a] = max(alcance[a], b)
         blocos, inicio, fim = [], 0, 0
@@ -384,12 +420,12 @@ class BenefitCostProblematic(Problematic):
             if k == fim:
                 blocos.append(ordem[inicio:k + 1])
                 inicio = k + 1
-        restante = self._budget
+        restante = 1.0  # o orcamento inteiro, na escala do custo relativo
         for bloco in blocos:
-            if (costs[bloco] <= restante + TOLERANCE).any():
+            if (custo_relativo[bloco] <= restante + TOLERANCE).any():
                 if len(bloco) > 1:
                     return False  # algo dele entra, e a ordem interna ainda conta
-                restante -= float(costs[bloco[0]])
+                restante -= float(custo_relativo[bloco[0]])
         return True
 
     def _dominancia_por_razao(
@@ -404,13 +440,13 @@ class BenefitCostProblematic(Problematic):
 
         Exatidao: conservadora -- faixas exatas (LP), mas pares de faixas
         sobrepostas com ordem fixa nao sao declarados
+        Recebe as faixas na escala do orcamento (custo como fracao dele), para
+        a folga de ``TOLERANCE`` nao depender da unidade do custo; a ordem
+        entre as faixas e a mesma das publicadas.
+
         Custo: nenhum LP (recebe as faixas prontas)
         """
         pares = []
-        # Limitacao conhecida: a mesma TOLERANCE absoluta de `_pares_sem_ordem`,
-        # comparada com razoes cuja escala depende da unidade do custo. Com
-        # custos muito grandes a folga passa a engolir diferencas reais e
-        # menos dominancias sao declaradas.
         for i in range(len(razao_minima)):
             for l in range(len(razao_minima)):
                 if i != l and razao_minima[i] > razao_maxima[l] + TOLERANCE:
@@ -418,7 +454,7 @@ class BenefitCostProblematic(Problematic):
         return pares
 
     def _selecionar_por_razao(
-        self, razoes: np.ndarray, costs: np.ndarray
+        self, beneficios: np.ndarray, custo_relativo: np.ndarray
     ) -> tuple[int, ...]:
         """Carteira gulosa: desce a lista ordenada por razao enquanto couber.
 
@@ -427,28 +463,28 @@ class BenefitCostProblematic(Problematic):
         - um projeto que nao cabe e pulado, nao encerra a varredura. Parar no
           primeiro que estoura deixaria orcamento parado enquanto ha projeto
           barato e eficiente mais abaixo na lista.
-        - razao nao positiva fica fora, ainda que haja folga. Um projeto que nao
-          agrega valor algum naquele vetor de pesos so consumiria orcamento e
-          apareceria como "selecionado" sem ter sido escolhido por merito.
+        - beneficio nao positivo fica fora, ainda que haja folga. Um projeto que
+          nao agrega valor algum naquele vetor de pesos so consumiria orcamento
+          e apareceria como "selecionado" sem ter sido escolhido por merito. O
+          teste e no beneficio (valor global em [0, 1]), nao na razao, cuja
+          escala dependeria da unidade do custo.
 
         Custo: nenhum LP
+        Unidade: beneficio em valor global; custo como fracao do orcamento
         """
+        razoes = beneficios / custo_relativo
         ordem = sorted(
             range(len(razoes)),
             # empate na razao resolve pelo mais barato, e depois pelo indice:
             # a carteira precisa ser a mesma a cada execucao
-            key=lambda i: (-razoes[i], costs[i], i),
+            key=lambda i: (-razoes[i], custo_relativo[i], i),
         )
         escolhidos: list[int] = []
-        restante = self._budget
+        restante = 1.0  # o orcamento inteiro, na escala do custo relativo
         for i in ordem:
-            # Limitacao conhecida: "razao nao positiva" e testada contra a
-            # TOLERANCE absoluta (1e-7), e a razao e valor em [0, 1] dividido
-            # pelo custo. Com custos acima de ~1e7 na unidade informada, toda
-            # razao fica abaixo de 1e-7 e nenhum projeto entra na carteira.
-            if razoes[i] <= TOLERANCE:
+            if beneficios[i] <= TOLERANCE:
                 continue
-            if costs[i] <= restante + 1e-12:
+            if custo_relativo[i] <= restante + 1e-12:
                 escolhidos.append(i)
-                restante -= costs[i]
+                restante -= custo_relativo[i]
         return tuple(sorted(escolhidos))

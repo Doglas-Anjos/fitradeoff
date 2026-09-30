@@ -16,6 +16,26 @@ from dataclasses import dataclass
 import numpy as np
 
 
+# Distancia maxima entre uma consequencia e um nivel declarado para que ela seja
+# lida como aquele nivel. Absoluta, e nao a tolerancia relativa padrao do
+# `np.isclose` (rtol 1e-5): com ela, niveis grandes e vizinhos (100000 e 100001)
+# se confundiam e 100001 era lido como 100000.
+#
+# Unidade: unidade original do criterio
+TOLERANCIA_DE_NIVEL = 1e-9
+
+
+def indice_do_nivel(levels: tuple[float, ...], consequence: float) -> int | None:
+    """Indice do nivel declarado mais proximo da consequencia, se a distancia
+    for no maximo ``TOLERANCIA_DE_NIVEL``; ``None`` se nenhum estiver perto.
+
+    Unidade: unidade original do criterio
+    """
+    distancias = np.abs(np.asarray(levels, dtype=float) - float(consequence))
+    indice = int(np.argmin(distancias))
+    return indice if distancias[indice] <= TOLERANCIA_DE_NIVEL else None
+
+
 class Scale(ABC):
     """Conversao entre consequencia e valor, nos dois sentidos."""
 
@@ -104,13 +124,13 @@ class DiscreteScale(Scale):
             raise ValueError("Uma escala construida precisa de ao menos dois niveis.")
 
     def value_of(self, consequence: float) -> float:
-        matches = np.flatnonzero(np.isclose(np.asarray(self.levels), consequence))
-        if matches.size == 0:
+        indice = indice_do_nivel(self.levels, consequence)
+        if indice is None:
             raise ValueError(
                 f"Consequencia {consequence} nao pertence aos niveis declarados "
                 f"{self.levels}."
             )
-        return float(matches[0]) / (len(self.levels) - 1)
+        return float(indice) / (len(self.levels) - 1)
 
     def consequence_at(self, value: float) -> float:
         index = int(round(value * (len(self.levels) - 1)))

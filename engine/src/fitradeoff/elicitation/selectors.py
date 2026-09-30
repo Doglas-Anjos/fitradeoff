@@ -139,6 +139,9 @@ class QuestionSelector(ABC):
         qualidade de lado -- Qualidade x Custo ele nunca pergunta. Nos pulavamos
         a abertura e faziamos uma pergunta a menos.
 
+        Par encerrado por "nao sei" (``Bracket.encerrado``) nao volta, qualquer
+        que seja a largura que as respostas deixaram.
+
         Nao consulta o espaco de pesos: o filtro pelo peso do rival fica com
         quem seleciona (``WidestBracketSelector.select``).
 
@@ -147,7 +150,7 @@ class QuestionSelector(ABC):
         """
         found = []
         for bracket in sorted(brackets, key=lambda b: -b.width):
-            if bracket.width < self._resolution:
+            if bracket.encerrado or bracket.width < self._resolution:
                 continue
             if _estreita_demais(problem, bracket) and not bracket.abertura:
                 continue

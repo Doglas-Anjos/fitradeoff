@@ -103,6 +103,13 @@ class Evaluator:
         some com a opcao antes de ele a ver. A leitura passa a ser a
         conservadora: e POA quem nenhuma outra domina pelo envelope.
 
+        A dominancia que elimina e a estrita: ``l`` separa ``i`` e ``i`` nao
+        separa ``l``. Dois envelopes iguais (alternativas empatadas) se separam
+        nos dois sentidos, e com a separacao simples uma eliminava a outra: o
+        conjunto de POAs saia vazio e a escolha se dava por resolvida sem
+        ninguem. A relacao estrita nao tem ciclo (a cada dois passos o teto cai
+        mais que a tolerancia), entao sempre sobra ao menos uma POA.
+
         Metodo: de Almeida et al. (2016); com veto, de Almeida (2013)
         Exatidao: exata (LP) sem veto; conservadora (envelope) com veto
         Custo: n LPs sem veto; 4n LPs com veto
@@ -114,6 +121,7 @@ class Evaluator:
                 for i in range(problem.n_alternatives)
                 if not any(
                     self._envelopes_separate(envelopes, l, i)
+                    and not self._envelopes_separate(envelopes, i, l)
                     for l in range(problem.n_alternatives)
                     if l != i
                 )

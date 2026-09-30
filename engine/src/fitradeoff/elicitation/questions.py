@@ -15,6 +15,7 @@ from ..domain.audit import AuditLog
 from ..domain.formatting import format_amount
 from ..domain.preferences import CriteriaRanking, Preference, TradeoffAnswer
 from ..domain.problem import Problem
+from ..domain.scales import DegenerateScale
 
 
 @dataclass(frozen=True)
@@ -39,6 +40,12 @@ class Bracket:
 
     Cada resposta corta a faixa: e uma busca binaria sobre a razao entre dois
     pesos consecutivos na ordem declarada.
+
+    Limitacao conhecida: o teto e 1,0 mesmo com ``epsilon`` positivo, embora a
+    ordenacao estrita deixe a razao real um pouco abaixo disso (cerca de
+    ``1 - 2 epsilon / k``). Muito perto de 1, uma resposta legitima pode esvaziar
+    o espaco de pesos. Visto com 11 respostas B seguidas em dois criterios; num
+    percurso completo o avaliador costuma resolver antes de o seletor chegar la.
     """
 
     criterion: int
@@ -47,6 +54,9 @@ class Bracket:
     upper: float = 1.0
     #: a pergunta de abertura (topo contra base), ainda nao respondida
     abertura: bool = False
+    #: par encerrado por "nao sei": nao volta a ser perguntado, mas ``lower`` e
+    #: ``upper`` seguem sendo o que as respostas de fato afirmaram
+    encerrado: bool = False
 
     @property
     def width(self) -> float:
@@ -61,8 +71,10 @@ class Bracket:
 
         Seja r a razao. Preferir A significa ``value * k >= k_rival``, ou seja
         ``r <= value``, o que baixa o teto; preferir B eleva o piso; a
-        indiferenca fixa ``r = value``. "Nao sei" colapsa a faixa no ponto
-        medio so para encerrar o par (ver a limitacao no corpo).
+        indiferenca fixa ``r = value``. "Nao sei" marca o par como
+        ``encerrado`` e deixa a faixa como estava: nada foi afirmado sobre a
+        razao, entao quem le as pontas (``_propagar_abertura``) continua lendo
+        so o que o decisor declarou.
 
         Unidade: razao ``k[rival] / k[criterion]``, em [0, 1]
         """
@@ -75,15 +87,10 @@ class Bracket:
         if answer.preference is Preference.INDIFFERENT:
             return replace(self, lower=answer.value, upper=answer.value)
         # sem resposta: o par se encerra sem que nada seja afirmado sobre a
-        # razao entre os pesos -- o intervalo colapsa apenas para que a pergunta
-        # nao volte, e nenhuma restricao entrou no modelo
-        #
-        # Limitacao conhecida: o bracket colapsado no ponto medio e
-        # indistinguivel de um fixado por "indiferente". Quem le as pontas dele
-        # como informacao -- e `_propagar_abertura` le -- trata o "nao sei"
-        # como se o decisor tivesse fixado a razao no meio da faixa, embora o
-        # espaco de pesos nao tenha restricao nenhuma ali.
-        return replace(self, lower=self.midpoint, upper=self.midpoint)
+        # razao entre os pesos. Colapsar a faixa no meio (como ja se fez) o
+        # tornava indistinguivel de um "indiferente", e a propagacao da abertura
+        # apertava os vizinhos com uma razao que ninguem declarou.
+        return replace(self, encerrado=True)
 
     def candidate_value(self, problem: Problem) -> float | None:
         """Desempenho intermediario a usar na proxima pergunta deste par.
@@ -125,6 +132,14 @@ def brackets_from_log(
     abertura pode ser revista a qualquer momento, como qualquer outra resposta:
     o que vale e o conjunto do log, nao a sequencia.
 
+    Criterio de escala degenerada (todas as alternativas empatam) fica fora
+    dos pares: como rival ele produzia uma pergunta em que A domina B (o mesmo
+    desempenho aparece como "o pior" e "o melhor possivel"), e como foco nao
+    tem desempenho intermediario, entao o par seguinte nunca era perguntado.
+    Os vizinhos dele passam a formar um par direto. A ordenacao dos pesos
+    continua a declarada, degenerado incluido; a razao extrema segue sendo o
+    produto das consecutivas, porque o produto telescopa.
+
     Sem ordenacao no log nao ha intervalo nenhum. Havendo mais de uma, vale a
     ultima para montar os pares. Nao resolve LP: os intervalos saem so das
     respostas registradas, e nao do espaco de pesos.
@@ -133,7 +148,10 @@ def brackets_from_log(
     if ranking is None:
         return ()
 
-    ordem = ranking.order
+    ordem = tuple(
+        j for j in ranking.order
+        if not isinstance(problem.scales[j], DegenerateScale)
+    )
     respostas = tuple(log.of_type(TradeoffAnswer))
 
     brackets: list[Bracket] = []
@@ -185,13 +203,11 @@ def _propagar_abertura(
     fatores ja fixados em v2 e v3, o seguinte precisa ser ao menos piso/(v2*v3),
     e o seletor perguntou abaixo disso.
 
-    Limitacao conhecida: ``piso`` e ``teto`` vem so das respostas A, B e
-    indiferente a abertura, mas os fatores ``outros`` sao lidos das pontas dos
-    brackets consecutivos, como estao. Um par consecutivo encerrado por "nao
-    sei" chega aqui colapsado no ponto medio (``Bracket.narrowed_by``), e entra
-    na conta como se a razao dele fosse conhecida e igual a esse meio -- o que
-    o decisor nao afirmou e o espaco de pesos nao contem. Os pares vizinhos
-    podem entao ser apertados alem do que o espaco de pesos justifica.
+    ``piso`` e ``teto`` vem so das respostas A, B e indiferente a abertura, e
+    os fatores ``outros`` sao lidos das pontas dos brackets consecutivos. Um par
+    encerrado por "nao sei" chega aqui com as pontas que as respostas
+    afirmaram (``Bracket.encerrado`` o tira da fila sem mexer nelas), entao
+    nao aperta os vizinhos com uma razao que o decisor nao declarou.
     """
     topo, base = ordem[0], ordem[-1]
     piso, teto = 0.0, 1.0

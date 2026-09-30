@@ -17,9 +17,9 @@ from ..domain.weights import Sense, WeightSpace
 # Folga numerica para comparar o valor otimo de um LP com zero.
 #
 # E absoluta, e foi pensada para grandezas em valor global normalizado [0, 1].
-# Quem a compara com outra regua herda a escala dela: em `benefit_cost.py` ela e
-# comparada com razoes valor/custo, que dependem da unidade do custo (ver a
-# "Limitacao conhecida" la).
+# Quem a compara com outra regua precisa trazer a grandeza para essa escala:
+# em `benefit_cost.py` as razoes valor/custo sao comparadas com o custo como
+# fracao do orcamento, para que ela nao dependa da unidade do custo.
 TOLERANCE = 1e-7
 
 

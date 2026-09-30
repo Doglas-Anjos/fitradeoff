@@ -225,6 +225,11 @@ class HolisticJudgement(PreferenceStatement):
     que nas outras declaracoes, mas medida em outra regua -- aqui e diferenca de
     valor global, la e diferenca entre constantes de escala.
 
+    Limitacao conhecida: sob veto, a restricao usa ``problem.values``, sem a
+    penalidade. Um decisor que prefere X porque Y esta na zona de veto recebe uma
+    restricao sobre os pesos que talvez nao sustente essa preferencia -- o
+    motivo dele era o veto, nao os pesos.
+
     Unidade: ``epsilon`` em valor global normalizado
     """
 

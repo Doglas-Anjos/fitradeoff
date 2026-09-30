@@ -516,3 +516,12 @@ todo critério tem faixa zero, e a elicitação da função valor não tem o que
 Nós respondemos, e desde o limiar de equivalência respondemos bem: *"3
 alternativas ficaram equivalentes dentro do limiar de 0,01: qualquer uma delas
 serve; mais perguntas não separariam."*
+
+Basta **um critério** de faixa zero. No `fin-R1` (ranking, 7 critérios por 30
+alternativas) a nota de 7 níveis ficou em 4 para todas as alternativas, por
+descuido na geração do caso. O oficial parou na tela da matriz: em quatro
+tentativas, depois de esperar 10 minutos duas vezes em cada uma, a tela de
+Intra-Criteria Evaluation nunca veio. O `est-escolha-7x30`, do mesmo tamanho e
+sem coluna constante, passou por ali sem problema. Nós fazemos 11 perguntas e
+chegamos a uma pré-ordem completa, tratando a nota como o que ela é naquela
+matriz: um critério que não separa ninguém.

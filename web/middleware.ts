@@ -24,6 +24,19 @@ export function middleware(request: NextRequest) {
 
   const resposta = NextResponse.next({ request: { headers: cabecalhos } });
   resposta.headers.set("Content-Security-Policy", csp);
+
+  // O par natural da CSP, para fechar as brechas que ela sozinha não cobre:
+  // não deixar o navegador adivinhar o tipo de conteúdo (evita que um upload
+  // vire script), vazar o mínimo de Referer para outras origens, reforçar o
+  // `frame-ancestors 'none'` da CSP em navegadores antigos que só entendem
+  // X-Frame-Options, e desligar APIs do navegador que o app não usa.
+  resposta.headers.set("X-Content-Type-Options", "nosniff");
+  resposta.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  resposta.headers.set("X-Frame-Options", "DENY");
+  resposta.headers.set(
+    "Permissions-Policy",
+    "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+  );
   return resposta;
 }
 

@@ -1,4 +1,4 @@
-# FITradeoff — plataforma de apoio à decisão multicritério
+# FITradeoff: plataforma de apoio à decisão multicritério
 
 > [!IMPORTANT]
 > **Este não é o FITradeoff original.** É uma implementação independente do método FITradeoff,
@@ -6,11 +6,11 @@
 > apresentar valores diferentes dos dele**.
 >
 > Foi construída a partir do guia do usuário publicado no site do FITradeoff (*Practical User
-> Guide — FITradeoff*, CDSID-UFPE) e dos artigos que descrevem o método. Para aproximar os dois
-> sistemas, fizemos várias rodadas de equivalência: os mesmos casos, rodados no original e aqui e
-> comparados pergunta a pergunta e resultado a resultado, em cada problemática que o original
-> permite comparar — escolha, ranking, sorting e benefício-custo; o portfólio combinatorial dele não
-> roda em sessão. O que bate e o que ainda difere está em [Validação contra o sistema
+> Guide*, CDSID-UFPE) e dos artigos que descrevem o método. Para aproximar os dois sistemas,
+> fizemos várias rodadas de equivalência: os mesmos casos, rodados no original e aqui e comparados
+> pergunta a pergunta e resultado a resultado, em cada problemática que o original permite comparar
+> (escolha, ranking, sorting e benefício-custo; o portfólio combinatorial dele não roda em sessão).
+> O que bate e o que ainda difere está em [Validação contra o sistema
 > oficial](#validação-contra-o-sistema-oficial) e, em detalhe, em
 > [`paridade/EQUIVALENCIA.md`](paridade/EQUIVALENCIA.md).
 
@@ -20,7 +20,7 @@ para elicitação de constantes de escala em modelos aditivos no escopo da MAVT,
 
 Duas formas de conduzir a mesma decisão: a **tela estruturada**, com o fluxo clássico do método e
 apoio gráfico, e o **servidor MCP**, que entrega o método como ferramentas ao assistente que o
-decisor já usa — Claude, Cursor, VS Code. As duas usam as mesmas operações: o assistente não tem
+decisor já usa (Claude, Cursor, VS Code). As duas usam as mesmas operações: o assistente não tem
 atalho por dentro, e não calcula nada por conta própria.
 
 O decisor nunca vê um espaço de pesos nem um problema de programação linear: responde a
@@ -29,7 +29,7 @@ justificar.
 
 > **Veio auditar?** [`AUDITORIA.md`](AUDITORIA.md) é a porta de entrada: em que arquivo mora
 > cada etapa do método, quais parâmetros mudam a conclusão, o que é exato e o que é
-> aproximado, e como reproduzir tudo — inclusive a comparação com o sistema oficial.
+> aproximado, e como reproduzir tudo, inclusive a comparação com o sistema oficial.
 
 ## Começar
 
@@ -49,27 +49,27 @@ Front em http://localhost:3000, API em http://127.0.0.1:8000. Detalhes, Postgres
 
 | Módulo | Situação |
 |---|---|
-| Escolha, ranking, sorting | **pronto** — exatos |
-| Portfólio combinatorial | **pronto** — aproximado, ver ressalva abaixo |
-| Portfólio benefício-custo | **pronto** — faixas de razão exatas, carteira aproximada |
+| Escolha, ranking, sorting | **pronto**: exatos |
+| Portfólio combinatorial | **pronto**: aproximado, ver ressalva abaixo |
+| Portfólio benefício-custo | **pronto**: faixas de razão exatas, carteira aproximada |
 | Avaliação holística + tradeoff no mesmo espaço | **pronto** |
-| Curva de valor intra-critério elicitada | **pronto** — por bisseção, antes da ordenação |
-| Modelo de veto | **pronto** — escolha e ordenação, por envelope conservador |
-| Auditoria, desfazer, sensibilidade | **pronto** — sobre o limiar e sobre as consequências |
-| Servidor MCP (19 ferramentas) | **pronto** — stdio e HTTP remoto, com chave |
-| Superfície pública do MCP | **pronto** — imagem, composição e túnel |
-| Identidade vinda de outra aplicação | **pronto** — JWT assinado, um acervo por pessoa |
-| Autenticação de `/api` | **pronto** — atrás de quem autentica; local segue sem cadastro |
-| API HTTP (FastAPI) | **pronto** — 27 rotas |
-| Tela de decisão estruturada | **pronto** — com os gráficos |
-| Tela de chaves do MCP | **pronto** — emitir, listar e revogar |
-| Entrada manual + import de planilha | **pronto** — `.xlsx` e `.csv` |
+| Curva de valor intra-critério elicitada | **pronto**: por bisseção, antes da ordenação |
+| Modelo de veto | **pronto**: escolha e ordenação, por envelope conservador |
+| Auditoria, desfazer, sensibilidade | **pronto**: sobre o limiar e sobre as consequências |
+| Servidor MCP (19 ferramentas) | **pronto**: stdio e HTTP remoto, com chave |
+| Superfície pública do MCP | **pronto**: imagem, composição e túnel |
+| Identidade vinda de outra aplicação | **pronto**: JWT assinado, um acervo por pessoa |
+| Autenticação de `/api` | **pronto**: atrás de quem autentica; local segue sem cadastro |
+| API HTTP (FastAPI) | **pronto**: 27 rotas |
+| Tela de decisão estruturada | **pronto**: com os gráficos |
+| Tela de chaves do MCP | **pronto**: emitir, listar e revogar |
+| Entrada manual + import de planilha | **pronto**: `.xlsx` e `.csv` |
 | Export (entrada + resultado + trilha) | **pronto** |
-| Ordenação de pesos nos dois modos | **pronto** — lista e avaliação global |
-| Paridade medida contra o sistema oficial | **74 casos**, versionados — 67 batem de 73 comparáveis; ver abaixo |
+| Ordenação de pesos nos dois modos | **pronto**: lista e avaliação global |
+| Paridade medida contra o sistema oficial | **74 casos**, versionados: 67 batem de 73 comparáveis; ver abaixo |
 | Decisão em grupo | a fazer |
 
-**Mais de 1600 testes** — motor e API, servidor MCP, paridade e interface.
+**Mais de 1600 testes**: motor e API, servidor MCP, paridade e interface.
 Entre eles, um decisor-oráculo que verifica a invariante central do método (a alternativa
 verdadeiramente ótima nunca sai do conjunto de POAs), testes que auditam a própria
 arquitetura e testes de entrada não confiável.
@@ -91,7 +91,7 @@ arquitetura e testes de entrada não confiável.
                                              solvers  (porta + adaptador HiGHS)
 ```
 
-Dependências apontam **sempre para dentro**. O domínio não conhece ninguém —
+Dependências apontam **sempre para dentro**. O domínio não conhece ninguém, e
 [`test_architecture.py`](engine/tests/test_architecture.py) verifica isso por AST a cada execução
 da suíte, porque arquitetura em camadas que ninguém checa vira, com o tempo, um grafo qualquer.
 
@@ -110,7 +110,7 @@ da suíte, porque arquitetura em camadas que ninguém checa vira, com o tempo, u
 | **DTO** | [`application/dto.py`](engine/src/fitradeoff/application/dto.py) | contrato de saída declarado, não improvisado por view |
 
 **Descartados de propósito:** Singleton (estado global mataria a auditoria), container de DI com
-resolução automática (tornaria o wiring invisível — o oposto do que um sistema auditável precisa),
+resolução automática (tornaria o wiring invisível, o oposto do que um sistema auditável precisa),
 Observer e Visitor (não há o que observar nem hierarquia a percorrer).
 
 ### As duas decisões que sustentam tudo
@@ -127,7 +127,7 @@ Quatro funcionalidades que num SAD são features separadas aparecem sozinhas:
 - **análise de sensibilidade** → reprocessar o mesmo log com outro limiar;
 - **trocar de problemática** → reler o mesmo log; nada é reelicitado.
 
-Os intervalos da busca binária também são **derivados do log**, nunca guardados à parte — se
+Os intervalos da busca binária também são **derivados do log**, nunca guardados à parte. Se
 fossem estado próprio, uma correção no log poderia dessincronizá-los, e a auditoria passaria a
 mentir.
 
@@ -135,7 +135,7 @@ Um servidor reiniciado retoma exatamente de onde parou, porque não havia nada n
 
 ## As cinco problemáticas
 
-São as mesmas cinco do sistema oficial, com os nomes de lá — quem chega de um artigo ou usa
+São as mesmas cinco do sistema oficial, com os nomes de lá, porque quem chega de um artigo ou usa
 os dois sistemas lado a lado procura por eles.
 
 | Chave | O que responde | Exatidão |
@@ -150,20 +150,20 @@ O decisor responde **uma vez**: as cinco leituras saem do mesmo log de auditoria
 problemática não reelicita nada.
 
 **A ressalva das carteiras, que precisa chegar ao decisor:** com os pesos ainda incertos, decidir
-se um projeto pertence a algum portfólio ótimo é um problema **bilevel** — a escolha binária
+se um projeto pertence a algum portfólio ótimo é um problema **bilevel**: a escolha binária
 depende dos pesos, que por sua vez são variáveis. Não se resolve com um LP. O que fazemos é
 amostrar vértices do espaço de pesos e resolver a carteira em cada um. Por isso "sempre
 selecionado" e "nunca selecionado" valem **para as amostras avaliadas**, e a ressalva acompanha o
 resultado na API, no MCP, na tela e na planilha exportada.
 
 Em `beneficio_custo` a divisão é mais fina, e a distinção importa: as **faixas de razão** e a
-dominância entre faixas que não se sobrepõem são **exatas** — o custo é constante, logo a razão é
-linear nos pesos e seus extremos saem de LPs. Só a **carteira** é amostrada. As outras três
+dominância entre faixas que não se sobrepõem são **exatas**, porque o custo é constante, logo a
+razão é linear nos pesos e seus extremos saem de LPs. Só a **carteira** é amostrada. As outras três
 problemáticas não têm ressalva nenhuma.
 
 Sob **veto** declarado, qualquer resultado passa a ser um envelope conservador: o valor penalizado
 é quadrático nos pesos e a dominância deixa de ser um LP. As faixas publicadas contêm a verdadeira
-e são mais largas que ela — o método pode deixar de apontar uma superioridade que existe, nunca
+e são mais largas que ela: o método pode deixar de apontar uma superioridade que existe, mas nunca
 aponta uma que não existe. Detalhe em [`AUDITORIA.md`](AUDITORIA.md) e em
 [`problematics/veto.py`](engine/src/fitradeoff/problematics/veto.py).
 
@@ -174,7 +174,7 @@ resultado a resultado: **74 casos** nas quatro problemáticas que o oficial elic
 30 alternativas e de 2 a 7 critérios, com curva de valor não linear, critério discreto, respostas A,
 B e misturadas, e casos de borda feitos para quebrar a equivalência.
 
-**67 batem de 73 comparáveis** — a mesma contagem nas duas fases, a mesma sequência de perguntas e
+**67 batem de 73 comparáveis**: a mesma contagem nas duas fases, a mesma sequência de perguntas e
 o mesmo resultado (vencedor, ordem, classe de cada alternativa, carteira). Os 6 que não batem se
 resumem a duas diferenças estreitas, cada uma presa num teste para que fechá-la também o quebre:
 
@@ -191,19 +191,19 @@ A medição do lado oficial está versionada, então a suíte roda sem rede e se
 python -m pytest paridade/
 ```
 
-- [`paridade/README.md`](paridade/README.md) — como rodar cada modo e o que a suíte trava
-- [`PARIDADE.md`](PARIDADE.md) — comparação de **recursos**, levantada do guia do usuário oficial
-- [`paridade/EQUIVALENCIA.md`](paridade/EQUIVALENCIA.md) — comparação de **comportamento**: as
+- [`paridade/README.md`](paridade/README.md): como rodar cada modo e o que a suíte trava
+- [`PARIDADE.md`](PARIDADE.md): comparação de **recursos**, levantada do guia do usuário oficial
+- [`paridade/EQUIVALENCIA.md`](paridade/EQUIVALENCIA.md): comparação de **comportamento**, com as
   regras que a comparação encontrou e corrigiu, e as duas diferenças que permanecem
 
 Rodar lado a lado é o que revelou essas regras. Na maior parte delas as perguntas iniciais eram
-idênticas e a diferença estava em **quando cada sistema para** — a largura mínima de um par, a
+idênticas e a diferença estava em **quando cada sistema para**: a largura mínima de um par, a
 parada pelo orçamento no benefício-custo, a pergunta de abertura que sai mesmo com o critério do
 topo quase constante. É o tipo de coisa que nenhuma leitura do artigo entrega.
 
 ## A parte difícil: perguntar em texto
 
-A pergunta de tradeoff do FITradeoff é visual por design — o SAD original usa gráficos de barras
+A pergunta de tradeoff do FITradeoff é visual por design: o SAD original usa gráficos de barras
 porque comparar duas consequências hipotéticas é cognitivamente pesado. Em texto mal formulado, a
 elicitação degrada.
 
@@ -221,7 +221,7 @@ normalizada:
     ...
 ```
 
-Ambos os lados vêm por inteiro, marcando o que é melhor e pior possível — caso contrário o decisor
+Ambos os lados vêm por inteiro, marcando o que é melhor e pior possível; caso contrário o decisor
 responde a uma pergunta diferente da que o modelo registra. O campo `posicao_na_escala` acompanha
 a resposta, para renderizar a mesma pergunta como gráfico quando houver interface visual.
 
@@ -269,7 +269,7 @@ Os dados ficam em `~/.fitradeoff/decisoes` (configurável por `FITRADEOFF_DATA`)
 | `FITRADEOFF_ESPERA_POR_VAGA` | segundos esperando vaga antes de responder 503 (padrão 60) |
 | `FITRADEOFF_ESPERANDO_POR_PESSOA` | pedidos de uma pessoa na fila, além dos que rodam; acima disso, 429 (padrão 8) |
 | `FITRADEOFF_MCP_URL` | endereço do MCP que a tela de chaves manda copiar |
-| `FITRADEOFF_MCP_HOSTS` | domínios públicos do MCP, separados por vírgula — **declarar é o que diz "publiquei"** |
+| `FITRADEOFF_MCP_HOSTS` | domínios públicos do MCP, separados por vírgula; **declarar é o que diz "publiquei"** |
 | `FITRADEOFF_ADMIN_TOKEN` | segredo que libera emitir chaves de fora deste computador |
 | `FITRADEOFF_JWT_ISSUER` | o `iss` que a aplicação da frente assina |
 | `FITRADEOFF_JWT_AUDIENCE` | o `aud` que ela põe no token para este serviço |
@@ -285,7 +285,7 @@ Os dados ficam em `~/.fitradeoff/decisoes` (configurável por `FITRADEOFF_DATA`)
 
 ### Decisões no PostgreSQL
 
-Sem `FITRADEOFF_DATABASE_URL`, cada decisão é um arquivo JSON — o certo para quem
+Sem `FITRADEOFF_DATABASE_URL`, cada decisão é um arquivo JSON, o certo para quem
 roda no próprio computador, sem nada para instalar. Com ela, as decisões vão para
 o PostgreSQL, que é o certo quando há várias pessoas, ou mais de um processo
 escrevendo: transação no lugar de arquivo reescrito, e uma gravação que apagaria a
@@ -338,23 +338,23 @@ FITRADEOFF_TEST_DATABASE_URL=postgresql://fitradeoff_app:...@127.0.0.1:5432/fitr
 
 ### As duas telas
 
-**Decisão estruturada** — o fluxo clássico do método, em quatro etapas que só
+**Decisão estruturada**: o fluxo clássico do método, em quatro etapas que só
 aparecem quando a anterior fecha (não há pergunta antes da ordenação dos pesos,
 nem resultado antes de haver resposta). A pergunta de tradeoff é desenhada, não
 descrita: os dois lados aparecem completos, com barras por critério e o valor na
-unidade real. Isso importa — em texto mal formulado, o decisor responde a uma
+unidade real. Isso importa: em texto mal formulado, o decisor responde a uma
 pergunta diferente da que o modelo registra.
 
-**Chaves do MCP** — onde se gera a credencial que liga o assistente do decisor
+**Chaves do MCP**: onde se gera a credencial que liga o assistente do decisor
 a este servidor, e se revoga a que não é mais usada. A tela monta o trecho de
 configuração pronto para cada cliente, com a chave dentro, porque trocar
 `SUA_CHAVE` à mão depois de colar é o passo em que se erra.
 
 Uma chave não é senha escolhida por gente: são 256 bits aleatórios, e o que fica
 gravado é o resumo SHA-256 dela. O texto existe uma vez, na resposta que o criou.
-Perder a chave não tem recuperação — revoga-se e emite-se outra.
+Perder a chave não tem recuperação: revoga-se e emite-se outra.
 
-Toda chave **vence** — em 90 dias por padrão (`FITRADEOFF_CHAVE_DIAS`) —, e a lista mostra
+Toda chave **vence**, em 90 dias por padrão (`FITRADEOFF_CHAVE_DIAS`), e a lista mostra
 "vence em …" ou "vencida". Uma credencial portadora sem prazo valeria para sempre depois de vazar.
 Só o dono da plataforma pode emitir chave sem prazo, e só explicitamente
 (`python -m fitradeoff_api.chaves criar "CI" --dias 0`). Chaves gravadas antes da validade existir:
@@ -401,7 +401,7 @@ declaração de preferência do decisor: o agente pode propor, mas precisa confi
 ### Os dois modos do MCP
 
 **stdio**, como no [`.mcp.json`](.mcp.json): o cliente lança o processo, que roda como o próprio
-usuário. Não há chave, porque não há fronteira — quem lançou o processo já podia ler os arquivos.
+usuário. Não há chave, porque não há fronteira: quem lançou o processo já podia ler os arquivos.
 Continua sendo o caminho certo para um cliente na mesma máquina.
 
 **HTTP**, em `/mcp`, montado na própria API: para clientes que não rodam aqui, e em especial para o
@@ -418,7 +418,7 @@ curl -X POST "http://127.0.0.1:8000/mcp/$CHAVE" ...
 
 A forma com a chave na URL existe porque, sem ela, o caso de uso que motivou o modo remoto não
 existiria: o painel do claude.ai pede um endereço e nada mais, sem campo de cabeçalho. Em troca, a
-chave aparece em histórico de navegador e em log de servidor — daí uma chave por cliente, e revogar
+chave aparece em histórico de navegador e em log de servidor; daí uma chave por cliente, e revogar
 a que saiu de uso.
 
 As quatro formas de endereço respondem igual, porque os painéis normalizam a URL de jeitos
@@ -434,7 +434,7 @@ API não derruba a conversa em andamento do cliente.
 ## Publicar o MCP
 
 Para o assistente chamar o método de fora desta máquina, o servidor precisa estar num endereço
-alcançável — e o que se publica **não** é a porta 8000. O passo a passo (superfície pública,
+alcançável, e o que se publica **não** é a porta 8000. O passo a passo (superfície pública,
 hospedeiro, túnel para experimentar hoje, o que protege a porta e rodar atrás de outra aplicação)
 está em [`PUBLICAR.md`](PUBLICAR.md).
 
@@ -450,7 +450,7 @@ tirar o `'unsafe-inline'` dos scripts.
 - **Estilos:** `<style>` só com nonce, da própria origem, ou com o hash exato do CSS que a
   biblioteca de notificações injeta (um teste recalcula esse hash a partir do pacote instalado).
   O `'unsafe-inline'` fica restrito aos atributos `style="..."`, que o React usa e que não aceitam
-  nonce — injetar estilo não executa código.
+  nonce; injetar estilo não executa código.
 - Os endereços do Cloudflare (verificação contra robôs) e o da FasorX (sessão) continuam
   liberados.
 - `X-Powered-By` desligado.
@@ -466,7 +466,7 @@ curl -sI https://seu-dominio | grep -ci content-security-policy   # tem de dar 1
 
 O servidor roda em stdio, como o próprio usuário, atendendo um cliente: não há fronteira de
 privilégio *dentro* do processo a defender. O que existe é a fronteira por onde entra o que o
-agente manda — e é lá que as barreiras estão. Cada uma responde a um vetor que foi reproduzido
+agente manda, e é lá que as barreiras estão. Cada uma responde a um vetor que foi reproduzido
 antes de ser corrigido:
 
 | Vetor | O que acontecia | Barreira |
@@ -474,16 +474,16 @@ antes de ser corrigido:
 | Log adulterado com índice fora da faixa | `IndexError` cru vazava pelo protocolo | `PreferenceStatement.validate` confere índices contra o problema antes de virar restrição |
 | Matriz com milhares de alternativas | O(n²) LPs travavam o processo | [`Limits`](engine/src/fitradeoff/application/limits.py), injetáveis |
 | Identificador com `../` | Só o adaptador de disco validava | Padrão de caracteres **e** conferência do caminho resolvido, nos dois adaptadores |
-| Identificador de 48 bits | Adivinhável; o id também é credencial de leitura | `secrets.token_hex(16)` — 128 bits |
+| Identificador de 48 bits | Adivinhável; o id também é credencial de leitura | `secrets.token_hex(16)`, 128 bits |
 | Exceção não prevista | Vazava tipo e caminho de arquivo para o agente | Rede de segurança no servidor: mensagem contida |
 
-O campo `actor` da auditoria é aceito, mas **não é autenticado** — a própria trilha diz isso
+O campo `actor` da auditoria é aceito, mas **não é autenticado**: a própria trilha diz isso
 (`nota_sobre_autoria`). Tratá-lo como prova de autoria seria enganoso, e esse é o tipo de coisa
 que só se descobre tarde demais numa auditoria de verdade.
 
 Fora de escopo por enquanto, e explicitamente: **não há controle de acesso entre usuários**. Quem
 tem o identificador lê e escreve a decisão. Isso basta para um servidor local de um usuário só, e
-não basta no momento em que isto virar serviço multiusuário — aí entra autenticação e dono por
+não basta no momento em que isto virar serviço multiusuário: aí entra autenticação e dono por
 registro.
 
 ### Planilhas
@@ -502,7 +502,7 @@ O layout tem três linhas de cabeçalho:
 ```
 
 A linha `direcao` é o único dado que não dá para inferir dos números, e errar
-nela inverte a decisão inteira — por isso é obrigatória, e a mensagem de erro
+nela inverte a decisão inteira; por isso é obrigatória, e a mensagem de erro
 diz exatamente o que falta quando ela não está lá.
 
 O **export** traz três abas: entrada, resultado e trilha de auditoria. A aba de
@@ -529,7 +529,7 @@ fixo mostra quantas alternativas seguem em disputa, e as descartadas ficam
 riscadas em vez de sumir. É o conceito central do método, e sem ele responder
 perguntas sobre situações ruins parece não levar a lugar nenhum.
 
-Contraste conferido nos dois temas — a tinta fraca do modo claro estava em
+Contraste conferido nos dois temas: a tinta fraca do modo claro estava em
 2,46:1 (abaixo do mínimo WCAG de 4,5:1) e foi corrigida para 4,63:1.
 
 O `.agents/skills/` traz as skills de design usadas na revisão (Anthropic
@@ -539,7 +539,7 @@ instruções de terceiros: leia antes de confiar.
 ### Onde a pessoa trava, e o que a ajuda
 
 O método tem três pontos em que quem usa sempre empaca. A ajuda fica ao lado do
-controle que confunde, no momento em que confunde — não num manual à parte.
+controle que confunde, no momento em que confunde, não num manual à parte.
 
 | Ponto | O que confunde | O que a interface faz |
 |---|---|---|
@@ -551,7 +551,7 @@ controle que confunde, no momento em que confunde — não num manual à parte.
 
 Nos formulários: **rótulo acima do campo, ajuda abaixo do rótulo, erro abaixo do
 controle**, e o campo com erro fica marcado. Placeholder nunca faz as vezes de
-rótulo — ele some quando a pessoa digita, justamente quando ela volta para
+rótulo: ele some quando a pessoa digita, justamente quando ela volta para
 conferir o que preencheu.
 
 Ícones são do Phosphor, uma família só. O `iniciar.ps1` sobe tudo.
@@ -564,36 +564,36 @@ scipy 1.17 / HiGHS, Python 3.11, pesos apenas ordenados:
 |---:|---:|---:|---:|
 | 50 | 10 | 0,108 s | 0,56 s |
 | 100 | 10 | 0,215 s | 2,06 s |
-| 250 | 10 | 0,739 s | — |
+| 250 | 10 | 0,739 s | n/d |
 
 O gargalo é a matriz de dominância, O(n²) LPs. Três reduções **exatas** cortam o custo em ~100x:
 
 1. restringir aos pares que interessam (entre POAs, para a escolha);
 2. dominância de Pareto dispensa o LP;
-3. **refutação por vértice** — um único vetor de pesos viável em que `l` supera `i` já prova que
+3. **refutação por vértice**: um único vetor de pesos viável em que `l` supera `i` já prova que
    `i` não domina `l`. Amostrar alguns vértices custa dezenas de LPs e dispensa milhares. Sozinha,
    levou o ranking de 11,9s para 2,1s em 100 alternativas.
 
 Uma decisão inteira responde em tempo de chat. Não há necessidade de fila.
 
 Próxima otimização, se necessário: trocar `scipy.optimize.linprog` por `highspy` com reuso do
-modelo — hoje ~1 ms por LP é quase todo overhead de montagem, não de solução. É um adaptador novo
+modelo. Hoje ~1 ms por LP é quase todo overhead de montagem, não de solução. É um adaptador novo
 em [`solvers/`](engine/src/fitradeoff/solvers/), nada mais.
 
 ## Próximos passos
 
-1. **Decisão em grupo** — uma sessão por decisor, e o agente localiza onde eles divergem.
-2. **Montagem do problema a partir de documento** — o agente lê um edital ou planilha e propõe
+1. **Decisão em grupo**: uma sessão por decisor, e o agente localiza onde eles divergem.
+2. **Montagem do problema a partir de documento**: o agente lê um edital ou planilha e propõe
    alternativas, critérios e matriz para o decisor validar.
-3. **Portfólio combinatorial comparado com o oficial** — é a única das cinco leituras sem medição
-   de paridade, porque o módulo de lá não elicita em sessão: enumera as carteiras offline e avisa
-   por e-mail. Comparar exige o modelo de voltar depois.
+3. **Portfólio combinatorial comparado com o oficial**: é a única das cinco leituras sem medição
+   de paridade, porque o módulo de lá não elicita em sessão. Ele enumera as carteiras offline e
+   avisa por e-mail, então comparar exige o modelo de voltar depois.
 
 ## Estrutura
 
 ```
 engine/src/fitradeoff/
-  domain/           entidades, preferências, auditoria — não importa nada
+  domain/           entidades, preferências, auditoria (não importa nada)
     scales.py         escala de valor (contínua, construída, degenerada)
     problem.py        problema, critérios, matriz de valor
     weights.py        espaço de pesos e restrições lineares
@@ -621,14 +621,14 @@ padrão de documentação e o que a CI espera.
 
 ## Licença
 
-[MIT](LICENSE) — © 2026 Doglas Anjos. Implementação independente; o método FITradeoff é do
+[MIT](LICENSE), © 2026 Doglas Anjos. Implementação independente; o método FITradeoff é do
 CDSID-UFPE (ver Referências), e a atribuição acadêmica fica lá.
 
 ## Referências
 
 - De Almeida, A.T. et al. (2016). *A new method for elicitation of criteria weights in additive
   models: Flexible and interactive tradeoff.* European Journal of Operational Research, 250(1), 179-191.
-- Frej, E.A. et al. (2019) — ranking. Kang, T.H.A. et al. (2020) — sorting. Frej, E.A. et al. (2021) — portfólio.
-- de Almeida, A.T. (2013) — modelo aditivo com veto, na formulação reproduzida por Palha,
+- Frej, E.A. et al. (2019), ranking. Kang, T.H.A. et al. (2020), sorting. Frej, E.A. et al. (2021), portfólio.
+- de Almeida, A.T. (2013), modelo aditivo com veto, na formulação reproduzida por Palha,
   de Almeida, Morais & Hipel (2019), *J. Civil Eng. Manag.* 25(4).
-- [fitradeoff.org](https://fitradeoff.org/) — método e sistema oficial do CDSID-UFPE.
+- [fitradeoff.org](https://fitradeoff.org/), método e sistema oficial do CDSID-UFPE.

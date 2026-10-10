@@ -107,11 +107,11 @@ medição do lado oficial para esses casos pede aquele script.
 
 ## Três coisas que o sistema oficial exige e não são óbvias
 
-**A URL que parece certa não é o app.** `http://15.229.155.120/fitradeoff/`
-devolve uma tela de erro do IntraWeb — "Device not supported" — que é o
-User-Agent sendo recusado, não o sistema fora do ar. A entrada é
-`/fitradeoff/fitradeoff.dll/`, e o bootstrap mede o viewport por JavaScript
-antes de abrir sessão. `curl` não serve.
+**A URL que parece certa não é o app.** A raiz `…/fitradeoff/` (o endereço fica
+em `FIT_BASE_URL`, no `.env`) devolve uma tela de erro do IntraWeb — "Device not
+supported" — que é o User-Agent sendo recusado, não o sistema fora do ar. A
+entrada é `…/fitradeoff/fitradeoff.dll/`, e o bootstrap mede o viewport por
+JavaScript antes de abrir sessão. `curl` não serve.
 
 **O clique some no meio da ação.** Cada clique dispara um re-render completo e o
 próprio botão desaparece; o Playwright reporta timeout embora o clique tenha

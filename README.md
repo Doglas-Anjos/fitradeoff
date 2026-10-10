@@ -614,6 +614,16 @@ paridade/           suíte que compara com o sistema oficial, e as medições
 
 Em que arquivo mora cada etapa do método: [`AUDITORIA.md`](AUDITORIA.md).
 
+## Contribuindo
+
+Issues e pull requests são bem-vindos. Veja [`CONTRIBUTING.md`](CONTRIBUTING.md): como rodar, o
+padrão de documentação e o que a CI espera.
+
+## Licença
+
+[MIT](LICENSE) — © 2026 Doglas Anjos. Implementação independente; o método FITradeoff é do
+CDSID-UFPE (ver Referências), e a atribuição acadêmica fica lá.
+
 ## Referências
 
 - De Almeida, A.T. et al. (2016). *A new method for elicitation of criteria weights in additive

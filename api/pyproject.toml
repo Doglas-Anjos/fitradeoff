@@ -2,6 +2,7 @@
 name = "fitradeoff-api"
 version = "0.3.0"
 description = "API HTTP do metodo FITradeoff"
+license = "MIT"
 requires-python = ">=3.13"
 dependencies = [
     # o extra traz o driver do PostgreSQL, usado quando FITRADEOFF_DATABASE_URL

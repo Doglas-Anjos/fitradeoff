@@ -19,14 +19,16 @@ tudo o que esta aqui. Tres licoes que custaram caro e estao codificadas:
    servidor fica lento e um sleep calibrado para uma sessao estoura na tela
    errada. Todas as esperas aqui sao por condicao.
 
-Credenciais vem de `FIT_USER` e `FIT_PASS`; nunca ficam no arquivo.
+Endereco vem de `FIT_BASE_URL` e credenciais de `FIT_USER`/`FIT_PASS`; o
+endereco e de terceiros e as credenciais sao suas -- ficam no `.env`, nunca
+no repositorio.
 """
 
 from __future__ import annotations
 
 import os
 
-BASE = "http://15.229.155.120/fitradeoff/fitradeoff.dll/"
+BASE = os.environ.get("FIT_BASE_URL", "")  # endereco do oficial; vem do .env
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36")
 ESPERA = 90000
